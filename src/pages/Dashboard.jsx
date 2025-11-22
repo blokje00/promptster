@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Search, Plus, Star, Code2, Sparkles, Filter } from "lucide-react";
+import { Search, Plus, Star, Code2, Sparkles, Filter, FileArchive, GitBranch } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import ItemCard from "../components/dashboard/ItemCard";
@@ -15,6 +15,8 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [showZipOnly, setShowZipOnly] = useState(false);
+  const [showPublishedOnly, setShowPublishedOnly] = useState(false);
 
   const { data: items, isLoading } = useQuery({
     queryKey: ['items'],
@@ -30,8 +32,10 @@ export default function Dashboard() {
     
     const matchesType = filterType === "all" || item.type === filterType;
     const matchesFavorites = !showFavoritesOnly || item.is_favorite;
+    const matchesZip = !showZipOnly || (item.zip_files && item.zip_files.length > 0);
+    const matchesPublished = !showPublishedOnly || item.is_publish_version;
     
-    return matchesSearch && matchesType && matchesFavorites;
+    return matchesSearch && matchesType && matchesFavorites && matchesZip && matchesPublished;
   });
 
   return (
@@ -72,6 +76,22 @@ export default function Dashboard() {
             >
               <Star className={`w-4 h-4 mr-2 ${showFavoritesOnly ? 'fill-white' : ''}`} />
               Favorieten
+            </Button>
+            <Button
+              variant={showZipOnly ? "default" : "outline"}
+              onClick={() => setShowZipOnly(!showZipOnly)}
+              className={showZipOnly ? "bg-purple-500 hover:bg-purple-600" : ""}
+            >
+              <FileArchive className={`w-4 h-4 mr-2`} />
+              ZIP
+            </Button>
+            <Button
+              variant={showPublishedOnly ? "default" : "outline"}
+              onClick={() => setShowPublishedOnly(!showPublishedOnly)}
+              className={showPublishedOnly ? "bg-green-500 hover:bg-green-600" : ""}
+            >
+              <GitBranch className={`w-4 h-4 mr-2`} />
+              Published
             </Button>
           </div>
 
