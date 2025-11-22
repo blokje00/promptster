@@ -270,7 +270,15 @@ export default function AddItem() {
                 <Checkbox
                   id="is_publish"
                   checked={formData.is_publish_version}
-                  onCheckedChange={(checked) => setFormData({...formData, is_publish_version: checked})}
+                  onCheckedChange={(checked) => {
+                    const now = new Date();
+                    const timestamp = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                    setFormData({
+                      ...formData, 
+                      is_publish_version: checked,
+                      publish_timestamp: checked ? timestamp : formData.publish_timestamp
+                    });
+                  }}
                 />
                 <label
                   htmlFor="is_publish"

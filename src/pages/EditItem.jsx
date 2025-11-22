@@ -215,7 +215,15 @@ export default function EditItem() {
                 <Checkbox
                   id="is_publish"
                   checked={formData.is_publish_version}
-                  onCheckedChange={(checked) => handleInputChange('is_publish_version', checked)}
+                  onCheckedChange={(checked) => {
+                    const now = new Date();
+                    const timestamp = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                    setFormData({
+                      ...formData, 
+                      is_publish_version: checked,
+                      publish_timestamp: checked && !formData.publish_timestamp ? timestamp : formData.publish_timestamp
+                    });
+                  }}
                 />
                 <label
                   htmlFor="is_publish"
