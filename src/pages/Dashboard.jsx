@@ -9,7 +9,6 @@ import { Search, Plus, Star, Code2, Sparkles, Filter, FileArchive, GitBranch } f
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import ItemCard from "../components/dashboard/ItemCard";
-import StatsOverview from "../components/dashboard/StatsOverview";
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,8 +55,6 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        <StatsOverview items={items} />
-
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-1">
@@ -98,18 +95,18 @@ export default function Dashboard() {
           <Tabs value={filterType} onValueChange={setFilterType}>
             <TabsList className="bg-slate-100">
               <TabsTrigger value="all" className="data-[state=active]:bg-white">
-                Alles
+                Alles <span className="ml-2 text-xs text-slate-500">({items.length})</span>
               </TabsTrigger>
               <TabsTrigger value="prompt" className="data-[state=active]:bg-white">
                 <Sparkles className="w-4 h-4 mr-2" />
-                Prompts
+                Prompts <span className="ml-2 text-xs text-slate-500">({items.filter(i => i.type === 'prompt').length})</span>
               </TabsTrigger>
               <TabsTrigger value="code" className="data-[state=active]:bg-white">
                 <Code2 className="w-4 h-4 mr-2" />
-                Code
+                Code <span className="ml-2 text-xs text-slate-500">({items.filter(i => i.type === 'code').length})</span>
               </TabsTrigger>
               <TabsTrigger value="snippet" className="data-[state=active]:bg-white">
-                Snippets
+                Snippets <span className="ml-2 text-xs text-slate-500">({items.filter(i => i.type === 'snippet').length})</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
