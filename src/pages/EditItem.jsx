@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, X, Star } from "lucide-react";
+import { ArrowLeft, Save, X, Star, GitBranch } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImageUploadZone from "../components/dashboard/ImageUploadZone";
 import ZipUploadZone from "../components/dashboard/ZipUploadZone";
@@ -38,7 +38,11 @@ export default function EditItem() {
         ...item,
         tags: item.tags || [],
         images: item.images || [],
-        zip_files: item.zip_files || []
+        zip_files: item.zip_files || [],
+        is_publish_version: item.is_publish_version || false,
+        publish_timestamp: item.publish_timestamp || "",
+        publish_working_notes: item.publish_working_notes || "",
+        publish_reason: item.publish_reason || ""
       });
     }
   }, [item]);
@@ -198,6 +202,68 @@ export default function EditItem() {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="shadow-lg border-slate-200 mt-6">
+            <CardHeader className="border-b border-slate-100">
+              <CardTitle className="flex items-center gap-2">
+                <GitBranch className="w-5 h-5 text-green-600" />
+                Publish Versie
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_publish"
+                  checked={formData.is_publish_version}
+                  onCheckedChange={(checked) => handleInputChange('is_publish_version', checked)}
+                />
+                <label
+                  htmlFor="is_publish"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Dit is een Publish versie / stabiele timestamp
+                </label>
+              </div>
+
+              {formData.is_publish_version && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="publish_timestamp">Datum/Tijd Publish</Label>
+                    <Input
+                      id="publish_timestamp"
+                      type="datetime-local"
+                      value={formData.publish_timestamp}
+                      onChange={(e) => handleInputChange('publish_timestamp', e.target.value)}
+                      className="border-slate-200"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="publish_working_notes">Wat werkte er allemaal goed?</Label>
+                    <Textarea
+                      id="publish_working_notes"
+                      placeholder="Beschrijf wat er op dit moment allemaal goed werkte..."
+                      value={formData.publish_working_notes || ''}
+                      onChange={(e) => handleInputChange('publish_working_notes', e.target.value)}
+                      className="min-h-[100px] border-slate-200"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="publish_reason">Waarom deze Publish versie?</Label>
+                    <Textarea
+                      id="publish_reason"
+                      placeholder="Leg uit waarom je deze Publish versie maakt (bijv. voor een grote wijziging)..."
+                      value={formData.publish_reason || ''}
+                      onChange={(e) => handleInputChange('publish_reason', e.target.value)}
+                      className="min-h-[100px] border-slate-200"
+                    />
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
           <div className="flex justify-end gap-3 mt-6">
             <Button type="button" variant="outline" onClick={() => navigate(createPageUrl(`ViewItem?id=${itemId}`))}>Annuleren</Button>
             <Button type="submit" disabled={updateMutation.isPending} className="bg-indigo-600 hover:bg-indigo-700">
