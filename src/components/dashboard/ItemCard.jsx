@@ -82,13 +82,7 @@ export default function ItemCard({ item }) {
                   {item.is_publish_version && (
                     <Badge variant="outline" className="bg-green-50 border-green-300 text-green-700 flex-shrink-0">
                       <GitBranch className="w-3 h-3 mr-1" />
-                      {item.publish_timestamp ? new Date(item.publish_timestamp).toLocaleString('nl-NL', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      }) : 'Publish'}
+                      {item.publish_timestamp ? new Date(item.publish_timestamp).toLocaleDateString('nl-NL') : 'Publish'}
                     </Badge>
                   )}
                 </div>
