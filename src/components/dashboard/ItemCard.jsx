@@ -80,10 +80,22 @@ export default function ItemCard({ item }) {
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-slate-900 truncate hover:text-indigo-600 transition-colors">{item.title}</h3>
                   {item.is_publish_version && (
-                    <Badge variant="outline" className="bg-green-50 border-green-300 text-green-700 flex-shrink-0">
-                      <GitBranch className="w-3 h-3 mr-1" />
-                      {item.publish_timestamp ? new Date(item.publish_timestamp).toLocaleDateString('nl-NL') : 'Publish'}
-                    </Badge>
+                    <HoverCard>
+                      <HoverCardTrigger asChild>
+                        <Badge variant="outline" className="bg-green-50 border-green-300 text-green-700 flex-shrink-0 cursor-pointer">
+                          <GitBranch className="w-3 h-3 mr-1" />
+                          {item.publish_timestamp ? new Date(item.publish_timestamp).toLocaleTimeString('nl-NL', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }) : 'Publish'}
+                        </Badge>
+                      </HoverCardTrigger>
+                      <HoverCardContent className="w-auto">
+                        <p className="text-sm">
+                          {item.publish_timestamp ? new Date(item.publish_timestamp).toLocaleString('nl-NL') : 'Geen datum beschikbaar'}
+                        </p>
+                      </HoverCardContent>
+                    </HoverCard>
                   )}
                 </div>
                 {item.description && (
