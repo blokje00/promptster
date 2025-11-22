@@ -162,9 +162,9 @@ export default function ItemCard({ item }) {
               )}
 
               {item.zip_files && item.zip_files.length > 0 && (
-                <Badge variant="outline" className="text-xs">
+                <Badge variant="outline" className="text-xs bg-purple-100 border-purple-300 text-purple-700 font-medium">
                   <FileArchive className="w-3 h-3 mr-1" />
-                  {item.zip_files.length}
+                  {item.zip_files.length} ZIP
                 </Badge>
               )}
             </div>
