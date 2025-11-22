@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Star, Trash2, Edit, Code2, Sparkles, FileText, CheckCircle, MessageSquare, Image as ImageIcon, FileArchive } from "lucide-react";
+import { Copy, Star, Trash2, Edit, Code2, Sparkles, FileText, CheckCircle, MessageSquare, Image as ImageIcon, FileArchive, GitBranch } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
@@ -75,7 +75,15 @@ export default function ItemCard({ item }) {
                 <TypeIcon className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-slate-900 truncate hover:text-indigo-600 transition-colors">{item.title}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-slate-900 truncate hover:text-indigo-600 transition-colors">{item.title}</h3>
+                  {item.is_publish_version && (
+                    <Badge variant="outline" className="bg-green-50 border-green-300 text-green-700 flex-shrink-0">
+                      <GitBranch className="w-3 h-3 mr-1" />
+                      Publish
+                    </Badge>
+                  )}
+                </div>
                 {item.description && (
                   <p className="text-sm text-slate-500 mt-1 line-clamp-2">{item.description}</p>
                 )}
