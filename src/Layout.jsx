@@ -32,6 +32,11 @@ const navigationItems = [
     url: createPageUrl("Multiprompt"),
     icon: Sparkles,
   },
+  {
+    title: "AI Instellingen",
+    url: createPageUrl("AIBackoffice"),
+    icon: Sparkles,
+  },
 ];
 
 export default function Layout({ children, currentPageName }) {
