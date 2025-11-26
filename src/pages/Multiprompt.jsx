@@ -26,7 +26,8 @@ import {
   Loader2,
   FolderOpen,
   Edit,
-  MoreHorizontal
+  MoreHorizontal,
+  GripVertical
 } from "lucide-react";
 
 import {
@@ -42,6 +43,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 const projectColors = {
   red: "bg-red-500",
@@ -279,10 +281,11 @@ export default function Multiprompt() {
     );
   };
 
-  const moveThoughtInSelection = (fromIndex, toIndex) => {
+  const handleSelectedThoughtsDragEnd = (result) => {
+    if (!result.destination) return;
     const newSelected = [...selectedThoughts];
-    const [removed] = newSelected.splice(fromIndex, 1);
-    newSelected.splice(toIndex, 0, removed);
+    const [removed] = newSelected.splice(result.source.index, 1);
+    newSelected.splice(result.destination.index, 0, removed);
     setSelectedThoughts(newSelected);
   };
 
@@ -722,37 +725,52 @@ ${generatedPrompt}`,
 
                     <div className="pt-2 border-t">
                       <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        Geselecteerde gedachten: {selectedThoughts.length} (klik pijlen om te verplaatsen)
+                        Geselecteerde gedachten: {selectedThoughts.length} (sleep om te herordenen)
                       </label>
-                      <div className="space-y-1">
-                        {selectedThoughts.map((id, idx) => {
-                          const thought = thoughts.find(t => t.id === id);
-                          return (
-                            <div key={id} className="flex items-center gap-2 p-2 bg-slate-100 rounded text-xs">
-                              <div className="flex flex-col">
-                                <button 
-                                  onClick={() => idx > 0 && moveThoughtInSelection(idx, idx - 1)}
-                                  disabled={idx === 0}
-                                  className="text-slate-400 hover:text-slate-700 disabled:opacity-30"
-                                >▲</button>
-                                <button 
-                                  onClick={() => idx < selectedThoughts.length - 1 && moveThoughtInSelection(idx, idx + 1)}
-                                  disabled={idx === selectedThoughts.length - 1}
-                                  className="text-slate-400 hover:text-slate-700 disabled:opacity-30"
-                                >▼</button>
-                              </div>
-                              <Badge variant="secondary" className="text-xs shrink-0">
-                                {idx + 1}
-                              </Badge>
-                              <span className="truncate text-slate-600">{thought?.content?.substring(0, 40)}...</span>
-                              <button 
-                                onClick={() => toggleThoughtSelection(id)}
-                                className="ml-auto text-red-400 hover:text-red-600"
-                              >×</button>
+                      <DragDropContext onDragEnd={handleSelectedThoughtsDragEnd}>
+                        <Droppable droppableId="selected-thoughts">
+                          {(provided) => (
+                            <div 
+                              {...provided.droppableProps} 
+                              ref={provided.innerRef}
+                              className="space-y-1"
+                            >
+                              {selectedThoughts.map((id, idx) => {
+                                const thought = thoughts.find(t => t.id === id);
+                                return (
+                                  <Draggable key={id} draggableId={id} index={idx}>
+                                    {(provided, snapshot) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        className={`flex items-center gap-2 p-2 bg-slate-100 rounded text-xs ${
+                                          snapshot.isDragging ? 'shadow-lg bg-white' : ''
+                                        }`}
+                                      >
+                                        <div 
+                                          {...provided.dragHandleProps}
+                                          className="text-slate-400 cursor-grab active:cursor-grabbing"
+                                        >
+                                          <GripVertical className="w-4 h-4" />
+                                        </div>
+                                        <Badge variant="secondary" className="text-xs shrink-0">
+                                          {idx + 1}
+                                        </Badge>
+                                        <span className="truncate text-slate-600 flex-1">{thought?.content?.substring(0, 40)}...</span>
+                                        <button 
+                                          onClick={() => toggleThoughtSelection(id)}
+                                          className="text-red-400 hover:text-red-600"
+                                        >×</button>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                );
+                              })}
+                              {provided.placeholder}
                             </div>
-                          );
-                        })}
-                      </div>
+                          )}
+                        </Droppable>
+                      </DragDropContext>
                     </div>
                   </CardContent>
                 </Card>
