@@ -878,47 +878,46 @@ ${generatedPrompt}`,
                       <Plus className="w-4 h-4 mr-2" />
                       Taak Toevoegen {selectedProject && `aan ${selectedProject.name}`}
                     </Button>
-                      <Droppable droppableId="thoughts-list">
-                        {(provided) => (
-                          <div 
-                            {...provided.droppableProps}
-                            ref={provided.innerRef}
-                            className="space-y-2 max-h-[400px] overflow-auto"
-                          >
-                            {filteredThoughts.map((thought, index) => {
-                              const thoughtProject = projects.find(p => p.id === thought.project_id);
-                              return (
-                                <Draggable key={thought.id} draggableId={thought.id} index={index}>
-                                  {(provided, snapshot) => (
-                                    <div
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      className={snapshot.isDragging ? 'opacity-90' : ''}
-                                    >
-                                      <ThoughtCard
-                                        thought={thought}
-                                        project={thoughtProject}
-                                        isSelected={selectedThoughts.includes(thought.id)}
-                                        onToggleSelect={() => toggleThoughtSelection(thought.id)}
-                                        onDelete={() => deleteThoughtMutation.mutate(thought.id)}
-                                        onUpdateImages={handleUpdateThoughtImages}
-                                        dragHandleProps={provided.dragHandleProps}
-                                      />
-                                    </div>
-                                  )}
-                                </Draggable>
-                              );
-                            })}
-                            {provided.placeholder}
-                            {filteredThoughts.length === 0 && (
-                              <p className="text-center text-slate-400 py-8">
-                                Nog geen taken{selectedProject ? ` voor ${selectedProject.name}` : ''}. Begin met typen!
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </Droppable>
-                    </DragDropContext>
+                    <Droppable droppableId="thoughts-list">
+                      {(provided) => (
+                        <div 
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          className="space-y-2 max-h-[400px] overflow-auto"
+                        >
+                          {filteredThoughts.map((thought, index) => {
+                            const thoughtProject = projects.find(p => p.id === thought.project_id);
+                            return (
+                              <Draggable key={thought.id} draggableId={thought.id} index={index}>
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    className={snapshot.isDragging ? 'opacity-90' : ''}
+                                  >
+                                    <ThoughtCard
+                                      thought={thought}
+                                      project={thoughtProject}
+                                      isSelected={selectedThoughts.includes(thought.id)}
+                                      onToggleSelect={() => toggleThoughtSelection(thought.id)}
+                                      onDelete={() => deleteThoughtMutation.mutate(thought.id)}
+                                      onUpdateImages={handleUpdateThoughtImages}
+                                      dragHandleProps={provided.dragHandleProps}
+                                    />
+                                  </div>
+                                )}
+                              </Draggable>
+                            );
+                          })}
+                          {provided.placeholder}
+                          {filteredThoughts.length === 0 && (
+                            <p className="text-center text-slate-400 py-8">
+                              Nog geen taken{selectedProject ? ` voor ${selectedProject.name}` : ''}. Begin met typen!
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </Droppable>
                   </CardContent>
                 </Card>
               </div>
