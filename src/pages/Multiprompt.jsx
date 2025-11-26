@@ -74,15 +74,8 @@ export default function Multiprompt() {
   const [newThought, setNewThought] = useState("");
   const [newThoughtImage, setNewThoughtImage] = useState(null);
   const [selectedThoughts, setSelectedThoughts] = useState([]);
-  
-  // Load saved template IDs from localStorage per project
-  const getStoredTemplateId = (type) => {
-    const key = `template_${type}_${selectedProjectId || 'all'}`;
-    return localStorage.getItem(key) || "";
-  };
-  
-  const [startTemplateId, setStartTemplateId] = useState(() => getStoredTemplateId('start'));
-  const [endTemplateId, setEndTemplateId] = useState(() => getStoredTemplateId('end'));
+  const [startTemplateId, setStartTemplateId] = useState("");
+  const [endTemplateId, setEndTemplateId] = useState("");
   const [customStartText, setCustomStartText] = useState("");
   const [customEndText, setCustomEndText] = useState("");
   const [promptTitle, setPromptTitle] = useState("");
@@ -356,8 +349,10 @@ export default function Multiprompt() {
   
   // Load templates when project changes
   useEffect(() => {
-    setStartTemplateId(getStoredTemplateId('start'));
-    setEndTemplateId(getStoredTemplateId('end'));
+    const storedStart = localStorage.getItem(`template_start_${selectedProjectId || 'all'}`) || "";
+    const storedEnd = localStorage.getItem(`template_end_${selectedProjectId || 'all'}`) || "";
+    setStartTemplateId(storedStart);
+    setEndTemplateId(storedEnd);
   }, [selectedProjectId]);
 
   const selectedStartTemplate = templates.find(t => t.id === startTemplateId);
