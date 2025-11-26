@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -21,9 +21,33 @@ import {
   Copy, 
   CheckCircle,
   FileText,
-  ArrowRight,
-  X
+  X,
+  Sparkles,
+  Loader2,
+  FolderOpen
 } from "lucide-react";
+
+const projectColors = {
+  red: "bg-red-500",
+  orange: "bg-orange-500",
+  yellow: "bg-yellow-500",
+  green: "bg-green-500",
+  blue: "bg-blue-500",
+  indigo: "bg-indigo-500",
+  purple: "bg-purple-500",
+  pink: "bg-pink-500"
+};
+
+const projectBorderColors = {
+  red: "border-red-500",
+  orange: "border-orange-500",
+  yellow: "border-yellow-500",
+  green: "border-green-500",
+  blue: "border-blue-500",
+  indigo: "border-indigo-500",
+  purple: "border-purple-500",
+  pink: "border-pink-500"
+};
 
 export default function Multiprompt() {
   const navigate = useNavigate();
@@ -32,13 +56,23 @@ export default function Multiprompt() {
   const [selectedThoughts, setSelectedThoughts] = useState([]);
   const [startTemplateId, setStartTemplateId] = useState("");
   const [endTemplateId, setEndTemplateId] = useState("");
+  const [customStartText, setCustomStartText] = useState("");
+  const [customEndText, setCustomEndText] = useState("");
   const [promptTitle, setPromptTitle] = useState("");
   const [copied, setCopied] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [improvedPrompt, setImprovedPrompt] = useState("");
+  const [isImproving, setIsImproving] = useState(false);
 
   // Template form state
   const [newTemplateName, setNewTemplateName] = useState("");
   const [newTemplateType, setNewTemplateType] = useState("start");
   const [newTemplateContent, setNewTemplateContent] = useState("");
+
+  // Project form state
+  const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectColor, setNewProjectColor] = useState("blue");
+  const [newProjectDescription, setNewProjectDescription] = useState("");
 
   const { data: thoughts = [] } = useQuery({
     queryKey: ['thoughts'],
@@ -48,6 +82,11 @@ export default function Multiprompt() {
   const { data: templates = [] } = useQuery({
     queryKey: ['templates'],
     queryFn: () => base44.entities.PromptTemplate.list(),
+  });
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: () => base44.entities.Project.list(),
   });
 
   const createThoughtMutation = useMutation({
@@ -85,6 +124,24 @@ export default function Multiprompt() {
     },
   });
 
+  const createProjectMutation = useMutation({
+    mutationFn: (data) => base44.entities.Project.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      setNewProjectName("");
+      setNewProjectDescription("");
+      toast.success("Project toegevoegd");
+    },
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: (id) => base44.entities.Project.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast.success("Project verwijderd");
+    },
+  });
+
   const createMultipromptMutation = useMutation({
     mutationFn: (data) => base44.entities.Item.create(data),
     onSuccess: (newItem) => {
@@ -96,7 +153,10 @@ export default function Multiprompt() {
 
   const handleAddThought = () => {
     if (!newThought.trim()) return;
-    createThoughtMutation.mutate({ content: newThought.trim() });
+    createThoughtMutation.mutate({ 
+      content: newThought.trim(),
+      project_id: selectedProjectId || null
+    });
   };
 
   const handleAddTemplate = () => {
@@ -105,6 +165,15 @@ export default function Multiprompt() {
       name: newTemplateName.trim(),
       type: newTemplateType,
       content: newTemplateContent.trim()
+    });
+  };
+
+  const handleAddProject = () => {
+    if (!newProjectName.trim()) return;
+    createProjectMutation.mutate({
+      name: newProjectName.trim(),
+      color: newProjectColor,
+      description: newProjectDescription.trim()
     });
   };
 
@@ -125,14 +194,50 @@ export default function Multiprompt() {
     .filter(t => selectedThoughts.includes(t.id))
     .map(t => t.content);
 
+  const startText = customStartText || selectedStartTemplate?.content || "";
+  const endText = customEndText || selectedEndTemplate?.content || "";
+
   const generatedPrompt = [
-    selectedStartTemplate?.content || "",
+    startText,
     ...selectedThoughtContents,
-    selectedEndTemplate?.content || ""
+    endText
   ].filter(Boolean).join("\n\n");
 
+  // Filter thoughts by selected project
+  const filteredThoughts = selectedProjectId 
+    ? thoughts.filter(t => t.project_id === selectedProjectId)
+    : thoughts;
+
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
+
+  const handleImprovePrompt = async () => {
+    if (!generatedPrompt.trim()) return;
+    
+    setIsImproving(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Verbeter de volgende prompt technisch en taalkundig. Maak de tekst professioneler, duidelijker en beter gestructureerd. Behoud de originele intentie en inhoud, maar verbeter grammatica, spelling, en technische precisie. Geef alleen de verbeterde tekst terug, geen uitleg.
+
+Originele prompt:
+${generatedPrompt}`,
+      });
+      setImprovedPrompt(result);
+      toast.success("Prompt verbeterd!");
+    } catch (error) {
+      toast.error("Kon prompt niet verbeteren");
+    } finally {
+      setIsImproving(false);
+    }
+  };
+
+  // Reset improved prompt when source changes
+  useEffect(() => {
+    setImprovedPrompt("");
+  }, [generatedPrompt]);
+
   const handleCopyPrompt = () => {
-    navigator.clipboard.writeText(generatedPrompt);
+    const textToCopy = improvedPrompt || generatedPrompt;
+    navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     toast.success("Prompt gekopieerd!");
     setTimeout(() => setCopied(false), 2000);
@@ -143,7 +248,8 @@ export default function Multiprompt() {
       toast.error("Geef de multiprompt een titel");
       return;
     }
-    if (!generatedPrompt.trim()) {
+    const finalPrompt = improvedPrompt || generatedPrompt;
+    if (!finalPrompt.trim()) {
       toast.error("De prompt is leeg");
       return;
     }
@@ -151,7 +257,7 @@ export default function Multiprompt() {
     createMultipromptMutation.mutate({
       title: promptTitle.trim(),
       type: "multiprompt",
-      content: generatedPrompt,
+      content: finalPrompt,
       used_thoughts: selectedThoughts,
       start_template_id: startTemplateId || null,
       end_template_id: endTemplateId || null
@@ -168,6 +274,40 @@ export default function Multiprompt() {
           <p className="text-slate-600 mt-2">Verzamel gedachten en bouw uitgebreide prompts</p>
         </div>
 
+        {/* Project Selector Bar */}
+        <Card className={`mb-6 ${selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : ''}`}>
+          <CardContent className="py-4">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <FolderOpen className="w-5 h-5 text-slate-500" />
+                <span className="font-medium text-slate-700">Project:</span>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={!selectedProjectId ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedProjectId("")}
+                  className={!selectedProjectId ? "bg-slate-700" : ""}
+                >
+                  Alle
+                </Button>
+                {projects.map(project => (
+                  <Button
+                    key={project.id}
+                    variant={selectedProjectId === project.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedProjectId(project.id)}
+                    className={selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}
+                  >
+                    <div className={`w-3 h-3 rounded-full ${projectColors[project.color]} mr-2`} />
+                    {project.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="build" className="space-y-6">
           <TabsList className="bg-slate-100">
             <TabsTrigger value="build" className="data-[state=active]:bg-white">
@@ -177,6 +317,10 @@ export default function Multiprompt() {
             <TabsTrigger value="templates" className="data-[state=active]:bg-white">
               <FileText className="w-4 h-4 mr-2" />
               Templates
+            </TabsTrigger>
+            <TabsTrigger value="projects" className="data-[state=active]:bg-white">
+              <FolderOpen className="w-4 h-4 mr-2" />
+              Projecten
             </TabsTrigger>
           </TabsList>
 
@@ -189,6 +333,11 @@ export default function Multiprompt() {
                     <CardTitle className="flex items-center gap-2">
                       <Lightbulb className="w-5 h-5 text-yellow-500" />
                       Gedachten
+                      {selectedProject && (
+                        <Badge className={`${projectColors[selectedProject.color]} text-white ml-2`}>
+                          {selectedProject.name}
+                        </Badge>
+                      )}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -211,45 +360,57 @@ export default function Multiprompt() {
                       className="w-full bg-indigo-600 hover:bg-indigo-700"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Gedachte Toevoegen
+                      Gedachte Toevoegen {selectedProject && `aan ${selectedProject.name}`}
                     </Button>
 
                     <div className="space-y-2 max-h-[400px] overflow-auto">
-                      {thoughts.map((thought) => (
-                        <div 
-                          key={thought.id}
-                          className={`p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                            selectedThoughts.includes(thought.id)
-                              ? 'border-indigo-500 bg-indigo-50'
-                              : 'border-slate-200 hover:border-slate-300'
-                          }`}
-                          onClick={() => toggleThoughtSelection(thought.id)}
-                        >
-                          <div className="flex items-start gap-3">
-                            <Checkbox 
-                              checked={selectedThoughts.includes(thought.id)}
-                              onCheckedChange={() => toggleThoughtSelection(thought.id)}
-                            />
-                            <p className="flex-1 text-sm text-slate-700 whitespace-pre-wrap">
-                              {thought.content}
-                            </p>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 text-slate-400 hover:text-red-500"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteThoughtMutation.mutate(thought.id);
-                              }}
-                            >
-                              <X className="w-4 h-4" />
-                            </Button>
+                      {filteredThoughts.map((thought) => {
+                        const thoughtProject = projects.find(p => p.id === thought.project_id);
+                        return (
+                          <div 
+                            key={thought.id}
+                            className={`p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                              selectedThoughts.includes(thought.id)
+                                ? 'border-indigo-500 bg-indigo-50'
+                                : thoughtProject 
+                                  ? `${projectBorderColors[thoughtProject.color]} bg-white`
+                                  : 'border-slate-200 hover:border-slate-300'
+                            }`}
+                            onClick={() => toggleThoughtSelection(thought.id)}
+                          >
+                            <div className="flex items-start gap-3">
+                              <Checkbox 
+                                checked={selectedThoughts.includes(thought.id)}
+                                onCheckedChange={() => toggleThoughtSelection(thought.id)}
+                              />
+                              <div className="flex-1">
+                                {thoughtProject && (
+                                  <Badge className={`${projectColors[thoughtProject.color]} text-white text-xs mb-1`}>
+                                    {thoughtProject.name}
+                                  </Badge>
+                                )}
+                                <p className="text-sm text-slate-700 whitespace-pre-wrap">
+                                  {thought.content}
+                                </p>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-slate-400 hover:text-red-500"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteThoughtMutation.mutate(thought.id);
+                                }}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                      {thoughts.length === 0 && (
+                        );
+                      })}
+                      {filteredThoughts.length === 0 && (
                         <p className="text-center text-slate-400 py-8">
-                          Nog geen gedachten. Begin met typen!
+                          Nog geen gedachten{selectedProject ? ` voor ${selectedProject.name}` : ''}. Begin met typen!
                         </p>
                       )}
                     </div>
@@ -264,38 +425,63 @@ export default function Multiprompt() {
                     <CardTitle>Prompt Samenstellen</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4">
                       <div>
                         <label className="text-sm font-medium text-slate-700 mb-2 block">
                           Starttekst
                         </label>
-                        <Select value={startTemplateId} onValueChange={setStartTemplateId}>
+                        <Select value={startTemplateId} onValueChange={(val) => {
+                          setStartTemplateId(val);
+                          if (val) setCustomStartText("");
+                        }}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Kies starttekst..." />
+                            <SelectValue placeholder="Kies template of typ hieronder..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value={null}>Geen</SelectItem>
+                            <SelectItem value={null}>Geen template</SelectItem>
                             {startTemplates.map(t => (
                               <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+                        <Textarea
+                          placeholder="Of typ hier je eigen starttekst..."
+                          value={customStartText}
+                          onChange={(e) => {
+                            setCustomStartText(e.target.value);
+                            if (e.target.value) setStartTemplateId("");
+                          }}
+                          className="mt-2 min-h-[60px]"
+                        />
                       </div>
+                      
                       <div>
                         <label className="text-sm font-medium text-slate-700 mb-2 block">
                           Eindtekst
                         </label>
-                        <Select value={endTemplateId} onValueChange={setEndTemplateId}>
+                        <Select value={endTemplateId} onValueChange={(val) => {
+                          setEndTemplateId(val);
+                          if (val) setCustomEndText("");
+                        }}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Kies eindtekst..." />
+                            <SelectValue placeholder="Kies template of typ hieronder..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value={null}>Geen</SelectItem>
+                            <SelectItem value={null}>Geen template</SelectItem>
                             {endTemplates.map(t => (
                               <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
+                        <Textarea
+                          placeholder="Of typ hier je eigen eindtekst..."
+                          value={customEndText}
+                          onChange={(e) => {
+                            setCustomEndText(e.target.value);
+                            if (e.target.value) setEndTemplateId("");
+                          }}
+                          className="mt-2 min-h-[60px]"
+                        />
                       </div>
                     </div>
 
@@ -318,21 +504,41 @@ export default function Multiprompt() {
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center justify-between">
                       <span>Preview</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCopyPrompt}
-                        disabled={!generatedPrompt}
-                      >
-                        {copied ? <CheckCircle className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                        {copied ? "Gekopieerd" : "Kopieer"}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleImprovePrompt}
+                          disabled={!generatedPrompt || isImproving}
+                        >
+                          {isImproving ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Sparkles className="w-4 h-4 mr-2" />
+                          )}
+                          {isImproving ? "Bezig..." : "Verbeter met AI"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCopyPrompt}
+                          disabled={!generatedPrompt && !improvedPrompt}
+                        >
+                          {copied ? <CheckCircle className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                          {copied ? "Gekopieerd" : "Kopieer"}
+                        </Button>
+                      </div>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
+                    {improvedPrompt && (
+                      <div className="mb-3">
+                        <Badge className="bg-green-100 text-green-700 mb-2">AI Verbeterd</Badge>
+                      </div>
+                    )}
                     <div className="bg-slate-900 rounded-xl p-4 max-h-[300px] overflow-auto">
                       <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap">
-                        {generatedPrompt || "Selecteer gedachten en templates om een preview te zien..."}
+                        {improvedPrompt || generatedPrompt || "Selecteer gedachten en templates om een preview te zien..."}
                       </pre>
                     </div>
                   </CardContent>
@@ -347,7 +553,7 @@ export default function Multiprompt() {
                     />
                     <Button
                       onClick={handleSaveMultiprompt}
-                      disabled={!generatedPrompt || !promptTitle.trim()}
+                      disabled={(!generatedPrompt && !improvedPrompt) || !promptTitle.trim()}
                       className="w-full bg-green-600 hover:bg-green-700"
                     >
                       <Save className="w-4 h-4 mr-2" />
@@ -458,6 +664,93 @@ export default function Multiprompt() {
                   </CardContent>
                 </Card>
               </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="projects" className="space-y-6">
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Add Project Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Nieuw Project</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input
+                    placeholder="Project naam..."
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                  />
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-2 block">Kleur</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {Object.keys(projectColors).map(color => (
+                        <button
+                          key={color}
+                          onClick={() => setNewProjectColor(color)}
+                          className={`w-8 h-8 rounded-full ${projectColors[color]} ${
+                            newProjectColor === color ? 'ring-2 ring-offset-2 ring-slate-400' : ''
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <Textarea
+                    placeholder="Beschrijving (optioneel)..."
+                    value={newProjectDescription}
+                    onChange={(e) => setNewProjectDescription(e.target.value)}
+                    className="min-h-[80px]"
+                  />
+                  <Button
+                    onClick={handleAddProject}
+                    disabled={!newProjectName.trim()}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Project Toevoegen
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Projects List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Mijn Projecten</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {projects.map(project => (
+                    <div 
+                      key={project.id} 
+                      className={`p-4 rounded-lg border-2 ${projectBorderColors[project.color]} bg-white`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-4 h-4 rounded-full ${projectColors[project.color]}`} />
+                          <div>
+                            <p className="font-medium text-slate-800">{project.name}</p>
+                            {project.description && (
+                              <p className="text-sm text-slate-500 mt-1">{project.description}</p>
+                            )}
+                            <p className="text-xs text-slate-400 mt-1">
+                              {thoughts.filter(t => t.project_id === project.id).length} gedachten
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-500 hover:bg-red-50"
+                          onClick={() => deleteProjectMutation.mutate(project.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {projects.length === 0 && (
+                    <p className="text-slate-400 text-center py-8">Nog geen projecten</p>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>
