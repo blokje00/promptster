@@ -47,12 +47,20 @@ export default function Dashboard() {
             </h1>
             <p className="text-slate-600 mt-2">Al je prompts en code op één plek</p>
           </div>
-          <Link to={createPageUrl("AddItem")}>
-            <Button className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30">
-              <Plus className="w-5 h-5 mr-2" />
-              Nieuw Item
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link to={createPageUrl("AddItem")}>
+              <Button className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30">
+                <Plus className="w-5 h-5 mr-2" />
+                Prompt
+              </Button>
+            </Link>
+            <Link to={createPageUrl("Multiprompt")}>
+              <Button variant="outline" className="border-indigo-600 text-indigo-600 hover:bg-indigo-50">
+                <Plus className="w-5 h-5 mr-2" />
+                Multi-task
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
