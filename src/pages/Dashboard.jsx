@@ -102,8 +102,8 @@ export default function Dashboard() {
                                 Prompts <span className="ml-2 text-xs text-slate-500">({items.filter(i => i.type === 'prompt').length})</span>
                               </TabsTrigger>
                               <TabsTrigger value="multiprompt" className="data-[state=active]:bg-white">
-                                Multiprompts <span className="ml-2 text-xs text-slate-500">({items.filter(i => i.type === 'multiprompt').length})</span>
-                              </TabsTrigger>
+                                                    Multi-tasks <span className="ml-2 text-xs text-slate-500">({items.filter(i => i.type === 'multiprompt').length})</span>
+                                                  </TabsTrigger>
               <TabsTrigger value="code" className="data-[state=active]:bg-white">
                 <Code2 className="w-4 h-4 mr-2" />
                 Code <span className="ml-2 text-xs text-slate-500">({items.filter(i => i.type === 'code').length})</span>

@@ -24,8 +24,25 @@ import {
   X,
   Sparkles,
   Loader2,
-  FolderOpen
+  FolderOpen,
+  GripVertical,
+  Edit,
+  MoreHorizontal
 } from "lucide-react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const projectColors = {
   red: "bg-red-500",
@@ -78,6 +95,13 @@ export default function Multiprompt() {
   const [promptInput, setPromptInput] = useState("");
   const [promptDoel, setPromptDoel] = useState("");
   const [tasks, setTasks] = useState([{ id: 1, text: "" }]);
+
+  // Edit project state
+  const [editingProject, setEditingProject] = useState(null);
+  const [editProjectName, setEditProjectName] = useState("");
+  const [editProjectColor, setEditProjectColor] = useState("blue");
+  const [editProjectDescription, setEditProjectDescription] = useState("");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const { data: thoughts = [] } = useQuery({
     queryKey: ['thoughts'],
@@ -143,7 +167,18 @@ export default function Multiprompt() {
     mutationFn: (id) => base44.entities.Project.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      if (selectedProjectId === editingProject?.id) setSelectedProjectId("");
       toast.success("Project verwijderd");
+    },
+  });
+
+  const updateProjectMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Project.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      setEditDialogOpen(false);
+      setEditingProject(null);
+      toast.success("Project bijgewerkt");
     },
   });
 
@@ -151,7 +186,7 @@ export default function Multiprompt() {
     mutationFn: (data) => base44.entities.Item.create(data),
     onSuccess: (newItem) => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
-      toast.success("Multiprompt opgeslagen!");
+      toast.success("Multi-task opgeslagen!");
       navigate(createPageUrl(`ViewItem?id=${newItem.id}`));
     },
   });
@@ -182,6 +217,34 @@ export default function Multiprompt() {
     });
   };
 
+  const handleEditProject = (project) => {
+    setEditingProject(project);
+    setEditProjectName(project.name);
+    setEditProjectColor(project.color);
+    setEditProjectDescription(project.description || "");
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEditProject = () => {
+    if (!editProjectName.trim()) return;
+    updateProjectMutation.mutate({
+      id: editingProject.id,
+      data: {
+        name: editProjectName.trim(),
+        color: editProjectColor,
+        description: editProjectDescription.trim()
+      }
+    });
+  };
+
+  const handleTaskDragEnd = (result) => {
+    if (!result.destination) return;
+    const items = Array.from(tasks);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    setTasks(items);
+  };
+
   const toggleThoughtSelection = (thoughtId) => {
     setSelectedThoughts(prev => 
       prev.includes(thoughtId) 
@@ -202,23 +265,32 @@ export default function Multiprompt() {
   const startText = customStartText || selectedStartTemplate?.content || "";
   const endText = customEndText || selectedEndTemplate?.content || "";
 
-  // Build structured prompt
+  // Build structured prompt combining start text, thoughts, tasks, and end text
   const buildStructuredPrompt = () => {
     const thoughtsText = selectedThoughtContents.join("\n");
-    const tasksText = tasks
-      .filter(t => t.text.trim())
+    const inputContent = promptInput || thoughtsText || "[input]";
+    
+    const filledTasks = tasks.filter(t => t.text.trim());
+    const tasksText = filledTasks
       .map((t, i) => `${i + 1}. Taak ${i + 1} – ${t.text}`)
       .join("\n");
     
-    const resultTags = tasks
-      .filter(t => t.text.trim())
+    const resultTags = filledTasks
       .map((_, i) => `<<RESULTAAT_TAAK_${i + 1}>>\n[output taak ${i + 1}]`)
       .join("\n\n");
 
-    return `Je bent een AI die meerdere taken uitvoert. Verwerk alle taken strikt in volgorde.
+    const promptParts = [];
+    
+    // Add start text if available
+    if (startText) {
+      promptParts.push(startText);
+    }
+
+    // Main structured prompt
+    promptParts.push(`Je bent een AI die meerdere taken uitvoert. Verwerk alle taken strikt in volgorde.
 
 INPUT:
-${promptInput || thoughtsText || "[input]"}
+${inputContent}
 
 DOEL:
 ${promptDoel || "[doel]"}
@@ -237,7 +309,14 @@ REGELS:
 - Gebruik GEEN markdown.
 - GEEN extra uitleg of tekst buiten de blokken.
 - Houd je exact aan de tags: <<RESULTAAT_TAAK_X>> en <<EINDE>>.
-- Gebruik alleen plain text zodat Node/JS parsing altijd werkt.`;
+- Gebruik alleen plain text zodat Node/JS parsing altijd werkt.`);
+
+    // Add end text if available
+    if (endText) {
+      promptParts.push(endText);
+    }
+
+    return promptParts.join("\n\n");
   };
 
   const generatedPrompt = buildStructuredPrompt();
@@ -284,7 +363,7 @@ ${generatedPrompt}`,
 
   const handleSaveMultiprompt = () => {
     if (!promptTitle.trim()) {
-      toast.error("Geef de multiprompt een titel");
+      toast.error("Geef de multi-task een titel");
       return;
     }
     const finalPrompt = improvedPrompt || generatedPrompt;
@@ -308,9 +387,9 @@ ${generatedPrompt}`,
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            Multiprompt Builder
+            Promptguard Multi-task Builder
           </h1>
-          <p className="text-slate-600 mt-2">Verzamel gedachten en bouw uitgebreide prompts</p>
+          <p className="text-slate-600 mt-2">Verzamel gedachten en bouw uitgebreide multi-task prompts</p>
         </div>
 
         {/* Project Selector Bar */}
@@ -331,21 +410,90 @@ ${generatedPrompt}`,
                   Alle
                 </Button>
                 {projects.map(project => (
-                  <Button
-                    key={project.id}
-                    variant={selectedProjectId === project.id ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedProjectId(project.id)}
-                    className={selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}
-                  >
-                    <div className={`w-3 h-3 rounded-full ${projectColors[project.color]} mr-2`} />
-                    {project.name}
-                  </Button>
+                  <div key={project.id} className="flex items-center">
+                    <Button
+                      variant={selectedProjectId === project.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedProjectId(project.id)}
+                      className={`rounded-r-none ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
+                    >
+                      <div className={`w-3 h-3 rounded-full ${projectColors[project.color]} mr-2`} />
+                      {project.name}
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant={selectedProjectId === project.id ? "default" : "outline"}
+                          size="sm"
+                          className={`rounded-l-none border-l-0 px-1 ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => handleEditProject(project)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Bewerken
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => deleteProjectMutation.mutate(project.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Verwijderen
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 ))}
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Edit Project Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Project Bewerken</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <Input
+                placeholder="Project naam..."
+                value={editProjectName}
+                onChange={(e) => setEditProjectName(e.target.value)}
+              />
+              <div>
+                <label className="text-sm font-medium text-slate-700 mb-2 block">Kleur</label>
+                <div className="flex gap-2 flex-wrap">
+                  {Object.keys(projectColors).map(color => (
+                    <button
+                      key={color}
+                      onClick={() => setEditProjectColor(color)}
+                      className={`w-8 h-8 rounded-full ${projectColors[color]} ${
+                        editProjectColor === color ? 'ring-2 ring-offset-2 ring-slate-400' : ''
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <Textarea
+                placeholder="Beschrijving (optioneel)..."
+                value={editProjectDescription}
+                onChange={(e) => setEditProjectDescription(e.target.value)}
+                className="min-h-[80px]"
+              />
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                  Annuleren
+                </Button>
+                <Button onClick={handleSaveEditProject} className="bg-indigo-600 hover:bg-indigo-700">
+                  Opslaan
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Tabs defaultValue="build" className="space-y-6">
           <TabsList className="bg-slate-100">
@@ -469,15 +617,15 @@ ${generatedPrompt}`,
                         <label className="text-sm font-medium text-slate-700 mb-2 block">
                           Starttekst
                         </label>
-                        <Select value={startTemplateId} onValueChange={(val) => {
-                          setStartTemplateId(val);
-                          if (val) setCustomStartText("");
+                        <Select value={startTemplateId || "none"} onValueChange={(val) => {
+                          setStartTemplateId(val === "none" ? "" : val);
+                          if (val && val !== "none") setCustomStartText("");
                         }}>
                           <SelectTrigger>
                             <SelectValue placeholder="Kies template of typ hieronder..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value={null}>Geen template</SelectItem>
+                            <SelectItem value="none">Geen template</SelectItem>
                             {startTemplates.map(t => (
                               <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                             ))}
@@ -498,15 +646,15 @@ ${generatedPrompt}`,
                         <label className="text-sm font-medium text-slate-700 mb-2 block">
                           Eindtekst
                         </label>
-                        <Select value={endTemplateId} onValueChange={(val) => {
-                          setEndTemplateId(val);
-                          if (val) setCustomEndText("");
+                        <Select value={endTemplateId || "none"} onValueChange={(val) => {
+                          setEndTemplateId(val === "none" ? "" : val);
+                          if (val && val !== "none") setCustomEndText("");
                         }}>
                           <SelectTrigger>
                             <SelectValue placeholder="Kies template of typ hieronder..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value={null}>Geen template</SelectItem>
+                            <SelectItem value="none">Geen template</SelectItem>
                             {endTemplates.map(t => (
                               <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                             ))}
@@ -570,44 +718,69 @@ ${generatedPrompt}`,
 
                     <div>
                       <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        TAKEN
+                        TAKEN (sleep om te herordenen)
                       </label>
-                      <div className="space-y-2">
-                        {tasks.map((task, index) => (
-                          <div key={task.id} className="flex gap-2">
-                            <span className="flex items-center text-sm text-slate-500 w-8">{index + 1}.</span>
-                            <Input
-                              placeholder={`Taak ${index + 1}...`}
-                              value={task.text}
-                              onChange={(e) => {
-                                const newTasks = [...tasks];
-                                newTasks[index].text = e.target.value;
-                                setTasks(newTasks);
-                              }}
-                              className="flex-1"
-                            />
-                            {tasks.length > 1 && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setTasks(tasks.filter((_, i) => i !== index))}
-                                className="text-red-500"
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setTasks([...tasks, { id: Date.now(), text: "" }])}
-                          className="w-full"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Taak Toevoegen
-                        </Button>
-                      </div>
+                      <DragDropContext onDragEnd={handleTaskDragEnd}>
+                        <Droppable droppableId="tasks">
+                          {(provided) => (
+                            <div 
+                              {...provided.droppableProps} 
+                              ref={provided.innerRef}
+                              className="space-y-2"
+                            >
+                              {tasks.map((task, index) => (
+                                <Draggable key={task.id} draggableId={String(task.id)} index={index}>
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      className={`flex gap-2 ${snapshot.isDragging ? 'opacity-80' : ''}`}
+                                    >
+                                      <div 
+                                        {...provided.dragHandleProps}
+                                        className="flex items-center text-slate-400 cursor-grab active:cursor-grabbing"
+                                      >
+                                        <GripVertical className="w-4 h-4" />
+                                      </div>
+                                      <span className="flex items-center text-sm text-slate-500 w-6">{index + 1}.</span>
+                                      <Input
+                                        placeholder={`Taak ${index + 1}...`}
+                                        value={task.text}
+                                        onChange={(e) => {
+                                          const newTasks = [...tasks];
+                                          newTasks[index].text = e.target.value;
+                                          setTasks(newTasks);
+                                        }}
+                                        className="flex-1"
+                                      />
+                                      {tasks.length > 1 && (
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => setTasks(tasks.filter((_, i) => i !== index))}
+                                          className="text-red-500"
+                                        >
+                                          <X className="w-4 h-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  )}
+                                </Draggable>
+                              ))}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      </DragDropContext>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTasks([...tasks, { id: Date.now(), text: "" }])}
+                        className="w-full mt-2"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Taak Toevoegen
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -659,7 +832,7 @@ ${generatedPrompt}`,
                 <Card>
                   <CardContent className="pt-6 space-y-4">
                     <Input
-                      placeholder="Titel voor deze multiprompt..."
+                      placeholder="Titel voor deze multi-task..."
                       value={promptTitle}
                       onChange={(e) => setPromptTitle(e.target.value)}
                     />
@@ -669,7 +842,7 @@ ${generatedPrompt}`,
                       className="w-full bg-green-600 hover:bg-green-700"
                     >
                       <Save className="w-4 h-4 mr-2" />
-                      Opslaan als Multiprompt
+                      Opslaan als Multi-task
                     </Button>
                   </CardContent>
                 </Card>

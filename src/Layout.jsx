@@ -28,7 +28,7 @@ const navigationItems = [
     icon: Plus,
   },
   {
-    title: "Multiprompt",
+    title: "Multi-task",
     url: createPageUrl("Multiprompt"),
     icon: Sparkles,
   },
