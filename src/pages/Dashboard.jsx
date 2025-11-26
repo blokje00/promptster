@@ -29,7 +29,7 @@ export default function Dashboard() {
       item.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    const matchesType = filterType === "all" || item.type === filterType;
+    const matchesType = filterType === "all" || item.type === filterType || (filterType === "multiprompt" && item.type === "multiprompt");
     const matchesFavorites = !showFavoritesOnly || item.is_favorite;
     const matchesZip = !showZipOnly || (item.zip_files && item.zip_files.length > 0);
     const matchesPublished = !showPublishedOnly || item.is_publish_version;
