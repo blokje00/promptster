@@ -995,7 +995,7 @@ ${generatedPrompt}`,
                               {selectedThoughts.map((id, idx) => {
                                 const thought = localThoughts.find(t => t.id === id);
                                 return (
-                                  <Draggable key={id} draggableId={id} index={idx}>
+                                  <Draggable key={id} draggableId={`selected-${id}`} index={idx}>
                                     {(provided, snapshot) => (
                                       <div
                                         ref={provided.innerRef}
@@ -1076,12 +1076,12 @@ ${generatedPrompt}`,
                     )}
                     <div className="bg-slate-900 rounded-xl p-4 max-h-[400px] overflow-auto">
                       <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap">
-                        {improvedPrompt || generatedPrompt || "Selecteer gedachten en templates om een preview te zien..."}
+                        {improvedPrompt || generatedPrompt || "Selecteer taken en templates om een preview te zien..."}
                       </pre>
                     </div>
                     {!generatedPrompt && (
                       <p className="text-sm text-slate-500 mt-3 text-center">
-                        Selecteer links gedachten en kies hierboven templates
+                        Selecteer links taken en kies hierboven templates
                       </p>
                     )}
                   </CardContent>
