@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +40,14 @@ export default function ThoughtCard({
   const queryClient = useQueryClient();
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [localImageUrl, setLocalImageUrl] = useState(thought.image_url);
   const fileInputRef = useRef(null);
+  const cardRef = useRef(null);
+
+  // Sync local image with thought
+  useEffect(() => {
+    setLocalImageUrl(thought.image_url);
+  }, [thought.image_url]);
 
   const updateThoughtMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Thought.update(id, data),
@@ -56,19 +63,52 @@ export default function ThoughtCard({
     }
 
     setIsUploading(true);
+    // Show preview immediately
+    const previewUrl = URL.createObjectURL(file);
+    setLocalImageUrl(previewUrl);
+    
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setLocalImageUrl(file_url);
       updateThoughtMutation.mutate({
         id: thought.id,
         data: { image_url: file_url }
       });
       toast.success("Screenshot toegevoegd");
     } catch (error) {
+      setLocalImageUrl(null);
       toast.error("Kon afbeelding niet uploaden");
     } finally {
       setIsUploading(false);
+      URL.revokeObjectURL(previewUrl);
     }
   };
+
+  // Handle paste from clipboard
+  useEffect(() => {
+    const handlePaste = async (e) => {
+      if (!cardRef.current?.contains(document.activeElement) && document.activeElement !== cardRef.current) {
+        return;
+      }
+      
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (file) {
+            handleImageUpload(file);
+          }
+          break;
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [thought.id]);
 
   const handleDrop = (e) => {
     e.preventDefault();
@@ -88,6 +128,7 @@ export default function ThoughtCard({
 
   const handleRemoveImage = (e) => {
     e.stopPropagation();
+    setLocalImageUrl(null);
     updateThoughtMutation.mutate({
       id: thought.id,
       data: { image_url: null }
@@ -97,7 +138,9 @@ export default function ThoughtCard({
 
   return (
     <div 
-      className={`p-3 rounded-lg border-2 transition-all ${
+      ref={cardRef}
+      tabIndex={0}
+      className={`p-3 rounded-lg border-2 transition-all outline-none focus:ring-2 focus:ring-indigo-300 ${
         isDragOver ? 'border-indigo-400 bg-indigo-50' :
         isSelected
           ? 'border-indigo-500 bg-indigo-50'
@@ -121,7 +164,7 @@ export default function ThoughtCard({
         <Checkbox 
           checked={isSelected}
           onCheckedChange={onToggleSelect}
-          className="mt-1"
+          className="mt-1 data-[state=checked]:bg-slate-900 data-[state=checked]:border-slate-900"
         />
         <div className="flex-1 min-w-0">
           {project && (
@@ -134,13 +177,18 @@ export default function ThoughtCard({
           </p>
           
           {/* Image display */}
-          {thought.image_url && (
+          {localImageUrl && (
             <div className="mt-2 relative inline-block">
               <img 
-                src={thought.image_url} 
+                src={localImageUrl} 
                 alt="Screenshot" 
                 className="max-w-full max-h-32 rounded border border-slate-200"
               />
+              {isUploading && (
+                <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded">
+                  <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+                </div>
+              )}
               <button
                 onClick={handleRemoveImage}
                 className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
@@ -151,7 +199,7 @@ export default function ThoughtCard({
           )}
           
           {/* Upload zone */}
-          {!thought.image_url && (
+          {!localImageUrl && (
             <div className="mt-2">
               <input
                 type="file"
@@ -173,7 +221,7 @@ export default function ThoughtCard({
                 ) : (
                   <ImageIcon className="w-3 h-3" />
                 )}
-                {isUploading ? "Uploaden..." : "Drop of klik voor screenshot"}
+                {isUploading ? "Uploaden..." : "Drop, plak (Ctrl+V) of klik"}
               </button>
             </div>
           )}
