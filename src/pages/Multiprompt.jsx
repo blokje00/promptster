@@ -27,8 +27,13 @@ import {
   FolderOpen,
   Edit,
   MoreHorizontal,
-  GripVertical
+  GripVertical,
+  Settings,
+  Pencil,
+  CheckSquare,
+  Square
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import {
   DropdownMenu,
@@ -112,9 +117,20 @@ export default function Multiprompt() {
     queryFn: () => base44.entities.Thought.list("-created_date"),
   });
   
-  // Sync DB thoughts to local state when DB updates
+  // Sync DB thoughts to local state when DB updates AND auto-select all
   useEffect(() => {
     setLocalThoughts(dbThoughts);
+    // Auto-select all thoughts that match current project filter
+    const relevantIds = selectedProjectId 
+      ? dbThoughts.filter(t => t.project_id === selectedProjectId).map(t => t.id)
+      : dbThoughts.map(t => t.id);
+    setSelectedThoughts(prev => {
+      // Only set if empty (first load) or keep existing selection
+      if (prev.length === 0 && relevantIds.length > 0) {
+        return relevantIds;
+      }
+      return prev;
+    });
   }, [dbThoughts]);
 
   const { data: templates = [] } = useQuery({
@@ -126,6 +142,17 @@ export default function Multiprompt() {
     queryKey: ['projects'],
     queryFn: () => base44.entities.Project.list(),
   });
+
+  const { data: aiSettings = [] } = useQuery({
+    queryKey: ['aiSettings'],
+    queryFn: () => base44.entities.AISettings.list(),
+  });
+
+  // Edit template state
+  const [editingTemplate, setEditingTemplate] = useState(null);
+  const [editTemplateName, setEditTemplateName] = useState("");
+  const [editTemplateContent, setEditTemplateContent] = useState("");
+  const [editTemplateDialogOpen, setEditTemplateDialogOpen] = useState(false);
 
   const createThoughtMutation = useMutation({
     mutationFn: (data) => base44.entities.Thought.create(data),
@@ -171,6 +198,34 @@ export default function Multiprompt() {
       toast.success("Template verwijderd");
     },
   });
+
+  const updateTemplateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.PromptTemplate.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['templates'] });
+      setEditTemplateDialogOpen(false);
+      setEditingTemplate(null);
+      toast.success("Template bijgewerkt");
+    },
+  });
+
+  const handleEditTemplate = (template) => {
+    setEditingTemplate(template);
+    setEditTemplateName(template.name);
+    setEditTemplateContent(template.content);
+    setEditTemplateDialogOpen(true);
+  };
+
+  const handleSaveEditTemplate = () => {
+    if (!editTemplateName.trim() || !editTemplateContent.trim()) return;
+    updateTemplateMutation.mutate({
+      id: editingTemplate.id,
+      data: {
+        name: editTemplateName.trim(),
+        content: editTemplateContent.trim()
+      }
+    });
+  };
 
   const createProjectMutation = useMutation({
     mutationFn: (data) => base44.entities.Project.create(data),
@@ -316,6 +371,19 @@ export default function Multiprompt() {
     );
   };
 
+  const toggleSelectAll = () => {
+    const allFilteredIds = filteredThoughts.map(t => t.id);
+    const allSelected = allFilteredIds.every(id => selectedThoughts.includes(id));
+    
+    if (allSelected) {
+      // Deselect all filtered thoughts
+      setSelectedThoughts(prev => prev.filter(id => !allFilteredIds.includes(id)));
+    } else {
+      // Select all filtered thoughts
+      setSelectedThoughts(prev => [...new Set([...prev, ...allFilteredIds])]);
+    }
+  };
+
   const handleSelectedThoughtsDragEnd = (result) => {
     if (!result.destination) return;
     const newSelected = [...selectedThoughts];
@@ -436,8 +504,12 @@ export default function Multiprompt() {
     
     setIsImproving(true);
     try {
+      // Use custom AI instruction from settings if available
+      const customInstruction = aiSettings[0]?.improve_prompt_instruction || 
+        `Verbeter de volgende prompt technisch en taalkundig. Maak de tekst professioneler, duidelijker en beter gestructureerd. Behoud de originele intentie en inhoud, maar verbeter grammatica, spelling, en technische precisie. Geef alleen de verbeterde tekst terug, geen uitleg.`;
+      
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Verbeter de volgende prompt technisch en taalkundig. Maak de tekst professioneler, duidelijker en beter gestructureerd. Behoud de originele intentie en inhoud, maar verbeter grammatica, spelling, en technische precisie. Geef alleen de verbeterde tekst terug, geen uitleg.
+        prompt: `${customInstruction}
 
 Originele prompt:
 ${generatedPrompt}`,
@@ -657,13 +729,35 @@ ${generatedPrompt}`,
               <div className="space-y-4">
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2">
-                      <Lightbulb className="w-5 h-5 text-yellow-500" />
-                      Gedachten
-                      {selectedProject && (
-                        <Badge className={`${projectColors[selectedProject.color]} text-white ml-2`}>
-                          {selectedProject.name}
-                        </Badge>
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Lightbulb className="w-5 h-5 text-yellow-500" />
+                        Gedachten
+                        {selectedProject && (
+                          <Badge className={`${projectColors[selectedProject.color]} text-white ml-2`}>
+                            {selectedProject.name}
+                          </Badge>
+                        )}
+                      </div>
+                      {filteredThoughts.length > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={toggleSelectAll}
+                          className="text-xs"
+                        >
+                          {filteredThoughts.every(t => selectedThoughts.includes(t.id)) ? (
+                            <>
+                              <Square className="w-3 h-3 mr-1" />
+                              Deselecteer alles
+                            </>
+                          ) : (
+                            <>
+                              <CheckSquare className="w-3 h-3 mr-1" />
+                              Selecteer alles
+                            </>
+                          )}
+                        </Button>
                       )}
                     </CardTitle>
                   </CardHeader>
@@ -852,6 +946,11 @@ ${generatedPrompt}`,
                     <CardTitle className="flex items-center justify-between">
                       <span>Preview</span>
                       <div className="flex gap-2">
+                        <Link to={createPageUrl("AIBackoffice")}>
+                          <Button variant="ghost" size="sm" className="text-slate-500">
+                            <Settings className="w-4 h-4" />
+                          </Button>
+                        </Link>
                         <Button
                           variant="outline"
                           size="sm"
@@ -1057,14 +1156,24 @@ ${generatedPrompt}`,
                               </div>
                               <p className="text-sm text-green-600 mt-1 line-clamp-2">{template.content}</p>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-red-500 hover:bg-red-50"
-                              onClick={() => deleteTemplateMutation.mutate(template.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-slate-500 hover:bg-slate-100"
+                                onClick={() => handleEditTemplate(template)}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-500 hover:bg-red-50"
+                                onClick={() => deleteTemplateMutation.mutate(template.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -1096,14 +1205,24 @@ ${generatedPrompt}`,
                               </div>
                               <p className="text-sm text-orange-600 mt-1 line-clamp-2">{template.content}</p>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-red-500 hover:bg-red-50"
-                              onClick={() => deleteTemplateMutation.mutate(template.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-slate-500 hover:bg-slate-100"
+                                onClick={() => handleEditTemplate(template)}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-500 hover:bg-red-50"
+                                onClick={() => deleteTemplateMutation.mutate(template.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -1115,6 +1234,36 @@ ${generatedPrompt}`,
                 </Card>
               </div>
             </div>
+
+            {/* Edit Template Dialog */}
+            <Dialog open={editTemplateDialogOpen} onOpenChange={setEditTemplateDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Template Bewerken</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <Input
+                    placeholder="Template naam..."
+                    value={editTemplateName}
+                    onChange={(e) => setEditTemplateName(e.target.value)}
+                  />
+                  <Textarea
+                    placeholder="Template inhoud..."
+                    value={editTemplateContent}
+                    onChange={(e) => setEditTemplateContent(e.target.value)}
+                    className="min-h-[200px]"
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setEditTemplateDialogOpen(false)}>
+                      Annuleren
+                    </Button>
+                    <Button onClick={handleSaveEditTemplate} className="bg-indigo-600 hover:bg-indigo-700">
+                      Opslaan
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="projects" className="space-y-6">
