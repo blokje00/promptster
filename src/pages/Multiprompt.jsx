@@ -25,11 +25,10 @@ import {
   Sparkles,
   Loader2,
   FolderOpen,
-  GripVertical,
   Edit,
   MoreHorizontal
 } from "lucide-react";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -91,17 +90,17 @@ export default function Multiprompt() {
   const [newProjectColor, setNewProjectColor] = useState("blue");
   const [newProjectDescription, setNewProjectDescription] = useState("");
 
-  // Structured prompt fields
-  const [promptInput, setPromptInput] = useState("");
-  const [promptDoel, setPromptDoel] = useState("");
-  const [tasks, setTasks] = useState([{ id: 1, text: "" }]);
-
   // Edit project state
   const [editingProject, setEditingProject] = useState(null);
   const [editProjectName, setEditProjectName] = useState("");
   const [editProjectColor, setEditProjectColor] = useState("blue");
   const [editProjectDescription, setEditProjectDescription] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  // Post-copy control flow
+  const [showControlDialog, setShowControlDialog] = useState(false);
+  const [taskChecks, setTaskChecks] = useState([]);
+  const [controlNotes, setControlNotes] = useState("");
 
   const { data: thoughts = [] } = useQuery({
     queryKey: ['thoughts'],
@@ -191,6 +190,41 @@ export default function Multiprompt() {
     },
   });
 
+  const createPromptCheckMutation = useMutation({
+    mutationFn: (data) => base44.entities.PromptCheck.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['promptChecks'] });
+      toast.success("Controle item aangemaakt!");
+      resetBuilder();
+    },
+  });
+
+  const deleteUsedThoughtsMutation = useMutation({
+    mutationFn: async (thoughtIds) => {
+      for (const id of thoughtIds) {
+        await base44.entities.Thought.delete(id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+      toast.success("Gedachten verwijderd!");
+      resetBuilder();
+    },
+  });
+
+  const resetBuilder = () => {
+    setSelectedThoughts([]);
+    setStartTemplateId("");
+    setEndTemplateId("");
+    setCustomStartText("");
+    setCustomEndText("");
+    setPromptTitle("");
+    setImprovedPrompt("");
+    setShowControlDialog(false);
+    setTaskChecks([]);
+    setControlNotes("");
+  };
+
   const handleAddThought = () => {
     if (!newThought.trim()) return;
     createThoughtMutation.mutate({ 
@@ -237,14 +271,6 @@ export default function Multiprompt() {
     });
   };
 
-  const handleTaskDragEnd = (result) => {
-    if (!result.destination) return;
-    const items = Array.from(tasks);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    setTasks(items);
-  };
-
   const toggleThoughtSelection = (thoughtId) => {
     setSelectedThoughts(prev => 
       prev.includes(thoughtId) 
@@ -265,53 +291,29 @@ export default function Multiprompt() {
   const startText = customStartText || selectedStartTemplate?.content || "";
   const endText = customEndText || selectedEndTemplate?.content || "";
 
-  // Build structured prompt combining start text, thoughts, tasks, and end text
+  // Build multi-task prompt: starttekst + gedachten als deeltaken + eindtekst
   const buildStructuredPrompt = () => {
-    const thoughtsText = selectedThoughtContents.join("\n");
-    const inputContent = promptInput || thoughtsText || "[input]";
-    
-    const filledTasks = tasks.filter(t => t.text.trim());
-    const tasksText = filledTasks
-      .map((t, i) => `${i + 1}. Taak ${i + 1} – ${t.text}`)
-      .join("\n");
-    
-    const resultTags = filledTasks
-      .map((_, i) => `<<RESULTAAT_TAAK_${i + 1}>>\n[output taak ${i + 1}]`)
-      .join("\n\n");
+    if (selectedThoughtContents.length === 0 && !startText && !endText) {
+      return "";
+    }
 
     const promptParts = [];
     
-    // Add start text if available
+    // Start template
     if (startText) {
       promptParts.push(startText);
     }
 
-    // Main structured prompt
-    promptParts.push(`Je bent een AI die meerdere taken uitvoert. Verwerk alle taken strikt in volgorde.
+    // Gedachten als genummerde deeltaken
+    if (selectedThoughtContents.length > 0) {
+      const tasksSection = selectedThoughtContents
+        .map((content, i) => `--- DEELTAAK ${i + 1} ---\n${content}`)
+        .join("\n\n");
+      
+      promptParts.push(`DEELTAKEN (verwerk in volgorde):\n\n${tasksSection}`);
+    }
 
-INPUT:
-${inputContent}
-
-DOEL:
-${promptDoel || "[doel]"}
-
-TAKEN:
-${tasksText || "1. Taak 1 – [taak]"}
-
-UITVOERFORMAT (ZEER BELANGRIJK):
-Geef de output ALLEEN in deze structuur, niets erbuiten:
-
-${resultTags || "<<RESULTAAT_TAAK_1>>\n[output taak 1]"}
-
-<<EINDE>>
-
-REGELS:
-- Gebruik GEEN markdown.
-- GEEN extra uitleg of tekst buiten de blokken.
-- Houd je exact aan de tags: <<RESULTAAT_TAAK_X>> en <<EINDE>>.
-- Gebruik alleen plain text zodat Node/JS parsing altijd werkt.`);
-
-    // Add end text if available
+    // Eind template
     if (endText) {
       promptParts.push(endText);
     }
@@ -320,6 +322,14 @@ REGELS:
   };
 
   const generatedPrompt = buildStructuredPrompt();
+  
+  // Maak task checks gebaseerd op geselecteerde gedachten
+  const generateTaskChecks = () => {
+    return selectedThoughtContents.map((content, i) => ({
+      task_name: `Deeltaak ${i + 1}: ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`,
+      is_checked: false
+    }));
+  };
 
   // Filter thoughts by selected project
   const filteredThoughts = selectedProjectId 
@@ -358,19 +368,21 @@ ${generatedPrompt}`,
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     toast.success("Prompt gekopieerd!");
-    setTimeout(() => setCopied(false), 2000);
+    
+    // Open control dialog after copy
+    setTaskChecks(generateTaskChecks());
+    setTimeout(() => {
+      setCopied(false);
+      setShowControlDialog(true);
+    }, 500);
   };
 
-  const handleSaveMultiprompt = () => {
+  const handleSaveAsPrompt = () => {
     if (!promptTitle.trim()) {
-      toast.error("Geef de multi-task een titel");
+      toast.error("Geef de prompt een titel");
       return;
     }
     const finalPrompt = improvedPrompt || generatedPrompt;
-    if (!finalPrompt.trim()) {
-      toast.error("De prompt is leeg");
-      return;
-    }
 
     createMultipromptMutation.mutate({
       title: promptTitle.trim(),
@@ -380,6 +392,41 @@ ${generatedPrompt}`,
       start_template_id: startTemplateId || null,
       end_template_id: endTemplateId || null
     });
+    setShowControlDialog(false);
+  };
+
+  const handleSaveAsCheck = () => {
+    if (!promptTitle.trim()) {
+      toast.error("Geef de controle een titel");
+      return;
+    }
+    const finalPrompt = improvedPrompt || generatedPrompt;
+
+    createPromptCheckMutation.mutate({
+      title: promptTitle.trim(),
+      prompt_content: finalPrompt,
+      project_id: selectedProjectId || null,
+      thought_ids: selectedThoughts,
+      task_checks: taskChecks,
+      status: "pending",
+      notes: controlNotes
+    });
+  };
+
+  const handleDeleteAndClear = () => {
+    deleteUsedThoughtsMutation.mutate(selectedThoughts);
+    setShowControlDialog(false);
+  };
+
+  const handleDiscardPrompt = () => {
+    resetBuilder();
+    toast.info("Prompt verwijderd");
+  };
+
+  const toggleTaskCheck = (index) => {
+    const newChecks = [...taskChecks];
+    newChecks[index].is_checked = !newChecks[index].is_checked;
+    setTaskChecks(newChecks);
   };
 
   return (
@@ -605,81 +652,72 @@ ${generatedPrompt}`,
                 </Card>
               </div>
 
-              {/* Right: Preview & Actions */}
+              {/* Right: Templates & Preview */}
               <div className="space-y-4">
+                {/* Template Selection */}
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle>Prompt Samenstellen</CardTitle>
+                    <CardTitle>Templates</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium text-slate-700 mb-2 block">
-                          Starttekst
-                        </label>
-                        <Select value={startTemplateId || "none"} onValueChange={(val) => {
-                          setStartTemplateId(val === "none" ? "" : val);
-                          if (val && val !== "none") setCustomStartText("");
-                        }}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Kies template of typ hieronder..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Geen template</SelectItem>
-                            {startTemplates.map(t => (
-                              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Textarea
-                          placeholder="Of typ hier je eigen starttekst..."
-                          value={customStartText}
-                          onChange={(e) => {
-                            setCustomStartText(e.target.value);
-                            if (e.target.value) setStartTemplateId("");
-                          }}
-                          className="mt-2 min-h-[60px]"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="text-sm font-medium text-slate-700 mb-2 block">
-                          Eindtekst
-                        </label>
-                        <Select value={endTemplateId || "none"} onValueChange={(val) => {
-                          setEndTemplateId(val === "none" ? "" : val);
-                          if (val && val !== "none") setCustomEndText("");
-                        }}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Kies template of typ hieronder..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Geen template</SelectItem>
-                            {endTemplates.map(t => (
-                              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Textarea
-                          placeholder="Of typ hier je eigen eindtekst..."
-                          value={customEndText}
-                          onChange={(e) => {
-                            setCustomEndText(e.target.value);
-                            if (e.target.value) setEndTemplateId("");
-                          }}
-                          className="mt-2 min-h-[60px]"
-                        />
-                      </div>
-                    </div>
-
                     <div>
                       <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        Geselecteerde gedachten als INPUT: {selectedThoughts.length}
+                        Starttekst
+                      </label>
+                      <Select value={startTemplateId || "none"} onValueChange={(val) => {
+                        setStartTemplateId(val === "none" ? "" : val);
+                        if (val && val !== "none") setCustomStartText("");
+                      }}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Kies starttekst template..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Geen template</SelectItem>
+                          {startTemplates.map(t => (
+                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {startTemplateId && selectedStartTemplate && (
+                        <div className="mt-2 p-2 bg-green-50 rounded text-xs text-green-700 max-h-20 overflow-auto">
+                          {selectedStartTemplate.content}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 mb-2 block">
+                        Eindtekst
+                      </label>
+                      <Select value={endTemplateId || "none"} onValueChange={(val) => {
+                        setEndTemplateId(val === "none" ? "" : val);
+                        if (val && val !== "none") setCustomEndText("");
+                      }}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Kies eindtekst template..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Geen template</SelectItem>
+                          {endTemplates.map(t => (
+                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {endTemplateId && selectedEndTemplate && (
+                        <div className="mt-2 p-2 bg-orange-50 rounded text-xs text-orange-700 max-h-20 overflow-auto">
+                          {selectedEndTemplate.content}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t">
+                      <label className="text-sm font-medium text-slate-700 mb-2 block">
+                        Geselecteerde gedachten: {selectedThoughts.length}
                       </label>
                       <div className="flex flex-wrap gap-1">
                         {selectedThoughts.map((id, idx) => (
                           <Badge key={id} variant="secondary" className="text-xs">
-                            #{idx + 1}
+                            Deeltaak {idx + 1}
                           </Badge>
                         ))}
                       </div>
@@ -687,104 +725,7 @@ ${generatedPrompt}`,
                   </CardContent>
                 </Card>
 
-                {/* Structured Prompt Builder */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle>Gestructureerde Prompt</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        INPUT (of gebruik geselecteerde gedachten)
-                      </label>
-                      <Textarea
-                        placeholder="Extra input tekst..."
-                        value={promptInput}
-                        onChange={(e) => setPromptInput(e.target.value)}
-                        className="min-h-[60px]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        DOEL
-                      </label>
-                      <Input
-                        placeholder="Wat is het doel van deze prompt?"
-                        value={promptDoel}
-                        onChange={(e) => setPromptDoel(e.target.value)}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        TAKEN (sleep om te herordenen)
-                      </label>
-                      <DragDropContext onDragEnd={handleTaskDragEnd}>
-                        <Droppable droppableId="tasks">
-                          {(provided) => (
-                            <div 
-                              {...provided.droppableProps} 
-                              ref={provided.innerRef}
-                              className="space-y-2"
-                            >
-                              {tasks.map((task, index) => (
-                                <Draggable key={task.id} draggableId={String(task.id)} index={index}>
-                                  {(provided, snapshot) => (
-                                    <div
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      className={`flex gap-2 ${snapshot.isDragging ? 'opacity-80' : ''}`}
-                                    >
-                                      <div 
-                                        {...provided.dragHandleProps}
-                                        className="flex items-center text-slate-400 cursor-grab active:cursor-grabbing"
-                                      >
-                                        <GripVertical className="w-4 h-4" />
-                                      </div>
-                                      <span className="flex items-center text-sm text-slate-500 w-6">{index + 1}.</span>
-                                      <Input
-                                        placeholder={`Taak ${index + 1}...`}
-                                        value={task.text}
-                                        onChange={(e) => {
-                                          const newTasks = [...tasks];
-                                          newTasks[index].text = e.target.value;
-                                          setTasks(newTasks);
-                                        }}
-                                        className="flex-1"
-                                      />
-                                      {tasks.length > 1 && (
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() => setTasks(tasks.filter((_, i) => i !== index))}
-                                          className="text-red-500"
-                                        >
-                                          <X className="w-4 h-4" />
-                                        </Button>
-                                      )}
-                                    </div>
-                                  )}
-                                </Draggable>
-                              ))}
-                              {provided.placeholder}
-                            </div>
-                          )}
-                        </Droppable>
-                      </DragDropContext>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setTasks([...tasks, { id: Date.now(), text: "" }])}
-                        className="w-full mt-2"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Taak Toevoegen
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-
+                {/* Preview */}
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center justify-between">
@@ -804,13 +745,13 @@ ${generatedPrompt}`,
                           {isImproving ? "Bezig..." : "Verbeter met AI"}
                         </Button>
                         <Button
-                          variant="outline"
                           size="sm"
                           onClick={handleCopyPrompt}
                           disabled={!generatedPrompt && !improvedPrompt}
+                          className="bg-indigo-600 hover:bg-indigo-700"
                         >
                           {copied ? <CheckCircle className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                          {copied ? "Gekopieerd" : "Kopieer"}
+                          {copied ? "Gekopieerd" : "Kopieer & Ga verder"}
                         </Button>
                       </div>
                     </CardTitle>
@@ -821,33 +762,116 @@ ${generatedPrompt}`,
                         <Badge className="bg-green-100 text-green-700 mb-2">AI Verbeterd</Badge>
                       </div>
                     )}
-                    <div className="bg-slate-900 rounded-xl p-4 max-h-[300px] overflow-auto">
+                    <div className="bg-slate-900 rounded-xl p-4 max-h-[400px] overflow-auto">
                       <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap">
                         {improvedPrompt || generatedPrompt || "Selecteer gedachten en templates om een preview te zien..."}
                       </pre>
                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6 space-y-4">
-                    <Input
-                      placeholder="Titel voor deze multi-task..."
-                      value={promptTitle}
-                      onChange={(e) => setPromptTitle(e.target.value)}
-                    />
-                    <Button
-                      onClick={handleSaveMultiprompt}
-                      disabled={(!generatedPrompt && !improvedPrompt) || !promptTitle.trim()}
-                      className="w-full bg-green-600 hover:bg-green-700"
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      Opslaan als Multi-task
-                    </Button>
+                    {!generatedPrompt && (
+                      <p className="text-sm text-slate-500 mt-3 text-center">
+                        Selecteer links gedachten en kies hierboven templates
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               </div>
             </div>
+
+            {/* Control Dialog after Copy */}
+            <Dialog open={showControlDialog} onOpenChange={setShowControlDialog}>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    Prompt Gekopieerd - Wat nu?
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <p className="text-sm text-slate-600">
+                    De prompt is gekopieerd. Na het uitvoeren, controleer of elke deeltaak goed is verwerkt:
+                  </p>
+
+                  {/* Task Checklist */}
+                  <div className="space-y-2 max-h-48 overflow-auto">
+                    {taskChecks.map((check, index) => (
+                      <div 
+                        key={index}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                          check.is_checked 
+                            ? 'bg-green-50 border-green-300' 
+                            : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                        }`}
+                        onClick={() => toggleTaskCheck(index)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Checkbox 
+                            checked={check.is_checked}
+                            onCheckedChange={() => toggleTaskCheck(index)}
+                          />
+                          <span className={`text-sm ${check.is_checked ? 'text-green-700 line-through' : 'text-slate-700'}`}>
+                            {check.task_name}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Notes */}
+                  <Textarea
+                    placeholder="Opmerkingen (optioneel)..."
+                    value={controlNotes}
+                    onChange={(e) => setControlNotes(e.target.value)}
+                    className="min-h-[60px]"
+                  />
+
+                  {/* Title for saving */}
+                  <Input
+                    placeholder="Titel voor opslag..."
+                    value={promptTitle}
+                    onChange={(e) => setPromptTitle(e.target.value)}
+                  />
+
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      onClick={handleSaveAsPrompt}
+                      disabled={!promptTitle.trim()}
+                      className="bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      Opslaan als Prompt
+                    </Button>
+                    <Button
+                      onClick={handleSaveAsCheck}
+                      disabled={!promptTitle.trim()}
+                      variant="outline"
+                      className="border-green-500 text-green-700 hover:bg-green-50"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Opslaan als Controle
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      onClick={handleDeleteAndClear}
+                      variant="outline"
+                      className="border-red-300 text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Verwijder gedachten
+                    </Button>
+                    <Button
+                      onClick={handleDiscardPrompt}
+                      variant="ghost"
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Alleen sluiten
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           <TabsContent value="templates" className="space-y-6">
