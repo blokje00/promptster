@@ -3,6 +3,7 @@ import AddItem from './pages/AddItem';
 import ViewItem from './pages/ViewItem';
 import EditItem from './pages/EditItem';
 import Multiprompt from './pages/Multiprompt';
+import AIBackoffice from './pages/AIBackoffice';
 import __Layout from './Layout.jsx';
 
 
@@ -12,6 +13,7 @@ export const PAGES = {
     "ViewItem": ViewItem,
     "EditItem": EditItem,
     "Multiprompt": Multiprompt,
+    "AIBackoffice": AIBackoffice,
 }
 
 export const pagesConfig = {
