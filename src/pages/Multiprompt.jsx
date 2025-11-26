@@ -716,8 +716,7 @@ ${generatedPrompt}`,
           <p className="text-slate-600 mt-2">Verzamel gedachten en bouw uitgebreide multi-task prompts</p>
         </div>
 
-        {/* Project Selector Bar - integrated with drag & drop */}
-        <DragDropContext onDragEnd={handleThoughtsDragEnd}>
+        {/* Project Selector Bar */}
         <Card className={`mb-6 ${selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : ''}`}>
           <CardContent className="py-4">
             <div className="flex items-center gap-4 flex-wrap">
@@ -726,74 +725,61 @@ ${generatedPrompt}`,
                 <span className="font-medium text-slate-700">Project:</span>
               </div>
               <div className="flex gap-2 flex-wrap">
-                <Droppable droppableId="project-none" direction="horizontal">
-                  {(provided, snapshot) => (
-                    <div ref={provided.innerRef} {...provided.droppableProps} className="inline-flex">
-                      <Button
-                        variant={!selectedProjectId ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          setSelectedProjectId("");
-                          localStorage.setItem('lastSelectedProjectId', "");
-                        }}
-                        className={`${!selectedProjectId ? "bg-slate-700" : ""} ${snapshot.isDraggingOver ? "ring-2 ring-indigo-400 ring-offset-1" : ""}`}
-                      >
-                        Alle
-                      </Button>
-                      <div style={{display: 'none'}}>{provided.placeholder}</div>
-                    </div>
-                  )}
-                </Droppable>
+                <Button
+                  variant={!selectedProjectId ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setSelectedProjectId("");
+                    localStorage.setItem('lastSelectedProjectId', "");
+                  }}
+                  className={!selectedProjectId ? "bg-slate-700" : ""}
+                >
+                  Alle
+                </Button>
                 {projects.map(project => (
-                  <Droppable key={project.id} droppableId={`project-${project.id}`} direction="horizontal">
-                    {(provided, snapshot) => (
-                      <div ref={provided.innerRef} {...provided.droppableProps} className="inline-flex items-center">
+                  <div key={project.id} className="inline-flex items-center">
+                    <Button
+                      variant={selectedProjectId === project.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => {
+                        setSelectedProjectId(project.id);
+                        localStorage.setItem('lastSelectedProjectId', project.id);
+                      }}
+                      className={`rounded-r-none ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
+                    >
+                      <div className={`w-3 h-3 rounded-full ${projectColors[project.color]} mr-2`} />
+                      {project.name}
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
                         <Button
                           variant={selectedProjectId === project.id ? "default" : "outline"}
                           size="sm"
-                          onClick={() => {
-                            setSelectedProjectId(project.id);
-                            localStorage.setItem('lastSelectedProjectId', project.id);
-                          }}
-                          className={`rounded-r-none ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""} ${snapshot.isDraggingOver ? "ring-2 ring-indigo-400 ring-offset-1" : ""}`}
+                          className={`rounded-l-none border-l-0 px-1 ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
                         >
-                          <div className={`w-3 h-3 rounded-full ${projectColors[project.color]} mr-2`} />
-                          {project.name}
+                          <MoreHorizontal className="w-4 h-4" />
                         </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant={selectedProjectId === project.id ? "default" : "outline"}
-                              size="sm"
-                              className={`rounded-l-none border-l-0 px-1 ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
-                            >
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => handleEditProject(project)}>
-                              <Edit className="w-4 h-4 mr-2" />
-                              Bewerken
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => deleteProjectMutation.mutate(project.id)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Verwijderen
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        <div style={{display: 'none'}}>{provided.placeholder}</div>
-                      </div>
-                    )}
-                  </Droppable>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => handleEditProject(project)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Bewerken
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => deleteProjectMutation.mutate(project.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Verwijderen
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 ))}
               </div>
             </div>
           </CardContent>
         </Card>
-        </DragDropContext>
 
         {/* Edit Project Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -856,9 +842,7 @@ ${generatedPrompt}`,
           </TabsList>
 
           <TabsContent value="build" className="space-y-6">
-            <Droppable droppableId="thoughts-list">
-              {(droppableProvided) => (
-            <div className="grid lg:grid-cols-2 gap-6" ref={droppableProvided.innerRef} {...droppableProvided.droppableProps}
+            <div className="grid lg:grid-cols-2 gap-6">
               {/* Left: Thoughts */}
               <div className="space-y-4">
                 <Card>
@@ -960,26 +944,16 @@ ${generatedPrompt}`,
                       {filteredThoughts.map((thought, index) => {
                         const thoughtProject = projects.find(p => p.id === thought.project_id);
                         return (
-                          <Draggable key={thought.id} draggableId={thought.id} index={index}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={snapshot.isDragging ? 'opacity-90 z-50' : ''}
-                              >
-                                <ThoughtCard
-                                  thought={thought}
-                                  project={thoughtProject}
-                                  isSelected={selectedThoughts.includes(thought.id)}
-                                  onToggleSelect={() => toggleThoughtSelection(thought.id)}
-                                  onDelete={() => deleteThoughtMutation.mutate(thought.id)}
-                                  onUpdateImages={handleUpdateThoughtImages}
-                                  onUpdateContent={handleUpdateThoughtContent}
-                                  dragHandleProps={provided.dragHandleProps}
-                                />
-                              </div>
-                            )}
-                          </Draggable>
+                          <ThoughtCard
+                            key={thought.id}
+                            thought={thought}
+                            project={thoughtProject}
+                            isSelected={selectedThoughts.includes(thought.id)}
+                            onToggleSelect={() => toggleThoughtSelection(thought.id)}
+                            onDelete={() => deleteThoughtMutation.mutate(thought.id)}
+                            onUpdateImages={handleUpdateThoughtImages}
+                            onUpdateContent={handleUpdateThoughtContent}
+                          />
                         );
                       })}
                       {filteredThoughts.length === 0 && (
@@ -1134,9 +1108,6 @@ ${generatedPrompt}`,
                 </Card>
               </div>
             </div>
-            <div style={{display:'none'}}>{droppableProvided.placeholder}</div>
-              )}
-            </Droppable>
 
             {/* Control Dialog after Copy */}
             <Dialog open={showControlDialog} onOpenChange={setShowControlDialog}>
