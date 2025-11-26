@@ -21,7 +21,7 @@ export default function AIBackoffice() {
 
   const { data: settings = [] } = useQuery({
     queryKey: ['aiSettings'],
-    queryFn: () => base44.entities.AISettings.list(),
+    queryFn: () => base44.entities.AISettings.filter({}),
   });
 
   useEffect(() => {
