@@ -477,10 +477,11 @@ export default function Multiprompt() {
   const selectedEndTemplate = templates.find(t => t.id === endTemplateId);
   
   // Use localThoughts as source of truth for preview - maintains selection order
-  const selectedThoughtContents = selectedThoughts
+  const selectedThoughtData = selectedThoughts
     .map(id => localThoughts.find(t => t.id === id))
-    .filter(Boolean)
-    .map(t => t.content);
+    .filter(Boolean);
+  
+  const selectedThoughtContents = selectedThoughtData.map(t => t.content);
 
   const startText = customStartText || selectedStartTemplate?.content || "";
   const endText = customEndText || selectedEndTemplate?.content || "";
@@ -498,10 +499,21 @@ export default function Multiprompt() {
       promptParts.push(startText);
     }
 
-    // Gedachten als genummerde deeltaken
-    if (selectedThoughtContents.length > 0) {
-      const tasksSection = selectedThoughtContents
-        .map((content, i) => `--- DEELTAAK ${i + 1} ---\n${content}`)
+    // Taken als genummerde deeltaken (inclusief afbeeldingen)
+    if (selectedThoughtData.length > 0) {
+      const tasksSection = selectedThoughtData
+        .map((thought, i) => {
+          let taskText = `--- DEELTAAK ${i + 1} ---\n${thought.content || ''}`;
+          // Voeg afbeelding URLs toe als er afbeeldingen zijn
+          const images = thought.image_urls || [];
+          if (images.length > 0) {
+            taskText += `\n\n[BIJGEVOEGDE AFBEELDINGEN: ${images.length}]`;
+            images.forEach((url, idx) => {
+              taskText += `\n- Afbeelding ${idx + 1}: ${url}`;
+            });
+          }
+          return taskText;
+        })
         .join("\n\n");
       
       promptParts.push(`DEELTAKEN (verwerk in volgorde):\n\n${tasksSection}`);
@@ -576,14 +588,11 @@ ${generatedPrompt}`,
   };
 
   const handleSaveAsPrompt = () => {
-    if (!promptTitle.trim()) {
-      toast.error("Geef de prompt een titel");
-      return;
-    }
     const finalPrompt = improvedPrompt || generatedPrompt;
+    const title = promptTitle.trim() || `Multi-task ${new Date().toLocaleString('nl-NL')}`;
 
     createMultipromptMutation.mutate({
-      title: promptTitle.trim(),
+      title: title,
       type: "multiprompt",
       content: finalPrompt,
       used_thoughts: selectedThoughts,
@@ -594,11 +603,6 @@ ${generatedPrompt}`,
   };
 
   const handleSaveAsCheck = async () => {
-    if (!promptTitle.trim()) {
-      toast.error("Geef de controle een titel");
-      return;
-    }
-    
     // First save all thoughts to DB
     setIsSavingAll(true);
     try {
@@ -614,8 +618,10 @@ ${generatedPrompt}`,
       
       // Then create the check
       const finalPrompt = improvedPrompt || generatedPrompt;
+      const title = promptTitle.trim() || `Controle ${new Date().toLocaleString('nl-NL')}`;
+      
       createPromptCheckMutation.mutate({
-        title: promptTitle.trim(),
+        title: title,
         prompt_content: finalPrompt,
         project_id: selectedProjectId || null,
         thought_ids: selectedThoughts,
@@ -1109,15 +1115,15 @@ ${generatedPrompt}`,
                   <div className="grid grid-cols-2 gap-2">
                     <Button
                       onClick={handleSaveAsPrompt}
-                      disabled={!promptTitle.trim()}
+                      disabled={isSavingAll}
                       className="bg-indigo-600 hover:bg-indigo-700"
                     >
                       <Save className="w-4 h-4 mr-2" />
-                      Opslaan als Prompt
+                      {promptTitle.trim() ? "Opslaan als Prompt" : "Snel Opslaan"}
                     </Button>
                     <Button
                       onClick={handleSaveAsCheck}
-                      disabled={!promptTitle.trim() || isSavingAll}
+                      disabled={isSavingAll}
                       variant="outline"
                       className="border-green-500 text-green-700 hover:bg-green-50"
                     >
