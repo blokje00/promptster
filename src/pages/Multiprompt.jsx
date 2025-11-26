@@ -946,52 +946,28 @@ ${generatedPrompt}`,
 
                     <div className="pt-2 border-t">
                       <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        Geselecteerde taken: {selectedThoughts.length} (sleep om te herordenen)
+                        Geselecteerde taken: {selectedThoughts.length}
                       </label>
-                      <DragDropContext onDragEnd={handleSelectedThoughtsDragEnd}>
-                        <Droppable droppableId="selected-thoughts">
-                          {(provided) => (
-                            <div 
-                              {...provided.droppableProps} 
-                              ref={provided.innerRef}
-                              className="space-y-1"
+                      <div className="space-y-1 max-h-32 overflow-auto">
+                        {selectedThoughts.map((id, idx) => {
+                          const thought = localThoughts.find(t => t.id === id);
+                          return (
+                            <div
+                              key={id}
+                              className="flex items-center gap-2 p-2 bg-slate-100 rounded text-xs"
                             >
-                              {selectedThoughts.map((id, idx) => {
-                                const thought = localThoughts.find(t => t.id === id);
-                                return (
-                                  <Draggable key={id} draggableId={`selected-${id}`} index={idx}>
-                                    {(provided, snapshot) => (
-                                      <div
-                                        ref={provided.innerRef}
-                                        {...provided.draggableProps}
-                                        className={`flex items-center gap-2 p-2 bg-slate-100 rounded text-xs ${
-                                          snapshot.isDragging ? 'shadow-lg bg-white' : ''
-                                        }`}
-                                      >
-                                        <div 
-                                          {...provided.dragHandleProps}
-                                          className="text-slate-400 cursor-grab active:cursor-grabbing"
-                                        >
-                                          <GripVertical className="w-4 h-4" />
-                                        </div>
-                                        <Badge variant="secondary" className="text-xs shrink-0">
-                                          {idx + 1}
-                                        </Badge>
-                                        <span className="truncate text-slate-600 flex-1">{thought?.content?.substring(0, 40)}...</span>
-                                        <button 
-                                          onClick={() => toggleThoughtSelection(id)}
-                                          className="text-red-400 hover:text-red-600"
-                                        >×</button>
-                                      </div>
-                                    )}
-                                  </Draggable>
-                                );
-                              })}
-                              {provided.placeholder}
+                              <Badge variant="secondary" className="text-xs shrink-0">
+                                {idx + 1}
+                              </Badge>
+                              <span className="truncate text-slate-600 flex-1">{thought?.content?.substring(0, 40)}...</span>
+                              <button 
+                                onClick={() => toggleThoughtSelection(id)}
+                                className="text-red-400 hover:text-red-600"
+                              >×</button>
                             </div>
-                          )}
-                        </Droppable>
-                      </DragDropContext>
+                          );
+                        })}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
