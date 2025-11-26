@@ -279,13 +279,22 @@ export default function Multiprompt() {
     );
   };
 
+  const moveThoughtInSelection = (fromIndex, toIndex) => {
+    const newSelected = [...selectedThoughts];
+    const [removed] = newSelected.splice(fromIndex, 1);
+    newSelected.splice(toIndex, 0, removed);
+    setSelectedThoughts(newSelected);
+  };
+
   const startTemplates = templates.filter(t => t.type === "start");
   const endTemplates = templates.filter(t => t.type === "eind");
 
   const selectedStartTemplate = templates.find(t => t.id === startTemplateId);
   const selectedEndTemplate = templates.find(t => t.id === endTemplateId);
-  const selectedThoughtContents = thoughts
-    .filter(t => selectedThoughts.includes(t.id))
+  // Behoud volgorde van selectie, niet van originele thoughts array
+  const selectedThoughtContents = selectedThoughts
+    .map(id => thoughts.find(t => t.id === id))
+    .filter(Boolean)
     .map(t => t.content);
 
   const startText = customStartText || selectedStartTemplate?.content || "";
@@ -582,7 +591,8 @@ ${generatedPrompt}`,
                         onChange={(e) => setNewThought(e.target.value)}
                         className="min-h-[80px]"
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter' && e.ctrlKey) {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
                             handleAddThought();
                           }
                         }}
@@ -712,14 +722,36 @@ ${generatedPrompt}`,
 
                     <div className="pt-2 border-t">
                       <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        Geselecteerde gedachten: {selectedThoughts.length}
+                        Geselecteerde gedachten: {selectedThoughts.length} (klik pijlen om te verplaatsen)
                       </label>
-                      <div className="flex flex-wrap gap-1">
-                        {selectedThoughts.map((id, idx) => (
-                          <Badge key={id} variant="secondary" className="text-xs">
-                            Deeltaak {idx + 1}
-                          </Badge>
-                        ))}
+                      <div className="space-y-1">
+                        {selectedThoughts.map((id, idx) => {
+                          const thought = thoughts.find(t => t.id === id);
+                          return (
+                            <div key={id} className="flex items-center gap-2 p-2 bg-slate-100 rounded text-xs">
+                              <div className="flex flex-col">
+                                <button 
+                                  onClick={() => idx > 0 && moveThoughtInSelection(idx, idx - 1)}
+                                  disabled={idx === 0}
+                                  className="text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                                >▲</button>
+                                <button 
+                                  onClick={() => idx < selectedThoughts.length - 1 && moveThoughtInSelection(idx, idx + 1)}
+                                  disabled={idx === selectedThoughts.length - 1}
+                                  className="text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                                >▼</button>
+                              </div>
+                              <Badge variant="secondary" className="text-xs shrink-0">
+                                {idx + 1}
+                              </Badge>
+                              <span className="truncate text-slate-600">{thought?.content?.substring(0, 40)}...</span>
+                              <button 
+                                onClick={() => toggleThoughtSelection(id)}
+                                className="ml-auto text-red-400 hover:text-red-600"
+                              >×</button>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </CardContent>

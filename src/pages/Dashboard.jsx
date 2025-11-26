@@ -56,8 +56,8 @@ export default function Dashboard() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
               <Input
                 placeholder="Zoek in je vault..."
@@ -66,50 +66,55 @@ export default function Dashboard() {
                 className="pl-10 h-12 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
               />
             </div>
-            <Button
-              variant={showFavoritesOnly ? "default" : "outline"}
-              onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-              className={showFavoritesOnly ? "bg-yellow-500 hover:bg-yellow-600" : ""}
-            >
-              <Star className={`w-4 h-4 mr-2 ${showFavoritesOnly ? 'fill-white' : ''}`} />
-              Favorieten
-            </Button>
-            <Button
-              variant={showZipOnly ? "default" : "outline"}
-              onClick={() => setShowZipOnly(!showZipOnly)}
-              className={showZipOnly ? "bg-purple-500 hover:bg-purple-600" : ""}
-            >
-              <FileArchive className={`w-4 h-4 mr-2`} />
-              ZIP
-            </Button>
-            <Button
-              variant={showPublishedOnly ? "default" : "outline"}
-              onClick={() => setShowPublishedOnly(!showPublishedOnly)}
-              className={showPublishedOnly ? "bg-green-500 hover:bg-green-600" : ""}
-            >
-              <GitBranch className={`w-4 h-4 mr-2`} />
-              Published
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={showFavoritesOnly ? "default" : "outline"}
+                onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                className={`text-xs sm:text-sm ${showFavoritesOnly ? "bg-yellow-500 hover:bg-yellow-600" : ""}`}
+                size="sm"
+              >
+                <Star className={`w-3 h-3 sm:w-4 sm:h-4 mr-1 ${showFavoritesOnly ? 'fill-white' : ''}`} />
+                Favorieten
+              </Button>
+              <Button
+                variant={showZipOnly ? "default" : "outline"}
+                onClick={() => setShowZipOnly(!showZipOnly)}
+                className={`text-xs sm:text-sm ${showZipOnly ? "bg-purple-500 hover:bg-purple-600" : ""}`}
+                size="sm"
+              >
+                <FileArchive className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                ZIP
+              </Button>
+              <Button
+                variant={showPublishedOnly ? "default" : "outline"}
+                onClick={() => setShowPublishedOnly(!showPublishedOnly)}
+                className={`text-xs sm:text-sm ${showPublishedOnly ? "bg-green-500 hover:bg-green-600" : ""}`}
+                size="sm"
+              >
+                <GitBranch className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                Published
+              </Button>
+            </div>
           </div>
 
           <Tabs value={filterType} onValueChange={setFilterType}>
-            <TabsList className="bg-slate-100">
-              <TabsTrigger value="all" className="data-[state=active]:bg-white">
-                Alles <span className="ml-2 text-xs text-slate-500">({items.length})</span>
+            <TabsList className="bg-slate-100 flex-wrap h-auto gap-1 p-1">
+              <TabsTrigger value="all" className="data-[state=active]:bg-white text-xs sm:text-sm">
+                Alles <span className="ml-1 text-xs text-slate-500">({items.length})</span>
               </TabsTrigger>
-              <TabsTrigger value="prompt" className="data-[state=active]:bg-white">
-                                <Sparkles className="w-4 h-4 mr-2" />
-                                Prompts <span className="ml-2 text-xs text-slate-500">({items.filter(i => i.type === 'prompt').length})</span>
-                              </TabsTrigger>
-                              <TabsTrigger value="multiprompt" className="data-[state=active]:bg-white">
-                                                    Multi-tasks <span className="ml-2 text-xs text-slate-500">({items.filter(i => i.type === 'multiprompt').length})</span>
-                                                  </TabsTrigger>
-              <TabsTrigger value="code" className="data-[state=active]:bg-white">
-                <Code2 className="w-4 h-4 mr-2" />
-                Code <span className="ml-2 text-xs text-slate-500">({items.filter(i => i.type === 'code').length})</span>
+              <TabsTrigger value="prompt" className="data-[state=active]:bg-white text-xs sm:text-sm">
+                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                Prompts <span className="ml-1 text-xs text-slate-500">({items.filter(i => i.type === 'prompt').length})</span>
               </TabsTrigger>
-              <TabsTrigger value="snippet" className="data-[state=active]:bg-white">
-                Snippets <span className="ml-2 text-xs text-slate-500">({items.filter(i => i.type === 'snippet').length})</span>
+              <TabsTrigger value="multiprompt" className="data-[state=active]:bg-white text-xs sm:text-sm">
+                Multi-tasks <span className="ml-1 text-xs text-slate-500">({items.filter(i => i.type === 'multiprompt').length})</span>
+              </TabsTrigger>
+              <TabsTrigger value="code" className="data-[state=active]:bg-white text-xs sm:text-sm">
+                <Code2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                Code <span className="ml-1 text-xs text-slate-500">({items.filter(i => i.type === 'code').length})</span>
+              </TabsTrigger>
+              <TabsTrigger value="snippet" className="data-[state=active]:bg-white text-xs sm:text-sm">
+                Snippets <span className="ml-1 text-xs text-slate-500">({items.filter(i => i.type === 'snippet').length})</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
