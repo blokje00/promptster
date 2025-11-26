@@ -30,7 +30,8 @@ import {
   Settings,
   Pencil,
   CheckSquare,
-  Square
+  Square,
+  GripVertical
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
