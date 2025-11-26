@@ -27,6 +27,11 @@ const navigationItems = [
     url: createPageUrl("AddItem"),
     icon: Plus,
   },
+  {
+    title: "Multiprompt",
+    url: createPageUrl("Multiprompt"),
+    icon: Sparkles,
+  },
 ];
 
 export default function Layout({ children, currentPageName }) {
