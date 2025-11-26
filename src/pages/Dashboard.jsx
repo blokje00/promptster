@@ -19,7 +19,10 @@ export default function Dashboard() {
 
   const { data: items, isLoading } = useQuery({
     queryKey: ['items'],
-    queryFn: () => base44.entities.Item.filter({}, "-updated_date"),
+    queryFn: async () => {
+      const result = await base44.entities.Item.list("-updated_date");
+      return result || [];
+    },
     initialData: [],
   });
 
