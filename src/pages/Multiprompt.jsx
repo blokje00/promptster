@@ -27,7 +27,6 @@ import {
   FolderOpen,
   Edit,
   MoreHorizontal,
-  GripVertical,
   Settings,
   Pencil,
   CheckSquare,
