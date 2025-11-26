@@ -856,7 +856,9 @@ ${generatedPrompt}`,
           </TabsList>
 
           <TabsContent value="build" className="space-y-6">
-            <div className="grid lg:grid-cols-2 gap-6">
+            <Droppable droppableId="thoughts-list">
+              {(droppableProvided) => (
+            <div className="grid lg:grid-cols-2 gap-6" ref={droppableProvided.innerRef} {...droppableProvided.droppableProps}
               {/* Left: Thoughts */}
               <div className="space-y-4">
                 <Card>
@@ -1132,6 +1134,9 @@ ${generatedPrompt}`,
                 </Card>
               </div>
             </div>
+            <div style={{display:'none'}}>{droppableProvided.placeholder}</div>
+              )}
+            </Droppable>
 
             {/* Control Dialog after Copy */}
             <Dialog open={showControlDialog} onOpenChange={setShowControlDialog}>
