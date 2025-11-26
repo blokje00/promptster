@@ -35,12 +35,16 @@ export default function ThoughtCard({
   onToggleSelect, 
   onDelete,
   onUpdateImages,
+  onUpdateContent,
   dragHandleProps 
 }) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(thought.content || "");
   const fileInputRef = useRef(null);
   const cardRef = useRef(null);
+  const textareaRef = useRef(null);
 
   // Get images from thought - always ensure array
   const imageUrls = thought.image_urls || [];
@@ -116,6 +120,34 @@ export default function ThoughtCard({
     toast.success("Screenshot verwijderd");
   };
 
+  const handleStartEditing = (e) => {
+    e.stopPropagation();
+    setEditContent(thought.content || "");
+    setIsEditing(true);
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+
+  const handleSaveEdit = () => {
+    if (onUpdateContent) {
+      onUpdateContent(thought.id, editContent);
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditContent(thought.content || "");
+    setIsEditing(false);
+  };
+
+  const handleEditKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
+
   return (
     <div 
       ref={cardRef}
@@ -152,9 +184,27 @@ export default function ThoughtCard({
               {project.name}
             </Badge>
           )}
-          <p className="text-sm text-slate-700 whitespace-pre-wrap cursor-pointer" onClick={onToggleSelect}>
-            {thought.content || <span className="text-slate-400 italic">Geen tekst</span>}
-          </p>
+          {isEditing ? (
+            <div className="space-y-2">
+              <textarea
+                ref={textareaRef}
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                onKeyDown={handleEditKeyDown}
+                onBlur={handleSaveEdit}
+                className="w-full text-sm text-slate-700 p-2 border rounded-md min-h-[60px] focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          ) : (
+            <p 
+              className="text-sm text-slate-700 whitespace-pre-wrap cursor-text hover:bg-slate-50 rounded p-1 -m-1" 
+              onClick={handleStartEditing}
+              title="Klik om te bewerken"
+            >
+              {thought.content || <span className="text-slate-400 italic">Klik om tekst toe te voegen...</span>}
+            </p>
+          )}
           
           {/* Images display - show ALL images */}
           {imageUrls.length > 0 && (

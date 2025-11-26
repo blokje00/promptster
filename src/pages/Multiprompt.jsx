@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -31,7 +31,8 @@ import {
   Pencil,
   CheckSquare,
   Square,
-  GripVertical
+  GripVertical,
+  Image as ImageIcon
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -77,7 +78,10 @@ export default function Multiprompt() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [newThought, setNewThought] = useState("");
-  const [newThoughtImage, setNewThoughtImage] = useState(null);
+  const [newThoughtImages, setNewThoughtImages] = useState([]);
+  const [isUploadingNewImage, setIsUploadingNewImage] = useState(false);
+  const newThoughtInputRef = useRef(null);
+  const newThoughtFileInputRef = useRef(null);
   const [selectedThoughts, setSelectedThoughts] = useState([]);
   const [localThoughts, setLocalThoughts] = useState([]); // UI source of truth
   const [startTemplateId, setStartTemplateId] = useState("");
@@ -305,24 +309,57 @@ export default function Multiprompt() {
   };
 
   const handleAddThought = async () => {
-    if (!newThought.trim()) return;
-    
-    let imageUrls = [];
-    if (newThoughtImage) {
-      try {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file: newThoughtImage });
-        imageUrls = [file_url];
-      } catch (error) {
-        toast.error("Kon afbeelding niet uploaden");
-      }
-    }
+    if (!newThought.trim() && newThoughtImages.length === 0) return;
     
     createThoughtMutation.mutate({ 
       content: newThought.trim(),
       project_id: selectedProjectId || null,
-      image_urls: imageUrls,
+      image_urls: newThoughtImages,
       is_selected: true
     });
+    setNewThoughtImages([]);
+  };
+
+  // Handle paste in new thought textarea
+  const handleNewThoughtPaste = async (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          await uploadNewThoughtImage(file);
+        }
+        break;
+      }
+    }
+  };
+
+  const uploadNewThoughtImage = async (file) => {
+    if (!file || !file.type.startsWith('image/')) {
+      toast.error("Alleen afbeeldingen zijn toegestaan");
+      return;
+    }
+    setIsUploadingNewImage(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setNewThoughtImages(prev => [...prev, file_url]);
+      toast.success("Afbeelding toegevoegd");
+    } catch (error) {
+      toast.error("Kon afbeelding niet uploaden");
+    } finally {
+      setIsUploadingNewImage(false);
+    }
+  };
+
+  const handleNewThoughtDrop = async (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      await uploadNewThoughtImage(file);
+    }
   };
 
   // Update images for a thought in local state
@@ -330,6 +367,31 @@ export default function Multiprompt() {
     setLocalThoughts(prev => prev.map(t => 
       t.id === thoughtId ? { ...t, image_urls: newImages } : t
     ));
+  };
+
+  // Update content for a thought in local state
+  const handleUpdateThoughtContent = (thoughtId, newContent) => {
+    setLocalThoughts(prev => prev.map(t => 
+      t.id === thoughtId ? { ...t, content: newContent } : t
+    ));
+  };
+
+  // Move thought to different project
+  const updateThoughtProjectMutation = useMutation({
+    mutationFn: ({ id, project_id }) => base44.entities.Thought.update(id, { project_id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+      toast.success("Taak verplaatst naar project");
+    },
+  });
+
+  const handleMoveThoughtToProject = (thoughtId, newProjectId) => {
+    // Update local state immediately
+    setLocalThoughts(prev => prev.map(t => 
+      t.id === thoughtId ? { ...t, project_id: newProjectId } : t
+    ));
+    // Persist to DB
+    updateThoughtProjectMutation.mutate({ id: thoughtId, project_id: newProjectId });
   };
 
   // Save all thoughts to database (for "Controle opslaan")
@@ -427,6 +489,14 @@ export default function Multiprompt() {
 
   const handleThoughtsDragEnd = (result) => {
     if (!result.destination) return;
+    
+    // Check if dropped on a project
+    if (result.destination.droppableId.startsWith('project-')) {
+      const projectId = result.destination.droppableId.replace('project-', '');
+      const thoughtId = result.draggableId;
+      handleMoveThoughtToProject(thoughtId, projectId === 'none' ? null : projectId);
+      return;
+    }
     
     const draggedThought = filteredThoughts[result.source.index];
     if (selectedThoughts.includes(draggedThought?.id)) {
@@ -661,64 +731,78 @@ ${generatedPrompt}`,
           <p className="text-slate-600 mt-2">Verzamel gedachten en bouw uitgebreide multi-task prompts</p>
         </div>
 
-        {/* Project Selector Bar */}
+        {/* Project Selector Bar - wrapped in DragDropContext for project drops */}
+        <DragDropContext onDragEnd={handleThoughtsDragEnd}>
         <Card className={`mb-6 ${selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : ''}`}>
           <CardContent className="py-4">
             <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-2">
                 <FolderOpen className="w-5 h-5 text-slate-500" />
-                <span className="font-medium text-slate-700">Project:</span>
+                <span className="font-medium text-slate-700">Project (sleep taken hierheen):</span>
               </div>
               <div className="flex gap-2 flex-wrap">
-                <Button
-                  variant={!selectedProjectId ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedProjectId("")}
-                  className={!selectedProjectId ? "bg-slate-700" : ""}
-                >
-                  Alle
-                </Button>
+                <Droppable droppableId="project-none" direction="horizontal">
+                  {(provided, snapshot) => (
+                    <div ref={provided.innerRef} {...provided.droppableProps}>
+                      <Button
+                        variant={!selectedProjectId ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setSelectedProjectId("")}
+                        className={`${!selectedProjectId ? "bg-slate-700" : ""} ${snapshot.isDraggingOver ? "ring-2 ring-indigo-400" : ""}`}
+                      >
+                        Alle
+                      </Button>
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
                 {projects.map(project => (
-                  <div key={project.id} className="flex items-center">
-                    <Button
-                      variant={selectedProjectId === project.id ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedProjectId(project.id)}
-                      className={`rounded-r-none ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
-                    >
-                      <div className={`w-3 h-3 rounded-full ${projectColors[project.color]} mr-2`} />
-                      {project.name}
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                  <Droppable key={project.id} droppableId={`project-${project.id}`} direction="horizontal">
+                    {(provided, snapshot) => (
+                      <div ref={provided.innerRef} {...provided.droppableProps} className="flex items-center">
                         <Button
                           variant={selectedProjectId === project.id ? "default" : "outline"}
                           size="sm"
-                          className={`rounded-l-none border-l-0 px-1 ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
+                          onClick={() => setSelectedProjectId(project.id)}
+                          className={`rounded-r-none ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""} ${snapshot.isDraggingOver ? "ring-2 ring-indigo-400" : ""}`}
                         >
-                          <MoreHorizontal className="w-4 h-4" />
+                          <div className={`w-3 h-3 rounded-full ${projectColors[project.color]} mr-2`} />
+                          {project.name}
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => handleEditProject(project)}>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Bewerken
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => deleteProjectMutation.mutate(project.id)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Verwijderen
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant={selectedProjectId === project.id ? "default" : "outline"}
+                              size="sm"
+                              className={`rounded-l-none border-l-0 px-1 ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
+                            >
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => handleEditProject(project)}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Bewerken
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => deleteProjectMutation.mutate(project.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Verwijderen
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
                 ))}
               </div>
             </div>
           </CardContent>
         </Card>
+        </DragDropContext>
 
         {/* Edit Project Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -820,11 +904,17 @@ ${generatedPrompt}`,
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex gap-2">
+                    <div 
+                      className="space-y-2"
+                      onDrop={handleNewThoughtDrop}
+                      onDragOver={(e) => e.preventDefault()}
+                    >
                       <Textarea
-                        placeholder="Typ een taak of idee..."
+                        ref={newThoughtInputRef}
+                        placeholder="Typ een taak of idee... (plak of drop afbeeldingen)"
                         value={newThought}
                         onChange={(e) => setNewThought(e.target.value)}
+                        onPaste={handleNewThoughtPaste}
                         className="min-h-[80px]"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
@@ -833,10 +923,42 @@ ${generatedPrompt}`,
                           }
                         }}
                       />
+                      {/* Image preview for new thought */}
+                      {newThoughtImages.length > 0 && (
+                        <div className="flex flex-wrap gap-2 p-2 bg-slate-50 rounded-lg">
+                          {newThoughtImages.map((url, idx) => (
+                            <div key={idx} className="relative">
+                              <img src={url} alt={`Preview ${idx + 1}`} className="w-12 h-12 object-cover rounded border" />
+                              <button
+                                onClick={() => setNewThoughtImages(prev => prev.filter((_, i) => i !== idx))}
+                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
+                              >×</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <input
+                          type="file"
+                          ref={newThoughtFileInputRef}
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => e.target.files[0] && uploadNewThoughtImage(e.target.files[0])}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => newThoughtFileInputRef.current?.click()}
+                          disabled={isUploadingNewImage}
+                        >
+                          {isUploadingNewImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+                        </Button>
+                      </div>
                     </div>
                     <Button 
                       onClick={handleAddThought} 
-                      disabled={!newThought.trim()}
+                      disabled={!newThought.trim() && newThoughtImages.length === 0}
                       className="w-full bg-indigo-600 hover:bg-indigo-700"
                     >
                       <Plus className="w-4 h-4 mr-2" />
@@ -866,6 +988,7 @@ ${generatedPrompt}`,
                                       onToggleSelect={() => toggleThoughtSelection(thought.id)}
                                       onDelete={() => deleteThoughtMutation.mutate(thought.id)}
                                       onUpdateImages={handleUpdateThoughtImages}
+                                      onUpdateContent={handleUpdateThoughtContent}
                                       dragHandleProps={provided.dragHandleProps}
                                     />
                                   </div>
