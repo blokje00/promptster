@@ -74,6 +74,7 @@ export default function Multiprompt() {
   const [newThought, setNewThought] = useState("");
   const [newThoughtImage, setNewThoughtImage] = useState(null);
   const [selectedThoughts, setSelectedThoughts] = useState([]);
+  const [localThoughts, setLocalThoughts] = useState([]); // UI source of truth
   const [startTemplateId, setStartTemplateId] = useState("");
   const [endTemplateId, setEndTemplateId] = useState("");
   const [customStartText, setCustomStartText] = useState("");
@@ -106,10 +107,15 @@ export default function Multiprompt() {
   const [taskChecks, setTaskChecks] = useState([]);
   const [controlNotes, setControlNotes] = useState("");
 
-  const { data: thoughts = [] } = useQuery({
+  const { data: dbThoughts = [] } = useQuery({
     queryKey: ['thoughts'],
     queryFn: () => base44.entities.Thought.list("-created_date"),
   });
+  
+  // Sync DB thoughts to local state when DB updates
+  useEffect(() => {
+    setLocalThoughts(dbThoughts);
+  }, [dbThoughts]);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['templates'],
@@ -124,17 +130,24 @@ export default function Multiprompt() {
   const createThoughtMutation = useMutation({
     mutationFn: (data) => base44.entities.Thought.create(data),
     onSuccess: (newThoughtData) => {
-      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+      // Immediately add to local state for instant UI update
+      setLocalThoughts(prev => [newThoughtData, ...prev]);
+      setSelectedThoughts(prev => [...prev, newThoughtData.id]);
       setNewThought("");
       setNewThoughtImage(null);
-      // Auto-select new thought
-      setSelectedThoughts(prev => [...prev, newThoughtData.id]);
       toast.success("Gedachte toegevoegd");
+      // Background sync with DB
+      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
     },
   });
 
   const deleteThoughtMutation = useMutation({
     mutationFn: (id) => base44.entities.Thought.delete(id),
+    onMutate: (id) => {
+      // Immediately remove from local state
+      setLocalThoughts(prev => prev.filter(t => t.id !== id));
+      setSelectedThoughts(prev => prev.filter(tid => tid !== id));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
       toast.success("Gedachte verwijderd");
@@ -211,6 +224,10 @@ export default function Multiprompt() {
       for (const id of thoughtIds) {
         await base44.entities.Thought.delete(id);
       }
+    },
+    onMutate: (thoughtIds) => {
+      // Immediately remove from local state
+      setLocalThoughts(prev => prev.filter(t => !thoughtIds.includes(t.id)));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
@@ -357,9 +374,10 @@ export default function Multiprompt() {
 
   const selectedStartTemplate = templates.find(t => t.id === startTemplateId);
   const selectedEndTemplate = templates.find(t => t.id === endTemplateId);
-  // Behoud volgorde van selectie, niet van originele thoughts array
+  
+  // Use localThoughts as source of truth for preview - maintains selection order
   const selectedThoughtContents = selectedThoughts
-    .map(id => thoughts.find(t => t.id === id))
+    .map(id => localThoughts.find(t => t.id === id))
     .filter(Boolean)
     .map(t => t.content);
 
@@ -406,10 +424,10 @@ export default function Multiprompt() {
     }));
   };
 
-  // Filter thoughts by selected project
+  // Filter thoughts by selected project - uses localThoughts for instant updates
   const filteredThoughts = selectedProjectId 
-    ? thoughts.filter(t => t.project_id === selectedProjectId)
-    : thoughts;
+    ? localThoughts.filter(t => t.project_id === selectedProjectId)
+    : localThoughts;
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
@@ -789,7 +807,7 @@ ${generatedPrompt}`,
                               className="space-y-1"
                             >
                               {selectedThoughts.map((id, idx) => {
-                                const thought = thoughts.find(t => t.id === id);
+                                const thought = localThoughts.find(t => t.id === id);
                                 return (
                                   <Draggable key={id} draggableId={id} index={idx}>
                                     {(provided, snapshot) => (
@@ -1163,7 +1181,7 @@ ${generatedPrompt}`,
                               <p className="text-sm text-slate-500 mt-1">{project.description}</p>
                             )}
                             <p className="text-xs text-slate-400 mt-1">
-                              {thoughts.filter(t => t.project_id === project.id).length} gedachten
+                              {localThoughts.filter(t => t.project_id === project.id).length} gedachten
                             </p>
                           </div>
                         </div>
