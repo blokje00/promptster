@@ -44,6 +44,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import ThoughtCard from "../components/multiprompt/ThoughtCard";
 
 const projectColors = {
   red: "bg-red-500",
@@ -71,9 +72,17 @@ export default function Multiprompt() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [newThought, setNewThought] = useState("");
+  const [newThoughtImage, setNewThoughtImage] = useState(null);
   const [selectedThoughts, setSelectedThoughts] = useState([]);
-  const [startTemplateId, setStartTemplateId] = useState("");
-  const [endTemplateId, setEndTemplateId] = useState("");
+  
+  // Load saved template IDs from localStorage per project
+  const getStoredTemplateId = (type) => {
+    const key = `template_${type}_${selectedProjectId || 'all'}`;
+    return localStorage.getItem(key) || "";
+  };
+  
+  const [startTemplateId, setStartTemplateId] = useState(() => getStoredTemplateId('start'));
+  const [endTemplateId, setEndTemplateId] = useState(() => getStoredTemplateId('end'));
   const [customStartText, setCustomStartText] = useState("");
   const [customEndText, setCustomEndText] = useState("");
   const [promptTitle, setPromptTitle] = useState("");
@@ -121,9 +130,12 @@ export default function Multiprompt() {
 
   const createThoughtMutation = useMutation({
     mutationFn: (data) => base44.entities.Thought.create(data),
-    onSuccess: () => {
+    onSuccess: (newThoughtData) => {
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
       setNewThought("");
+      setNewThoughtImage(null);
+      // Auto-select new thought
+      setSelectedThoughts(prev => [...prev, newThoughtData.id]);
       toast.success("Gedachte toegevoegd");
     },
   });
@@ -227,11 +239,23 @@ export default function Multiprompt() {
     setControlNotes("");
   };
 
-  const handleAddThought = () => {
+  const handleAddThought = async () => {
     if (!newThought.trim()) return;
+    
+    let imageUrl = null;
+    if (newThoughtImage) {
+      try {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file: newThoughtImage });
+        imageUrl = file_url;
+      } catch (error) {
+        toast.error("Kon afbeelding niet uploaden");
+      }
+    }
+    
     createThoughtMutation.mutate({ 
       content: newThought.trim(),
-      project_id: selectedProjectId || null
+      project_id: selectedProjectId || null,
+      image_url: imageUrl
     });
   };
 
@@ -240,7 +264,8 @@ export default function Multiprompt() {
     createTemplateMutation.mutate({
       name: newTemplateName.trim(),
       type: newTemplateType,
-      content: newTemplateContent.trim()
+      content: newTemplateContent.trim(),
+      project_id: selectedProjectId || null
     });
   };
 
@@ -289,8 +314,51 @@ export default function Multiprompt() {
     setSelectedThoughts(newSelected);
   };
 
-  const startTemplates = templates.filter(t => t.type === "start");
-  const endTemplates = templates.filter(t => t.type === "eind");
+  const handleThoughtsDragEnd = (result) => {
+    // For now just reorder selection if dragged item is selected
+    if (!result.destination) return;
+    const draggedId = filteredThoughts[result.source.index]?.id;
+    if (selectedThoughts.includes(draggedId)) {
+      // Reorder in selection based on new visual position
+      const fromIdx = selectedThoughts.indexOf(draggedId);
+      if (fromIdx !== -1) {
+        const newSelected = [...selectedThoughts];
+        newSelected.splice(fromIdx, 1);
+        // Find target position based on destination
+        const targetThought = filteredThoughts[result.destination.index];
+        const targetIdx = selectedThoughts.indexOf(targetThought?.id);
+        if (targetIdx !== -1) {
+          newSelected.splice(targetIdx, 0, draggedId);
+        } else {
+          newSelected.push(draggedId);
+        }
+        setSelectedThoughts(newSelected);
+      }
+    }
+  };
+
+  // Filter templates by selected project (or show all if no project selected)
+  const startTemplates = templates.filter(t => t.type === "start" && (!selectedProjectId || !t.project_id || t.project_id === selectedProjectId));
+  const endTemplates = templates.filter(t => t.type === "eind" && (!selectedProjectId || !t.project_id || t.project_id === selectedProjectId));
+  
+  // Save template selection to localStorage when changed
+  useEffect(() => {
+    if (startTemplateId) {
+      localStorage.setItem(`template_start_${selectedProjectId || 'all'}`, startTemplateId);
+    }
+  }, [startTemplateId, selectedProjectId]);
+  
+  useEffect(() => {
+    if (endTemplateId) {
+      localStorage.setItem(`template_end_${selectedProjectId || 'all'}`, endTemplateId);
+    }
+  }, [endTemplateId, selectedProjectId]);
+  
+  // Load templates when project changes
+  useEffect(() => {
+    setStartTemplateId(getStoredTemplateId('start'));
+    setEndTemplateId(getStoredTemplateId('end'));
+  }, [selectedProjectId]);
 
   const selectedStartTemplate = templates.find(t => t.id === startTemplateId);
   const selectedEndTemplate = templates.find(t => t.id === endTemplateId);
@@ -610,57 +678,47 @@ ${generatedPrompt}`,
                       Gedachte Toevoegen {selectedProject && `aan ${selectedProject.name}`}
                     </Button>
 
-                    <div className="space-y-2 max-h-[400px] overflow-auto">
-                      {filteredThoughts.map((thought) => {
-                        const thoughtProject = projects.find(p => p.id === thought.project_id);
-                        return (
+                    <DragDropContext onDragEnd={handleThoughtsDragEnd}>
+                      <Droppable droppableId="thoughts-list">
+                        {(provided) => (
                           <div 
-                            key={thought.id}
-                            className={`p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                              selectedThoughts.includes(thought.id)
-                                ? 'border-indigo-500 bg-indigo-50'
-                                : thoughtProject 
-                                  ? `${projectBorderColors[thoughtProject.color]} bg-white`
-                                  : 'border-slate-200 hover:border-slate-300'
-                            }`}
-                            onClick={() => toggleThoughtSelection(thought.id)}
+                            {...provided.droppableProps}
+                            ref={provided.innerRef}
+                            className="space-y-2 max-h-[400px] overflow-auto"
                           >
-                            <div className="flex items-start gap-3">
-                              <Checkbox 
-                                checked={selectedThoughts.includes(thought.id)}
-                                onCheckedChange={() => toggleThoughtSelection(thought.id)}
-                              />
-                              <div className="flex-1">
-                                {thoughtProject && (
-                                  <Badge className={`${projectColors[thoughtProject.color]} text-white text-xs mb-1`}>
-                                    {thoughtProject.name}
-                                  </Badge>
-                                )}
-                                <p className="text-sm text-slate-700 whitespace-pre-wrap">
-                                  {thought.content}
-                                </p>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-slate-400 hover:text-red-500"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteThoughtMutation.mutate(thought.id);
-                                }}
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </div>
+                            {filteredThoughts.map((thought, index) => {
+                              const thoughtProject = projects.find(p => p.id === thought.project_id);
+                              return (
+                                <Draggable key={thought.id} draggableId={thought.id} index={index}>
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      className={snapshot.isDragging ? 'opacity-90' : ''}
+                                    >
+                                      <ThoughtCard
+                                        thought={thought}
+                                        project={thoughtProject}
+                                        isSelected={selectedThoughts.includes(thought.id)}
+                                        onToggleSelect={() => toggleThoughtSelection(thought.id)}
+                                        onDelete={() => deleteThoughtMutation.mutate(thought.id)}
+                                        dragHandleProps={provided.dragHandleProps}
+                                      />
+                                    </div>
+                                  )}
+                                </Draggable>
+                              );
+                            })}
+                            {provided.placeholder}
+                            {filteredThoughts.length === 0 && (
+                              <p className="text-center text-slate-400 py-8">
+                                Nog geen gedachten{selectedProject ? ` voor ${selectedProject.name}` : ''}. Begin met typen!
+                              </p>
+                            )}
                           </div>
-                        );
-                      })}
-                      {filteredThoughts.length === 0 && (
-                        <p className="text-center text-slate-400 py-8">
-                          Nog geen gedachten{selectedProject ? ` voor ${selectedProject.name}` : ''}. Begin met typen!
-                        </p>
-                      )}
-                    </div>
+                        )}
+                      </Droppable>
+                    </DragDropContext>
                   </CardContent>
                 </Card>
               </div>
@@ -970,24 +1028,34 @@ ${generatedPrompt}`,
                     <CardTitle className="text-green-700">Startteksten</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    {startTemplates.map(template => (
-                      <div key={template.id} className="p-3 bg-green-50 rounded-lg border border-green-200">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="font-medium text-green-800">{template.name}</p>
-                            <p className="text-sm text-green-600 mt-1 line-clamp-2">{template.content}</p>
+                    {startTemplates.map(template => {
+                      const templateProject = projects.find(p => p.id === template.project_id);
+                      return (
+                        <div key={template.id} className="p-3 bg-green-50 rounded-lg border border-green-200">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-green-800">{template.name}</p>
+                                {templateProject && (
+                                  <Badge className={`${projectColors[templateProject.color]} text-white text-xs`}>
+                                    {templateProject.name}
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-green-600 mt-1 line-clamp-2">{template.content}</p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-500 hover:bg-red-50"
+                              onClick={() => deleteTemplateMutation.mutate(template.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-500 hover:bg-red-50"
-                            onClick={() => deleteTemplateMutation.mutate(template.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {startTemplates.length === 0 && (
                       <p className="text-slate-400 text-center py-4">Geen startteksten</p>
                     )}
@@ -999,24 +1067,34 @@ ${generatedPrompt}`,
                     <CardTitle className="text-orange-700">Eindteksten</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    {endTemplates.map(template => (
-                      <div key={template.id} className="p-3 bg-orange-50 rounded-lg border border-orange-200">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="font-medium text-orange-800">{template.name}</p>
-                            <p className="text-sm text-orange-600 mt-1 line-clamp-2">{template.content}</p>
+                    {endTemplates.map(template => {
+                      const templateProject = projects.find(p => p.id === template.project_id);
+                      return (
+                        <div key={template.id} className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-orange-800">{template.name}</p>
+                                {templateProject && (
+                                  <Badge className={`${projectColors[templateProject.color]} text-white text-xs`}>
+                                    {templateProject.name}
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-orange-600 mt-1 line-clamp-2">{template.content}</p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-500 hover:bg-red-50"
+                              onClick={() => deleteTemplateMutation.mutate(template.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-500 hover:bg-red-50"
-                            onClick={() => deleteTemplateMutation.mutate(template.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {endTemplates.length === 0 && (
                       <p className="text-slate-400 text-center py-4">Geen eindteksten</p>
                     )}
