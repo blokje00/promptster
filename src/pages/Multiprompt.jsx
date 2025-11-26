@@ -121,7 +121,7 @@ export default function Multiprompt() {
 
   const { data: dbThoughts = [] } = useQuery({
     queryKey: ['thoughts'],
-    queryFn: () => base44.entities.Thought.list("-created_date"),
+    queryFn: () => base44.entities.Thought.filter({}, "-created_date"),
   });
   
   // Sync DB thoughts to local state when DB updates AND auto-select all
@@ -142,17 +142,17 @@ export default function Multiprompt() {
 
   const { data: templates = [] } = useQuery({
     queryKey: ['templates'],
-    queryFn: () => base44.entities.PromptTemplate.list(),
+    queryFn: () => base44.entities.PromptTemplate.filter({}),
   });
 
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
+    queryFn: () => base44.entities.Project.filter({}),
   });
 
   const { data: aiSettings = [] } = useQuery({
     queryKey: ['aiSettings'],
-    queryFn: () => base44.entities.AISettings.list(),
+    queryFn: () => base44.entities.AISettings.filter({}),
   });
 
   // Edit template state
