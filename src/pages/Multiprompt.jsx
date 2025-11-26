@@ -74,6 +74,11 @@ export default function Multiprompt() {
   const [newProjectColor, setNewProjectColor] = useState("blue");
   const [newProjectDescription, setNewProjectDescription] = useState("");
 
+  // Structured prompt fields
+  const [promptInput, setPromptInput] = useState("");
+  const [promptDoel, setPromptDoel] = useState("");
+  const [tasks, setTasks] = useState([{ id: 1, text: "" }]);
+
   const { data: thoughts = [] } = useQuery({
     queryKey: ['thoughts'],
     queryFn: () => base44.entities.Thought.list("-created_date"),
@@ -197,11 +202,45 @@ export default function Multiprompt() {
   const startText = customStartText || selectedStartTemplate?.content || "";
   const endText = customEndText || selectedEndTemplate?.content || "";
 
-  const generatedPrompt = [
-    startText,
-    ...selectedThoughtContents,
-    endText
-  ].filter(Boolean).join("\n\n");
+  // Build structured prompt
+  const buildStructuredPrompt = () => {
+    const thoughtsText = selectedThoughtContents.join("\n");
+    const tasksText = tasks
+      .filter(t => t.text.trim())
+      .map((t, i) => `${i + 1}. Taak ${i + 1} – ${t.text}`)
+      .join("\n");
+    
+    const resultTags = tasks
+      .filter(t => t.text.trim())
+      .map((_, i) => `<<RESULTAAT_TAAK_${i + 1}>>\n[output taak ${i + 1}]`)
+      .join("\n\n");
+
+    return `Je bent een AI die meerdere taken uitvoert. Verwerk alle taken strikt in volgorde.
+
+INPUT:
+${promptInput || thoughtsText || "[input]"}
+
+DOEL:
+${promptDoel || "[doel]"}
+
+TAKEN:
+${tasksText || "1. Taak 1 – [taak]"}
+
+UITVOERFORMAT (ZEER BELANGRIJK):
+Geef de output ALLEEN in deze structuur, niets erbuiten:
+
+${resultTags || "<<RESULTAAT_TAAK_1>>\n[output taak 1]"}
+
+<<EINDE>>
+
+REGELS:
+- Gebruik GEEN markdown.
+- GEEN extra uitleg of tekst buiten de blokken.
+- Houd je exact aan de tags: <<RESULTAAT_TAAK_X>> en <<EINDE>>.
+- Gebruik alleen plain text zodat Node/JS parsing altijd werkt.`;
+  };
+
+  const generatedPrompt = buildStructuredPrompt();
 
   // Filter thoughts by selected project
   const filteredThoughts = selectedProjectId 
@@ -487,7 +526,7 @@ ${generatedPrompt}`,
 
                     <div>
                       <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        Geselecteerd: {selectedThoughts.length} gedachten
+                        Geselecteerde gedachten als INPUT: {selectedThoughts.length}
                       </label>
                       <div className="flex flex-wrap gap-1">
                         {selectedThoughts.map((id, idx) => (
@@ -495,6 +534,79 @@ ${generatedPrompt}`,
                             #{idx + 1}
                           </Badge>
                         ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Structured Prompt Builder */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle>Gestructureerde Prompt</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 mb-2 block">
+                        INPUT (of gebruik geselecteerde gedachten)
+                      </label>
+                      <Textarea
+                        placeholder="Extra input tekst..."
+                        value={promptInput}
+                        onChange={(e) => setPromptInput(e.target.value)}
+                        className="min-h-[60px]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 mb-2 block">
+                        DOEL
+                      </label>
+                      <Input
+                        placeholder="Wat is het doel van deze prompt?"
+                        value={promptDoel}
+                        onChange={(e) => setPromptDoel(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-slate-700 mb-2 block">
+                        TAKEN
+                      </label>
+                      <div className="space-y-2">
+                        {tasks.map((task, index) => (
+                          <div key={task.id} className="flex gap-2">
+                            <span className="flex items-center text-sm text-slate-500 w-8">{index + 1}.</span>
+                            <Input
+                              placeholder={`Taak ${index + 1}...`}
+                              value={task.text}
+                              onChange={(e) => {
+                                const newTasks = [...tasks];
+                                newTasks[index].text = e.target.value;
+                                setTasks(newTasks);
+                              }}
+                              className="flex-1"
+                            />
+                            {tasks.length > 1 && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setTasks(tasks.filter((_, i) => i !== index))}
+                                className="text-red-500"
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setTasks([...tasks, { id: Date.now(), text: "" }])}
+                          className="w-full"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Taak Toevoegen
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
