@@ -162,7 +162,7 @@ export default function Multiprompt() {
       setSelectedThoughts(prev => [...prev, newThoughtData.id]);
       setNewThought("");
       setNewThoughtImage(null);
-      toast.success("Gedachte toegevoegd");
+      toast.success("Taak toegevoegd");
       // Background sync with DB
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
     },
@@ -177,7 +177,7 @@ export default function Multiprompt() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-      toast.success("Gedachte verwijderd");
+      toast.success("Taak verwijderd");
     },
   });
 
@@ -286,7 +286,7 @@ export default function Multiprompt() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-      toast.success("Gedachten verwijderd!");
+      toast.success("Taken verwijderd!");
       resetBuilder();
     },
   });
@@ -348,10 +348,10 @@ export default function Multiprompt() {
         });
       }
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-      toast.success("Alle gedachten opgeslagen!");
+      toast.success("Alle taken opgeslagen!");
     } catch (error) {
       console.error("Save error:", error);
-      toast.error("Kon niet alle gedachten opslaan");
+      toast.error("Kon niet alle taken opslaan");
     } finally {
       setIsSavingAll(false);
     }
@@ -785,7 +785,7 @@ ${generatedPrompt}`,
                     <CardTitle className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Lightbulb className="w-5 h-5 text-yellow-500" />
-                        Gedachten
+                        Taken
                         {selectedProject && (
                           <Badge className={`${projectColors[selectedProject.color]} text-white ml-2`}>
                             {selectedProject.name}
@@ -835,7 +835,7 @@ ${generatedPrompt}`,
                       className="w-full bg-indigo-600 hover:bg-indigo-700"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Gedachte Toevoegen {selectedProject && `aan ${selectedProject.name}`}
+                      Taak Toevoegen {selectedProject && `aan ${selectedProject.name}`}
                     </Button>
 
                     <DragDropContext onDragEnd={handleThoughtsDragEnd}>
@@ -873,7 +873,7 @@ ${generatedPrompt}`,
                             {provided.placeholder}
                             {filteredThoughts.length === 0 && (
                               <p className="text-center text-slate-400 py-8">
-                                Nog geen gedachten{selectedProject ? ` voor ${selectedProject.name}` : ''}. Begin met typen!
+                                Nog geen taken{selectedProject ? ` voor ${selectedProject.name}` : ''}. Begin met typen!
                               </p>
                             )}
                           </div>
@@ -944,7 +944,7 @@ ${generatedPrompt}`,
 
                     <div className="pt-2 border-t">
                       <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        Geselecteerde gedachten: {selectedThoughts.length} (sleep om te herordenen)
+                        Geselecteerde taken: {selectedThoughts.length} (sleep om te herordenen)
                       </label>
                       <DragDropContext onDragEnd={handleSelectedThoughtsDragEnd}>
                         <Droppable droppableId="selected-thoughts">
@@ -1137,7 +1137,7 @@ ${generatedPrompt}`,
                       className="border-red-300 text-red-600 hover:bg-red-50"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
-                      Verwijder gedachten
+                      Verwijder taken
                     </Button>
                     <Button
                       onClick={handleDiscardPrompt}
@@ -1388,7 +1388,7 @@ ${generatedPrompt}`,
                               <p className="text-sm text-slate-500 mt-1">{project.description}</p>
                             )}
                             <p className="text-xs text-slate-400 mt-1">
-                              {localThoughts.filter(t => t.project_id === project.id).length} gedachten
+                              {localThoughts.filter(t => t.project_id === project.id).length} taken
                             </p>
                           </div>
                         </div>
