@@ -498,28 +498,6 @@ export default function Multiprompt() {
       handleMoveThoughtToProject(thoughtId, projectId === 'none' ? null : projectId);
       return;
     }
-    
-    if (!result.destination) return;
-    
-    // Reordering within thoughts-list
-    if (result.destination.droppableId === 'thoughts-list') {
-      const draggedThought = filteredThoughts[result.source.index];
-      if (selectedThoughts.includes(draggedThought?.id)) {
-        const fromIdx = selectedThoughts.indexOf(draggedThought.id);
-        if (fromIdx !== -1) {
-          const newSelected = [...selectedThoughts];
-          newSelected.splice(fromIdx, 1);
-          const targetThought = filteredThoughts[result.destination.index];
-          const targetIdx = selectedThoughts.indexOf(targetThought?.id);
-          if (targetIdx !== -1) {
-            newSelected.splice(targetIdx, 0, draggedThought.id);
-          } else {
-            newSelected.push(draggedThought.id);
-          }
-          setSelectedThoughts(newSelected);
-        }
-      }
-    }
   };
 
   // Filter templates by selected project (or show all if no project selected)
@@ -671,7 +649,8 @@ ${generatedPrompt}`,
       content: finalPrompt,
       used_thoughts: selectedThoughts,
       start_template_id: startTemplateId || null,
-      end_template_id: endTemplateId || null
+      end_template_id: endTemplateId || null,
+      task_checks: taskChecks
     });
     setShowControlDialog(false);
   };
@@ -737,7 +716,8 @@ ${generatedPrompt}`,
           <p className="text-slate-600 mt-2">Verzamel gedachten en bouw uitgebreide multi-task prompts</p>
         </div>
 
-        {/* Project Selector Bar */}
+        {/* Project Selector Bar - integrated with drag & drop */}
+        <DragDropContext onDragEnd={handleThoughtsDragEnd}>
         <Card className={`mb-6 ${selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : ''}`}>
           <CardContent className="py-4">
             <div className="flex items-center gap-4 flex-wrap">
@@ -746,61 +726,74 @@ ${generatedPrompt}`,
                 <span className="font-medium text-slate-700">Project:</span>
               </div>
               <div className="flex gap-2 flex-wrap">
-                <Button
-                  variant={!selectedProjectId ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => {
-                    setSelectedProjectId("");
-                    localStorage.setItem('lastSelectedProjectId', "");
-                  }}
-                  className={!selectedProjectId ? "bg-slate-700" : ""}
-                >
-                  Alle
-                </Button>
+                <Droppable droppableId="project-none" direction="horizontal">
+                  {(provided, snapshot) => (
+                    <div ref={provided.innerRef} {...provided.droppableProps} className="inline-flex">
+                      <Button
+                        variant={!selectedProjectId ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setSelectedProjectId("");
+                          localStorage.setItem('lastSelectedProjectId', "");
+                        }}
+                        className={`${!selectedProjectId ? "bg-slate-700" : ""} ${snapshot.isDraggingOver ? "ring-2 ring-indigo-400 ring-offset-1" : ""}`}
+                      >
+                        Alle
+                      </Button>
+                      <div style={{display: 'none'}}>{provided.placeholder}</div>
+                    </div>
+                  )}
+                </Droppable>
                 {projects.map(project => (
-                  <div key={project.id} className="flex items-center">
-                    <Button
-                      variant={selectedProjectId === project.id ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => {
-                        setSelectedProjectId(project.id);
-                        localStorage.setItem('lastSelectedProjectId', project.id);
-                      }}
-                      className={`rounded-r-none ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
-                    >
-                      <div className={`w-3 h-3 rounded-full ${projectColors[project.color]} mr-2`} />
-                      {project.name}
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                  <Droppable key={project.id} droppableId={`project-${project.id}`} direction="horizontal">
+                    {(provided, snapshot) => (
+                      <div ref={provided.innerRef} {...provided.droppableProps} className="inline-flex items-center">
                         <Button
                           variant={selectedProjectId === project.id ? "default" : "outline"}
                           size="sm"
-                          className={`rounded-l-none border-l-0 px-1 ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
+                          onClick={() => {
+                            setSelectedProjectId(project.id);
+                            localStorage.setItem('lastSelectedProjectId', project.id);
+                          }}
+                          className={`rounded-r-none ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""} ${snapshot.isDraggingOver ? "ring-2 ring-indigo-400 ring-offset-1" : ""}`}
                         >
-                          <MoreHorizontal className="w-4 h-4" />
+                          <div className={`w-3 h-3 rounded-full ${projectColors[project.color]} mr-2`} />
+                          {project.name}
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => handleEditProject(project)}>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Bewerken
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => deleteProjectMutation.mutate(project.id)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Verwijderen
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant={selectedProjectId === project.id ? "default" : "outline"}
+                              size="sm"
+                              className={`rounded-l-none border-l-0 px-1 ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
+                            >
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => handleEditProject(project)}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Bewerken
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => deleteProjectMutation.mutate(project.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Verwijderen
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <div style={{display: 'none'}}>{provided.placeholder}</div>
+                      </div>
+                    )}
+                  </Droppable>
                 ))}
               </div>
             </div>
           </CardContent>
         </Card>
+        </DragDropContext>
 
         {/* Edit Project Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -863,42 +856,6 @@ ${generatedPrompt}`,
           </TabsList>
 
           <TabsContent value="build" className="space-y-6">
-            <DragDropContext onDragEnd={handleThoughtsDragEnd}>
-            {/* Droppable project zones */}
-            <div className="flex gap-2 flex-wrap mb-4 p-3 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-              <span className="text-sm text-slate-500 mr-2 self-center">Sleep taken naar project:</span>
-              <Droppable droppableId="project-none" direction="horizontal">
-                {(provided, snapshot) => (
-                  <div ref={provided.innerRef} {...provided.droppableProps} className="inline-block">
-                    <div className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                      snapshot.isDraggingOver 
-                        ? "bg-indigo-100 ring-2 ring-indigo-400 text-indigo-700" 
-                        : "bg-slate-200 text-slate-600"
-                    }`}>
-                      Geen project
-                    </div>
-                    <div style={{display: 'none'}}>{provided.placeholder}</div>
-                  </div>
-                )}
-              </Droppable>
-              {projects.map(project => (
-                <Droppable key={project.id} droppableId={`project-${project.id}`} direction="horizontal">
-                  {(provided, snapshot) => (
-                    <div ref={provided.innerRef} {...provided.droppableProps} className="inline-block">
-                      <div className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
-                        snapshot.isDraggingOver 
-                          ? "ring-2 ring-indigo-400 bg-indigo-50" 
-                          : ""
-                      } ${projectColors[project.color]} text-white`}>
-                        {project.name}
-                      </div>
-                      <div style={{display: 'none'}}>{provided.placeholder}</div>
-                    </div>
-                  )}
-                </Droppable>
-              ))}
-            </div>
-
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Left: Thoughts */}
               <div className="space-y-4">
@@ -997,47 +954,38 @@ ${generatedPrompt}`,
                       <Plus className="w-4 h-4 mr-2" />
                       Taak Toevoegen {selectedProject && `aan ${selectedProject.name}`}
                     </Button>
-                    <Droppable droppableId="thoughts-list">
-                      {(provided) => (
-                        <div 
-                          {...provided.droppableProps}
-                          ref={provided.innerRef}
-                          className="space-y-2 max-h-[400px] overflow-auto"
-                        >
-                          {filteredThoughts.map((thought, index) => {
-                            const thoughtProject = projects.find(p => p.id === thought.project_id);
-                            return (
-                              <Draggable key={thought.id} draggableId={thought.id} index={index}>
-                                {(provided, snapshot) => (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    className={snapshot.isDragging ? 'opacity-90' : ''}
-                                  >
-                                    <ThoughtCard
-                                      thought={thought}
-                                      project={thoughtProject}
-                                      isSelected={selectedThoughts.includes(thought.id)}
-                                      onToggleSelect={() => toggleThoughtSelection(thought.id)}
-                                      onDelete={() => deleteThoughtMutation.mutate(thought.id)}
-                                      onUpdateImages={handleUpdateThoughtImages}
-                                      onUpdateContent={handleUpdateThoughtContent}
-                                      dragHandleProps={provided.dragHandleProps}
-                                    />
-                                  </div>
-                                )}
-                              </Draggable>
-                            );
-                          })}
-                          {provided.placeholder}
-                          {filteredThoughts.length === 0 && (
-                            <p className="text-center text-slate-400 py-8">
-                              Nog geen taken{selectedProject ? ` voor ${selectedProject.name}` : ''}. Begin met typen!
-                            </p>
-                          )}
-                        </div>
+                    <div className="space-y-2 max-h-[400px] overflow-auto">
+                      {filteredThoughts.map((thought, index) => {
+                        const thoughtProject = projects.find(p => p.id === thought.project_id);
+                        return (
+                          <Draggable key={thought.id} draggableId={thought.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={snapshot.isDragging ? 'opacity-90 z-50' : ''}
+                              >
+                                <ThoughtCard
+                                  thought={thought}
+                                  project={thoughtProject}
+                                  isSelected={selectedThoughts.includes(thought.id)}
+                                  onToggleSelect={() => toggleThoughtSelection(thought.id)}
+                                  onDelete={() => deleteThoughtMutation.mutate(thought.id)}
+                                  onUpdateImages={handleUpdateThoughtImages}
+                                  onUpdateContent={handleUpdateThoughtContent}
+                                  dragHandleProps={provided.dragHandleProps}
+                                />
+                              </div>
+                            )}
+                          </Draggable>
+                        );
+                      })}
+                      {filteredThoughts.length === 0 && (
+                        <p className="text-center text-slate-400 py-8">
+                          Nog geen taken{selectedProject ? ` voor ${selectedProject.name}` : ''}. Begin met typen!
+                        </p>
                       )}
-                    </Droppable>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -1184,7 +1132,6 @@ ${generatedPrompt}`,
                 </Card>
               </div>
             </div>
-            </DragDropContext>
 
             {/* Control Dialog after Copy */}
             <Dialog open={showControlDialog} onOpenChange={setShowControlDialog}>
