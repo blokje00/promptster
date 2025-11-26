@@ -307,11 +307,11 @@ export default function Multiprompt() {
   const handleAddThought = async () => {
     if (!newThought.trim()) return;
     
-    let imageUrl = null;
+    let imageUrls = [];
     if (newThoughtImage) {
       try {
         const { file_url } = await base44.integrations.Core.UploadFile({ file: newThoughtImage });
-        imageUrl = file_url;
+        imageUrls = [file_url];
       } catch (error) {
         toast.error("Kon afbeelding niet uploaden");
       }
@@ -320,8 +320,41 @@ export default function Multiprompt() {
     createThoughtMutation.mutate({ 
       content: newThought.trim(),
       project_id: selectedProjectId || null,
-      image_url: imageUrl
+      image_urls: imageUrls,
+      is_selected: true
     });
+  };
+
+  // Update images for a thought in local state
+  const handleUpdateThoughtImages = (thoughtId, newImages) => {
+    setLocalThoughts(prev => prev.map(t => 
+      t.id === thoughtId ? { ...t, image_urls: newImages } : t
+    ));
+  };
+
+  // Save all thoughts to database (for "Controle opslaan")
+  const [isSavingAll, setIsSavingAll] = useState(false);
+  
+  const handleSaveAllThoughts = async () => {
+    setIsSavingAll(true);
+    try {
+      for (const thought of localThoughts) {
+        // Update each thought with its current state including images
+        await base44.entities.Thought.update(thought.id, {
+          content: thought.content || "",
+          image_urls: thought.image_urls || [],
+          is_selected: selectedThoughts.includes(thought.id),
+          project_id: thought.project_id
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+      toast.success("Alle gedachten opgeslagen!");
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Kon niet alle gedachten opslaan");
+    } finally {
+      setIsSavingAll(false);
+    }
   };
 
   const handleAddTemplate = () => {
@@ -560,22 +593,42 @@ ${generatedPrompt}`,
     setShowControlDialog(false);
   };
 
-  const handleSaveAsCheck = () => {
+  const handleSaveAsCheck = async () => {
     if (!promptTitle.trim()) {
       toast.error("Geef de controle een titel");
       return;
     }
-    const finalPrompt = improvedPrompt || generatedPrompt;
-
-    createPromptCheckMutation.mutate({
-      title: promptTitle.trim(),
-      prompt_content: finalPrompt,
-      project_id: selectedProjectId || null,
-      thought_ids: selectedThoughts,
-      task_checks: taskChecks,
-      status: "pending",
-      notes: controlNotes
-    });
+    
+    // First save all thoughts to DB
+    setIsSavingAll(true);
+    try {
+      for (const thought of localThoughts) {
+        await base44.entities.Thought.update(thought.id, {
+          content: thought.content || "",
+          image_urls: thought.image_urls || [],
+          is_selected: selectedThoughts.includes(thought.id),
+          project_id: thought.project_id
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+      
+      // Then create the check
+      const finalPrompt = improvedPrompt || generatedPrompt;
+      createPromptCheckMutation.mutate({
+        title: promptTitle.trim(),
+        prompt_content: finalPrompt,
+        project_id: selectedProjectId || null,
+        thought_ids: selectedThoughts,
+        task_checks: taskChecks,
+        status: "pending",
+        notes: controlNotes
+      });
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Kon niet opslaan");
+    } finally {
+      setIsSavingAll(false);
+    }
   };
 
   const handleDeleteAndClear = () => {
@@ -809,6 +862,7 @@ ${generatedPrompt}`,
                                         isSelected={selectedThoughts.includes(thought.id)}
                                         onToggleSelect={() => toggleThoughtSelection(thought.id)}
                                         onDelete={() => deleteThoughtMutation.mutate(thought.id)}
+                                        onUpdateImages={handleUpdateThoughtImages}
                                         dragHandleProps={provided.dragHandleProps}
                                       />
                                     </div>
@@ -1063,12 +1117,16 @@ ${generatedPrompt}`,
                     </Button>
                     <Button
                       onClick={handleSaveAsCheck}
-                      disabled={!promptTitle.trim()}
+                      disabled={!promptTitle.trim() || isSavingAll}
                       variant="outline"
                       className="border-green-500 text-green-700 hover:bg-green-50"
                     >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Opslaan als Controle
+                      {isSavingAll ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                      )}
+                      {isSavingAll ? "Opslaan..." : "Opslaan als Controle"}
                     </Button>
                   </div>
 
