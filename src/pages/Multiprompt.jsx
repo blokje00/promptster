@@ -428,44 +428,20 @@ export default function Multiprompt() {
   const handleThoughtsDragEnd = (result) => {
     if (!result.destination) return;
     
-    const draggedId = result.draggableId;
-    const destinationDroppableId = result.destination.droppableId;
-    
-    // Check if dropped on a project
-    if (destinationDroppableId.startsWith('project-')) {
-      const targetProjectId = destinationDroppableId.replace('project-', '');
-      // Update the thought's project_id in local state
-      setLocalThoughts(prev => prev.map(t => 
-        t.id === draggedId ? { ...t, project_id: targetProjectId === 'none' ? null : targetProjectId } : t
-      ));
-      // Also save to DB
-      const targetProject = projects.find(p => p.id === targetProjectId);
-      base44.entities.Thought.update(draggedId, { 
-        project_id: targetProjectId === 'none' ? null : targetProjectId 
-      }).then(() => {
-        queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-        toast.success(`Taak verplaatst naar ${targetProject?.name || 'Algemeen'}`);
-      });
-      return;
-    }
-    
-    // Regular reorder in thoughts-list
-    if (destinationDroppableId === 'thoughts-list') {
-      const draggedThought = filteredThoughts[result.source.index];
-      if (selectedThoughts.includes(draggedThought?.id)) {
-        const fromIdx = selectedThoughts.indexOf(draggedThought.id);
-        if (fromIdx !== -1) {
-          const newSelected = [...selectedThoughts];
-          newSelected.splice(fromIdx, 1);
-          const targetThought = filteredThoughts[result.destination.index];
-          const targetIdx = selectedThoughts.indexOf(targetThought?.id);
-          if (targetIdx !== -1) {
-            newSelected.splice(targetIdx, 0, draggedThought.id);
-          } else {
-            newSelected.push(draggedThought.id);
-          }
-          setSelectedThoughts(newSelected);
+    const draggedThought = filteredThoughts[result.source.index];
+    if (selectedThoughts.includes(draggedThought?.id)) {
+      const fromIdx = selectedThoughts.indexOf(draggedThought.id);
+      if (fromIdx !== -1) {
+        const newSelected = [...selectedThoughts];
+        newSelected.splice(fromIdx, 1);
+        const targetThought = filteredThoughts[result.destination.index];
+        const targetIdx = selectedThoughts.indexOf(targetThought?.id);
+        if (targetIdx !== -1) {
+          newSelected.splice(targetIdx, 0, draggedThought.id);
+        } else {
+          newSelected.push(draggedThought.id);
         }
+        setSelectedThoughts(newSelected);
       }
     }
   };
@@ -685,71 +661,59 @@ ${generatedPrompt}`,
           <p className="text-slate-600 mt-2">Verzamel gedachten en bouw uitgebreide multi-task prompts</p>
         </div>
 
-        {/* Project Selector Bar - with drop zones */}
+        {/* Project Selector Bar */}
         <Card className={`mb-6 ${selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : ''}`}>
           <CardContent className="py-4">
             <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-2">
                 <FolderOpen className="w-5 h-5 text-slate-500" />
-                <span className="font-medium text-slate-700">Project (sleep taken hierheen):</span>
+                <span className="font-medium text-slate-700">Project:</span>
               </div>
               <div className="flex gap-2 flex-wrap">
-                <Droppable droppableId="project-none" direction="horizontal">
-                  {(provided, snapshot) => (
-                    <div ref={provided.innerRef} {...provided.droppableProps}>
-                      <Button
-                        variant={!selectedProjectId ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSelectedProjectId("")}
-                        className={`${!selectedProjectId ? "bg-slate-700" : ""} ${snapshot.isDraggingOver ? "ring-2 ring-indigo-400" : ""}`}
-                      >
-                        Alle
-                      </Button>
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
+                <Button
+                  variant={!selectedProjectId ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedProjectId("")}
+                  className={!selectedProjectId ? "bg-slate-700" : ""}
+                >
+                  Alle
+                </Button>
                 {projects.map(project => (
-                  <Droppable key={project.id} droppableId={`project-${project.id}`} direction="horizontal">
-                    {(provided, snapshot) => (
-                      <div ref={provided.innerRef} {...provided.droppableProps} className="flex items-center">
+                  <div key={project.id} className="flex items-center">
+                    <Button
+                      variant={selectedProjectId === project.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedProjectId(project.id)}
+                      className={`rounded-r-none ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
+                    >
+                      <div className={`w-3 h-3 rounded-full ${projectColors[project.color]} mr-2`} />
+                      {project.name}
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
                         <Button
                           variant={selectedProjectId === project.id ? "default" : "outline"}
                           size="sm"
-                          onClick={() => setSelectedProjectId(project.id)}
-                          className={`rounded-r-none ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""} ${snapshot.isDraggingOver ? "ring-2 ring-indigo-400 scale-105" : ""}`}
+                          className={`rounded-l-none border-l-0 px-1 ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
                         >
-                          <div className={`w-3 h-3 rounded-full ${projectColors[project.color]} mr-2`} />
-                          {project.name}
+                          <MoreHorizontal className="w-4 h-4" />
                         </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant={selectedProjectId === project.id ? "default" : "outline"}
-                              size="sm"
-                              className={`rounded-l-none border-l-0 px-1 ${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
-                            >
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => handleEditProject(project)}>
-                              <Edit className="w-4 h-4 mr-2" />
-                              Bewerken
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => deleteProjectMutation.mutate(project.id)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Verwijderen
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => handleEditProject(project)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Bewerken
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => deleteProjectMutation.mutate(project.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Verwijderen
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 ))}
               </div>
             </div>
