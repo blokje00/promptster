@@ -32,7 +32,8 @@ import {
   Image as ImageIcon,
   User,
   Cog,
-  Lightbulb
+  Lightbulb,
+  Layers
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
