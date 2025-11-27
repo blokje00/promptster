@@ -563,6 +563,7 @@ export default function Multiprompt() {
 
   const startText = customStartText || selectedStartTemplate?.content || "";
   const endText = customEndText || selectedEndTemplate?.content || "";
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   // Config inclusion toggles
   const [includePersonalPrefs, setIncludePersonalPrefs] = useState(true);
@@ -635,8 +636,6 @@ export default function Multiprompt() {
   const filteredThoughts = selectedProjectId 
     ? localThoughts.filter(t => t.project_id === selectedProjectId)
     : localThoughts;
-
-  const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   const handleImprovePrompt = async () => {
     if (!generatedPrompt.trim()) return;
