@@ -564,6 +564,10 @@ export default function Multiprompt() {
   const startText = customStartText || selectedStartTemplate?.content || "";
   const endText = customEndText || selectedEndTemplate?.content || "";
 
+  // Config inclusion toggles
+  const [includePersonalPrefs, setIncludePersonalPrefs] = useState(true);
+  const [includeProjectConfig, setIncludeProjectConfig] = useState(true);
+
   // Build multi-task prompt: voorkeuren + project config + starttekst + gedachten als deeltaken + eindtekst
   const buildStructuredPrompt = () => {
     if (selectedThoughtContents.length === 0 && !startText && !endText) {
@@ -633,10 +637,6 @@ export default function Multiprompt() {
     : localThoughts;
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
-
-  // Config inclusion toggles
-  const [includePersonalPrefs, setIncludePersonalPrefs] = useState(true);
-  const [includeProjectConfig, setIncludeProjectConfig] = useState(true);
 
   const handleImprovePrompt = async () => {
     if (!generatedPrompt.trim()) return;
