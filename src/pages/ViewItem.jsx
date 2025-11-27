@@ -49,6 +49,27 @@ export default function ViewItem() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handlePasteFeedbackDirect = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        setIsSavingFeedback(true);
+        // Append to existing feedback or set new
+        const newFeedback = item.file_changes_feedback 
+          ? `${item.file_changes_feedback}\n\n---\n\n${text}` 
+          : text;
+        await updateItemMutation.mutateAsync({
+          file_changes_feedback: newFeedback
+        });
+        toast.success('Feedback geplakt en opgeslagen!');
+        setIsSavingFeedback(false);
+      }
+    } catch (err) {
+      toast.error('Kon niet plakken uit klembord');
+      setIsSavingFeedback(false);
+    }
+  };
+
   const handlePasteFeedback = async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -121,12 +142,30 @@ export default function ViewItem() {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <Link to={createPageUrl(`EditItem?id=${itemId}`)}>
-            <Button className="bg-indigo-600 hover:bg-indigo-700">
-              <Edit className="w-4 h-4 mr-2" />
-              Bewerken
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            {item.type === 'multiprompt' && (
+              <Button
+                variant="outline"
+                onClick={handlePasteFeedbackDirect}
+                disabled={isSavingFeedback}
+                className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                title="Plak tekst uit klembord direct als Project Kennis Feedback"
+              >
+                {isSavingFeedback ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <ClipboardPaste className="w-4 h-4 mr-2" />
+                )}
+                Plak PKF
+              </Button>
+            )}
+            <Link to={createPageUrl(`EditItem?id=${itemId}`)}>
+              <Button className="bg-indigo-600 hover:bg-indigo-700">
+                <Edit className="w-4 h-4 mr-2" />
+                Bewerken
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <Card className="shadow-lg border-slate-200">
