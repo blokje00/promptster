@@ -999,7 +999,7 @@ ${generatedPrompt}`,
                     <Button 
                       onClick={handleAddThought} 
                       disabled={!newThought.trim() && newThoughtImages.length === 0}
-                      className="w-full bg-indigo-600 hover:bg-indigo-700"
+                      className={`w-full ${selectedProject ? projectColors[selectedProject.color] : 'bg-indigo-600'} hover:opacity-90 text-white`}
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Taak Toevoegen {selectedProject && `aan ${selectedProject.name}`}
