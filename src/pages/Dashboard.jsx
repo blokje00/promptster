@@ -17,12 +17,19 @@ export default function Dashboard() {
   const [showZipOnly, setShowZipOnly] = useState(false);
   const [showPublishedOnly, setShowPublishedOnly] = useState(false);
 
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+  });
+
   const { data: items, isLoading } = useQuery({
-    queryKey: ['items'],
+    queryKey: ['items', currentUser?.email],
     queryFn: async () => {
-      const result = await base44.entities.Item.list("-updated_date");
+      if (!currentUser?.email) return [];
+      const result = await base44.entities.Item.filter({ created_by: currentUser.email }, "-updated_date");
       return result || [];
     },
+    enabled: !!currentUser?.email,
     initialData: [],
   });
 

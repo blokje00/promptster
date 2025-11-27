@@ -123,11 +123,13 @@ export default function Multiprompt() {
   const [controlNotes, setControlNotes] = useState("");
 
   const { data: dbThoughts = [] } = useQuery({
-    queryKey: ['thoughts'],
+    queryKey: ['thoughts', currentUser?.email],
     queryFn: async () => {
-      const result = await base44.entities.Thought.list("-created_date");
+      if (!currentUser?.email) return [];
+      const result = await base44.entities.Thought.filter({ created_by: currentUser.email }, "-created_date");
       return result || [];
     },
+    enabled: !!currentUser?.email,
   });
   
   // Sync DB thoughts to local state when DB updates AND auto-select all
@@ -146,37 +148,43 @@ export default function Multiprompt() {
     });
   }, [dbThoughts]);
 
-  const { data: templates = [] } = useQuery({
-    queryKey: ['templates'],
-    queryFn: async () => {
-      const result = await base44.entities.PromptTemplate.list();
-      return result || [];
-    },
-  });
-
-  const { data: projects = [] } = useQuery({
-    queryKey: ['projects'],
-    queryFn: async () => {
-      const result = await base44.entities.Project.list();
-      return result || [];
-    },
-  });
-
-  const { data: aiSettings = [] } = useQuery({
-    queryKey: ['aiSettings'],
-    queryFn: async () => {
-      const result = await base44.entities.AISettings.list();
-      return result || [];
-    },
-  });
-
-  // Get current user for personal preferences
+  // Get current user for personal preferences - MUST be first
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: async () => {
       const user = await base44.auth.me();
       return user;
     },
+  });
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ['templates', currentUser?.email],
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+      const result = await base44.entities.PromptTemplate.filter({ created_by: currentUser.email });
+      return result || [];
+    },
+    enabled: !!currentUser?.email,
+  });
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects', currentUser?.email],
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+      const result = await base44.entities.Project.filter({ created_by: currentUser.email });
+      return result || [];
+    },
+    enabled: !!currentUser?.email,
+  });
+
+  const { data: aiSettings = [] } = useQuery({
+    queryKey: ['aiSettings', currentUser?.email],
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+      const result = await base44.entities.AISettings.filter({ created_by: currentUser.email });
+      return result || [];
+    },
+    enabled: !!currentUser?.email,
   });
 
   // Edit template state
