@@ -728,7 +728,7 @@ export const translations = {
     aiSettings: "AI设置",
     configureAI: "配置AI改进功能的工作方式",
     aiInstruction: "AI指令",
-    aiInstructionDesc: "点击"AI优化"时使用此指令。原始提示词将自动添加。",
+    aiInstructionDesc: "点击'AI优化'时使用此指令。原始提示词将自动添加。",
     modelPreference: "模型偏好",
     standard: "标准",
     creative: "创意（更多变化）",
