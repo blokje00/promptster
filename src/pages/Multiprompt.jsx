@@ -122,6 +122,15 @@ export default function Multiprompt() {
   const [taskChecks, setTaskChecks] = useState([]);
   const [controlNotes, setControlNotes] = useState("");
 
+  // Get current user for personal preferences - MUST be first
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return user;
+    },
+  });
+
   const { data: dbThoughts = [] } = useQuery({
     queryKey: ['thoughts', currentUser?.email],
     queryFn: async () => {
@@ -147,15 +156,6 @@ export default function Multiprompt() {
       return prev;
     });
   }, [dbThoughts]);
-
-  // Get current user for personal preferences - MUST be first
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return user;
-    },
-  });
 
   const { data: templates = [] } = useQuery({
     queryKey: ['templates', currentUser?.email],
@@ -699,7 +699,8 @@ ${generatedPrompt}`,
       used_thoughts: selectedThoughts,
       start_template_id: startTemplateId || null,
       end_template_id: endTemplateId || null,
-      task_checks: taskChecks
+      task_checks: taskChecks,
+      project_id: selectedProjectId || null
     });
     setShowControlDialog(false);
   };
