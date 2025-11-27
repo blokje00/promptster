@@ -410,11 +410,13 @@ export default function Multiprompt() {
     ));
   };
 
-  // Update focus type for a thought in local state
+  // Update focus type for a thought in local state AND persist to DB
   const handleUpdateThoughtFocus = (thoughtId, newFocus) => {
     setLocalThoughts(prev => prev.map(t => 
       t.id === thoughtId ? { ...t, focus_type: newFocus } : t
     ));
+    // Persist to DB
+    base44.entities.Thought.update(thoughtId, { focus_type: newFocus });
   };
 
   // Move thought to different project
