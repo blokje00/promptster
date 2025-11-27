@@ -899,7 +899,7 @@ ${generatedPrompt}`,
                     >
                       <Textarea
                         ref={newThoughtInputRef}
-                        placeholder="Typ een taak of idee... (plak of drop afbeeldingen)"
+                        placeholder="Type Taak en/of drop image"
                         value={newThought}
                         onChange={(e) => setNewThought(e.target.value)}
                         onPaste={handleNewThoughtPaste}
