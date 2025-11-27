@@ -32,7 +32,9 @@ import {
   CheckSquare,
   Square,
   GripVertical,
-  Image as ImageIcon
+  Image as ImageIcon,
+  User,
+  Cog
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -112,7 +114,12 @@ export default function Multiprompt() {
   const [editProjectName, setEditProjectName] = useState("");
   const [editProjectColor, setEditProjectColor] = useState("blue");
   const [editProjectDescription, setEditProjectDescription] = useState("");
+  const [editProjectConfig, setEditProjectConfig] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  // Config inclusion toggles
+  const [includePersonalPrefs, setIncludePersonalPrefs] = useState(true);
+  const [includeProjectConfig, setIncludeProjectConfig] = useState(true);
 
   // Post-copy control flow
   const [showControlDialog, setShowControlDialog] = useState(false);
@@ -164,6 +171,15 @@ export default function Multiprompt() {
     queryFn: async () => {
       const result = await base44.entities.AISettings.list();
       return result || [];
+    },
+  });
+
+  // Get current user for personal preferences
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return user;
     },
   });
 
@@ -458,6 +474,7 @@ export default function Multiprompt() {
     setEditProjectName(project.name);
     setEditProjectColor(project.color);
     setEditProjectDescription(project.description || "");
+    setEditProjectConfig(project.technical_config_markdown || "");
     setEditDialogOpen(true);
   };
 
@@ -468,7 +485,8 @@ export default function Multiprompt() {
       data: {
         name: editProjectName.trim(),
         color: editProjectColor,
-        description: editProjectDescription.trim()
+        description: editProjectDescription.trim(),
+        technical_config_markdown: editProjectConfig.trim()
       }
     });
   };
@@ -550,13 +568,25 @@ export default function Multiprompt() {
   const startText = customStartText || selectedStartTemplate?.content || "";
   const endText = customEndText || selectedEndTemplate?.content || "";
 
-  // Build multi-task prompt: starttekst + gedachten als deeltaken + eindtekst
+  // Build multi-task prompt: voorkeuren + project config + starttekst + gedachten als deeltaken + eindtekst
   const buildStructuredPrompt = () => {
     if (selectedThoughtContents.length === 0 && !startText && !endText) {
       return "";
     }
 
     const promptParts = [];
+
+    // Personal preferences (if enabled)
+    const personalPrefs = currentUser?.personal_preferences_markdown;
+    if (includePersonalPrefs && personalPrefs) {
+      promptParts.push(`# PERSOONLIJKE VOORKEUREN\n${personalPrefs}`);
+    }
+
+    // Project configuration (if enabled and project selected)
+    const projectConfig = selectedProject?.technical_config_markdown;
+    if (includeProjectConfig && projectConfig) {
+      promptParts.push(`# PROJECT CONFIGURATIE\n${projectConfig}`);
+    }
     
     // Start template
     if (startText) {
@@ -580,7 +610,7 @@ export default function Multiprompt() {
         })
         .join("\n\n");
       
-      promptParts.push(`DEELTAKEN (verwerk in volgorde):\n\n${tasksSection}`);
+      promptParts.push(`# DEELTAKEN (verwerk in volgorde)\n\n${tasksSection}`);
     }
 
     // Eind template
@@ -588,7 +618,7 @@ export default function Multiprompt() {
       promptParts.push(endText);
     }
 
-    return promptParts.join("\n\n");
+    return promptParts.join("\n\n---\n\n");
   };
 
   const generatedPrompt = buildStructuredPrompt();
@@ -795,7 +825,7 @@ ${generatedPrompt}`,
 
         {/* Edit Project Dialog */}
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
             <DialogHeader>
               <DialogTitle>Project Bewerken</DialogTitle>
             </DialogHeader>
@@ -825,6 +855,20 @@ ${generatedPrompt}`,
                 onChange={(e) => setEditProjectDescription(e.target.value)}
                 className="min-h-[80px]"
               />
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 block">
+                  Technische Configuratie (Markdown)
+                </label>
+                <Textarea
+                  placeholder="# Project Configuratie&#10;&#10;## Technische Context&#10;- Platform: ...&#10;- Framework: ..."
+                  value={editProjectConfig}
+                  onChange={(e) => setEditProjectConfig(e.target.value)}
+                  className="min-h-[200px] font-mono text-sm"
+                />
+                <p className="text-xs text-slate-500">
+                  Definieer hier project-specifieke configuratie zoals bestandsstructuur, kleuren, API endpoints, etc.
+                </p>
+              </div>
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
                   Annuleren
@@ -980,6 +1024,62 @@ ${generatedPrompt}`,
 
               {/* Right: Templates & Preview */}
               <div className="space-y-4">
+                {/* Config Inclusion Toggles */}
+                <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Cog className="w-4 h-4" />
+                      Prompt Configuratie
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm text-slate-700">Persoonlijke Voorkeuren</span>
+                        {!currentUser?.personal_preferences_markdown && (
+                          <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
+                            Niet ingesteld
+                          </Badge>
+                        )}
+                      </div>
+                      <Checkbox 
+                        checked={includePersonalPrefs && !!currentUser?.personal_preferences_markdown}
+                        onCheckedChange={setIncludePersonalPrefs}
+                        disabled={!currentUser?.personal_preferences_markdown}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FolderOpen className="w-4 h-4 text-purple-600" />
+                        <span className="text-sm text-slate-700">Project Configuratie</span>
+                        {selectedProject && !selectedProject.technical_config_markdown && (
+                          <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
+                            Niet ingesteld
+                          </Badge>
+                        )}
+                        {!selectedProject && (
+                          <Badge variant="outline" className="text-xs text-slate-400">
+                            Geen project
+                          </Badge>
+                        )}
+                      </div>
+                      <Checkbox 
+                        checked={includeProjectConfig && !!selectedProject?.technical_config_markdown}
+                        onCheckedChange={setIncludeProjectConfig}
+                        disabled={!selectedProject?.technical_config_markdown}
+                      />
+                    </div>
+                    {(!currentUser?.personal_preferences_markdown || (selectedProject && !selectedProject.technical_config_markdown)) && (
+                      <Link to={createPageUrl("AIBackoffice")}>
+                        <Button variant="link" size="sm" className="text-xs p-0 h-auto text-blue-600">
+                          → Configureer in Instellingen
+                        </Button>
+                      </Link>
+                    )}
+                  </CardContent>
+                </Card>
+
                 {/* Template Selection */}
                 <Card>
                   <CardHeader className="pb-3">
