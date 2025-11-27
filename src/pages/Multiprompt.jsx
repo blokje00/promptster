@@ -1273,6 +1273,17 @@ ${generatedPrompt}`,
                           )}
                           {isImproving ? "Bezig..." : "Verbeter met AI"}
                         </Button>
+                        {improvedPrompt && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setImprovedPrompt("")}
+                            className="text-slate-500"
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            Reset
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           onClick={handleCopyPrompt}
