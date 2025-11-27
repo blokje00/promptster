@@ -29,6 +29,13 @@ const projectBorderColors = {
   pink: "border-pink-500"
 };
 
+const focusLabels = {
+  both: { label: "Design + Logica", icon: null, color: "text-slate-500" },
+  design: { label: "Alleen Design", icon: Palette, color: "text-pink-600" },
+  logic: { label: "Alleen Logica", icon: Code, color: "text-blue-600" },
+  no_design: { label: "Geen Design", icon: Ban, color: "text-orange-600" }
+};
+
 export default function ThoughtCard({ 
   thought, 
   project, 
@@ -37,6 +44,7 @@ export default function ThoughtCard({
   onDelete,
   onUpdateImages,
   onUpdateContent,
+  onUpdateFocus,
   dragHandleProps 
 }) {
   const [isUploading, setIsUploading] = useState(false);
@@ -228,8 +236,8 @@ export default function ThoughtCard({
             </div>
           )}
           
-          {/* Upload zone - always visible */}
-          <div className="mt-2">
+          {/* Upload zone and Focus selector */}
+          <div className="mt-2 flex items-center gap-3 flex-wrap">
             <input
               type="file"
               ref={fileInputRef}
@@ -250,10 +258,40 @@ export default function ThoughtCard({
               ) : (
                 <Plus className="w-3 h-3" />
               )}
-              {isUploading ? "Uploaden..." : "Afbeelding toevoegen"}
+              {isUploading ? "Uploaden..." : "Afbeelding"}
             </button>
+
+            {/* Focus Type Selector */}
+            <Select 
+              value={thought.focus_type || "both"} 
+              onValueChange={(value) => onUpdateFocus && onUpdateFocus(thought.id, value)}
+            >
+              <SelectTrigger className="h-6 text-xs w-auto min-w-[100px] border-dashed" onClick={(e) => e.stopPropagation()}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="both">
+                  <span className="text-slate-600">Design + Logica</span>
+                </SelectItem>
+                <SelectItem value="design">
+                  <span className="flex items-center gap-1 text-pink-600">
+                    <Palette className="w-3 h-3" /> Alleen Design
+                  </span>
+                </SelectItem>
+                <SelectItem value="logic">
+                  <span className="flex items-center gap-1 text-blue-600">
+                    <Code className="w-3 h-3" /> Alleen Logica
+                  </span>
+                </SelectItem>
+                <SelectItem value="no_design">
+                  <span className="flex items-center gap-1 text-orange-600">
+                    <Ban className="w-3 h-3" /> Geen Design
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
+          </div>
         <Button
           variant="ghost"
           size="icon"
