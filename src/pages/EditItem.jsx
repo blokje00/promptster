@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, X, Star, GitBranch } from "lucide-react";
+import { ArrowLeft, Save, X, Star, GitBranch, Brain } from "lucide-react";
+import FileChangesFeedback from "../components/items/FileChangesFeedback";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImageUploadZone from "../components/dashboard/ImageUploadZone";
@@ -42,7 +43,8 @@ export default function EditItem() {
         is_publish_version: item.is_publish_version || false,
         publish_timestamp: item.publish_timestamp || "",
         publish_working_notes: item.publish_working_notes || "",
-        publish_reason: item.publish_reason || ""
+        publish_reason: item.publish_reason || "",
+        file_changes_feedback: item.file_changes_feedback || ""
       });
     }
   }, [item]);
@@ -271,6 +273,18 @@ export default function EditItem() {
               )}
             </CardContent>
           </Card>
+
+          {/* Project Knowledge Feedback - Only for multiprompts */}
+          {formData.type === 'multiprompt' && (
+            <Card className="shadow-lg border-purple-200 mt-6">
+              <CardContent className="p-6">
+                <FileChangesFeedback
+                  value={formData.file_changes_feedback}
+                  onChange={(value) => handleInputChange('file_changes_feedback', value)}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           <div className="flex justify-end gap-3 mt-6">
             <Button type="button" variant="outline" onClick={() => navigate(createPageUrl(`ViewItem?id=${itemId}`))}>Annuleren</Button>
