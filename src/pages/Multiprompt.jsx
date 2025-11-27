@@ -774,7 +774,7 @@ ${generatedPrompt}`,
                 <FolderOpen className="w-5 h-5 text-slate-500" />
                 <span className="font-medium text-slate-700">Project:</span>
               </div>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 flex-wrap items-center">
                 <Button
                   variant={!selectedProjectId ? "default" : "outline"}
                   size="sm"

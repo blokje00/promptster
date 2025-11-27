@@ -1,20 +1,39 @@
-import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Code2, Settings, ArrowLeft, Sparkles, Plus } from "lucide-react";
+import { Code2, Settings, ArrowLeft, Sparkles, Plus, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../i18n/LanguageContext";
 
 export default function Header() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useLanguage();
   
-  const isHomePage = location.pathname === "/" || 
-                     location.pathname === createPageUrl("Dashboard") ||
-                     location.pathname.includes("Dashboard");
+  const currentPath = location.pathname;
+  const isVault = currentPath.includes("Dashboard");
+  const isAddItem = currentPath.includes("AddItem");
+  const isMultiprompt = currentPath.includes("Multiprompt");
+  const isMainNav = isVault || isAddItem || isMultiprompt;
+  
+  // Save last visited main page
+  useEffect(() => {
+    if (isVault) localStorage.setItem('lastMainPage', 'Dashboard');
+    else if (isAddItem) localStorage.setItem('lastMainPage', 'AddItem');
+    else if (isMultiprompt) localStorage.setItem('lastMainPage', 'Multiprompt');
+  }, [isVault, isAddItem, isMultiprompt]);
+
+  // Redirect to last page on initial load
+  useEffect(() => {
+    if (currentPath === "/" || currentPath === "") {
+      const lastPage = localStorage.getItem('lastMainPage') || 'Dashboard';
+      navigate(createPageUrl(lastPage), { replace: true });
+    }
+  }, [currentPath, navigate]);
   
   const handleLogoClick = () => {
-    window.location.href = createPageUrl("Dashboard");
+    const lastPage = localStorage.getItem('lastMainPage') || 'Dashboard';
+    window.location.href = createPageUrl(lastPage);
   };
 
   return (
@@ -22,7 +41,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Left side: Back button (on sub-pages) or Logo */}
         <div className="flex items-center gap-3">
-          {!isHomePage && (
+          {!isMainNav && (
             <Link to={createPageUrl("Dashboard")}>
               <Button variant="ghost" size="sm" className="gap-2 text-slate-600 hover:text-slate-900">
                 <ArrowLeft className="w-4 h-4" />
@@ -46,12 +65,24 @@ export default function Header() {
           </button>
         </div>
 
-        {/* Right side: Action buttons */}
-        <div className="flex items-center gap-2">
+        {/* Center: Main Navigation */}
+        <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+          <Link to={createPageUrl("Dashboard")}>
+            <Button 
+              variant={isVault ? "default" : "ghost"}
+              size="sm" 
+              className={`gap-1.5 ${isVault ? 'bg-slate-800 text-white' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              <Archive className="w-4 h-4" />
+              <span className="hidden sm:inline">Vault</span>
+            </Button>
+          </Link>
+          
           <Link to={createPageUrl("AddItem")}>
             <Button 
+              variant={isAddItem ? "default" : "ghost"}
               size="sm" 
-              className="bg-indigo-600 hover:bg-indigo-700 shadow-sm gap-1.5"
+              className={`gap-1.5 ${isAddItem ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Prompt</span>
@@ -60,15 +91,18 @@ export default function Header() {
           
           <Link to={createPageUrl("Multiprompt")}>
             <Button 
-              variant="outline" 
+              variant={isMultiprompt ? "default" : "ghost"}
               size="sm"
-              className="border-indigo-300 text-indigo-700 hover:bg-indigo-50 gap-1.5"
+              className={`gap-1.5 ${isMultiprompt ? 'bg-purple-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
             >
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">Multi-task</span>
             </Button>
           </Link>
-          
+        </div>
+
+        {/* Right side: Settings */}
+        <div className="flex items-center">
           <Link to={createPageUrl("AIBackoffice")}>
             <Button 
               variant="ghost" 
