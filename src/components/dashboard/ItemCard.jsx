@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Copy, Star, Trash2, Edit, Code2, Sparkles, FileText, CheckCircle, MessageSquare, Image as ImageIcon, FileArchive, GitBranch, ClipboardCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -26,6 +27,7 @@ const typeColors = {
 
 export default function ItemCard({ item }) {
   const [copied, setCopied] = useState(false);
+  const [localTaskChecks, setLocalTaskChecks] = useState(item.task_checks || []);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   
@@ -45,6 +47,21 @@ export default function ItemCard({ item }) {
       queryClient.invalidateQueries({ queryKey: ['items'] });
     },
   });
+
+  const updateTaskChecksMutation = useMutation({
+    mutationFn: ({ id, task_checks }) => base44.entities.Item.update(id, { task_checks }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+    },
+  });
+
+  const handleToggleTaskCheck = (e, index) => {
+    e.stopPropagation();
+    const newChecks = [...localTaskChecks];
+    newChecks[index] = { ...newChecks[index], is_checked: !newChecks[index].is_checked };
+    setLocalTaskChecks(newChecks);
+    updateTaskChecksMutation.mutate({ id: item.id, task_checks: newChecks });
+  };
 
   const handleCopy = (e) => {
     e.stopPropagation();
@@ -140,6 +157,29 @@ export default function ItemCard({ item }) {
                   +{item.images.length - 3}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Task checks for pending multiprompts */}
+          {item.is_pending_check && localTaskChecks.length > 0 && (
+            <div className="space-y-1 p-2 bg-orange-50 rounded-lg border border-orange-200" onClick={handleActionClick}>
+              <p className="text-xs font-medium text-orange-700 mb-1">Taken checklist:</p>
+              {localTaskChecks.map((check, index) => (
+                <div 
+                  key={index}
+                  className={`flex items-center gap-2 p-1.5 rounded text-xs cursor-pointer hover:bg-orange-100 ${check.is_checked ? 'bg-green-50' : ''}`}
+                  onClick={(e) => handleToggleTaskCheck(e, index)}
+                >
+                  <Checkbox 
+                    checked={check.is_checked}
+                    onCheckedChange={() => {}}
+                    className="h-3.5 w-3.5"
+                  />
+                  <span className={`${check.is_checked ? 'line-through text-green-600' : 'text-slate-700'}`}>
+                    {check.task_name}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
 

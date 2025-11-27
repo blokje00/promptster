@@ -557,13 +557,27 @@ export default function Multiprompt() {
     }
   }, [endTemplateId, selectedProjectId]);
   
-  // Load templates when project changes
+  // Load templates when project changes - use project's saved templates first
   useEffect(() => {
+    if (selectedProjectId) {
+      const project = projects.find(p => p.id === selectedProjectId);
+      if (project) {
+        // Use project's saved templates if available
+        const projectStart = project.last_start_template_id || "";
+        const projectEnd = project.last_end_template_id || "";
+        if (projectStart || projectEnd) {
+          setStartTemplateId(projectStart);
+          setEndTemplateId(projectEnd);
+          return;
+        }
+      }
+    }
+    // Fallback to localStorage
     const storedStart = localStorage.getItem(`template_start_${selectedProjectId || 'all'}`) || "";
     const storedEnd = localStorage.getItem(`template_end_${selectedProjectId || 'all'}`) || "";
     setStartTemplateId(storedStart);
     setEndTemplateId(storedEnd);
-  }, [selectedProjectId]);
+  }, [selectedProjectId, projects]);
 
   const selectedStartTemplate = templates.find(t => t.id === startTemplateId);
   const selectedEndTemplate = templates.find(t => t.id === endTemplateId);
@@ -708,9 +722,22 @@ ${generatedPrompt}`,
     }, 500);
   };
 
-  const handleSaveAsPrompt = () => {
+  const handleSaveAsPrompt = async () => {
     const finalPrompt = improvedPrompt || generatedPrompt;
     const title = promptTitle.trim() || `Multi-task ${new Date().toLocaleString('nl-NL')}`;
+
+    // Save template selection to project
+    if (selectedProjectId && (startTemplateId || endTemplateId)) {
+      try {
+        await base44.entities.Project.update(selectedProjectId, {
+          last_start_template_id: startTemplateId || null,
+          last_end_template_id: endTemplateId || null
+        });
+        queryClient.invalidateQueries({ queryKey: ['projects'] });
+      } catch (e) {
+        console.error("Could not save template preferences to project", e);
+      }
+    }
 
     createMultipromptMutation.mutate({
       title: title,
@@ -722,6 +749,9 @@ ${generatedPrompt}`,
       task_checks: taskChecks,
       project_id: selectedProjectId || null
     });
+    
+    // Delete used thoughts after saving
+    deleteUsedThoughtsMutation.mutate(selectedThoughts);
     setShowControlDialog(false);
   };
 
@@ -951,9 +981,42 @@ ${generatedPrompt}`,
                 className="min-h-[80px]"
               />
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700 block">
-                  Technische Configuratie (Markdown)
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-slate-700 block">
+                    Technische Configuratie (Markdown)
+                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditProjectConfig(`# Project Configuratie
+
+## Technische Context
+- Platform: Base44
+- Framework: React + Tailwind CSS
+- Componenten: shadcn/ui
+- Icons: Lucide React
+
+## Bestandsstructuur
+- pages/ - Pagina componenten
+- components/ - Herbruikbare componenten
+- entities/ - Data modellen (JSON schema)
+
+## Stijlrichtlijnen
+- Kleuren: Gebruik Tailwind klassen (indigo-600, slate-700, etc.)
+- Spacing: p-4 voor padding, gap-4 voor flex/grid gaps
+- Responsive: mobile-first (sm:, md:, lg: breakpoints)
+
+## Code Conventies
+- camelCase voor variabelen
+- PascalCase voor componenten
+- async/await voor async operaties`)}
+                    className="text-xs"
+                  >
+                    <FileText className="w-3 h-3 mr-1" />
+                    Voorbeeld
+                  </Button>
+                </div>
                 <Textarea
                   placeholder="# Project Configuratie&#10;&#10;## Technische Context&#10;- Platform: ...&#10;- Framework: ..."
                   value={editProjectConfig}
@@ -1233,31 +1296,6 @@ ${generatedPrompt}`,
                       )}
                     </div>
 
-                    <div className="pt-2 border-t">
-                      <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        Geselecteerde taken: {selectedThoughts.length}
-                      </label>
-                      <div className="space-y-1 max-h-32 overflow-auto">
-                        {selectedThoughts.map((id, idx) => {
-                          const thought = localThoughts.find(t => t.id === id);
-                          return (
-                            <div
-                              key={id}
-                              className="flex items-center gap-2 p-2 bg-slate-100 rounded text-xs"
-                            >
-                              <Badge variant="secondary" className="text-xs shrink-0">
-                                {idx + 1}
-                              </Badge>
-                              <span className="truncate text-slate-600 flex-1">{thought?.content?.substring(0, 40)}...</span>
-                              <button 
-                                onClick={() => toggleThoughtSelection(id)}
-                                className="text-red-400 hover:text-red-600"
-                              >×</button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
                   </CardContent>
                 </Card>
 
@@ -1314,10 +1352,22 @@ ${generatedPrompt}`,
                         <Badge className="bg-green-100 text-green-700 mb-2">AI Verbeterd</Badge>
                       </div>
                     )}
-                    <div className="bg-slate-900 rounded-xl p-4 max-h-[400px] overflow-auto">
+                    <div className="bg-slate-900 rounded-xl p-4 max-h-[400px] overflow-auto relative group">
                       <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap">
                         {improvedPrompt || generatedPrompt || "Selecteer taken en templates om een preview te zien..."}
                       </pre>
+                      {(generatedPrompt || improvedPrompt) && (
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(improvedPrompt || generatedPrompt);
+                            toast.success("Prompt gekopieerd!");
+                          }}
+                          className="absolute top-2 right-2 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Kopieer naar klembord"
+                        >
+                          <Copy className="w-4 h-4 text-white" />
+                        </button>
+                      )}
                     </div>
                     {!generatedPrompt && (
                       <p className="text-sm text-slate-500 mt-3 text-center">
@@ -1432,43 +1482,6 @@ ${generatedPrompt}`,
 
           <TabsContent value="templates" className="space-y-6">
             <div className="grid lg:grid-cols-2 gap-6">
-              {/* Add Template Form */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Nieuwe Template</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Input
-                    placeholder="Template naam..."
-                    value={newTemplateName}
-                    onChange={(e) => setNewTemplateName(e.target.value)}
-                  />
-                  <Select value={newTemplateType} onValueChange={setNewTemplateType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="start">Starttekst</SelectItem>
-                      <SelectItem value="eind">Eindtekst</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Textarea
-                    placeholder="Template inhoud..."
-                    value={newTemplateContent}
-                    onChange={(e) => setNewTemplateContent(e.target.value)}
-                    className="min-h-[150px]"
-                  />
-                  <Button
-                    onClick={handleAddTemplate}
-                    disabled={!newTemplateName.trim() || !newTemplateContent.trim()}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Template Opslaan
-                  </Button>
-                </CardContent>
-              </Card>
-
               {/* Templates List */}
               <div className="space-y-4">
                 <Card>
@@ -1569,6 +1582,43 @@ ${generatedPrompt}`,
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Add Template Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Nieuwe Template</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input
+                    placeholder="Template naam..."
+                    value={newTemplateName}
+                    onChange={(e) => setNewTemplateName(e.target.value)}
+                  />
+                  <Select value={newTemplateType} onValueChange={setNewTemplateType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="start">Starttekst</SelectItem>
+                      <SelectItem value="eind">Eindtekst</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Textarea
+                    placeholder="Template inhoud..."
+                    value={newTemplateContent}
+                    onChange={(e) => setNewTemplateContent(e.target.value)}
+                    className="min-h-[150px]"
+                  />
+                  <Button
+                    onClick={handleAddTemplate}
+                    disabled={!newTemplateName.trim() || !newTemplateContent.trim()}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Template Opslaan
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Edit Template Dialog */}
