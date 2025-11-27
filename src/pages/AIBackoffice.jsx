@@ -3,16 +3,39 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Save, Sparkles } from "lucide-react";
+import { Save, Sparkles, User, FileText } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import { useLanguage } from "../components/i18n/LanguageContext";
 import LanguageSelector from "../components/settings/LanguageSelector";
 
 const DEFAULT_INSTRUCTION = `Verbeter de volgende prompt technisch en taalkundig. Maak de tekst professioneler, duidelijker en beter gestructureerd. Behoud de originele intentie en inhoud, maar verbeter grammatica, spelling, en technische precisie. Geef alleen de verbeterde tekst terug, geen uitleg.`;
+
+const DEFAULT_PERSONAL_PREFERENCES = `# Mijn Persoonlijke Development Voorkeuren
+
+## Code Stijl
+- Naming: camelCase voor variabelen, PascalCase voor componenten
+- Async: Altijd async/await, nooit promise chains
+- Error handling: Try-catch rond alle async operations
+- Comments: JSDoc voor functies, inline voor complexe logica
+
+## UI/UX Filosofie
+- Design: Minimalistisch, focus op usability
+- Icons: Lucide React (eerste keuze)
+- Responsiveness: Mobile-first aanpak
+- Accessibility: WCAG 2.1 AA minimum
+
+## Testing & Validatie
+- Coverage target: 80% voor kritische paden
+- Edge cases: Altijd minimaal 3 edge cases per feature
+
+## Taak Structuur
+- Prioriteit labels: Kritisch/Hoog/Medium/Laag
+- Taak format: Wat/Waar/Waarom structuur
+`;
 
 export default function AIBackoffice() {
   const queryClient = useQueryClient();
@@ -20,12 +43,22 @@ export default function AIBackoffice() {
   const [instruction, setInstruction] = useState(DEFAULT_INSTRUCTION);
   const [modelPreference, setModelPreference] = useState("default");
   const [settingsId, setSettingsId] = useState(null);
+  const [personalPreferences, setPersonalPreferences] = useState("");
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
   const { data: settings = [] } = useQuery({
     queryKey: ['aiSettings'],
     queryFn: async () => {
       const result = await base44.entities.AISettings.list();
       return result || [];
+    },
+  });
+
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return user;
     },
   });
 
@@ -36,6 +69,12 @@ export default function AIBackoffice() {
       setSettingsId(settings[0].id);
     }
   }, [settings]);
+
+  useEffect(() => {
+    if (currentUser?.personal_preferences_markdown) {
+      setPersonalPreferences(currentUser.personal_preferences_markdown);
+    }
+  }, [currentUser]);
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
@@ -58,6 +97,19 @@ export default function AIBackoffice() {
     });
   };
 
+  const handleSavePersonalPreferences = async () => {
+    setIsSavingPreferences(true);
+    try {
+      await base44.auth.updateMe({ personal_preferences_markdown: personalPreferences });
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      toast.success("Persoonlijke voorkeuren opgeslagen");
+    } catch (error) {
+      toast.error("Kon voorkeuren niet opslaan");
+    } finally {
+      setIsSavingPreferences(false);
+    }
+  };
+
   return (
     <div className="p-4 md:p-8">
       <div className="max-w-3xl mx-auto">
@@ -75,6 +127,51 @@ export default function AIBackoffice() {
           </CardHeader>
           <CardContent>
             <LanguageSelector />
+          </CardContent>
+        </Card>
+
+        {/* Personal Preferences Card */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-5 h-5 text-blue-500" />
+              Persoonlijke Voorkeuren
+            </CardTitle>
+            <CardDescription>
+              Je herbruikbare development voorkeuren die automatisch aan multi-task prompts kunnen worden toegevoegd.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Voorkeuren (Markdown)</Label>
+              <Textarea
+                value={personalPreferences}
+                onChange={(e) => setPersonalPreferences(e.target.value)}
+                placeholder="# Mijn Persoonlijke Voorkeuren&#10;&#10;## Code Stijl&#10;- Naming: camelCase..."
+                className="min-h-[300px] font-mono text-sm"
+              />
+              <p className="text-xs text-slate-500">
+                Definieer hier je persoonlijke code stijl, UI/UX filosofie, testing voorkeuren, etc. 
+                Deze worden eenmalig opgeslagen en hergebruikt in al je prompts.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleSavePersonalPreferences} 
+                disabled={isSavingPreferences}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {isSavingPreferences ? "Opslaan..." : "Voorkeuren Opslaan"}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setPersonalPreferences(DEFAULT_PERSONAL_PREFERENCES)}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Laad Voorbeeld
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
