@@ -219,7 +219,7 @@ export default function AddItem() {
                     placeholder="Voeg een tag toe..."
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                     className="border-slate-200"
                   />
                   <Button type="button" onClick={addTag} variant="outline">

@@ -183,7 +183,7 @@ export default function ItemCard({ item }) {
             
             <div className="flex flex-wrap gap-2">
               {item.tags?.slice(0, 2).map((tag, index) => (
-                <Badge key={index} variant="secondary" className="text-xs">
+                <Badge key={`${tag}-${index}`} variant="secondary" className="text-xs">
                   {tag}
                 </Badge>
               ))}

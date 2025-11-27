@@ -14,8 +14,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { 
   Plus, 
-  Lightbulb, 
-  Layers, 
   Save, 
   Trash2, 
   Copy, 
@@ -31,10 +29,10 @@ import {
   Pencil,
   CheckSquare,
   Square,
-  GripVertical,
   Image as ImageIcon,
   User,
-  Cog
+  Cog,
+  Lightbulb
 } from "lucide-react";
 import { Link } from "react-router-dom";
 

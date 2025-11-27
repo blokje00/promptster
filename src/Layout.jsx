@@ -2,7 +2,7 @@ import React from "react";
 import Header from "./components/layout/Header";
 import { LanguageProvider } from "./components/i18n/LanguageContext";
 
-export default function Layout({ children, currentPageName }) {
+export default function Layout({ children }) {
   return (
     <LanguageProvider>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">

@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, X, Star, GitBranch, Brain } from "lucide-react";
+import { ArrowLeft, Save, X, Star, GitBranch } from "lucide-react";
 import FileChangesFeedback from "../components/items/FileChangesFeedback";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -187,7 +187,7 @@ export default function EditItem() {
               <div className="space-y-2">
                 <Label htmlFor="tags">Tags</Label>
                 <div className="flex gap-2">
-                  <Input id="tags" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())} />
+                  <Input id="tags" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())} />
                   <Button type="button" onClick={addTag} variant="outline">Toevoegen</Button>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-3">

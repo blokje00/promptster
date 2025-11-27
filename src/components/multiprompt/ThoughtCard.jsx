@@ -58,7 +58,7 @@ export default function ThoughtCard({
   // Get images from thought - always ensure array
   const imageUrls = thought.image_urls || [];
 
-  const handleImageUpload = async (file) => {
+  const handleImageUpload = React.useCallback(async (file) => {
     if (!file || !file.type.startsWith('image/')) {
       toast.error("Alleen afbeeldingen zijn toegestaan");
       return;
@@ -68,7 +68,6 @@ export default function ThoughtCard({
     
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      // Add to existing images array
       const newImages = [...imageUrls, file_url];
       onUpdateImages(thought.id, newImages);
       toast.success("Screenshot toegevoegd");
@@ -78,7 +77,7 @@ export default function ThoughtCard({
     } finally {
       setIsUploading(false);
     }
-  };
+  }, [imageUrls, onUpdateImages, thought.id]);
 
   // Handle paste from clipboard
   useEffect(() => {

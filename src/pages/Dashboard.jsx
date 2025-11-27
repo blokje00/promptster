@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Search, Plus, Star, Code2, Sparkles, Filter, FileArchive, GitBranch } from "lucide-react";
+import { Search, Plus, Star, Code2, Sparkles, FileArchive, GitBranch } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import ItemCard from "../components/dashboard/ItemCard";
@@ -32,6 +32,14 @@ export default function Dashboard() {
     enabled: !!currentUser?.email,
     initialData: [],
   });
+
+  const itemCounts = useMemo(() => ({
+    all: items.length,
+    prompt: items.filter(i => i.type === 'prompt').length,
+    multiprompt: items.filter(i => i.type === 'multiprompt').length,
+    code: items.filter(i => i.type === 'code').length,
+    snippet: items.filter(i => i.type === 'snippet').length,
+  }), [items]);
 
   const filteredItems = items.filter(item => {
     const matchesSearch = !searchQuery || 
@@ -118,21 +126,21 @@ export default function Dashboard() {
           <Tabs value={filterType} onValueChange={setFilterType}>
             <TabsList className="bg-slate-100 flex-wrap h-auto gap-1 p-1">
               <TabsTrigger value="all" className="data-[state=active]:bg-white text-xs sm:text-sm">
-                Alles <span className="ml-1 text-xs text-slate-500">({items.length})</span>
+                Alles <span className="ml-1 text-xs text-slate-500">({itemCounts.all})</span>
               </TabsTrigger>
               <TabsTrigger value="prompt" className="data-[state=active]:bg-white text-xs sm:text-sm">
                 <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                Prompts <span className="ml-1 text-xs text-slate-500">({items.filter(i => i.type === 'prompt').length})</span>
+                Prompts <span className="ml-1 text-xs text-slate-500">({itemCounts.prompt})</span>
               </TabsTrigger>
               <TabsTrigger value="multiprompt" className="data-[state=active]:bg-white text-xs sm:text-sm">
-                Multi-tasks <span className="ml-1 text-xs text-slate-500">({items.filter(i => i.type === 'multiprompt').length})</span>
+                Multi-tasks <span className="ml-1 text-xs text-slate-500">({itemCounts.multiprompt})</span>
               </TabsTrigger>
               <TabsTrigger value="code" className="data-[state=active]:bg-white text-xs sm:text-sm">
                 <Code2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                Code <span className="ml-1 text-xs text-slate-500">({items.filter(i => i.type === 'code').length})</span>
+                Code <span className="ml-1 text-xs text-slate-500">({itemCounts.code})</span>
               </TabsTrigger>
               <TabsTrigger value="snippet" className="data-[state=active]:bg-white text-xs sm:text-sm">
-                Snippets <span className="ml-1 text-xs text-slate-500">({items.filter(i => i.type === 'snippet').length})</span>
+                Snippets <span className="ml-1 text-xs text-slate-500">({itemCounts.snippet})</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
