@@ -117,10 +117,6 @@ export default function Multiprompt() {
   const [editProjectConfig, setEditProjectConfig] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
-  // Config inclusion toggles
-  const [includePersonalPrefs, setIncludePersonalPrefs] = useState(true);
-  const [includeProjectConfig, setIncludeProjectConfig] = useState(true);
-
   // Post-copy control flow
   const [showControlDialog, setShowControlDialog] = useState(false);
   const [taskChecks, setTaskChecks] = useState([]);
@@ -637,6 +633,10 @@ export default function Multiprompt() {
     : localThoughts;
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
+
+  // Config inclusion toggles
+  const [includePersonalPrefs, setIncludePersonalPrefs] = useState(true);
+  const [includeProjectConfig, setIncludeProjectConfig] = useState(true);
 
   const handleImprovePrompt = async () => {
     if (!generatedPrompt.trim()) return;
