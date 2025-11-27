@@ -411,6 +411,13 @@ export default function Multiprompt() {
     ));
   };
 
+  // Update focus type for a thought in local state
+  const handleUpdateThoughtFocus = (thoughtId, newFocus) => {
+    setLocalThoughts(prev => prev.map(t => 
+      t.id === thoughtId ? { ...t, focus_type: newFocus } : t
+    ));
+  };
+
   // Move thought to different project
   const updateThoughtProjectMutation = useMutation({
     mutationFn: ({ id, project_id }) => base44.entities.Thought.update(id, { project_id }),
@@ -602,11 +609,25 @@ export default function Multiprompt() {
       promptParts.push(startText);
     }
 
-    // Taken als genummerde deeltaken (inclusief afbeeldingen)
+    // Taken als genummerde deeltaken (inclusief afbeeldingen en focus)
     if (selectedThoughtData.length > 0) {
+      const focusInstructions = {
+        both: "",
+        design: "\n[FOCUS: Alleen DESIGN aanpassen - geen logica wijzigen]",
+        logic: "\n[FOCUS: Alleen LOGICA aanpassen - geen design wijzigen]",
+        no_design: "\n[FOCUS: BLIJF AF VAN HET DESIGN - alleen functionaliteit/logica]"
+      };
+      
       const tasksSection = selectedThoughtData
         .map((thought, i) => {
           let taskText = `--- DEELTAAK ${i + 1} ---\n${thought.content || ''}`;
+          
+          // Voeg focus instructie toe indien niet "both"
+          const focus = thought.focus_type || "both";
+          if (focus !== "both") {
+            taskText += focusInstructions[focus];
+          }
+          
           // Voeg afbeelding URLs toe als er afbeeldingen zijn
           const images = thought.image_urls || [];
           if (images.length > 0) {
@@ -1073,6 +1094,7 @@ ${generatedPrompt}`,
                             onDelete={() => deleteThoughtMutation.mutate(thought.id)}
                             onUpdateImages={handleUpdateThoughtImages}
                             onUpdateContent={handleUpdateThoughtContent}
+                            onUpdateFocus={handleUpdateThoughtFocus}
                           />
                         );
                       })}
