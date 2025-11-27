@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Search, Plus, Star, Code2, Sparkles, FileArchive, GitBranch } from "lucide-react";
+import { Search, Plus, Star, Code2, Sparkles, FileArchive, GitBranch, ClipboardCheck } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import ItemCard from "../components/dashboard/ItemCard";
@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [showZipOnly, setShowZipOnly] = useState(false);
   const [showPublishedOnly, setShowPublishedOnly] = useState(false);
+  const [showPendingCheckOnly, setShowPendingCheckOnly] = useState(false);
 
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
@@ -51,8 +52,9 @@ export default function Dashboard() {
     const matchesFavorites = !showFavoritesOnly || item.is_favorite;
     const matchesZip = !showZipOnly || (item.zip_files && item.zip_files.length > 0);
     const matchesPublished = !showPublishedOnly || item.is_publish_version;
+    const matchesPendingCheck = !showPendingCheckOnly || item.is_pending_check;
     
-    return matchesSearch && matchesType && matchesFavorites && matchesZip && matchesPublished;
+    return matchesSearch && matchesType && matchesFavorites && matchesZip && matchesPublished && matchesPendingCheck;
   });
 
   return (
@@ -103,6 +105,15 @@ export default function Dashboard() {
               >
                 <GitBranch className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                 Published
+              </Button>
+              <Button
+                variant={showPendingCheckOnly ? "default" : "outline"}
+                onClick={() => setShowPendingCheckOnly(!showPendingCheckOnly)}
+                className={`text-xs sm:text-sm ${showPendingCheckOnly ? "bg-orange-500 hover:bg-orange-600" : ""}`}
+                size="sm"
+              >
+                <ClipboardCheck className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                Te Controleren
               </Button>
             </div>
           </div>

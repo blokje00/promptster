@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Star, Trash2, Edit, Code2, Sparkles, FileText, CheckCircle, MessageSquare, Image as ImageIcon, FileArchive, GitBranch } from "lucide-react";
+import { Copy, Star, Trash2, Edit, Code2, Sparkles, FileText, CheckCircle, MessageSquare, Image as ImageIcon, FileArchive, GitBranch, ClipboardCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
@@ -96,6 +96,12 @@ export default function ItemCard({ item }) {
                         </p>
                       </HoverCardContent>
                     </HoverCard>
+                  )}
+                  {item.is_pending_check && (
+                    <Badge variant="outline" className="bg-orange-50 border-orange-300 text-orange-700 flex-shrink-0">
+                      <ClipboardCheck className="w-3 h-3 mr-1" />
+                      Te controleren
+                    </Badge>
                   )}
                 </div>
                 {item.description && (

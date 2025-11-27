@@ -612,9 +612,9 @@ export default function Multiprompt() {
     if (selectedThoughtData.length > 0) {
       const focusInstructions = {
         both: "",
-        design: "\n[FOCUS: Alleen DESIGN aanpassen - geen logica wijzigen]",
-        logic: "\n[FOCUS: Alleen LOGICA aanpassen - geen design wijzigen]",
-        no_design: "\n[FOCUS: BLIJF AF VAN HET DESIGN - alleen functionaliteit/logica]"
+        design: "\n\n[FOCUS: Alleen DESIGN aanpassen - geen logica wijzigen]",
+        logic: "\n\n[FOCUS: Alleen LOGICA aanpassen - geen design wijzigen]",
+        no_design: "\n\n[FOCUS: BLIJF AF VAN HET DESIGN - alleen functionaliteit/logica]"
       };
       
       const tasksSection = selectedThoughtData
@@ -623,7 +623,7 @@ export default function Multiprompt() {
           
           // Voeg focus instructie toe indien niet "both"
           const focus = thought.focus_type || "both";
-          if (focus !== "both") {
+          if (focus !== "both" && focusInstructions[focus]) {
             taskText += focusInstructions[focus];
           }
           
@@ -739,17 +739,20 @@ ${generatedPrompt}`,
       }
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
       
-      // Then create the check
+      // Save as Item with is_pending_check flag
       const finalPrompt = improvedPrompt || generatedPrompt;
       const title = promptTitle.trim() || `Controle ${new Date().toLocaleString('nl-NL')}`;
       
-      createPromptCheckMutation.mutate({
+      createMultipromptMutation.mutate({
         title: title,
-        prompt_content: finalPrompt,
-        project_id: selectedProjectId || null,
-        thought_ids: selectedThoughts,
+        type: "multiprompt",
+        content: finalPrompt,
+        used_thoughts: selectedThoughts,
+        start_template_id: startTemplateId || null,
+        end_template_id: endTemplateId || null,
         task_checks: taskChecks,
-        status: "pending",
+        project_id: selectedProjectId || null,
+        is_pending_check: true,
         notes: controlNotes
       });
     } catch (error) {
@@ -806,7 +809,9 @@ ${generatedPrompt}`,
                 >
                   Alle
                 </Button>
-                {projects.map(project => (
+                {projects.map(project => {
+                  const projectTaskCount = localThoughts.filter(t => t.project_id === project.id).length;
+                  return (
                   <div key={project.id} className="inline-flex items-center">
                     <Button
                       variant={selectedProjectId === project.id ? "default" : "outline"}
@@ -819,6 +824,11 @@ ${generatedPrompt}`,
                     >
                       <div className={`w-3 h-3 rounded-full ${projectColors[project.color]} mr-2`} />
                       {project.name}
+                      {projectTaskCount > 0 && (
+                        <Badge variant="secondary" className="ml-1.5 text-xs h-5 min-w-5 px-1.5 bg-white/20">
+                          {projectTaskCount}
+                        </Badge>
+                      )}
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -845,7 +855,8 @@ ${generatedPrompt}`,
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                ))}
+                  );
+                })}
                 
                 {/* Quick Add Project Button */}
                 <Dialog>
@@ -1121,7 +1132,9 @@ ${generatedPrompt}`,
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm text-slate-700">Persoonlijke Voorkeuren</span>
+                        <Link to={createPageUrl("AIBackoffice")} className="text-sm text-slate-700 hover:text-blue-600 hover:underline">
+                          Persoonlijke Voorkeuren
+                        </Link>
                         {!currentUser?.personal_preferences_markdown && (
                           <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
                             Niet ingesteld
@@ -1137,7 +1150,13 @@ ${generatedPrompt}`,
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <FolderOpen className="w-4 h-4 text-purple-600" />
-                        <span className="text-sm text-slate-700">Project Configuratie</span>
+                        <button 
+                          onClick={() => selectedProject && handleEditProject(selectedProject)}
+                          className={`text-sm text-slate-700 ${selectedProject ? 'hover:text-purple-600 hover:underline cursor-pointer' : 'cursor-default'}`}
+                          disabled={!selectedProject}
+                        >
+                          Project Configuratie
+                        </button>
                         {selectedProject && !selectedProject.technical_config_markdown && (
                           <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
                             Niet ingesteld
@@ -1155,13 +1174,6 @@ ${generatedPrompt}`,
                         disabled={!selectedProject?.technical_config_markdown}
                       />
                     </div>
-                    {(!currentUser?.personal_preferences_markdown || (selectedProject && !selectedProject.technical_config_markdown)) && (
-                      <Link to={createPageUrl("AIBackoffice")}>
-                        <Button variant="link" size="sm" className="text-xs p-0 h-auto text-blue-600">
-                          → Configureer in Instellingen
-                        </Button>
-                      </Link>
-                    )}
                   </CardContent>
                 </Card>
 
