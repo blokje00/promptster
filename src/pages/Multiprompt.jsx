@@ -826,6 +826,62 @@ ${generatedPrompt}`,
                     </DropdownMenu>
                   </div>
                 ))}
+                
+                {/* Quick Add Project Button */}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-dashed border-slate-300 text-slate-500 hover:text-slate-700 hover:border-slate-400"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Nieuw Project</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                      <Input
+                        placeholder="Project naam..."
+                        value={newProjectName}
+                        onChange={(e) => setNewProjectName(e.target.value)}
+                      />
+                      <div>
+                        <label className="text-sm font-medium text-slate-700 mb-2 block">Kleur</label>
+                        <div className="flex gap-2 flex-wrap">
+                          {Object.keys(projectColors).map(color => (
+                            <button
+                              key={color}
+                              type="button"
+                              onClick={() => setNewProjectColor(color)}
+                              className={`w-8 h-8 rounded-full ${projectColors[color]} ${
+                                newProjectColor === color ? 'ring-2 ring-offset-2 ring-slate-400' : ''
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <Textarea
+                        placeholder="Beschrijving (optioneel)..."
+                        value={newProjectDescription}
+                        onChange={(e) => setNewProjectDescription(e.target.value)}
+                        className="min-h-[60px]"
+                      />
+                      <Button
+                        onClick={() => {
+                          handleAddProject();
+                        }}
+                        disabled={!newProjectName.trim()}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Project Toevoegen
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           </CardContent>
