@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Search, Plus, Star, Code2, Sparkles, FileArchive, GitBranch } from "lucide-react";
+import { Search, Star, Code2, Sparkles, FileArchive, GitBranch } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import ItemCard from "../components/dashboard/ItemCard";
