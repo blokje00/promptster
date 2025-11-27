@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowLeft, Edit, Copy, CheckCircle, Star, MessageSquare, Image as ImageIcon, ZoomIn, FileArchive, Download, GitBranch, Calendar } from "lucide-react";
+import { ArrowLeft, Edit, Copy, CheckCircle, Star, MessageSquare, Image as ImageIcon, ZoomIn, FileArchive, Download, GitBranch, Calendar, ClipboardCheck, ClipboardPaste, Save, Loader2 } from "lucide-react";
 import FileChangesFeedback from "../components/items/FileChangesFeedback";
 import {
   Dialog,
@@ -19,14 +20,25 @@ import {
 export default function ViewItem() {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(location.search);
   const itemId = urlParams.get("id");
   const [copied, setCopied] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [isSavingFeedback, setIsSavingFeedback] = useState(false);
 
   const { data: item, isLoading, error } = useQuery({
     queryKey: ['item', itemId],
     queryFn: () => base44.entities.Item.get(itemId),
     enabled: !!itemId,
+  });
+
+  const updateItemMutation = useMutation({
+    mutationFn: (data) => base44.entities.Item.update(itemId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['item', itemId] });
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+    }
   });
 
   const handleCopy = () => {
@@ -35,6 +47,44 @@ export default function ViewItem() {
     setCopied(true);
     toast.success('Inhoud gekopieerd naar klembord!');
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handlePasteFeedback = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        setFeedbackText(text);
+        toast.success('Feedback geplakt uit klembord');
+      }
+    } catch (err) {
+      toast.error('Kon niet plakken uit klembord');
+    }
+  };
+
+  const handleSaveFeedback = async () => {
+    if (!feedbackText.trim()) return;
+    setIsSavingFeedback(true);
+    try {
+      await updateItemMutation.mutateAsync({
+        file_changes_feedback: feedbackText,
+        is_pending_check: false
+      });
+      toast.success('Feedback opgeslagen en controle afgerond!');
+      setFeedbackText("");
+    } catch (err) {
+      toast.error('Kon feedback niet opslaan');
+    } finally {
+      setIsSavingFeedback(false);
+    }
+  };
+
+  const handleMarkAsChecked = async () => {
+    try {
+      await updateItemMutation.mutateAsync({ is_pending_check: false });
+      toast.success('Controle afgerond!');
+    } catch (err) {
+      toast.error('Kon status niet wijzigen');
+    }
   };
 
   if (isLoading) {
@@ -216,8 +266,61 @@ export default function ViewItem() {
               </div>
             )}
             
-            {/* Project Knowledge Feedback Section */}
-            {item.type === 'multiprompt' && (
+            {/* Pending Check Section - Feedback Input */}
+            {item.type === 'multiprompt' && item.is_pending_check && (
+              <div className="p-4 bg-orange-50 border-2 border-orange-300 rounded-lg">
+                <h4 className="font-semibold text-orange-800 flex items-center gap-2 mb-3">
+                  <ClipboardCheck className="w-5 h-5" />
+                  Te Controleren - Plak Feedback
+                </h4>
+                <p className="text-sm text-orange-700 mb-3">
+                  Plak hier de feedback van Base44 (gewijzigde bestanden) om projectkennis op te bouwen.
+                </p>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePasteFeedback}
+                      className="border-orange-400 text-orange-700 hover:bg-orange-100"
+                    >
+                      <ClipboardPaste className="w-4 h-4 mr-2" />
+                      Plak uit klembord
+                    </Button>
+                  </div>
+                  <Textarea
+                    placeholder="Of plak hier direct de feedback tekst..."
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    className="min-h-[120px] bg-white"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSaveFeedback}
+                      disabled={!feedbackText.trim() || isSavingFeedback}
+                      className="bg-orange-600 hover:bg-orange-700"
+                    >
+                      {isSavingFeedback ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Save className="w-4 h-4 mr-2" />
+                      )}
+                      Feedback Opslaan
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleMarkAsChecked}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Alleen afronden
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Project Knowledge Feedback Section - Show saved feedback */}
+            {item.type === 'multiprompt' && item.file_changes_feedback && (
               <FileChangesFeedback
                 value={item.file_changes_feedback}
                 readOnly={true}
