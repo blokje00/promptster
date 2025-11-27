@@ -58,27 +58,11 @@ export default function Dashboard() {
   return (
     <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Mijn Vault
-            </h1>
-            <p className="text-slate-600 mt-2">Al je prompts en code op één plek</p>
-          </div>
-          <div className="flex gap-2">
-            <Link to={createPageUrl("AddItem")}>
-              <Button className="bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30">
-                <Plus className="w-5 h-5 mr-2" />
-                Prompt
-              </Button>
-            </Link>
-            <Link to={createPageUrl("Multiprompt")}>
-              <Button variant="outline" className="border-indigo-600 text-indigo-600 hover:bg-indigo-50">
-                <Plus className="w-5 h-5 mr-2" />
-                Multi-task
-              </Button>
-            </Link>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            Mijn Vault
+          </h1>
+          <p className="text-slate-600 mt-2">Al je prompts en code op één plek</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
