@@ -1787,14 +1787,24 @@ ${generatedPrompt}`,
                             </p>
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-500 hover:bg-red-50"
-                          onClick={() => deleteProjectMutation.mutate(project.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-slate-500 hover:bg-slate-100"
+                            onClick={() => handleEditProject(project)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-500 hover:bg-red-50"
+                            onClick={() => deleteProjectMutation.mutate(project.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
