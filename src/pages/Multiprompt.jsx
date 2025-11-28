@@ -652,6 +652,11 @@ export default function Multiprompt() {
   const selectedStartTemplate = templates.find(t => t.id === startTemplateId);
   const selectedEndTemplate = templates.find(t => t.id === endTemplateId);
   
+  // Filter thoughts by selected project - uses localThoughts for instant updates
+  const filteredThoughts = selectedProjectId 
+    ? localThoughts.filter(t => t.project_id === selectedProjectId)
+    : localThoughts;
+
   // Use filteredThoughts order for preview (same as UI display order)
   const selectedThoughtData = filteredThoughts
     .filter(t => selectedThoughts.includes(t.id));
@@ -752,11 +757,6 @@ export default function Multiprompt() {
       is_checked: false
     }));
   };
-
-  // Filter thoughts by selected project - uses localThoughts for instant updates
-  const filteredThoughts = selectedProjectId 
-    ? localThoughts.filter(t => t.project_id === selectedProjectId)
-    : localThoughts;
 
   const handleImprovePrompt = async () => {
     if (!generatedPrompt.trim()) return;
