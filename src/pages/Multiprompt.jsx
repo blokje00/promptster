@@ -749,44 +749,65 @@ Geen uitleg, alleen de JSON.`;
       promptParts.push(startText);
     }
 
-    // Taken als genummerde deeltaken (inclusief afbeeldingen en focus)
+    // Taken als JSON subtasks (inclusief afbeeldingen en focus)
     if (selectedThoughtData.length > 0) {
-      const focusInstructions = {
-        both: "",
-        design: "\n\n[FOCUS: Alleen DESIGN aanpassen - geen logica wijzigen]",
-        logic: "\n\n[FOCUS: Alleen LOGICA aanpassen - geen design wijzigen]",
-        no_design: "\n\n[FOCUS: BLIJF AF VAN HET DESIGN - alleen functionaliteit/logica]"
+      const focusToChanges = {
+        both: "Design en logica aanpassen",
+        design: "Alleen DESIGN aanpassen - geen logica wijzigen",
+        logic: "Alleen LOGICA aanpassen - geen design wijzigen",
+        no_design: "BLIJF AF VAN HET DESIGN - alleen functionaliteit/logica"
       };
       
       const tasksSection = selectedThoughtData
         .map((thought, i) => {
-          // Context prefix
-          let contextPrefix = "";
-          if (thought.target_page || thought.target_component || thought.target_domain) {
-            const parts = [];
-            if (thought.target_page) parts.push(`Page=${thought.target_page}`);
-            if (thought.target_component) parts.push(`Component=${thought.target_component}`);
-            if (thought.target_domain) parts.push(`Domain=${thought.target_domain}`);
-            contextPrefix = `[Context: ${parts.join(", ")}]\n`;
+          // Build files array from context
+          const files = [];
+          if (thought.target_page) {
+            files.push(`pages/${thought.target_page}.jsx`);
           }
-
-          let taskText = `--- DEELTAAK ${i + 1} ---\n${contextPrefix}${thought.content || ''}`;
-
-          // Voeg focus instructie toe indien niet "both"
-          const focus = thought.focus_type || "both";
-          if (focus !== "both" && focusInstructions[focus]) {
-            taskText += focusInstructions[focus];
+          if (thought.target_component) {
+            // Try to determine component path
+            const componentPath = thought.target_page 
+              ? `components/${thought.target_page.toLowerCase()}/${thought.target_component}.jsx`
+              : `components/${thought.target_component}.jsx`;
+            files.push(componentPath);
           }
-
-          // Voeg afbeelding URLs toe als er afbeeldingen zijn
+          
+          // Build acceptance criteria
+          const acceptance = [];
+          if (thought.target_page) {
+            acceptance.push(`Test: Wijziging werkt correct op ${thought.target_page} pagina`);
+          }
+          if (thought.target_component) {
+            acceptance.push(`Test: ${thought.target_component} component functioneert naar verwachting`);
+          }
+          if (acceptance.length === 0) {
+            acceptance.push("Test: Functionaliteit werkt zoals beschreven");
+          }
+          
+          // Build the JSON subtask
+          const subtask = {
+            id: `TAAK-${i + 1}`,
+            title: (thought.content || '').substring(0, 50) + ((thought.content || '').length > 50 ? '...' : ''),
+            description: thought.content || '',
+            files: files.length > 0 ? files : ["te bepalen"],
+            changes: focusToChanges[thought.focus_type || "both"],
+            acceptance: acceptance,
+            priority: "Medium"
+          };
+          
+          // Add domain info if present
+          if (thought.target_domain) {
+            subtask.domain = thought.target_domain;
+          }
+          
+          // Add images if present
           const images = thought.image_urls || [];
           if (images.length > 0) {
-            taskText += `\n\n[BIJGEVOEGDE AFBEELDINGEN: ${images.length}]`;
-            images.forEach((url, idx) => {
-              taskText += `\n- Afbeelding ${idx + 1}: ${url}`;
-            });
+            subtask.screenshots = images;
           }
-          return taskText;
+          
+          return `SUBTASK (JSON)\n${JSON.stringify(subtask, null, 2)}`;
         })
         .join("\n\n");
       
