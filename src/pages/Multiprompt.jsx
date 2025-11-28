@@ -1253,8 +1253,15 @@ ${generatedPrompt}`,
                         Starttekst
                       </label>
                       <Select value={startTemplateId || "none"} onValueChange={(val) => {
-                        setStartTemplateId(val === "none" ? "" : val);
+                        const newVal = val === "none" ? "" : val;
+                        setStartTemplateId(newVal);
                         if (val && val !== "none") setCustomStartText("");
+                        // Save to project immediately
+                        if (selectedProjectId) {
+                          base44.entities.Project.update(selectedProjectId, {
+                            last_start_template_id: newVal || null
+                          }).then(() => queryClient.invalidateQueries({ queryKey: ['projects'] }));
+                        }
                       }}>
                         <SelectTrigger>
                           <SelectValue placeholder="Kies starttekst template..." />
@@ -1278,8 +1285,15 @@ ${generatedPrompt}`,
                         Eindtekst
                       </label>
                       <Select value={endTemplateId || "none"} onValueChange={(val) => {
-                        setEndTemplateId(val === "none" ? "" : val);
+                        const newVal = val === "none" ? "" : val;
+                        setEndTemplateId(newVal);
                         if (val && val !== "none") setCustomEndText("");
+                        // Save to project immediately
+                        if (selectedProjectId) {
+                          base44.entities.Project.update(selectedProjectId, {
+                            last_end_template_id: newVal || null
+                          }).then(() => queryClient.invalidateQueries({ queryKey: ['projects'] }));
+                        }
                       }}>
                         <SelectTrigger>
                           <SelectValue placeholder="Kies eindtekst template..." />
