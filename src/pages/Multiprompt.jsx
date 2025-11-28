@@ -124,6 +124,8 @@ export default function Multiprompt() {
   const [editProjectColor, setEditProjectColor] = useState("blue");
   const [editProjectDescription, setEditProjectDescription] = useState("");
   const [editProjectConfig, setEditProjectConfig] = useState("");
+  const [editProjectMapping, setEditProjectMapping] = useState("");
+  const [editMappingError, setEditMappingError] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   // Post-copy control flow
@@ -529,20 +531,61 @@ export default function Multiprompt() {
     setEditProjectColor(project.color);
     setEditProjectDescription(project.description || "");
     setEditProjectConfig(project.technical_config_markdown || "");
+    setEditProjectMapping(project.component_mapping ? JSON.stringify(project.component_mapping, null, 2) : "");
+    setEditMappingError("");
     setEditDialogOpen(true);
   };
 
   const handleSaveEditProject = () => {
     if (!editProjectName.trim()) return;
+    
+    // Parse component mapping if provided
+    let componentMapping = null;
+    if (editProjectMapping.trim()) {
+      try {
+        componentMapping = JSON.parse(editProjectMapping);
+        setEditMappingError("");
+      } catch (e) {
+        setEditMappingError("Ongeldige JSON format");
+        return;
+      }
+    }
+    
     updateProjectMutation.mutate({
       id: editingProject.id,
       data: {
         name: editProjectName.trim(),
         color: editProjectColor,
         description: editProjectDescription.trim(),
-        technical_config_markdown: editProjectConfig.trim()
+        technical_config_markdown: editProjectConfig.trim(),
+        component_mapping: componentMapping
       }
     });
+  };
+
+  const generateMappingPrompt = (projectName) => {
+    return `Ik werk aan het project "${projectName}" en wil een component mapping maken voor mijn prompt builder tool.
+
+Geef me een JSON object met de volgende structuur:
+- Keys zijn pagina namen (bijv. "Dashboard", "Settings", "UserProfile")
+- Values zijn arrays met component namen die op die pagina gebruikt worden
+
+Analyseer het project en geef me een realistische mapping van alle pagina's en hun componenten.
+
+Antwoord ALLEEN met valide JSON in dit format:
+{
+  "PaginaNaam1": ["Component1", "Component2"],
+  "PaginaNaam2": ["Component3", "Component4"]
+}
+
+Geen uitleg, alleen de JSON.`;
+  };
+
+  const handleCopyMappingPrompt = () => {
+    if (!editingProject) return;
+    const prompt = generateMappingPrompt(editingProject.name);
+    navigator.clipboard.writeText(prompt);
+    toast.success("Mapping prompt gekopieerd!");
   };
 
   const toggleThoughtSelection = (thoughtId) => {
@@ -1119,6 +1162,40 @@ ${generatedPrompt}`,
                 />
                 <p className="text-xs text-slate-500">
                   Definieer hier project-specifieke configuratie zoals bestandsstructuur, kleuren, API endpoints, etc.
+                </p>
+              </div>
+
+              {/* Component Mapping Section */}
+              <div className="space-y-2 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-slate-700 block">
+                    Component Mapping (JSON)
+                  </label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyMappingPrompt}
+                    className="text-xs bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100"
+                  >
+                    <Copy className="w-3 h-3 mr-1" />
+                    Mapping Prompt
+                  </Button>
+                </div>
+                <Textarea
+                  placeholder='{"Dashboard": ["StatCard", "Chart"], "Settings": ["FormField", "Toggle"]}'
+                  value={editProjectMapping}
+                  onChange={(e) => {
+                    setEditProjectMapping(e.target.value);
+                    setEditMappingError("");
+                  }}
+                  className={`min-h-[150px] font-mono text-sm ${editMappingError ? 'border-red-500' : ''}`}
+                />
+                {editMappingError && (
+                  <p className="text-xs text-red-500">{editMappingError}</p>
+                )}
+                <p className="text-xs text-slate-500">
+                  Plak hier de JSON mapping van pagina's naar componenten. Gebruik de "Mapping Prompt" knop om een AI prompt te genereren.
                 </p>
               </div>
               <div className="flex gap-2 justify-end">
