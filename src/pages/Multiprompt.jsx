@@ -339,20 +339,30 @@ export default function Multiprompt() {
       }
     },
     onMutate: (thoughtIds) => {
-      // Immediately remove from local state
-      setLocalThoughts(prev => prev.filter(t => !thoughtIds.includes(t.id)));
+      // Immediately clear ALL local thoughts
+      setLocalThoughts([]);
+      setSelectedThoughts([]);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
       toast.success("Taken verwijderd!");
-      resetBuilder();
+      // Reset maar behoud templates
+      setPromptTitle("");
+      setImprovedPrompt("");
+      setShowControlDialog(false);
+      setTaskChecks([]);
+      setControlNotes("");
     },
   });
 
-  const resetBuilder = () => {
+  // Reset builder state MAAR behoud template selectie
+  const resetBuilder = (keepTemplates = true) => {
     setSelectedThoughts([]);
-    setStartTemplateId("");
-    setEndTemplateId("");
+    setLocalThoughts([]); // Forceer lege thoughts lijst
+    if (!keepTemplates) {
+      setStartTemplateId("");
+      setEndTemplateId("");
+    }
     setCustomStartText("");
     setCustomEndText("");
     setPromptTitle("");
@@ -879,8 +889,12 @@ ${generatedPrompt}`,
   };
 
   const handleDiscardPrompt = () => {
-    resetBuilder();
-    toast.info("Prompt verwijderd");
+    // Alleen dialog sluiten, NIET thoughts of templates resetten
+    setShowControlDialog(false);
+    setPromptTitle("");
+    setTaskChecks([]);
+    setControlNotes("");
+    toast.info("Prompt gesloten");
   };
 
   const toggleTaskCheck = (index) => {
