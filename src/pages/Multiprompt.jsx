@@ -53,6 +53,7 @@ import {
 } from "@/components/ui/dialog";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import ThoughtCard from "../components/multiprompt/ThoughtCard";
+import ContextSelector from "../components/multiprompt/ContextSelector";
 
 const projectColors = {
   red: "bg-red-500",

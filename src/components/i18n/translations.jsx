@@ -155,6 +155,17 @@ export const translations = {
     uploading: "Uploaden...",
     clickToEdit: "Klik om te bewerken",
     clickToAddText: "Klik om tekst toe te voegen...",
+    
+    // Context Selector
+    page: "Pagina",
+    component: "Component",
+    domain: "Domein",
+    selectPage: "Selecteer pagina",
+    selectComponent: "Selecteer component",
+    selectDomain: "Selecteer domein",
+    clearSelection: "Wis selectie",
+    useSuggestion: "Gebruik",
+    contextTarget: "Doelcontext",
   },
   
   en: {
@@ -312,6 +323,17 @@ export const translations = {
     uploading: "Uploading...",
     clickToEdit: "Click to edit",
     clickToAddText: "Click to add text...",
+    
+    // Context Selector
+    page: "Page",
+    component: "Component",
+    domain: "Domain",
+    selectPage: "Select page",
+    selectComponent: "Select component",
+    selectDomain: "Select domain",
+    clearSelection: "Clear selection",
+    useSuggestion: "Use",
+    contextTarget: "Target context",
   },
   
   fr: {
