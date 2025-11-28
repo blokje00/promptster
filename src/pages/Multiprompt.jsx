@@ -1142,7 +1142,7 @@ ${generatedPrompt}`,
                           ))}
                         </div>
                       )}
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 items-center flex-wrap">
                         <input
                           type="file"
                           ref={newThoughtFileInputRef}
@@ -1159,6 +1159,21 @@ ${generatedPrompt}`,
                         >
                           {isUploadingNewImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
                         </Button>
+                        {/* Focus Type Selector for new thought */}
+                        <Select 
+                          value={newThoughtFocus} 
+                          onValueChange={setNewThoughtFocus}
+                        >
+                          <SelectTrigger className="h-8 text-xs w-auto min-w-[120px] border-dashed">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="both">Design + Logica</SelectItem>
+                            <SelectItem value="design">Alleen Design</SelectItem>
+                            <SelectItem value="logic">Alleen Logica</SelectItem>
+                            <SelectItem value="no_design">Geen Design</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                     <Button 
