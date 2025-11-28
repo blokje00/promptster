@@ -217,9 +217,16 @@ export default function Multiprompt() {
   const createThoughtMutation = useMutation({
     mutationFn: (data) => base44.entities.Thought.create(data),
     onSuccess: (newThoughtData) => {
-      // Immediately add to local state for instant UI update
-      setLocalThoughts(prev => [newThoughtData, ...prev]);
-      setSelectedThoughts(prev => [...prev, newThoughtData.id]);
+      // Immediately add to local state for instant UI update - use functional update
+      setLocalThoughts(prev => {
+        // Add new thought at beginning, ensure no duplicates
+        const filtered = prev.filter(t => t.id !== newThoughtData.id);
+        return [newThoughtData, ...filtered];
+      });
+      setSelectedThoughts(prev => {
+        if (prev.includes(newThoughtData.id)) return prev;
+        return [...prev, newThoughtData.id];
+      });
       setNewThought("");
       setNewThoughtImages([]);
       toast.success("Taak toegevoegd");
@@ -706,9 +713,22 @@ Geen uitleg, alleen de JSON.`;
   const selectedEndTemplate = templates.find(t => t.id === endTemplateId);
   
   // Filter thoughts by selected project - uses localThoughts for instant updates
-  const filteredThoughts = selectedProjectId 
+  const filteredThoughtsUnsorted = selectedProjectId 
     ? localThoughts.filter(t => t.project_id === selectedProjectId)
     : localThoughts;
+
+  // Sort thoughts by target_page, then target_component
+  const filteredThoughts = [...filteredThoughtsUnsorted].sort((a, b) => {
+    // First sort by page
+    const pageA = a.target_page || 'zzz'; // No page goes last
+    const pageB = b.target_page || 'zzz';
+    if (pageA !== pageB) return pageA.localeCompare(pageB);
+    
+    // Then by component
+    const compA = a.target_component || 'zzz';
+    const compB = b.target_component || 'zzz';
+    return compA.localeCompare(compB);
+  });
 
   // Use filteredThoughts order for preview (same as UI display order)
   const selectedThoughtData = filteredThoughts
@@ -1432,62 +1452,43 @@ ${generatedPrompt}`,
 
               {/* Right: Templates & Preview */}
               <div className="space-y-4">
-                {/* Config Inclusion Toggles */}
-                <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Cog className="w-4 h-4" />
-                      Prompt Configuratie
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-blue-600" />
-                        <Link to={createPageUrl("AIBackoffice")} className="text-sm text-slate-700 hover:text-blue-600 hover:underline">
-                          Persoonlijke Voorkeuren
-                        </Link>
-                        {!currentUser?.personal_preferences_markdown && (
-                          <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
-                            Niet ingesteld
-                          </Badge>
-                        )}
-                      </div>
-                      <Checkbox 
-                        checked={includePersonalPrefs && !!currentUser?.personal_preferences_markdown}
-                        onCheckedChange={setIncludePersonalPrefs}
-                        disabled={!currentUser?.personal_preferences_markdown}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FolderOpen className="w-4 h-4 text-purple-600" />
-                        <button 
-                          onClick={() => selectedProject && handleEditProject(selectedProject)}
-                          className={`text-sm text-slate-700 ${selectedProject ? 'hover:text-purple-600 hover:underline cursor-pointer' : 'cursor-default'}`}
-                          disabled={!selectedProject}
-                        >
-                          Project Configuratie
-                        </button>
-                        {selectedProject && !selectedProject.technical_config_markdown && (
-                          <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
-                            Niet ingesteld
-                          </Badge>
-                        )}
-                        {!selectedProject && (
-                          <Badge variant="outline" className="text-xs text-slate-400">
-                            Geen project
-                          </Badge>
-                        )}
-                      </div>
-                      <Checkbox 
-                        checked={includeProjectConfig && !!selectedProject?.technical_config_markdown}
-                        onCheckedChange={setIncludeProjectConfig}
-                        disabled={!selectedProject?.technical_config_markdown}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
+                {/* Config Inclusion Toggles - Compact inline */}
+                <div className="flex items-center gap-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                  <Cog className="w-4 h-4 text-slate-500 shrink-0" />
+
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      id="personalPrefs"
+                      checked={includePersonalPrefs && !!currentUser?.personal_preferences_markdown}
+                      onCheckedChange={setIncludePersonalPrefs}
+                      disabled={!currentUser?.personal_preferences_markdown}
+                    />
+                    <label htmlFor="personalPrefs" className="text-xs text-slate-700 cursor-pointer">
+                      Persoonlijk
+                    </label>
+                    {!currentUser?.personal_preferences_markdown && (
+                      <Badge variant="outline" className="text-xs text-orange-600 border-orange-300 h-5">!</Badge>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      id="projectConfig"
+                      checked={includeProjectConfig && !!selectedProject?.technical_config_markdown}
+                      onCheckedChange={setIncludeProjectConfig}
+                      disabled={!selectedProject?.technical_config_markdown}
+                    />
+                    <label htmlFor="projectConfig" className="text-xs text-slate-700 cursor-pointer">
+                      Project
+                    </label>
+                    {selectedProject && !selectedProject.technical_config_markdown && (
+                      <Badge variant="outline" className="text-xs text-orange-600 border-orange-300 h-5">!</Badge>
+                    )}
+                    {!selectedProject && (
+                      <Badge variant="outline" className="text-xs text-slate-400 h-5">-</Badge>
+                    )}
+                  </div>
+                </div>
 
                 {/* Template Selection */}
                 <Card>
@@ -1495,69 +1496,75 @@ ${generatedPrompt}`,
                     <CardTitle>{t("templates")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        {t("startText")}
-                      </label>
-                      <Select value={startTemplateId || "none"} onValueChange={(val) => {
-                        const newVal = val === "none" ? "" : val;
-                        setStartTemplateId(newVal);
-                        if (val && val !== "none") setCustomStartText("");
-                        // Save to project immediately
-                        if (selectedProjectId) {
-                          base44.entities.Project.update(selectedProjectId, {
-                            last_start_template_id: newVal || null
-                          }).then(() => queryClient.invalidateQueries({ queryKey: ['projects'] }));
-                        }
-                      }}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Kies starttekst template..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">{t("noTemplate")}</SelectItem>
-                          {startTemplates.map(t => (
-                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {startTemplateId && selectedStartTemplate && (
-                        <div className="mt-2 p-2 bg-green-50 rounded text-xs text-green-700 max-h-20 overflow-auto">
-                          {selectedStartTemplate.content}
-                        </div>
-                      )}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-sm font-medium text-slate-700 mb-2 block">
+                          {t("startText")}
+                        </label>
+                        <Select value={startTemplateId || "none"} onValueChange={(val) => {
+                          const newVal = val === "none" ? "" : val;
+                          setStartTemplateId(newVal);
+                          if (val && val !== "none") setCustomStartText("");
+                          // Save to project immediately
+                          if (selectedProjectId) {
+                            base44.entities.Project.update(selectedProjectId, {
+                              last_start_template_id: newVal || null
+                            }).then(() => queryClient.invalidateQueries({ queryKey: ['projects'] }));
+                          }
+                        }}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Start..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">{t("noTemplate")}</SelectItem>
+                            {startTemplates.map(t => (
+                              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm font-medium text-slate-700 mb-2 block">
+                          {t("endText")}
+                        </label>
+                        <Select value={endTemplateId || "none"} onValueChange={(val) => {
+                          const newVal = val === "none" ? "" : val;
+                          setEndTemplateId(newVal);
+                          if (val && val !== "none") setCustomEndText("");
+                          // Save to project immediately
+                          if (selectedProjectId) {
+                            base44.entities.Project.update(selectedProjectId, {
+                              last_end_template_id: newVal || null
+                            }).then(() => queryClient.invalidateQueries({ queryKey: ['projects'] }));
+                          }
+                        }}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Eind..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">{t("noTemplate")}</SelectItem>
+                            {endTemplates.map(t => (
+                              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        {t("endText")}
-                      </label>
-                      <Select value={endTemplateId || "none"} onValueChange={(val) => {
-                        const newVal = val === "none" ? "" : val;
-                        setEndTemplateId(newVal);
-                        if (val && val !== "none") setCustomEndText("");
-                        // Save to project immediately
-                        if (selectedProjectId) {
-                          base44.entities.Project.update(selectedProjectId, {
-                            last_end_template_id: newVal || null
-                          }).then(() => queryClient.invalidateQueries({ queryKey: ['projects'] }));
-                        }
-                      }}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Kies eindtekst template..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">{t("noTemplate")}</SelectItem>
-                          {endTemplates.map(t => (
-                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {endTemplateId && selectedEndTemplate && (
-                        <div className="mt-2 p-2 bg-orange-50 rounded text-xs text-orange-700 max-h-20 overflow-auto">
-                          {selectedEndTemplate.content}
-                        </div>
-                      )}
-                    </div>
+                    {(startTemplateId && selectedStartTemplate) || (endTemplateId && selectedEndTemplate) ? (
+                      <div className="grid grid-cols-2 gap-3 mt-2">
+                        {startTemplateId && selectedStartTemplate && (
+                          <div className="p-2 bg-green-50 rounded text-xs text-green-700 max-h-20 overflow-auto">
+                            {selectedStartTemplate.content}
+                          </div>
+                        )}
+                        {endTemplateId && selectedEndTemplate && (
+                          <div className="p-2 bg-orange-50 rounded text-xs text-orange-700 max-h-20 overflow-auto">
+                            {selectedEndTemplate.content}
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
 
                   </CardContent>
                 </Card>

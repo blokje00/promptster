@@ -224,100 +224,81 @@ export default function ContextSelector({
 
   return (
     <div className={`flex items-center gap-1.5 flex-wrap ${compact ? '' : 'w-full'}`}>
-      {/* Selection chips - inline */}
+      {/* Selection badges - show inline with dropdowns */}
       {hasSelection && (
-        <>
-          {target_page && (
-            <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700 text-xs h-7 px-2">
-              <FileCode className="w-3 h-3 mr-1" />
-              {target_page}
-            </Badge>
-          )}
-          {target_component && (
-            <Badge variant="outline" className="bg-purple-50 border-purple-300 text-purple-700 text-xs h-7 px-2">
-              <Layers className="w-3 h-3 mr-1" />
-              {target_component}
-            </Badge>
-          )}
-          {target_domain && (
-            <Badge variant="outline" className="bg-green-50 border-green-300 text-green-700 text-xs h-7 px-2">
-              <Zap className="w-3 h-3 mr-1" />
-              {target_domain}
-            </Badge>
-          )}
-          <button
-            type="button"
-            onClick={clearSelection}
-            className="text-slate-400 hover:text-slate-600 p-0.5"
-            aria-label={t("clearSelection") || "Wis selectie"}
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </>
+        <button
+          type="button"
+          onClick={clearSelection}
+          className="text-slate-400 hover:text-slate-600 p-0.5"
+          aria-label={t("clearSelection") || "Wis selectie"}
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
       )}
       
-      {/* Selectors - inline compact */}
-      {!hasSelection && (
-        <>
-          <Select 
-            value={target_page || ""} 
-            onValueChange={handlePageChange}
-          >
-            <SelectTrigger 
-              className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white"
-              aria-label={t("selectPage") || "Selecteer pagina"}
-            >
-              <SelectValue placeholder={t("page") || "Pagina"} />
-            </SelectTrigger>
-            <SelectContent>
-              {availablePages.map(page => (
-                <SelectItem key={page} value={page} className="text-xs">
-                  {page}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Selectors - always show all 3 dropdowns */}
+      <Select 
+        value={target_page || ""} 
+        onValueChange={handlePageChange}
+      >
+        <SelectTrigger 
+          className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white"
+          aria-label={t("selectPage") || "Selecteer pagina"}
+        >
+          <SelectValue placeholder={t("page") || "Pagina"} />
+        </SelectTrigger>
+        <SelectContent>
+          {availablePages.map(page => (
+            <SelectItem key={page} value={page} className="text-xs">
+              {page}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-          <Select 
-            value={target_component || ""} 
-            onValueChange={handleComponentChange}
-            disabled={!target_page}
-          >
-            <SelectTrigger 
-              className="h-7 text-xs w-auto min-w-[90px] border-dashed bg-white"
-              aria-label={t("selectComponent") || "Selecteer component"}
-            >
-              <SelectValue placeholder={t("component") || "Component"} />
-            </SelectTrigger>
-            <SelectContent>
-              {availableComponents.map(comp => (
-                <SelectItem key={comp} value={comp} className="text-xs">
-                  {comp}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <Select 
+        value={target_component || ""} 
+        onValueChange={handleComponentChange}
+      >
+        <SelectTrigger 
+          className="h-7 text-xs w-auto min-w-[90px] border-dashed bg-white"
+          aria-label={t("selectComponent") || "Selecteer component"}
+        >
+          <SelectValue placeholder={t("component") || "Component"} />
+        </SelectTrigger>
+        <SelectContent>
+          {availableComponents.length > 0 ? (
+            availableComponents.map(comp => (
+              <SelectItem key={comp} value={comp} className="text-xs">
+                {comp}
+              </SelectItem>
+            ))
+          ) : (
+            <SelectItem value="_none" disabled className="text-xs text-slate-400">
+              Kies eerst pagina
+            </SelectItem>
+          )}
+        </SelectContent>
+      </Select>
 
-          <Select 
-            value={target_domain || ""} 
-            onValueChange={handleDomainChange}
-          >
-            <SelectTrigger 
-              className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white"
-              aria-label={t("selectDomain") || "Selecteer domein"}
-            >
-              <SelectValue placeholder={t("domain") || "Domein"} />
-            </SelectTrigger>
-            <SelectContent>
-              {availableDomains.map(domain => (
-                <SelectItem key={domain} value={domain} className="text-xs">
-                  {domain}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </>
-      )}
+      <Select 
+        value={target_domain || ""} 
+        onValueChange={handleDomainChange}
+      >
+        <SelectTrigger 
+          className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white"
+          aria-label={t("selectDomain") || "Selecteer domein"}
+        >
+          <SelectValue placeholder={t("domain") || "Domein"} />
+        </SelectTrigger>
+        <SelectContent>
+          {availableDomains.map(domain => (
+            <SelectItem key={domain} value={domain} className="text-xs">
+              {domain}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       {/* AI Prediction - inline */}
       {showPrediction && prediction && enableAISuggestions && (
