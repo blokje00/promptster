@@ -36,6 +36,7 @@ import {
   Layers
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useLanguage } from "../components/i18n/LanguageContext";
 
 import {
   DropdownMenu,
@@ -78,6 +79,7 @@ const projectBorderColors = {
 export default function Multiprompt() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [newThought, setNewThought] = useState("");
   const [newThoughtImages, setNewThoughtImages] = useState([]);
   const [isUploadingNewImage, setIsUploadingNewImage] = useState(false);
@@ -829,9 +831,9 @@ ${generatedPrompt}`,
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            Promptguard Multi-task Builder
+            {t("promptguardBuilder")}
           </h1>
-          <p className="text-slate-600 mt-2">Verzamel gedachten en bouw uitgebreide multi-task prompts</p>
+          <p className="text-slate-600 mt-2">{t("collectThoughts")}</p>
         </div>
 
         {/* Project Selector Bar */}
@@ -840,7 +842,7 @@ ${generatedPrompt}`,
             <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-2">
                 <FolderOpen className="w-5 h-5 text-slate-500" />
-                <span className="font-medium text-slate-700">Project:</span>
+                <span className="font-medium text-slate-700">{t("project")}:</span>
               </div>
               <div className="flex gap-2 flex-wrap items-center">
                 <Button
@@ -852,7 +854,7 @@ ${generatedPrompt}`,
                   }}
                   className={!selectedProjectId ? "bg-slate-700" : ""}
                 >
-                  Alle
+                  {t("allProjects")}
                 </Button>
                 {projects.map(project => {
                   const projectTaskCount = localThoughts.filter(t => t.project_id === project.id).length;
@@ -888,14 +890,14 @@ ${generatedPrompt}`,
                       <DropdownMenuContent>
                         <DropdownMenuItem onClick={() => handleEditProject(project)}>
                           <Edit className="w-4 h-4 mr-2" />
-                          Bewerken
+                          {t("edit")}
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={() => deleteProjectMutation.mutate(project.id)}
                           className="text-red-600"
                         >
                           <Trash2 className="w-4 h-4 mr-2" />
-                          Verwijderen
+                          {t("delete")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -916,16 +918,16 @@ ${generatedPrompt}`,
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Nieuw Project</DialogTitle>
+                      <DialogTitle>{t("newProject")}</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 pt-4">
                       <Input
-                        placeholder="Project naam..."
+                        placeholder={t("projectName")}
                         value={newProjectName}
                         onChange={(e) => setNewProjectName(e.target.value)}
                       />
                       <div>
-                        <label className="text-sm font-medium text-slate-700 mb-2 block">Kleur</label>
+                        <label className="text-sm font-medium text-slate-700 mb-2 block">{t("color")}</label>
                         <div className="flex gap-2 flex-wrap">
                           {Object.keys(projectColors).map(color => (
                             <button
@@ -940,7 +942,7 @@ ${generatedPrompt}`,
                         </div>
                       </div>
                       <Textarea
-                        placeholder="Beschrijving (optioneel)..."
+                        placeholder={t("descriptionOptional")}
                         value={newProjectDescription}
                         onChange={(e) => setNewProjectDescription(e.target.value)}
                         className="min-h-[60px]"
@@ -953,7 +955,7 @@ ${generatedPrompt}`,
                         className="w-full bg-indigo-600 hover:bg-indigo-700"
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        Project Toevoegen
+                        {t("addProject")}
                       </Button>
                     </div>
                   </DialogContent>
@@ -967,7 +969,7 @@ ${generatedPrompt}`,
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
             <DialogHeader>
-              <DialogTitle>Project Bewerken</DialogTitle>
+              <DialogTitle>{t("editProject")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <Input
@@ -1044,10 +1046,10 @@ ${generatedPrompt}`,
               </div>
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-                  Annuleren
+                  {t("cancel")}
                 </Button>
                 <Button onClick={handleSaveEditProject} className="bg-indigo-600 hover:bg-indigo-700">
-                  Opslaan
+                  {t("save")}
                 </Button>
               </div>
             </div>
@@ -1058,15 +1060,15 @@ ${generatedPrompt}`,
           <TabsList className="bg-slate-100">
             <TabsTrigger value="build" className="data-[state=active]:bg-white">
               <Layers className="w-4 h-4 mr-2" />
-              Bouw Prompt
+              {t("buildPrompt")}
             </TabsTrigger>
             <TabsTrigger value="templates" className="data-[state=active]:bg-white">
               <FileText className="w-4 h-4 mr-2" />
-              Templates
+              {t("templates")}
             </TabsTrigger>
             <TabsTrigger value="projects" className="data-[state=active]:bg-white">
               <FolderOpen className="w-4 h-4 mr-2" />
-              Projecten
+              {t("myProjects")}
             </TabsTrigger>
           </TabsList>
 
@@ -1079,7 +1081,7 @@ ${generatedPrompt}`,
                     <CardTitle className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Lightbulb className="w-5 h-5 text-yellow-500" />
-                        Taken
+                        {t("tasks")}
                         {selectedProject && (
                           <Badge className={`${projectColors[selectedProject.color]} text-white ml-2`}>
                             {selectedProject.name}
@@ -1093,15 +1095,15 @@ ${generatedPrompt}`,
                           onClick={toggleSelectAll}
                           className="text-xs"
                         >
-                          {filteredThoughts.every(t => selectedThoughts.includes(t.id)) ? (
+                          {filteredThoughts.every(th => selectedThoughts.includes(th.id)) ? (
                             <>
                               <Square className="w-3 h-3 mr-1" />
-                              Deselecteer alles
+                              {t("deselectAll")}
                             </>
                           ) : (
                             <>
                               <CheckSquare className="w-3 h-3 mr-1" />
-                              Selecteer alles
+                              {t("selectAll")}
                             </>
                           )}
                         </Button>
@@ -1116,7 +1118,7 @@ ${generatedPrompt}`,
                     >
                       <Textarea
                         ref={newThoughtInputRef}
-                        placeholder="Type Taak en/of drop image"
+                        placeholder={t("taskPlaceholder")}
                         value={newThought}
                         onChange={(e) => setNewThought(e.target.value)}
                         onPaste={handleNewThoughtPaste}
@@ -1182,7 +1184,7 @@ ${generatedPrompt}`,
                       className={`w-full ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'} hover:opacity-90 text-white`}
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Taak Toevoegen {selectedProject && `aan ${selectedProject.name}`}
+                      {selectedProject ? `${t("addTaskTo")} ${selectedProject.name}` : t("addTask")}
                     </Button>
                     <DragDropContext onDragEnd={handleThoughtsDragEnd}>
                       <Droppable droppableId="thoughts-list">
@@ -1221,7 +1223,7 @@ ${generatedPrompt}`,
                             {provided.placeholder}
                             {filteredThoughts.length === 0 && (
                               <p className="text-center text-slate-400 py-8">
-                                Nog geen taken{selectedProject ? ` voor ${selectedProject.name}` : ''}. Begin met typen!
+                                {t("noTasksYet")}{selectedProject ? ` ${selectedProject.name}` : ''}. {t("startTyping")}
                               </p>
                             )}
                           </div>
@@ -1294,12 +1296,12 @@ ${generatedPrompt}`,
                 {/* Template Selection */}
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle>Templates</CardTitle>
+                    <CardTitle>{t("templates")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
                       <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        Starttekst
+                        {t("startText")}
                       </label>
                       <Select value={startTemplateId || "none"} onValueChange={(val) => {
                         const newVal = val === "none" ? "" : val;
@@ -1331,7 +1333,7 @@ ${generatedPrompt}`,
                     
                     <div>
                       <label className="text-sm font-medium text-slate-700 mb-2 block">
-                        Eindtekst
+                        {t("endText")}
                       </label>
                       <Select value={endTemplateId || "none"} onValueChange={(val) => {
                         const newVal = val === "none" ? "" : val;
@@ -1368,7 +1370,7 @@ ${generatedPrompt}`,
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                      <span>Preview</span>
+                      <span>{t("preview")}</span>
                       <div className="flex flex-wrap gap-2">
                         <Link to={createPageUrl("AIBackoffice")}>
                           <Button variant="ghost" size="sm" className="text-slate-500">
@@ -1386,7 +1388,7 @@ ${generatedPrompt}`,
                           ) : (
                             <Sparkles className="w-4 h-4 sm:mr-2" />
                           )}
-                          <span className="hidden sm:inline">{isImproving ? "Bezig..." : "Verbeter met AI"}</span>
+                          <span className="hidden sm:inline">{isImproving ? t("improving") : t("improveWithAI")}</span>
                         </Button>
                         {improvedPrompt && (
                           <Button
@@ -1406,7 +1408,7 @@ ${generatedPrompt}`,
                           className="bg-indigo-600 hover:bg-indigo-700"
                         >
                           {copied ? <CheckCircle className="w-4 h-4 sm:mr-2" /> : <Copy className="w-4 h-4 sm:mr-2" />}
-                          <span className="hidden sm:inline">{copied ? "Gekopieerd" : "Kopieer & Ga verder"}</span>
+                          <span className="hidden sm:inline">{copied ? t("copied") : t("copyAndContinue")}</span>
                         </Button>
                       </div>
                     </CardTitle>
@@ -1414,12 +1416,12 @@ ${generatedPrompt}`,
                   <CardContent>
                     {improvedPrompt && (
                       <div className="mb-3">
-                        <Badge className="bg-green-100 text-green-700 mb-2">AI Verbeterd</Badge>
+                        <Badge className="bg-green-100 text-green-700 mb-2">{t("aiImproved")}</Badge>
                       </div>
                     )}
                     <div className="bg-slate-900 rounded-xl p-4 max-h-[400px] overflow-auto relative group">
                       <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap">
-                        {improvedPrompt || generatedPrompt || "Selecteer taken en templates om een preview te zien..."}
+                        {improvedPrompt || generatedPrompt || t("selectTasksAndTemplates")}
                       </pre>
                       {(generatedPrompt || improvedPrompt) && (
                         <button
@@ -1436,7 +1438,7 @@ ${generatedPrompt}`,
                     </div>
                     {!generatedPrompt && (
                       <p className="text-sm text-slate-500 mt-3 text-center">
-                        Selecteer links taken en kies hierboven templates
+                        {t("selectTasksLeft")}
                       </p>
                     )}
                   </CardContent>
@@ -1450,12 +1452,12 @@ ${generatedPrompt}`,
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <CheckCircle className="w-5 h-5 text-green-600" />
-                    Prompt Gekopieerd - Wat nu?
+                    {t("promptCopied")}
                   </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
                   <p className="text-sm text-slate-600">
-                    De prompt is gekopieerd. Na het uitvoeren, controleer of elke deeltaak goed is verwerkt:
+                    {t("promptCopiedDesc")}
                   </p>
 
                   {/* Task Checklist */}
@@ -1485,7 +1487,7 @@ ${generatedPrompt}`,
 
                   {/* Notes */}
                   <Textarea
-                    placeholder="Opmerkingen (optioneel)..."
+                    placeholder={t("notesOptional")}
                     value={controlNotes}
                     onChange={(e) => setControlNotes(e.target.value)}
                     className="min-h-[60px]"
@@ -1493,7 +1495,7 @@ ${generatedPrompt}`,
 
                   {/* Title for saving */}
                   <Input
-                    placeholder="Titel voor opslag..."
+                    placeholder={t("titleForSave")}
                     value={promptTitle}
                     onChange={(e) => setPromptTitle(e.target.value)}
                   />
@@ -1506,7 +1508,7 @@ ${generatedPrompt}`,
                       className="bg-indigo-600 hover:bg-indigo-700"
                     >
                       <Save className="w-4 h-4 mr-2" />
-                      {promptTitle.trim() ? "Opslaan als Prompt" : "Snel Opslaan"}
+                      {promptTitle.trim() ? t("saveAsPrompt") : t("quickSave")}
                     </Button>
                     <Button
                       onClick={handleSaveAsCheck}
@@ -1519,7 +1521,7 @@ ${generatedPrompt}`,
                       ) : (
                         <CheckCircle className="w-4 h-4 mr-2" />
                       )}
-                      {isSavingAll ? "Opslaan..." : "Opslaan als Controle"}
+                      {isSavingAll ? t("saving") : t("saveAsCheck")}
                     </Button>
                   </div>
 
@@ -1530,14 +1532,14 @@ ${generatedPrompt}`,
                       className="border-red-300 text-red-600 hover:bg-red-50"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
-                      Verwijder taken
+                      {t("deleteTasks")}
                     </Button>
                     <Button
                       onClick={handleDiscardPrompt}
                       variant="ghost"
                     >
                       <X className="w-4 h-4 mr-2" />
-                      Alleen sluiten
+                      {t("closeOnly")}
                     </Button>
                   </div>
                 </div>
@@ -1551,7 +1553,7 @@ ${generatedPrompt}`,
               <div className="space-y-4">
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-green-700">Startteksten</CardTitle>
+                    <CardTitle className="text-green-700">{t("startTexts")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {startTemplates.map(template => {
@@ -1593,14 +1595,14 @@ ${generatedPrompt}`,
                       );
                     })}
                     {startTemplates.length === 0 && (
-                      <p className="text-slate-400 text-center py-4">Geen startteksten</p>
+                      <p className="text-slate-400 text-center py-4">{t("noStartTexts")}</p>
                     )}
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-orange-700">Eindteksten</CardTitle>
+                    <CardTitle className="text-orange-700">{t("endTexts")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {endTemplates.map(template => {
@@ -1642,7 +1644,7 @@ ${generatedPrompt}`,
                       );
                     })}
                     {endTemplates.length === 0 && (
-                      <p className="text-slate-400 text-center py-4">Geen eindteksten</p>
+                      <p className="text-slate-400 text-center py-4">{t("noEndTexts")}</p>
                     )}
                   </CardContent>
                 </Card>
@@ -1651,11 +1653,11 @@ ${generatedPrompt}`,
               {/* Add Template Form */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Nieuwe Template</CardTitle>
+                  <CardTitle>{t("newTemplate")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Input
-                    placeholder="Template naam..."
+                    placeholder={t("templateName")}
                     value={newTemplateName}
                     onChange={(e) => setNewTemplateName(e.target.value)}
                   />
@@ -1664,12 +1666,12 @@ ${generatedPrompt}`,
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="start">Starttekst</SelectItem>
-                      <SelectItem value="eind">Eindtekst</SelectItem>
+                      <SelectItem value="start">{t("startText")}</SelectItem>
+                      <SelectItem value="eind">{t("endText")}</SelectItem>
                     </SelectContent>
                   </Select>
                   <Textarea
-                    placeholder="Template inhoud..."
+                    placeholder={t("templateContent")}
                     value={newTemplateContent}
                     onChange={(e) => setNewTemplateContent(e.target.value)}
                     className="min-h-[150px]"
@@ -1680,7 +1682,7 @@ ${generatedPrompt}`,
                     className="w-full bg-indigo-600 hover:bg-indigo-700"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Template Opslaan
+                    {t("saveTemplate")}
                   </Button>
                 </CardContent>
               </Card>
@@ -1690,26 +1692,26 @@ ${generatedPrompt}`,
             <Dialog open={editTemplateDialogOpen} onOpenChange={setEditTemplateDialogOpen}>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Template Bewerken</DialogTitle>
+                  <DialogTitle>{t("edit")} Template</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
                   <Input
-                    placeholder="Template naam..."
+                    placeholder={t("templateName")}
                     value={editTemplateName}
                     onChange={(e) => setEditTemplateName(e.target.value)}
                   />
                   <Textarea
-                    placeholder="Template inhoud..."
+                    placeholder={t("templateContent")}
                     value={editTemplateContent}
                     onChange={(e) => setEditTemplateContent(e.target.value)}
                     className="min-h-[200px]"
                   />
                   <div className="flex gap-2 justify-end">
                     <Button variant="outline" onClick={() => setEditTemplateDialogOpen(false)}>
-                      Annuleren
+                      {t("cancel")}
                     </Button>
                     <Button onClick={handleSaveEditTemplate} className="bg-indigo-600 hover:bg-indigo-700">
-                      Opslaan
+                      {t("save")}
                     </Button>
                   </div>
                 </div>
@@ -1722,16 +1724,16 @@ ${generatedPrompt}`,
               {/* Add Project Form */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Nieuw Project</CardTitle>
+                  <CardTitle>{t("newProject")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Input
-                    placeholder="Project naam..."
+                    placeholder={t("projectName")}
                     value={newProjectName}
                     onChange={(e) => setNewProjectName(e.target.value)}
                   />
                   <div>
-                    <label className="text-sm font-medium text-slate-700 mb-2 block">Kleur</label>
+                    <label className="text-sm font-medium text-slate-700 mb-2 block">{t("color")}</label>
                     <div className="flex gap-2 flex-wrap">
                       {Object.keys(projectColors).map(color => (
                         <button
@@ -1745,7 +1747,7 @@ ${generatedPrompt}`,
                     </div>
                   </div>
                   <Textarea
-                    placeholder="Beschrijving (optioneel)..."
+                    placeholder={t("descriptionOptional")}
                     value={newProjectDescription}
                     onChange={(e) => setNewProjectDescription(e.target.value)}
                     className="min-h-[80px]"
@@ -1756,7 +1758,7 @@ ${generatedPrompt}`,
                     className="w-full bg-indigo-600 hover:bg-indigo-700"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Project Toevoegen
+                    {t("addProject")}
                   </Button>
                 </CardContent>
               </Card>
@@ -1764,7 +1766,7 @@ ${generatedPrompt}`,
               {/* Projects List */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Mijn Projecten</CardTitle>
+                  <CardTitle>{t("myProjects")}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {projects.map(project => (
@@ -1797,7 +1799,7 @@ ${generatedPrompt}`,
                     </div>
                   ))}
                   {projects.length === 0 && (
-                    <p className="text-slate-400 text-center py-8">Nog geen projecten</p>
+                    <p className="text-slate-400 text-center py-8">{t("noProjectsYet")}</p>
                   )}
                 </CardContent>
               </Card>
