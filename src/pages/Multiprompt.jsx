@@ -888,10 +888,10 @@ ${generatedPrompt}`,
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => navigate(createPageUrl(`ProjectManager?id=${project.id}`))}>
-                            <Edit className="w-4 h-4 mr-2" />
-                            {t("edit")}
-                          </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditProject(project)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          {t("edit")}
+                        </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={() => deleteProjectMutation.mutate(project.id)}
                           className="text-red-600"
@@ -1792,7 +1792,7 @@ ${generatedPrompt}`,
                             variant="ghost"
                             size="icon"
                             className="text-slate-500 hover:bg-slate-100"
-                            onClick={() => navigate(createPageUrl(`ProjectManager?id=${project.id}`))}
+                            onClick={() => handleEditProject(project)}
                           >
                             <Pencil className="w-4 h-4" />
                           </Button>
