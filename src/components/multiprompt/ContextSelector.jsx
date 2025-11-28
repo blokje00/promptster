@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, X, FileCode, Layers, Zap, CheckCircle } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
 
-// Page to Component mapping
-const PAGE_COMPONENT_MAP = {
+// Default Page to Component mapping (fallback)
+const DEFAULT_PAGE_COMPONENT_MAP = {
   Dashboard: ["ItemCard"],
   AddItem: ["ImageUploadZone", "ZipUploadZone"],
   ViewItem: ["FileChangesFeedback"],
@@ -16,9 +16,9 @@ const PAGE_COMPONENT_MAP = {
   AIBackoffice: ["LanguageSelector"]
 };
 
-const PAGES = Object.keys(PAGE_COMPONENT_MAP);
+const DEFAULT_PAGES = Object.keys(DEFAULT_PAGE_COMPONENT_MAP);
 
-const DOMAINS = [
+const DEFAULT_DOMAINS = [
   "UI",
   "Data", 
   "UploadFlow",
@@ -76,9 +76,9 @@ function predictContext(text) {
   if (!text || text.length < 3) return null;
 
   // Calculate page scores
-  const pageScores = PAGES.map(page => ({
+  const pageScores = DEFAULT_PAGES.map(page => ({
     name: page,
-    score: calculateScore(text, PAGE_KEYWORDS[page])
+    score: calculateScore(text, PAGE_KEYWORDS[page] || [])
   })).filter(p => p.score > 0).sort((a, b) => b.score - a.score).slice(0, 3);
 
   // Calculate component scores
@@ -88,9 +88,9 @@ function predictContext(text) {
   })).filter(c => c.score > 0).sort((a, b) => b.score - a.score).slice(0, 3);
 
   // Calculate domain scores
-  const domainScores = DOMAINS.map(domain => ({
+  const domainScores = DEFAULT_DOMAINS.map(domain => ({
     name: domain,
-    score: calculateScore(text, DOMAIN_KEYWORDS[domain])
+    score: calculateScore(text, DOMAIN_KEYWORDS[domain] || [])
   })).filter(d => d.score > 0).sort((a, b) => b.score - a.score).slice(0, 2);
 
   if (pageScores.length === 0 && componentScores.length === 0) return null;
@@ -117,6 +117,14 @@ export default function ContextSelector({
 
   const { target_page, target_component, target_domain } = value;
 
+  // Get pages list - use project mapping if available, otherwise default
+  const availablePages = useMemo(() => {
+    if (selectedProject?.component_mapping && Object.keys(selectedProject.component_mapping).length > 0) {
+      return Object.keys(selectedProject.component_mapping);
+    }
+    return DEFAULT_PAGES;
+  }, [selectedProject]);
+
   // Available components based on selected page - use project mapping if available
   const availableComponents = useMemo(() => {
     if (!target_page) return [];
@@ -124,8 +132,16 @@ export default function ContextSelector({
     if (selectedProject?.component_mapping && selectedProject.component_mapping[target_page]) {
       return selectedProject.component_mapping[target_page];
     }
-    return PAGE_COMPONENT_MAP[target_page] || [];
+    return DEFAULT_PAGE_COMPONENT_MAP[target_page] || [];
   }, [target_page, selectedProject]);
+
+  // Get domains - use project domains if available
+  const availableDomains = useMemo(() => {
+    if (selectedProject?.domains && selectedProject.domains.length > 0) {
+      return selectedProject.domains;
+    }
+    return DEFAULT_DOMAINS;
+  }, [selectedProject]);
 
   // AI Prediction on text change - only if enabled
   useEffect(() => {
@@ -144,7 +160,8 @@ export default function ContextSelector({
 
   const handlePageChange = (newPage) => {
     // Reset component if it doesn't belong to new page
-    const newComponents = PAGE_COMPONENT_MAP[newPage] || [];
+    const projectMapping = selectedProject?.component_mapping || {};
+    const newComponents = projectMapping[newPage] || DEFAULT_PAGE_COMPONENT_MAP[newPage] || [];
     const newComponent = newComponents.includes(target_component) ? target_component : null;
     
     onChange({
@@ -172,13 +189,14 @@ export default function ContextSelector({
     if (!prediction) return;
     
     const newValue = { ...value };
+    const projectMapping = selectedProject?.component_mapping || {};
     
     if (prediction.predictedPages[0]) {
       newValue.target_page = prediction.predictedPages[0].name;
     }
     if (prediction.predictedComponents[0]) {
       // Check if component belongs to predicted page
-      const pageComps = PAGE_COMPONENT_MAP[newValue.target_page] || [];
+      const pageComps = projectMapping[newValue.target_page] || DEFAULT_PAGE_COMPONENT_MAP[newValue.target_page] || [];
       if (pageComps.includes(prediction.predictedComponents[0].name)) {
         newValue.target_component = prediction.predictedComponents[0].name;
       }
@@ -252,7 +270,7 @@ export default function ContextSelector({
               <SelectValue placeholder={t("page") || "Pagina"} />
             </SelectTrigger>
             <SelectContent>
-              {PAGES.map(page => (
+              {availablePages.map(page => (
                 <SelectItem key={page} value={page} className="text-xs">
                   {page}
                 </SelectItem>
@@ -291,7 +309,7 @@ export default function ContextSelector({
               <SelectValue placeholder={t("domain") || "Domein"} />
             </SelectTrigger>
             <SelectContent>
-              {DOMAINS.map(domain => (
+              {availableDomains.map(domain => (
                 <SelectItem key={domain} value={domain} className="text-xs">
                   {domain}
                 </SelectItem>
