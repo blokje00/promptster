@@ -85,6 +85,12 @@ export default function Multiprompt() {
   const [newThoughtImages, setNewThoughtImages] = useState([]);
   const [isUploadingNewImage, setIsUploadingNewImage] = useState(false);
   const [newThoughtFocus, setNewThoughtFocus] = useState("both");
+  const [newThoughtContext, setNewThoughtContext] = useState({
+    target_page: null,
+    target_component: null,
+    target_domain: null,
+    ai_prediction: null
+  });
   const newThoughtInputRef = useRef(null);
   const newThoughtFileInputRef = useRef(null);
   const [selectedThoughts, setSelectedThoughts] = useState([]);
@@ -364,10 +370,20 @@ export default function Multiprompt() {
       project_id: selectedProjectId || null,
       image_urls: newThoughtImages,
       is_selected: true,
-      focus_type: newThoughtFocus
+      focus_type: newThoughtFocus,
+      target_page: newThoughtContext.target_page,
+      target_component: newThoughtContext.target_component,
+      target_domain: newThoughtContext.target_domain,
+      ai_prediction: newThoughtContext.ai_prediction
     });
     setNewThoughtImages([]);
     setNewThoughtFocus("both");
+    setNewThoughtContext({
+      target_page: null,
+      target_component: null,
+      target_domain: null,
+      ai_prediction: null
+    });
   };
 
   // Handle paste in new thought textarea
@@ -651,14 +667,24 @@ export default function Multiprompt() {
       
       const tasksSection = selectedThoughtData
         .map((thought, i) => {
-          let taskText = `--- DEELTAAK ${i + 1} ---\n${thought.content || ''}`;
-          
+          // Context prefix
+          let contextPrefix = "";
+          if (thought.target_page || thought.target_component || thought.target_domain) {
+            const parts = [];
+            if (thought.target_page) parts.push(`Page=${thought.target_page}`);
+            if (thought.target_component) parts.push(`Component=${thought.target_component}`);
+            if (thought.target_domain) parts.push(`Domain=${thought.target_domain}`);
+            contextPrefix = `[Context: ${parts.join(", ")}]\n`;
+          }
+
+          let taskText = `--- DEELTAAK ${i + 1} ---\n${contextPrefix}${thought.content || ''}`;
+
           // Voeg focus instructie toe indien niet "both"
           const focus = thought.focus_type || "both";
           if (focus !== "both" && focusInstructions[focus]) {
             taskText += focusInstructions[focus];
           }
-          
+
           // Voeg afbeelding URLs toe als er afbeeldingen zijn
           const images = thought.image_urls || [];
           if (images.length > 0) {
@@ -1145,6 +1171,14 @@ ${generatedPrompt}`,
                           ))}
                         </div>
                       )}
+                      {/* Context Selector */}
+                      <ContextSelector
+                        value={newThoughtContext}
+                        onChange={setNewThoughtContext}
+                        thoughtText={newThought}
+                        compact={true}
+                      />
+
                       <div className="flex gap-2 items-center flex-wrap">
                         <input
                           type="file"
