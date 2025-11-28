@@ -107,7 +107,9 @@ export default function ContextSelector({
   value = {}, 
   onChange, 
   thoughtText = "",
-  compact = false 
+  compact = false,
+  selectedProject = null,
+  enableAISuggestions = true
 }) {
   const { t } = useLanguage();
   const [prediction, setPrediction] = useState(null);
@@ -115,21 +117,30 @@ export default function ContextSelector({
 
   const { target_page, target_component, target_domain } = value;
 
-  // Available components based on selected page
+  // Available components based on selected page - use project mapping if available
   const availableComponents = useMemo(() => {
     if (!target_page) return [];
+    // Check if project has custom mapping
+    if (selectedProject?.component_mapping && selectedProject.component_mapping[target_page]) {
+      return selectedProject.component_mapping[target_page];
+    }
     return PAGE_COMPONENT_MAP[target_page] || [];
-  }, [target_page]);
+  }, [target_page, selectedProject]);
 
-  // AI Prediction on text change
+  // AI Prediction on text change - only if enabled
   useEffect(() => {
+    if (!enableAISuggestions) {
+      setPrediction(null);
+      setShowPrediction(false);
+      return;
+    }
     const timer = setTimeout(() => {
       const pred = predictContext(thoughtText);
       setPrediction(pred);
       setShowPrediction(!!pred);
     }, 500);
     return () => clearTimeout(timer);
-  }, [thoughtText]);
+  }, [thoughtText, enableAISuggestions]);
 
   const handlePageChange = (newPage) => {
     // Reset component if it doesn't belong to new page
@@ -194,24 +205,24 @@ export default function ContextSelector({
   const hasSelection = target_page || target_component || target_domain;
 
   return (
-    <div className="space-y-2">
-      {/* Selection chips */}
+    <div className={`flex items-center gap-1.5 flex-wrap ${compact ? '' : 'w-full'}`}>
+      {/* Selection chips - inline */}
       {hasSelection && (
-        <div className="flex flex-wrap gap-1.5 items-center">
+        <>
           {target_page && (
-            <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700 text-xs">
+            <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700 text-xs h-7 px-2">
               <FileCode className="w-3 h-3 mr-1" />
               {target_page}
             </Badge>
           )}
           {target_component && (
-            <Badge variant="outline" className="bg-purple-50 border-purple-300 text-purple-700 text-xs">
+            <Badge variant="outline" className="bg-purple-50 border-purple-300 text-purple-700 text-xs h-7 px-2">
               <Layers className="w-3 h-3 mr-1" />
               {target_component}
             </Badge>
           )}
           {target_domain && (
-            <Badge variant="outline" className="bg-green-50 border-green-300 text-green-700 text-xs">
+            <Badge variant="outline" className="bg-green-50 border-green-300 text-green-700 text-xs h-7 px-2">
               <Zap className="w-3 h-3 mr-1" />
               {target_domain}
             </Badge>
@@ -224,111 +235,88 @@ export default function ContextSelector({
           >
             <X className="w-3.5 h-3.5" />
           </button>
-        </div>
+        </>
+      )}
+      
+      {/* Selectors - inline compact */}
+      {!hasSelection && (
+        <>
+          <Select 
+            value={target_page || ""} 
+            onValueChange={handlePageChange}
+          >
+            <SelectTrigger 
+              className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white"
+              aria-label={t("selectPage") || "Selecteer pagina"}
+            >
+              <SelectValue placeholder={t("page") || "Pagina"} />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGES.map(page => (
+                <SelectItem key={page} value={page} className="text-xs">
+                  {page}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select 
+            value={target_component || ""} 
+            onValueChange={handleComponentChange}
+            disabled={!target_page}
+          >
+            <SelectTrigger 
+              className="h-7 text-xs w-auto min-w-[90px] border-dashed bg-white"
+              aria-label={t("selectComponent") || "Selecteer component"}
+            >
+              <SelectValue placeholder={t("component") || "Component"} />
+            </SelectTrigger>
+            <SelectContent>
+              {availableComponents.map(comp => (
+                <SelectItem key={comp} value={comp} className="text-xs">
+                  {comp}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select 
+            value={target_domain || ""} 
+            onValueChange={handleDomainChange}
+          >
+            <SelectTrigger 
+              className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white"
+              aria-label={t("selectDomain") || "Selecteer domein"}
+            >
+              <SelectValue placeholder={t("domain") || "Domein"} />
+            </SelectTrigger>
+            <SelectContent>
+              {DOMAINS.map(domain => (
+                <SelectItem key={domain} value={domain} className="text-xs">
+                  {domain}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </>
       )}
 
-      {/* Selectors row */}
-      <div className={`flex gap-2 ${compact ? 'flex-wrap' : 'flex-wrap md:flex-nowrap'}`}>
-        {/* Page selector */}
-        <Select 
-          value={target_page || ""} 
-          onValueChange={handlePageChange}
-        >
-          <SelectTrigger 
-            className="h-8 text-xs flex-1 min-w-[100px]"
-            aria-label={t("selectPage") || "Selecteer pagina"}
+      {/* AI Prediction - inline */}
+      {showPrediction && prediction && enableAISuggestions && (
+        <div className="flex items-center gap-1 text-xs bg-purple-50 rounded px-2 py-1 border border-purple-200">
+          <Sparkles className="w-3 h-3 text-purple-500" />
+          {prediction.predictedPages[0] && (
+            <span className="text-purple-600">{prediction.predictedPages[0].name}</span>
+          )}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={handleAcceptPrediction}
+            className="h-5 px-1.5 text-xs text-purple-700 hover:bg-purple-100"
           >
-            <SelectValue placeholder={t("page") || "Pagina"} />
-          </SelectTrigger>
-          <SelectContent>
-            {PAGES.map(page => (
-              <SelectItem key={page} value={page} className="text-xs">
-                {page}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Component selector */}
-        <Select 
-          value={target_component || ""} 
-          onValueChange={handleComponentChange}
-          disabled={!target_page}
-        >
-          <SelectTrigger 
-            className="h-8 text-xs flex-1 min-w-[120px]"
-            aria-label={t("selectComponent") || "Selecteer component"}
-          >
-            <SelectValue placeholder={t("component") || "Component"} />
-          </SelectTrigger>
-          <SelectContent>
-            {availableComponents.map(comp => (
-              <SelectItem key={comp} value={comp} className="text-xs">
-                {comp}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Domain selector */}
-        <Select 
-          value={target_domain || ""} 
-          onValueChange={handleDomainChange}
-        >
-          <SelectTrigger 
-            className="h-8 text-xs flex-1 min-w-[100px]"
-            aria-label={t("selectDomain") || "Selecteer domein"}
-          >
-            <SelectValue placeholder={t("domain") || "Domein"} />
-          </SelectTrigger>
-          <SelectContent>
-            {DOMAINS.map(domain => (
-              <SelectItem key={domain} value={domain} className="text-xs">
-                {domain}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* AI Prediction */}
-      {showPrediction && prediction && (
-        <div className="p-2 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 flex-wrap text-xs">
-              <Sparkles className="w-3.5 h-3.5 text-purple-500 flex-shrink-0" />
-              <span className="text-purple-700 font-medium">AI:</span>
-              {prediction.predictedPages[0] && (
-                <span className="text-purple-600">
-                  {prediction.predictedPages[0].name} 
-                  <span className="text-purple-400 ml-0.5">
-                    ({Math.round(prediction.predictedPages[0].score * 100)}%)
-                  </span>
-                </span>
-              )}
-              {prediction.predictedComponents[0] && (
-                <>
-                  <span className="text-purple-400">→</span>
-                  <span className="text-purple-600">
-                    {prediction.predictedComponents[0].name}
-                    <span className="text-purple-400 ml-0.5">
-                      ({Math.round(prediction.predictedComponents[0].score * 100)}%)
-                    </span>
-                  </span>
-                </>
-              )}
-            </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={handleAcceptPrediction}
-              className="h-6 px-2 text-xs text-purple-700 hover:bg-purple-100"
-            >
-              <CheckCircle className="w-3 h-3 mr-1" />
-              {t("useSuggestion") || "Gebruik"}
-            </Button>
-          </div>
+            <CheckCircle className="w-3 h-3" />
+          </Button>
         </div>
       )}
     </div>

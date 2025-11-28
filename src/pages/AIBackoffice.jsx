@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Save, Sparkles, User, FileText } from "lucide-react";
+import { Save, Sparkles, User, FileText, Lightbulb } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { createPageUrl } from "@/utils";
 import { useLanguage } from "../components/i18n/LanguageContext";
 import LanguageSelector from "../components/settings/LanguageSelector";
@@ -42,6 +43,7 @@ export default function AIBackoffice() {
   const { t } = useLanguage();
   const [instruction, setInstruction] = useState(DEFAULT_INSTRUCTION);
   const [modelPreference, setModelPreference] = useState("default");
+  const [enableContextSuggestions, setEnableContextSuggestions] = useState(true);
   const [settingsId, setSettingsId] = useState(null);
   const [personalPreferences, setPersonalPreferences] = useState("");
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
@@ -66,6 +68,7 @@ export default function AIBackoffice() {
     if (settings.length > 0) {
       setInstruction(settings[0].improve_prompt_instruction || DEFAULT_INSTRUCTION);
       setModelPreference(settings[0].model_preference || "default");
+      setEnableContextSuggestions(settings[0].enable_context_suggestions !== false);
       setSettingsId(settings[0].id);
     }
   }, [settings]);
@@ -93,7 +96,8 @@ export default function AIBackoffice() {
   const handleSave = () => {
     saveMutation.mutate({
       improve_prompt_instruction: instruction,
-      model_preference: modelPreference
+      model_preference: modelPreference,
+      enable_context_suggestions: enableContextSuggestions
     });
   };
 
@@ -171,6 +175,31 @@ export default function AIBackoffice() {
                 <FileText className="w-4 h-4 mr-2" />
                 Laad Voorbeeld
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Context Suggestions Toggle */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lightbulb className="w-5 h-5 text-yellow-500" />
+              AI Context Suggesties
+            </CardTitle>
+            <CardDescription>
+              Automatische AI-suggesties voor Pagina, Component en Domein tijdens het typen van thoughts.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">AI-suggesties inschakelen</p>
+                <p className="text-xs text-slate-500">Krijg automatisch voorgestelde context op basis van je tekst</p>
+              </div>
+              <Switch
+                checked={enableContextSuggestions}
+                onCheckedChange={setEnableContextSuggestions}
+              />
             </div>
           </CardContent>
         </Card>

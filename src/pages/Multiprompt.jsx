@@ -572,6 +572,42 @@ export default function Multiprompt() {
       handleMoveThoughtToProject(thoughtId, projectId === 'none' ? null : projectId);
       return;
     }
+    
+    // Handle reordering within thoughts-list
+    if (result.destination && result.source.droppableId === 'thoughts-list' && result.destination.droppableId === 'thoughts-list') {
+      const sourceIndex = result.source.index;
+      const destIndex = result.destination.index;
+      
+      if (sourceIndex !== destIndex) {
+        // Reorder filteredThoughts based on drag
+        const reorderedFiltered = [...filteredThoughts];
+        const [removed] = reorderedFiltered.splice(sourceIndex, 1);
+        reorderedFiltered.splice(destIndex, 0, removed);
+        
+        // Update localThoughts to reflect new order
+        // Keep non-filtered thoughts in place, replace filtered ones with reordered
+        const nonFilteredThoughts = localThoughts.filter(t => 
+          selectedProjectId ? t.project_id !== selectedProjectId : false
+        );
+        
+        if (selectedProjectId) {
+          // Project filter active: combine non-filtered + reordered filtered
+          setLocalThoughts([...nonFilteredThoughts, ...reorderedFiltered]);
+        } else {
+          // No filter: just use reordered
+          setLocalThoughts(reorderedFiltered);
+        }
+        
+        // Also update selectedThoughts order if needed
+        const newSelectedOrder = reorderedFiltered
+          .filter(t => selectedThoughts.includes(t.id))
+          .map(t => t.id);
+        const unselectedFromOther = selectedThoughts.filter(id => 
+          !reorderedFiltered.find(t => t.id === id)
+        );
+        setSelectedThoughts([...unselectedFromOther, ...newSelectedOrder]);
+      }
+    }
   };
 
   // Filter templates by selected project (or show all if no project selected)
@@ -616,10 +652,9 @@ export default function Multiprompt() {
   const selectedStartTemplate = templates.find(t => t.id === startTemplateId);
   const selectedEndTemplate = templates.find(t => t.id === endTemplateId);
   
-  // Use localThoughts as source of truth for preview - maintains selection order
-  const selectedThoughtData = selectedThoughts
-    .map(id => localThoughts.find(t => t.id === id))
-    .filter(Boolean);
+  // Use filteredThoughts order for preview (same as UI display order)
+  const selectedThoughtData = filteredThoughts
+    .filter(t => selectedThoughts.includes(t.id));
   
   const selectedThoughtContents = selectedThoughtData.map(t => t.content);
 
@@ -794,8 +829,9 @@ ${generatedPrompt}`,
       project_id: selectedProjectId || null
     });
     
-    // Delete used thoughts after saving
-    deleteUsedThoughtsMutation.mutate(selectedThoughts);
+    // Delete ALL thoughts after saving (not just selected)
+    const allThoughtIds = localThoughts.map(t => t.id);
+    deleteUsedThoughtsMutation.mutate(allThoughtIds);
     setShowControlDialog(false);
   };
 
@@ -1139,78 +1175,91 @@ ${generatedPrompt}`,
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div 
-                      className="space-y-2"
+                      className="space-y-0"
                       onDrop={handleNewThoughtDrop}
                       onDragOver={(e) => e.preventDefault()}
                     >
-                      <Textarea
-                        ref={newThoughtInputRef}
-                        placeholder={t("taskPlaceholder")}
-                        value={newThought}
-                        onChange={(e) => setNewThought(e.target.value)}
-                        onPaste={handleNewThoughtPaste}
-                        className="min-h-[80px]"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleAddThought();
-                          }
-                        }}
-                      />
-                      {/* Image preview for new thought */}
-                      {newThoughtImages.length > 0 && (
-                        <div className="flex flex-wrap gap-2 p-2 bg-slate-50 rounded-lg">
-                          {newThoughtImages.map((url, idx) => (
-                            <div key={idx} className="relative">
-                              <img src={url} alt={`Preview ${idx + 1}`} className="w-12 h-12 object-cover rounded border" />
-                              <button
-                                onClick={() => setNewThoughtImages(prev => prev.filter((_, i) => i !== idx))}
-                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
-                              >×</button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {/* Context Selector */}
-                      <ContextSelector
-                        value={newThoughtContext}
-                        onChange={setNewThoughtContext}
-                        thoughtText={newThought}
-                        compact={true}
-                      />
-
-                      <div className="flex gap-2 items-center flex-wrap">
-                        <input
-                          type="file"
-                          ref={newThoughtFileInputRef}
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => e.target.files[0] && uploadNewThoughtImage(e.target.files[0])}
+                      {/* Combined input box with all controls inside */}
+                      <div className="border-2 border-slate-200 rounded-lg focus-within:border-indigo-400 transition-colors bg-white">
+                        <Textarea
+                          ref={newThoughtInputRef}
+                          placeholder={t("taskPlaceholder")}
+                          value={newThought}
+                          onChange={(e) => setNewThought(e.target.value)}
+                          onPaste={handleNewThoughtPaste}
+                          className="min-h-[60px] border-0 focus-visible:ring-0 resize-none"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleAddThought();
+                            }
+                          }}
                         />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => newThoughtFileInputRef.current?.click()}
-                          disabled={isUploadingNewImage}
-                        >
-                          {isUploadingNewImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
-                        </Button>
-                        {/* Focus Type Selector for new thought */}
-                        <Select 
-                          value={newThoughtFocus} 
-                          onValueChange={setNewThoughtFocus}
-                        >
-                          <SelectTrigger className="h-8 text-xs w-auto min-w-[120px] border-dashed">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="both">Design + Logica</SelectItem>
-                            <SelectItem value="design">Alleen Design</SelectItem>
-                            <SelectItem value="logic">Alleen Logica</SelectItem>
-                            <SelectItem value="no_design">Geen Design</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        
+                        {/* Image preview inside box */}
+                        {newThoughtImages.length > 0 && (
+                          <div className="flex flex-wrap gap-2 px-3 pb-2">
+                            {newThoughtImages.map((url, idx) => (
+                              <div key={idx} className="relative">
+                                <img src={url} alt={`Preview ${idx + 1}`} className="w-10 h-10 object-cover rounded border" />
+                                <button
+                                  onClick={() => setNewThoughtImages(prev => prev.filter((_, i) => i !== idx))}
+                                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
+                                >×</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Controls bar inside box */}
+                        <div className="flex items-center gap-2 px-3 py-2 border-t border-slate-100 flex-wrap bg-slate-50/50 rounded-b-lg">
+                          {/* Image upload */}
+                          <input
+                            type="file"
+                            ref={newThoughtFileInputRef}
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => e.target.files[0] && uploadNewThoughtImage(e.target.files[0])}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => newThoughtFileInputRef.current?.click()}
+                            disabled={isUploadingNewImage}
+                            className="h-7 px-2"
+                          >
+                            {isUploadingNewImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+                          </Button>
+                          
+                          {/* Focus Type Selector */}
+                          <Select 
+                            value={newThoughtFocus} 
+                            onValueChange={setNewThoughtFocus}
+                          >
+                            <SelectTrigger className="h-7 text-xs w-auto min-w-[100px] border-dashed bg-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="both">Design + Logica</SelectItem>
+                              <SelectItem value="design">Alleen Design</SelectItem>
+                              <SelectItem value="logic">Alleen Logica</SelectItem>
+                              <SelectItem value="no_design">Geen Design</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          
+                          <div className="h-4 w-px bg-slate-300" />
+                          
+                          {/* Context Selector - 3 dropdowns */}
+                          <ContextSelector
+                            value={newThoughtContext}
+                            onChange={setNewThoughtContext}
+                            thoughtText={newThought}
+                            compact={true}
+                            selectedProject={selectedProject}
+                            enableAISuggestions={aiSettings[0]?.enable_context_suggestions !== false}
+                          />
+                        </div>
                       </div>
                     </div>
                     <Button 
