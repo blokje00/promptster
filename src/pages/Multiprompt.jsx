@@ -95,6 +95,7 @@ export default function Multiprompt() {
   const newThoughtFileInputRef = useRef(null);
   const [selectedThoughts, setSelectedThoughts] = useState([]);
   const [localThoughts, setLocalThoughts] = useState([]); // UI source of truth
+  const [builderInstanceKey, setBuilderInstanceKey] = useState(Date.now()); // Force remount key
   const [startTemplateId, setStartTemplateId] = useState("");
   const [endTemplateId, setEndTemplateId] = useState("");
   const [customStartText, setCustomStartText] = useState("");
@@ -328,6 +329,8 @@ export default function Multiprompt() {
     onSuccess: (newItem) => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
       toast.success("Multi-task opgeslagen!");
+      // Full reset before navigation (templates stay intact)
+      resetBuilder();
       navigate(createPageUrl(`ViewItem?id=${newItem.id}`));
     },
   });
@@ -347,7 +350,7 @@ export default function Multiprompt() {
         await base44.entities.Thought.delete(id);
       }
     },
-    onMutate: (thoughtIds) => {
+    onMutate: () => {
       // Immediately clear ALL local thoughts
       setLocalThoughts([]);
       setSelectedThoughts([]);
@@ -355,30 +358,42 @@ export default function Multiprompt() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
       toast.success("Taken verwijderd!");
-      // Reset maar behoud templates
-      setPromptTitle("");
-      setImprovedPrompt("");
-      setShowControlDialog(false);
-      setTaskChecks([]);
-      setControlNotes("");
+      // Full reset (templates stay intact)
+      resetBuilder();
     },
   });
 
-  // Reset builder state MAAR behoud template selectie
-  const resetBuilder = (keepTemplates = true) => {
+  /**
+   * Hard reset van alle thought-gerelateerde state.
+   * Templates worden NOOIT gereset - die blijven altijd behouden.
+   */
+  const resetBuilder = () => {
+    // Reset ALL thought-related states
+    setLocalThoughts([]);
     setSelectedThoughts([]);
-    setLocalThoughts([]); // Forceer lege thoughts lijst
-    if (!keepTemplates) {
-      setStartTemplateId("");
-      setEndTemplateId("");
-    }
+    setNewThought("");
+    setNewThoughtImages([]);
+    setNewThoughtFocus("both");
+    setNewThoughtContext({
+      target_page: null,
+      target_component: null,
+      target_domain: null,
+      ai_prediction: null
+    });
+    
+    // Reset prompt generation state
     setCustomStartText("");
     setCustomEndText("");
     setPromptTitle("");
     setImprovedPrompt("");
+    
+    // Reset control dialog state
     setShowControlDialog(false);
     setTaskChecks([]);
     setControlNotes("");
+    
+    // Force remount of entire builder UI to clear any cached state
+    setBuilderInstanceKey(Date.now());
   };
 
   const handleAddThought = async () => {
@@ -1268,7 +1283,7 @@ ${generatedPrompt}`,
           </TabsList>
 
           <TabsContent value="build" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            <div key={builderInstanceKey} className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
               {/* Left: Thoughts */}
               <div className="space-y-4">
                 <Card>
