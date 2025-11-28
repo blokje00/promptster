@@ -1184,29 +1184,50 @@ ${generatedPrompt}`,
                       <Plus className="w-4 h-4 mr-2" />
                       Taak Toevoegen {selectedProject && `aan ${selectedProject.name}`}
                     </Button>
-                    <div className="space-y-2 max-h-[400px] overflow-auto">
-                      {filteredThoughts.map((thought, index) => {
-                        const thoughtProject = projects.find(p => p.id === thought.project_id);
-                        return (
-                          <ThoughtCard
-                            key={thought.id}
-                            thought={thought}
-                            project={thoughtProject}
-                            isSelected={selectedThoughts.includes(thought.id)}
-                            onToggleSelect={() => toggleThoughtSelection(thought.id)}
-                            onDelete={() => deleteThoughtMutation.mutate(thought.id)}
-                            onUpdateImages={handleUpdateThoughtImages}
-                            onUpdateContent={handleUpdateThoughtContent}
-                            onUpdateFocus={handleUpdateThoughtFocus}
-                          />
-                        );
-                      })}
-                      {filteredThoughts.length === 0 && (
-                        <p className="text-center text-slate-400 py-8">
-                          Nog geen taken{selectedProject ? ` voor ${selectedProject.name}` : ''}. Begin met typen!
-                        </p>
-                      )}
-                    </div>
+                    <DragDropContext onDragEnd={handleThoughtsDragEnd}>
+                      <Droppable droppableId="thoughts-list">
+                        {(provided) => (
+                          <div 
+                            className="space-y-2 max-h-[400px] overflow-auto"
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                          >
+                            {filteredThoughts.map((thought, index) => {
+                              const thoughtProject = projects.find(p => p.id === thought.project_id);
+                              return (
+                                <Draggable key={thought.id} draggableId={thought.id} index={index}>
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                    >
+                                      <ThoughtCard
+                                        thought={thought}
+                                        project={thoughtProject}
+                                        isSelected={selectedThoughts.includes(thought.id)}
+                                        onToggleSelect={() => toggleThoughtSelection(thought.id)}
+                                        onDelete={() => deleteThoughtMutation.mutate(thought.id)}
+                                        onUpdateImages={handleUpdateThoughtImages}
+                                        onUpdateContent={handleUpdateThoughtContent}
+                                        onUpdateFocus={handleUpdateThoughtFocus}
+                                        dragHandleProps={provided.dragHandleProps}
+                                        showDragHandle={true}
+                                      />
+                                    </div>
+                                  )}
+                                </Draggable>
+                              );
+                            })}
+                            {provided.placeholder}
+                            {filteredThoughts.length === 0 && (
+                              <p className="text-center text-slate-400 py-8">
+                                Nog geen taken{selectedProject ? ` voor ${selectedProject.name}` : ''}. Begin met typen!
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </Droppable>
+                    </DragDropContext>
                   </CardContent>
                 </Card>
               </div>

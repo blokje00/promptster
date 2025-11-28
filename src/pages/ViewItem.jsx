@@ -373,40 +373,36 @@ export default function ViewItem() {
               <h4 className="font-semibold text-slate-800 mb-3">Inhoud</h4>
               <div className="relative">
                 <div className="bg-slate-900 rounded-xl p-4 max-h-[240px] overflow-auto">
-                  {/* Task Checks integrated in content view */}
-                  {item.type === 'multiprompt' && item.task_checks && item.task_checks.length > 0 && (
-                    <div className="mb-4 pb-4 border-b border-slate-700">
-                      <p className="text-xs text-slate-400 mb-2">Deeltaken ({item.task_checks.filter(c => c.is_checked).length}/{item.task_checks.length} afgevinkt):</p>
-                      <div className="space-y-1">
-                        {item.task_checks.map((check, index) => (
-                          <div 
-                            key={index}
-                            className="flex items-center gap-2 cursor-pointer hover:bg-slate-800 rounded px-2 py-1 -mx-2"
-                            onClick={() => {
-                              const newChecks = [...item.task_checks];
-                              newChecks[index] = { ...newChecks[index], is_checked: !newChecks[index].is_checked };
-                              updateItemMutation.mutate({ task_checks: newChecks });
-                            }}
-                          >
-                            <Checkbox 
-                              checked={check.is_checked}
-                              className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600 border-slate-500"
-                              onCheckedChange={(checked) => {
-                                const newChecks = [...item.task_checks];
-                                newChecks[index] = { ...newChecks[index], is_checked: checked };
-                                updateItemMutation.mutate({ task_checks: newChecks });
-                              }}
-                            />
-                            <span className={`text-sm ${check.is_checked ? 'text-green-400 line-through' : 'text-slate-300'}`}>
-                              {check.task_name}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                   <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap break-all">
-                    {item.content}
+                    {item.type === 'multiprompt' && item.task_checks && item.task_checks.length > 0 
+                      ? item.content.split('\n').map((line, lineIdx) => {
+                          // Check if line starts a DEELTAAK section
+                          const taskMatch = line.match(/^---\s*DEELTAAK\s*(\d+)\s*---/i);
+                          if (taskMatch) {
+                            const taskNum = parseInt(taskMatch[1]) - 1;
+                            const check = item.task_checks[taskNum];
+                            if (check) {
+                              return (
+                                <span key={lineIdx} className="flex items-center gap-2">
+                                  <Checkbox 
+                                    checked={check.is_checked}
+                                    className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600 border-slate-500 inline-flex"
+                                    onCheckedChange={(checked) => {
+                                      const newChecks = [...item.task_checks];
+                                      newChecks[taskNum] = { ...newChecks[taskNum], is_checked: checked };
+                                      updateItemMutation.mutate({ task_checks: newChecks });
+                                    }}
+                                  />
+                                  <span className={check.is_checked ? 'text-green-400' : ''}>{line}</span>
+                                  {'\n'}
+                                </span>
+                              );
+                            }
+                          }
+                          return <span key={lineIdx}>{line}{'\n'}</span>;
+                        })
+                      : item.content
+                    }
                   </pre>
                 </div>
                 <Button

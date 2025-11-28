@@ -45,7 +45,8 @@ export default function ThoughtCard({
   onUpdateImages,
   onUpdateContent,
   onUpdateFocus,
-  dragHandleProps 
+  dragHandleProps,
+  showDragHandle = true
 }) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -67,7 +68,16 @@ export default function ThoughtCard({
     setIsUploading(true);
     
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      // Create a new file with thought context in the name
+      const thoughtPreview = (thought.content || 'no-content').substring(0, 30).replace(/[^a-zA-Z0-9]/g, '_');
+      const timestamp = Date.now();
+      const extension = file.name.split('.').pop() || 'png';
+      const newFileName = `thought_${thought.id}_${thoughtPreview}_${timestamp}.${extension}`;
+      
+      // Create new file with renamed name
+      const renamedFile = new File([file], newFileName, { type: file.type });
+      
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: renamedFile });
       const newImages = [...imageUrls, file_url];
       onUpdateImages(thought.id, newImages);
       toast.success("Screenshot toegevoegd");
@@ -77,7 +87,7 @@ export default function ThoughtCard({
     } finally {
       setIsUploading(false);
     }
-  }, [imageUrls, onUpdateImages, thought.id]);
+  }, [imageUrls, onUpdateImages, thought.id, thought.content]);
 
   // Handle paste from clipboard
   useEffect(() => {
@@ -173,9 +183,9 @@ export default function ThoughtCard({
       onDragLeave={handleDragLeave}
     >
       <div className="flex items-start gap-3">
-        {dragHandleProps && (
+        {showDragHandle && (
           <div 
-            {...dragHandleProps}
+            {...(dragHandleProps || {})}
             className="text-slate-400 cursor-grab active:cursor-grabbing mt-1"
           >
             <GripVertical className="w-4 h-4" />
