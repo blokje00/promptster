@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowLeft, Edit, Copy, CheckCircle, Star, MessageSquare, Image as ImageIcon, ZoomIn, FileArchive, Download, GitBranch, Calendar, ClipboardCheck, ClipboardPaste, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Edit, Copy, CheckCircle, Star, MessageSquare, Image as ImageIcon, ZoomIn, FileArchive, Download, GitBranch, Calendar, ClipboardCheck, ClipboardPaste, Save, Loader2, ListChecks } from "lucide-react";
 import FileChangesFeedback from "../components/items/FileChangesFeedback";
 import {
   Dialog,
@@ -364,6 +365,50 @@ export default function ViewItem() {
                 value={item.file_changes_feedback}
                 readOnly={true}
               />
+            )}
+
+            {/* Task Checks Section - Interactive checkboxes */}
+            {item.type === 'multiprompt' && item.task_checks && item.task_checks.length > 0 && (
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                <h4 className="font-semibold text-slate-800 flex items-center gap-2 mb-3">
+                  <ListChecks className="w-5 h-5 text-indigo-600" />
+                  Deeltaken Controle
+                </h4>
+                <div className="space-y-2">
+                  {item.task_checks.map((check, index) => (
+                    <div 
+                      key={index}
+                      className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                        check.is_checked 
+                          ? 'bg-green-50 border-green-300' 
+                          : 'bg-white border-slate-200 hover:border-slate-300'
+                      }`}
+                      onClick={() => {
+                        const newChecks = [...item.task_checks];
+                        newChecks[index] = { ...newChecks[index], is_checked: !newChecks[index].is_checked };
+                        updateItemMutation.mutate({ task_checks: newChecks });
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Checkbox 
+                          checked={check.is_checked}
+                          onCheckedChange={(checked) => {
+                            const newChecks = [...item.task_checks];
+                            newChecks[index] = { ...newChecks[index], is_checked: checked };
+                            updateItemMutation.mutate({ task_checks: newChecks });
+                          }}
+                        />
+                        <span className={`text-sm ${check.is_checked ? 'text-green-700 line-through' : 'text-slate-700'}`}>
+                          {check.task_name}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-slate-500 mt-3">
+                  {item.task_checks.filter(c => c.is_checked).length} van {item.task_checks.length} deeltaken afgevinkt
+                </p>
+              </div>
             )}
 
             <div>
