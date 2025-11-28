@@ -81,6 +81,7 @@ export default function Multiprompt() {
   const [newThought, setNewThought] = useState("");
   const [newThoughtImages, setNewThoughtImages] = useState([]);
   const [isUploadingNewImage, setIsUploadingNewImage] = useState(false);
+  const [newThoughtFocus, setNewThoughtFocus] = useState("both");
   const newThoughtInputRef = useRef(null);
   const newThoughtFileInputRef = useRef(null);
   const [selectedThoughts, setSelectedThoughts] = useState([]);
@@ -155,6 +156,16 @@ export default function Multiprompt() {
       return prev;
     });
   }, [dbThoughts]);
+
+  // Reset selected thoughts when project changes to auto-select new project's thoughts
+  useEffect(() => {
+    const relevantIds = selectedProjectId 
+      ? localThoughts.filter(t => t.project_id === selectedProjectId).map(t => t.id)
+      : localThoughts.map(t => t.id);
+    setSelectedThoughts(relevantIds);
+    // Also reset improved prompt when project changes
+    setImprovedPrompt("");
+  }, [selectedProjectId]);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['templates', currentUser?.email],
@@ -349,9 +360,11 @@ export default function Multiprompt() {
       content: newThought.trim(),
       project_id: selectedProjectId || null,
       image_urls: newThoughtImages,
-      is_selected: true
+      is_selected: true,
+      focus_type: newThoughtFocus
     });
     setNewThoughtImages([]);
+    setNewThoughtFocus("both");
   };
 
   // Handle paste in new thought textarea
@@ -1058,7 +1071,7 @@ ${generatedPrompt}`,
           </TabsList>
 
           <TabsContent value="build" className="space-y-6">
-            <div className="grid lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
               {/* Left: Thoughts */}
               <div className="space-y-4">
                 <Card>
@@ -1318,9 +1331,9 @@ ${generatedPrompt}`,
                 {/* Preview */}
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center justify-between">
+                    <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                       <span>Preview</span>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Link to={createPageUrl("AIBackoffice")}>
                           <Button variant="ghost" size="sm" className="text-slate-500">
                             <Settings className="w-4 h-4" />
@@ -1333,11 +1346,11 @@ ${generatedPrompt}`,
                           disabled={!generatedPrompt || isImproving}
                         >
                           {isImproving ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            <Loader2 className="w-4 h-4 sm:mr-2 animate-spin" />
                           ) : (
-                            <Sparkles className="w-4 h-4 mr-2" />
+                            <Sparkles className="w-4 h-4 sm:mr-2" />
                           )}
-                          {isImproving ? "Bezig..." : "Verbeter met AI"}
+                          <span className="hidden sm:inline">{isImproving ? "Bezig..." : "Verbeter met AI"}</span>
                         </Button>
                         {improvedPrompt && (
                           <Button
@@ -1346,8 +1359,8 @@ ${generatedPrompt}`,
                             onClick={() => setImprovedPrompt("")}
                             className="text-slate-500"
                           >
-                            <X className="w-4 h-4 mr-1" />
-                            Reset
+                            <X className="w-4 h-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Reset</span>
                           </Button>
                         )}
                         <Button
@@ -1356,8 +1369,8 @@ ${generatedPrompt}`,
                           disabled={!generatedPrompt && !improvedPrompt}
                           className="bg-indigo-600 hover:bg-indigo-700"
                         >
-                          {copied ? <CheckCircle className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                          {copied ? "Gekopieerd" : "Kopieer & Ga verder"}
+                          {copied ? <CheckCircle className="w-4 h-4 sm:mr-2" /> : <Copy className="w-4 h-4 sm:mr-2" />}
+                          <span className="hidden sm:inline">{copied ? "Gekopieerd" : "Kopieer & Ga verder"}</span>
                         </Button>
                       </div>
                     </CardTitle>
