@@ -1318,7 +1318,7 @@ ${generatedPrompt}`,
                           <SelectValue placeholder="Kies starttekst template..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">Geen template</SelectItem>
+                          <SelectItem value="none">{t("noTemplate")}</SelectItem>
                           {startTemplates.map(t => (
                             <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                           ))}
@@ -1350,7 +1350,7 @@ ${generatedPrompt}`,
                           <SelectValue placeholder="Kies eindtekst template..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="none">Geen template</SelectItem>
+                          <SelectItem value="none">{t("noTemplate")}</SelectItem>
                           {endTemplates.map(t => (
                             <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                           ))}
