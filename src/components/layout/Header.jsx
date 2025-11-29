@@ -89,16 +89,23 @@ export default function Header() {
         </div>
 
         {/* Right side: Settings */}
-        <Link to={createPageUrl("AIBackoffice")}>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-            title={t("settings")}
-          >
-            <Settings className="w-5 h-5" />
-          </Button>
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link to={createPageUrl("Subscription")}>
+            <Button variant="ghost" size="sm" className="text-indigo-600 font-medium hover:text-indigo-700 hover:bg-indigo-50 hidden md:flex">
+              Pricing
+            </Button>
+          </Link>
+          <Link to={createPageUrl("AIBackoffice")}>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+              title={t("settings")}
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
+          </Link>
+        </div>
       </div>
     </header>
   );
