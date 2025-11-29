@@ -72,7 +72,7 @@ export default function SubscriptionPage() {
       });
 
       if (result.data?.url) {
-        window.location.href = result.data.url;
+        window.open(result.data.url, '_blank');
       } else {
         toast.error("Kon geen checkout URL genereren.");
       }
@@ -92,7 +92,7 @@ export default function SubscriptionPage() {
       });
       
       if (result.data?.url) {
-        window.location.href = result.data.url;
+        window.open(result.data.url, '_blank');
       } else {
         toast.error("Kon klantportaal niet openen.");
       }
