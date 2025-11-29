@@ -408,6 +408,7 @@ export default function Multiprompt() {
       target_domain: null,
       ai_prediction: null
     });
+    setGroupBy("date");
     
     // Reset prompt generation state
     setCustomStartText("");
@@ -1006,7 +1007,8 @@ ${generatedPrompt}`,
 
       // 3. Close dialog and Hard Reload as requested to clear all state
       setShowControlDialog(false);
-      window.location.reload();
+      resetBuilder();
+      window.location.href = "/Multiprompt";
 
     } catch (e) {
       console.error("Save failed:", e);
@@ -1050,7 +1052,8 @@ ${generatedPrompt}`,
       });
 
       // 3. Hard Reload to reset state
-      window.location.reload();
+      resetBuilder();
+      window.location.href = "/Multiprompt";
 
     } catch (error) {
       console.error("Save error:", error);
@@ -1079,6 +1082,12 @@ ${generatedPrompt}`,
     newChecks[index].is_checked = !newChecks[index].is_checked;
     setTaskChecks(newChecks);
   };
+
+  useEffect(() => {
+    if (selectedThoughts.length === 0 && improvedPrompt) {
+      setImprovedPrompt("");
+    }
+  }, [selectedThoughts, improvedPrompt]);
 
   return (
     <div className="p-4 md:p-8">
