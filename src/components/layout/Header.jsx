@@ -31,8 +31,7 @@ export default function Header() {
   }, [currentPath, navigate]);
   
   const handleLogoClick = () => {
-    const lastPage = localStorage.getItem('lastMainPage') || 'Dashboard';
-    window.location.href = createPageUrl(lastPage);
+    window.location.reload();
   };
 
   return (
@@ -83,7 +82,7 @@ export default function Header() {
               className={`gap-1.5 px-2 sm:px-3 ${isMultiprompt ? 'bg-purple-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
             >
               <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">Multi-task</span>
+              <span className="hidden sm:inline">Multi-Step</span>
             </Button>
           </Link>
         </div>

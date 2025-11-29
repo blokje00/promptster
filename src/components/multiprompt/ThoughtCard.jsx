@@ -215,13 +215,13 @@ export default function ThoughtCard({
               />
             </div>
           ) : (
-            <p 
-              className="text-sm text-slate-700 whitespace-pre-wrap cursor-text hover:bg-slate-50 rounded p-1 -m-1" 
+            <div 
+              className="text-sm text-slate-700 whitespace-pre-wrap cursor-text hover:bg-slate-50 rounded p-1 -m-1 h-[9em] overflow-y-auto" 
               onClick={handleStartEditing}
               title="Klik om te bewerken"
             >
               {thought.content || <span className="text-slate-400 italic">Klik om tekst toe te voegen...</span>}
-            </p>
+            </div>
           )}
           
           {/* Images display - show ALL images */}

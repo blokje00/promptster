@@ -951,18 +951,57 @@ ${generatedPrompt}`,
     setImprovedPrompt("");
   }, [generatedPrompt]);
 
-  const handleCopyPrompt = () => {
+  const handleCopyPrompt = async () => {
     const textToCopy = improvedPrompt || generatedPrompt;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
-    toast.success("Prompt gekopieerd!");
+    toast.success("Prompt gekopieerd! Opslaan...");
     
-    // Open control dialog after copy
-    setTaskChecks(generateTaskChecks());
-    setTimeout(() => {
+    // Direct save logic
+    try {
+      const defaultTitle = selectedProject 
+        ? `[${selectedProject.name}] ${new Date().toLocaleString('nl-NL')}`
+        : `Multi-Step ${new Date().toLocaleString('nl-NL')}`;
+        
+      // Save template preferences
+      if (selectedProjectId && (startTemplateId || endTemplateId)) {
+        try {
+          await base44.entities.Project.update(selectedProjectId, {
+            last_start_template_id: startTemplateId || null,
+            last_end_template_id: endTemplateId || null
+          });
+        } catch (e) {
+          console.error("Could not save template preferences", e);
+        }
+      }
+
+      // Create item
+      await createMultipromptMutation.mutateAsync({
+        title: defaultTitle,
+        type: "multiprompt",
+        content: textToCopy,
+        used_thoughts: selectedThoughts,
+        start_template_id: startTemplateId || null,
+        end_template_id: endTemplateId || null,
+        task_checks: generateTaskChecks(),
+        project_id: selectedProjectId || null
+      });
+      
+      // Delete thoughts
+      const allThoughtIds = localThoughts.map(t => t.id);
+      if (allThoughtIds.length > 0) {
+        await deleteUsedThoughtsMutation.mutateAsync(allThoughtIds);
+      }
+
+      // Reload
+      resetBuilder();
+      window.location.href = "/Multiprompt";
+
+    } catch (e) {
+      console.error("Direct save failed:", e);
+      toast.error("Opslaan mislukt: " + e.message);
       setCopied(false);
-      setShowControlDialog(true);
-    }, 500);
+    }
   };
 
   const handleSaveAsPrompt = async () => {
@@ -1494,6 +1533,26 @@ ${generatedPrompt}`,
                             selectedProject={selectedProject}
                             enableAISuggestions={aiSettings[0]?.enable_context_suggestions !== false}
                           />
+
+                          <div className="h-4 w-px bg-slate-300" />
+
+                          {/* Search & Replace Dropdown */}
+                          <Select onValueChange={(val) => setNewThought(prev => prev + (prev ? "\n\n" : "") + val)}>
+                            <SelectTrigger className="h-7 text-xs w-auto min-w-[24px] px-1 border-dashed bg-white" title="Speciale functies">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Zoek en vervang in /pages/**/*">/pages/**/*</SelectItem>
+                              <SelectItem value="Zoek en vervang in /components/**/*">/components/**/*</SelectItem>
+                              <SelectItem value="Zoek en vervang in /lib/**/*">/lib/**/*</SelectItem>
+                              <SelectItem value="Zoek en vervang in /utils/**/*">/utils/**/*</SelectItem>
+                              <SelectItem value="Zoek en vervang in /context/**/*">/context/**/*</SelectItem>
+                              <SelectItem value="Zoek en vervang in /hooks/**/*">/hooks/**/*</SelectItem>
+                              <SelectItem value="Zoek en vervang in /styles/**/*">/styles/**/*</SelectItem>
+                              <SelectItem value="Zoek en vervang in /public/**/*">/public/**/*</SelectItem>
+                              <SelectItem value="Zoek en vervang in **/*">**/* (alles)</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     </div>
@@ -1743,10 +1802,12 @@ ${generatedPrompt}`,
                         <Badge className="bg-green-100 text-green-700 mb-2">{t("aiImproved")}</Badge>
                       </div>
                     )}
-                    <div className="bg-slate-900 rounded-xl p-4 max-h-[400px] overflow-auto relative group">
-                      <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap">
-                        {improvedPrompt || generatedPrompt || t("selectTasksAndTemplates")}
-                      </pre>
+                    <div className="bg-slate-900 rounded-xl relative group">
+                      <div className="p-4 max-h-[400px] overflow-auto">
+                        <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap">
+                          {improvedPrompt || generatedPrompt || t("selectTasksAndTemplates")}
+                        </pre>
+                      </div>
                       {(generatedPrompt || improvedPrompt) && (
                         <button
                           onClick={() => {
