@@ -357,9 +357,8 @@ export default function Multiprompt() {
     onSuccess: (newItem) => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
       toast.success("Multi-task opgeslagen!");
-      // Full reset before navigation (templates stay intact)
+      // Reset builder state locally just in case
       resetBuilder();
-      navigate(createPageUrl(`ViewItem?id=${newItem.id}`));
     },
   });
 
@@ -943,47 +942,59 @@ ${generatedPrompt}`,
   };
 
   const handleSaveAsPrompt = async () => {
-    const finalPrompt = improvedPrompt || generatedPrompt;
-    const defaultTitle = selectedProject 
-      ? `[${selectedProject.name}] ${new Date().toLocaleString('nl-NL')}`
-      : `Multi-task ${new Date().toLocaleString('nl-NL')}`;
-      
-    const title = promptTitle.trim() || defaultTitle;
+    try {
+      const finalPrompt = improvedPrompt || generatedPrompt;
+      const defaultTitle = selectedProject 
+        ? `[${selectedProject.name}] ${new Date().toLocaleString('nl-NL')}`
+        : `Multi-task ${new Date().toLocaleString('nl-NL')}`;
+        
+      const title = promptTitle.trim() || defaultTitle;
 
-    // Save template selection to project
-    if (selectedProjectId && (startTemplateId || endTemplateId)) {
-      try {
-        await base44.entities.Project.update(selectedProjectId, {
-          last_start_template_id: startTemplateId || null,
-          last_end_template_id: endTemplateId || null
-        });
-        queryClient.invalidateQueries({ queryKey: ['projects'] });
-      } catch (e) {
-        console.error("Could not save template preferences to project", e);
+      // Save template selection to project
+      if (selectedProjectId && (startTemplateId || endTemplateId)) {
+        try {
+          await base44.entities.Project.update(selectedProjectId, {
+            last_start_template_id: startTemplateId || null,
+            last_end_template_id: endTemplateId || null
+          });
+          queryClient.invalidateQueries({ queryKey: ['projects'] });
+        } catch (e) {
+          console.error("Could not save template preferences to project", e);
+        }
       }
-    }
 
-    createMultipromptMutation.mutate({
-      title: title,
-      type: "multiprompt",
-      content: finalPrompt,
-      used_thoughts: selectedThoughts,
-      start_template_id: startTemplateId || null,
-      end_template_id: endTemplateId || null,
-      task_checks: taskChecks,
-      project_id: selectedProjectId || null
-    });
-    
-    // Delete ALL thoughts after saving (not just selected)
-    const allThoughtIds = localThoughts.map(t => t.id);
-    deleteUsedThoughtsMutation.mutate(allThoughtIds);
-    setShowControlDialog(false);
+      // 1. Create the prompt item
+      await createMultipromptMutation.mutateAsync({
+        title: title,
+        type: "multiprompt",
+        content: finalPrompt,
+        used_thoughts: selectedThoughts,
+        start_template_id: startTemplateId || null,
+        end_template_id: endTemplateId || null,
+        task_checks: taskChecks,
+        project_id: selectedProjectId || null
+      });
+      
+      // 2. Delete ALL thoughts after saving
+      const allThoughtIds = localThoughts.map(t => t.id);
+      if (allThoughtIds.length > 0) {
+        await deleteUsedThoughtsMutation.mutateAsync(allThoughtIds);
+      }
+
+      // 3. Close dialog and Hard Reload as requested to clear all state
+      setShowControlDialog(false);
+      window.location.reload();
+
+    } catch (e) {
+      console.error("Save failed:", e);
+      toast.error("Opslaan mislukt: " + (e.message || "Onbekende fout"));
+    }
   };
 
   const handleSaveAsCheck = async () => {
-    // First save all thoughts to DB
     setIsSavingAll(true);
     try {
+      // 1. Save all thoughts state to DB
       for (const thought of localThoughts) {
         await base44.entities.Thought.update(thought.id, {
           content: thought.content || "",
@@ -994,7 +1005,7 @@ ${generatedPrompt}`,
       }
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
       
-      // Save as Item with is_pending_check flag
+      // 2. Save as Item with is_pending_check flag
       const finalPrompt = improvedPrompt || generatedPrompt;
       const defaultTitle = selectedProject 
         ? `[${selectedProject.name}] Controle ${new Date().toLocaleString('nl-NL')}`
@@ -1002,7 +1013,7 @@ ${generatedPrompt}`,
         
       const title = promptTitle.trim() || defaultTitle;
       
-      createMultipromptMutation.mutate({
+      await createMultipromptMutation.mutateAsync({
         title: title,
         type: "multiprompt",
         content: finalPrompt,
@@ -1014,9 +1025,13 @@ ${generatedPrompt}`,
         is_pending_check: true,
         notes: controlNotes
       });
+
+      // 3. Hard Reload to reset state
+      window.location.reload();
+
     } catch (error) {
       console.error("Save error:", error);
-      toast.error("Kon niet opslaan");
+      toast.error("Kon niet opslaan: " + (error.message || "Onbekende fout"));
     } finally {
       setIsSavingAll(false);
     }
