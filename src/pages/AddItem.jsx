@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
@@ -15,13 +15,50 @@ import { Checkbox } from "@/components/ui/checkbox";
 import ImageUploadZone from "../components/dashboard/ImageUploadZone";
 import ZipUploadZone from "../components/dashboard/ZipUploadZone";
 
+const projectColors = {
+  red: "bg-red-500",
+  orange: "bg-orange-500",
+  yellow: "bg-yellow-500",
+  green: "bg-green-500",
+  blue: "bg-blue-500",
+  indigo: "bg-indigo-500",
+  purple: "bg-purple-500",
+  pink: "bg-pink-500"
+};
+
 export default function AddItem() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+  });
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects', currentUser?.email],
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+      const result = await base44.entities.Project.filter({ created_by: currentUser.email });
+      return result || [];
+    },
+    enabled: !!currentUser?.email,
+  });
+
+  const [selectedProjectId, setSelectedProjectId] = useState(() => {
+    return localStorage.getItem('lastSelectedProjectId') || "";
+  });
+
+  const handleProjectChange = (projectId) => {
+    setSelectedProjectId(projectId);
+    localStorage.setItem('lastSelectedProjectId', projectId);
+    setFormData(prev => ({ ...prev, project_id: projectId || null }));
+  };
+  
   const [formData, setFormData] = useState({
     title: "",
     type: "prompt",
+    project_id: localStorage.getItem('lastSelectedProjectId') || null,
     content: "",
     language: "javascript",
     description: "",
@@ -96,6 +133,31 @@ export default function AddItem() {
             <Save className="w-4 h-4 mr-2" />
             {createMutation.isPending ? 'Opslaan...' : 'Opslaan'}
           </Button>
+        </div>
+
+        <div className="mb-6">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={!selectedProjectId ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleProjectChange("")}
+              className={!selectedProjectId ? "bg-slate-700" : ""}
+            >
+              Geen Project
+            </Button>
+            {projects.map(project => (
+              <Button
+                key={project.id}
+                variant={selectedProjectId === project.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleProjectChange(project.id)}
+                className={`${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
+              >
+                <div className={`w-3 h-3 rounded-full ${projectColors[project.color]} mr-2 border border-white/50`} />
+                {project.name}
+              </Button>
+            ))}
+          </div>
         </div>
 
         <form onSubmit={handleSubmit}>
