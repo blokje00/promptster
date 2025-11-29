@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Code2, Settings, Sparkles, Plus, Archive } from "lucide-react";
+import { Settings, Sparkles, Plus, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../i18n/LanguageContext";
 
@@ -42,13 +42,11 @@ export default function Header() {
           onClick={handleLogoClick}
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
-          <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
-            <Code2 className="w-5 h-5 text-white" />
-          </div>
-          <div className="hidden sm:block">
-            <h1 className="font-bold text-slate-900 text-lg leading-tight">Promptguard</h1>
-            <p className="text-xs text-slate-500 leading-tight">Code Vault</p>
-          </div>
+          <img 
+            src="https://files.stripe.com/links/MDB8YWNjdF8xUXQ1REdLcm9TdWhndWRUfGZsX2xpdmVfcDAzTTNXUWJsbFhDRFpnaHRGeXJaQmRq00XJq5oQoT" 
+            alt="PromptGuard" 
+            className="h-10 w-auto object-contain"
+          />
         </button>
 
         {/* Center: Main Navigation */}
