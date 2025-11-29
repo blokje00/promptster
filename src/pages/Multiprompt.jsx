@@ -778,7 +778,8 @@ Geen uitleg, alleen de JSON.`;
 
   // Build multi-task prompt: voorkeuren + project config + starttekst + gedachten als deeltaken + eindtekst
   const buildStructuredPrompt = () => {
-    if (selectedThoughtContents.length === 0 && !startText && !endText) {
+    // Als er geen enkele input is, toon placeholder
+    if (selectedThoughtData.length === 0 && !startText && !endText) {
       return "";
     }
 
