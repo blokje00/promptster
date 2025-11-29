@@ -153,29 +153,46 @@ export default function Multiprompt() {
     enabled: !!currentUser?.email,
   });
   
-  // Sync DB thoughts to local state when DB updates AND auto-select all
+  // Sync DB thoughts to local state
   useEffect(() => {
     setLocalThoughts(dbThoughts);
-    // Auto-select all thoughts that match current project filter
+  }, [dbThoughts]);
+
+  // Handle auto-selection logic
+  useEffect(() => {
+    // Calculate relevant IDs for current view
     const relevantIds = selectedProjectId 
-      ? dbThoughts.filter(t => t.project_id === selectedProjectId).map(t => t.id)
-      : dbThoughts.map(t => t.id);
+      ? (dbThoughts || []).filter(t => t.project_id === selectedProjectId).map(t => t.id)
+      : (dbThoughts || []).map(t => t.id);
+
+    // Auto-select if we have items but nothing selected (Initial Load)
+    // OR if we switched projects (we detect this by checking if current selection mismatches project)
+    // We use a ref or just simplified logic:
+    
     setSelectedThoughts(prev => {
-      // Only set if empty (first load) or keep existing selection
+      // If empty and we have items -> Select All (Initial load)
       if (prev.length === 0 && relevantIds.length > 0) {
         return relevantIds;
       }
+      
+      // If we have a selection, but we switched to a project where these items aren't visible?
+      // The filteredThoughts logic handles visibility.
+      // But if we want to "Reset selection on project change", we need to detect project change.
+      // This effect runs on dbThoughts change.
+      
       return prev;
     });
   }, [dbThoughts]);
 
-  // Reset selected thoughts when project changes to auto-select new project's thoughts
+  // Explicitly handle project change to reset selection
   useEffect(() => {
     const relevantIds = selectedProjectId 
       ? localThoughts.filter(t => t.project_id === selectedProjectId).map(t => t.id)
       : localThoughts.map(t => t.id);
-    setSelectedThoughts(relevantIds);
-    // Also reset improved prompt when project changes
+    
+    if (relevantIds.length > 0) {
+      setSelectedThoughts(relevantIds);
+    }
     setImprovedPrompt("");
   }, [selectedProjectId]);
 
