@@ -43,9 +43,9 @@ export default function Header() {
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <img 
-            src="https://files.stripe.com/links/MDB8YWNjdF8xUXQ1REdLcm9TdWhndWRUfGZsX2xpdmVfcDAzTTNXUWJsbFhDRFpnaHRGeXJaQmRq00XJq5oQoT" 
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68f4bcd57ca6479c7acf2f47/777ee7e69_promptguardtranscrop.png" 
             alt="PromptGuard" 
-            className="h-10 w-auto object-contain"
+            className="h-20 w-auto object-contain"
           />
         </button>
 
