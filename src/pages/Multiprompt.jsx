@@ -102,6 +102,7 @@ export default function Multiprompt() {
     target_domain: null,
     ai_prediction: null
   });
+  const [groupBy, setGroupBy] = useState("date");
   const newThoughtInputRef = useRef(null);
   const newThoughtFileInputRef = useRef(null);
   const [selectedThoughts, setSelectedThoughts] = useState([]);
@@ -762,17 +763,20 @@ Geen uitleg, alleen de JSON.`;
   // Check limit
   const isProjectLimitReached = selectedProjectId && filteredThoughtsUnsorted.length >= 10;
 
-  // Sort thoughts by target_page, then target_component
+  // Sort thoughts based on groupBy
   const filteredThoughts = [...filteredThoughtsUnsorted].sort((a, b) => {
-    // First sort by page
-    const pageA = a.target_page || 'zzz'; // No page goes last
-    const pageB = b.target_page || 'zzz';
-    if (pageA !== pageB) return pageA.localeCompare(pageB);
-    
-    // Then by component
-    const compA = a.target_component || 'zzz';
-    const compB = b.target_component || 'zzz';
-    return compA.localeCompare(compB);
+    if (groupBy === 'page') {
+      const pageA = a.target_page || 'zzz';
+      const pageB = b.target_page || 'zzz';
+      if (pageA !== pageB) return pageA.localeCompare(pageB);
+    }
+    if (groupBy === 'component') {
+      const compA = a.target_component || 'zzz';
+      const compB = b.target_component || 'zzz';
+      if (compA !== compB) return compA.localeCompare(compB);
+    }
+    // Default date/id sort (already in Unsorted) or secondary sort
+    return 0;
   });
 
   // Use filteredThoughts order for preview (same as UI display order)
@@ -824,60 +828,28 @@ Geen uitleg, alleen de JSON.`;
         no_design: "BLIJF AF VAN HET DESIGN - alleen functionaliteit/logica"
       };
       
-      const tasksSection = selectedThoughtData
-        .map((thought, i) => {
-          // Build files array from context
-          const files = [];
-          if (thought.target_page) {
-            files.push(`pages/${thought.target_page}.jsx`);
-          }
-          if (thought.target_component) {
-            // Try to determine component path
-            const componentPath = thought.target_page 
-              ? `components/${thought.target_page.toLowerCase()}/${thought.target_component}.jsx`
-              : `components/${thought.target_component}.jsx`;
-            files.push(componentPath);
-          }
-          
-          // Build acceptance criteria
-          const acceptance = [];
-          if (thought.target_page) {
-            acceptance.push(`Test: Wijziging werkt correct op ${thought.target_page} pagina`);
-          }
-          if (thought.target_component) {
-            acceptance.push(`Test: ${thought.target_component} component functioneert naar verwachting`);
-          }
-          if (acceptance.length === 0) {
-            acceptance.push("Test: Functionaliteit werkt zoals beschreven");
-          }
-          
-          // Build the JSON subtask
-          const subtask = {
-            id: `TAAK-${i + 1}`,
-            title: (thought.content || '').substring(0, 50) + ((thought.content || '').length > 50 ? '...' : ''),
-            description: thought.content || '',
-            files: files.length > 0 ? files : ["te bepalen"],
-            changes: focusToChanges[thought.focus_type || "both"],
-            acceptance: acceptance,
-            priority: "Medium"
-          };
-          
-          // Add domain info if present
-          if (thought.target_domain) {
-            subtask.domain = thought.target_domain;
-          }
-          
-          // Add images if present
-          const images = thought.image_urls || [];
-          if (images.length > 0) {
-            subtask.screenshots = images;
-          }
-          
-          return `SUBTASK (JSON)\n${JSON.stringify(subtask, null, 2)}`;
-        })
-        .join("\n\n");
-      
-      promptParts.push(`# DEELTAKEN (verwerk in volgorde)\n\n${tasksSection}`);
+      // Group tasks if needed
+      let tasksSection = "";
+
+      if (groupBy === 'date') {
+        tasksSection = selectedThoughtData.map((thought, i) => buildSubtaskJson(thought, i, focusToChanges)).join("\n\n");
+        promptParts.push(`# DEELTAKEN (verwerk in volgorde)\n\n${tasksSection}`);
+      } else {
+        // Group by page or component
+        const groups = {};
+        selectedThoughtData.forEach(thought => {
+          const key = groupBy === 'page' ? (thought.target_page || 'Overig') : (thought.target_component || 'Overig');
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(thought);
+        });
+
+        const groupedSection = Object.keys(groups).map(group => {
+          const groupTasks = groups[group].map((thought, i) => buildSubtaskJson(thought, i, focusToChanges)).join("\n\n");
+          return `## ${groupBy === 'page' ? 'Pagina' : 'Component'}: ${group}\n${groupTasks}`;
+        }).join("\n\n");
+
+        promptParts.push(`# DEELTAKEN (Gegroepeerd op ${groupBy})\n\n${groupedSection}`);
+      }
     }
 
     // Eind template
@@ -886,6 +858,57 @@ Geen uitleg, alleen de JSON.`;
     }
 
     return promptParts.join("\n\n---\n\n");
+  };
+
+  const buildSubtaskJson = (thought, i, focusToChanges) => {
+    // Build files array from context
+    const files = [];
+    if (thought.target_page) {
+      files.push(`pages/${thought.target_page}.jsx`);
+    }
+    if (thought.target_component) {
+      // Try to determine component path
+      const componentPath = thought.target_page 
+        ? `components/${thought.target_page.toLowerCase()}/${thought.target_component}.jsx`
+        : `components/${thought.target_component}.jsx`;
+      files.push(componentPath);
+    }
+    
+    // Build acceptance criteria
+    const acceptance = [];
+    if (thought.target_page) {
+      acceptance.push(`Test: Wijziging werkt correct op ${thought.target_page} pagina`);
+    }
+    if (thought.target_component) {
+      acceptance.push(`Test: ${thought.target_component} component functioneert naar verwachting`);
+    }
+    if (acceptance.length === 0) {
+      acceptance.push("Test: Functionaliteit werkt zoals beschreven");
+    }
+    
+    // Build the JSON subtask
+    const subtask = {
+      id: `TAAK-${i + 1}`,
+      title: (thought.content || '').substring(0, 50) + ((thought.content || '').length > 50 ? '...' : ''),
+      description: thought.content || '',
+      files: files.length > 0 ? files : ["te bepalen"],
+      changes: focusToChanges[thought.focus_type || "both"],
+      acceptance: acceptance,
+      priority: "Medium"
+    };
+    
+    // Add domain info if present
+    if (thought.target_domain) {
+      subtask.domain = thought.target_domain;
+    }
+    
+    // Add images if present
+    const images = thought.image_urls || [];
+    if (images.length > 0) {
+      subtask.screenshots = images;
+    }
+    
+    return `SUBTASK (JSON)\n${JSON.stringify(subtask, null, 2)}`;
   };
 
   const generatedPrompt = buildStructuredPrompt();
@@ -1465,14 +1488,26 @@ ${generatedPrompt}`,
                         </div>
                       </div>
                     </div>
-                    <Button 
-                      onClick={handleAddThought} 
-                      disabled={(!newThought.trim() && newThoughtImages.length === 0) || isProjectLimitReached}
-                      className={`w-full ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'} hover:opacity-90 text-white transition-all`}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      {isProjectLimitReached ? "Limiet bereikt (max 10)" : (selectedProject ? `${t("addTaskTo")} ${selectedProject.name}` : t("addTask"))}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={handleAddThought} 
+                        disabled={(!newThought.trim() && newThoughtImages.length === 0) || isProjectLimitReached}
+                        className={`flex-1 ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'} hover:opacity-90 text-white transition-all`}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        {isProjectLimitReached ? "Limiet bereikt" : "+ Step"}
+                      </Button>
+                      <Select value={groupBy} onValueChange={setGroupBy}>
+                        <SelectTrigger className="w-[130px]">
+                          <SelectValue placeholder="Groepeer" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="date">Op invoer</SelectItem>
+                          <SelectItem value="page">Pagina</SelectItem>
+                          <SelectItem value="component">Component</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <DragDropContext onDragEnd={handleThoughtsDragEnd}>
                       <Droppable droppableId="thoughts-list">
                         {(provided) => (
@@ -1839,7 +1874,7 @@ ${generatedPrompt}`,
                     {startTemplates.map(template => {
                       const templateProject = projects.find(p => p.id === template.project_id);
                       return (
-                        <div key={template.id} className="p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div key={template.id} className={`p-3 rounded-lg border ${selectedProject ? projectLightColors[selectedProject.color] : 'bg-green-50 border-green-200'}`}>
                           <div className="flex items-start justify-between">
                             <div>
                               <div className="flex items-center gap-2">
@@ -1888,7 +1923,7 @@ ${generatedPrompt}`,
                     {endTemplates.map(template => {
                       const templateProject = projects.find(p => p.id === template.project_id);
                       return (
-                        <div key={template.id} className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                        <div key={template.id} className={`p-3 rounded-lg border ${selectedProject ? projectLightColors[selectedProject.color] : 'bg-orange-50 border-orange-200'}`}>
                           <div className="flex items-start justify-between">
                             <div>
                               <div className="flex items-center gap-2">

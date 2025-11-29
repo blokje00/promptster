@@ -283,10 +283,10 @@ export default function ContextSelector({
         </Select>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => setIsAddingItem('page')}
-          className="h-7 w-7 p-0 text-slate-400 hover:text-slate-600"
+          className="h-7 w-7 p-0 text-slate-500 hover:text-slate-700 bg-white border-dashed"
           title="Nieuwe pagina toevoegen"
         >
           <Plus className="w-3 h-3" />
@@ -320,11 +320,11 @@ export default function ContextSelector({
         </Select>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={() => setIsAddingItem('component')}
           disabled={!target_page}
-          className="h-7 w-7 p-0 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+          className="h-7 w-7 p-0 text-slate-500 hover:text-slate-700 bg-white border-dashed disabled:opacity-30"
           title="Nieuw component toevoegen"
         >
           <Plus className="w-3 h-3" />

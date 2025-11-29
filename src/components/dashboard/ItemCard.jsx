@@ -22,10 +22,22 @@ const typeIcons = {
 const typeColors = {
   prompt: "bg-purple-100 text-purple-700 border-purple-200",
   code: "bg-blue-100 text-blue-700 border-blue-200",
-  snippet: "bg-green-100 text-green-700 border-green-200"
+  snippet: "bg-green-100 text-green-700 border-green-200",
+  multiprompt: "bg-indigo-100 text-indigo-700 border-indigo-200"
 };
 
-export default function ItemCard({ item }) {
+const projectColors = {
+  red: "bg-red-500",
+  orange: "bg-orange-500",
+  yellow: "bg-yellow-500",
+  green: "bg-green-500",
+  blue: "bg-blue-500",
+  indigo: "bg-indigo-500",
+  purple: "bg-purple-500",
+  pink: "bg-pink-500"
+};
+
+export default function ItemCard({ item, project }) {
   const [copied, setCopied] = useState(false);
   const [localTaskChecks, setLocalTaskChecks] = useState(item.task_checks || []);
   const queryClient = useQueryClient();
@@ -94,6 +106,11 @@ export default function ItemCard({ item }) {
                 <TypeIcon className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
+                {project && (
+                  <Badge variant="secondary" className={`mb-1 text-[10px] px-1.5 py-0 h-4 ${projectColors[project.color]} text-white hover:${projectColors[project.color]}`}>
+                    {project.name}
+                  </Badge>
+                )}
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-slate-900 truncate hover:text-indigo-600 transition-colors">{item.title}</h3>
                   {item.is_publish_version && (
