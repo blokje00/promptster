@@ -3,7 +3,9 @@ import { base44 } from "@/api/base44Client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, X, FileCode, Layers, Zap, CheckCircle } from "lucide-react";
+import { Sparkles, X, FileCode, Layers, Zap, CheckCircle, Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useLanguage } from "../i18n/LanguageContext";
 
 // Default Page to Component mapping (fallback)
@@ -114,26 +116,49 @@ export default function ContextSelector({
   const { t } = useLanguage();
   const [prediction, setPrediction] = useState(null);
   const [showPrediction, setShowPrediction] = useState(false);
+  
+  // Custom items state
+  const [customPages, setCustomPages] = useState([]);
+  const [customComponents, setCustomComponents] = useState([]);
+  const [isAddingItem, setIsAddingItem] = useState(null); // 'page' or 'component'
+  const [newItemName, setNewItemName] = useState("");
 
   const { target_page, target_component, target_domain } = value;
 
   // Get pages list - use project mapping if available, otherwise default
   const availablePages = useMemo(() => {
+    let pages = DEFAULT_PAGES;
     if (selectedProject?.component_mapping && Object.keys(selectedProject.component_mapping).length > 0) {
-      return Object.keys(selectedProject.component_mapping);
+      pages = Object.keys(selectedProject.component_mapping);
     }
-    return DEFAULT_PAGES;
-  }, [selectedProject]);
+    return [...new Set([...pages, ...customPages])];
+  }, [selectedProject, customPages]);
 
   // Available components based on selected page - use project mapping if available
   const availableComponents = useMemo(() => {
     if (!target_page) return [];
+    let comps = DEFAULT_PAGE_COMPONENT_MAP[target_page] || [];
     // Check if project has custom mapping
     if (selectedProject?.component_mapping && selectedProject.component_mapping[target_page]) {
-      return selectedProject.component_mapping[target_page];
+      comps = selectedProject.component_mapping[target_page];
     }
-    return DEFAULT_PAGE_COMPONENT_MAP[target_page] || [];
-  }, [target_page, selectedProject]);
+    return [...new Set([...comps, ...customComponents])];
+  }, [target_page, selectedProject, customComponents]);
+
+  const handleAddItem = () => {
+    if (!newItemName.trim()) return;
+    
+    if (isAddingItem === 'page') {
+      setCustomPages(prev => [...prev, newItemName.trim()]);
+      handlePageChange(newItemName.trim());
+    } else if (isAddingItem === 'component') {
+      setCustomComponents(prev => [...prev, newItemName.trim()]);
+      handleComponentChange(newItemName.trim());
+    }
+    
+    setNewItemName("");
+    setIsAddingItem(null);
+  };
 
   // Get domains - use project domains if available
   const availableDomains = useMemo(() => {
@@ -237,49 +262,74 @@ export default function ContextSelector({
       )}
       
       {/* Selectors - always show all 3 dropdowns */}
-      <Select 
-        value={target_page || ""} 
-        onValueChange={handlePageChange}
-      >
-        <SelectTrigger 
-          className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white"
-          aria-label={t("selectPage") || "Selecteer pagina"}
+      <div className="flex items-center gap-1">
+        <Select 
+          value={target_page || ""} 
+          onValueChange={handlePageChange}
         >
-          <SelectValue placeholder={t("page") || "Pagina"} />
-        </SelectTrigger>
-        <SelectContent>
-          {availablePages.map(page => (
-            <SelectItem key={page} value={page} className="text-xs">
-              {page}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select 
-        value={target_component || ""} 
-        onValueChange={handleComponentChange}
-      >
-        <SelectTrigger 
-          className="h-7 text-xs w-auto min-w-[90px] border-dashed bg-white"
-          aria-label={t("selectComponent") || "Selecteer component"}
-        >
-          <SelectValue placeholder={t("component") || "Component"} />
-        </SelectTrigger>
-        <SelectContent>
-          {availableComponents.length > 0 ? (
-            availableComponents.map(comp => (
-              <SelectItem key={comp} value={comp} className="text-xs">
-                {comp}
+          <SelectTrigger 
+            className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white"
+            aria-label={t("selectPage") || "Selecteer pagina"}
+          >
+            <SelectValue placeholder={t("page") || "Pagina"} />
+          </SelectTrigger>
+          <SelectContent>
+            {availablePages.map(page => (
+              <SelectItem key={page} value={page} className="text-xs">
+                {page}
               </SelectItem>
-            ))
-          ) : (
-            <SelectItem value="_none" disabled className="text-xs text-slate-400">
-              Kies eerst pagina
-            </SelectItem>
-          )}
-        </SelectContent>
-      </Select>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsAddingItem('page')}
+          className="h-7 w-7 p-0 text-slate-400 hover:text-slate-600"
+          title="Nieuwe pagina toevoegen"
+        >
+          <Plus className="w-3 h-3" />
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-1">
+        <Select 
+          value={target_component || ""} 
+          onValueChange={handleComponentChange}
+        >
+          <SelectTrigger 
+            className="h-7 text-xs w-auto min-w-[90px] border-dashed bg-white"
+            aria-label={t("selectComponent") || "Selecteer component"}
+          >
+            <SelectValue placeholder={t("component") || "Component"} />
+          </SelectTrigger>
+          <SelectContent>
+            {availableComponents.length > 0 ? (
+              availableComponents.map(comp => (
+                <SelectItem key={comp} value={comp} className="text-xs">
+                  {comp}
+                </SelectItem>
+              ))
+            ) : (
+              <SelectItem value="_none" disabled className="text-xs text-slate-400">
+                Kies eerst pagina
+              </SelectItem>
+            )}
+          </SelectContent>
+        </Select>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsAddingItem('component')}
+          disabled={!target_page}
+          className="h-7 w-7 p-0 text-slate-400 hover:text-slate-600 disabled:opacity-30"
+          title="Nieuw component toevoegen"
+        >
+          <Plus className="w-3 h-3" />
+        </Button>
+      </div>
 
       <Select 
         value={target_domain || ""} 
@@ -318,6 +368,28 @@ export default function ContextSelector({
           </Button>
         </div>
       )}
+
+      {/* Add Item Dialog */}
+      <Dialog open={!!isAddingItem} onOpenChange={(open) => !open && setIsAddingItem(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Nieuwe {isAddingItem === 'page' ? 'Pagina' : 'Component'} toevoegen</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              placeholder={`Naam van ${isAddingItem === 'page' ? 'pagina' : 'component'}...`}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddItem()}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={() => setIsAddingItem(null)}>Annuleren</Button>
+            <Button type="submit" onClick={handleAddItem}>Toevoegen</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
