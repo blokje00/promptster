@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Copy, Star, Trash2, Edit, Code2, Sparkles, FileText, CheckCircle, MessageSquare, Image as ImageIcon, FileArchive, GitBranch, ClipboardCheck } from "lucide-react";
+import { Copy, Star, Trash2, Edit, Code2, Sparkles, FileText, CheckCircle, MessageSquare, Image as ImageIcon, FileArchive, GitBranch, ClipboardCheck, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
@@ -182,20 +182,34 @@ export default function ItemCard({ item, project }) {
             <div className="space-y-1 p-2 bg-orange-50 rounded-lg border border-orange-200" onClick={handleActionClick}>
               <p className="text-xs font-medium text-orange-700 mb-1">Taken checklist:</p>
               {localTaskChecks.map((check, index) => (
-                <div 
-                  key={index}
-                  className={`flex items-center gap-2 p-1.5 rounded text-xs cursor-pointer hover:bg-orange-100 ${check.is_checked ? 'bg-green-50' : ''}`}
-                  onClick={(e) => handleToggleTaskCheck(e, index)}
-                >
-                  <Checkbox 
-                    checked={check.is_checked}
-                    onCheckedChange={() => {}}
-                    className="h-3.5 w-3.5"
-                  />
-                  <span className={`${check.is_checked ? 'line-through text-green-600' : 'text-slate-700'}`}>
-                    {check.task_name}
-                  </span>
-                </div>
+                <HoverCard key={index} openDelay={200}>
+                  <HoverCardTrigger asChild>
+                    <div 
+                      className={`flex items-center gap-2 p-1.5 rounded text-xs cursor-pointer hover:bg-orange-100 ${check.is_checked ? 'bg-green-50' : ''}`}
+                      onClick={(e) => handleToggleTaskCheck(e, index)}
+                    >
+                      <Checkbox 
+                        checked={check.is_checked}
+                        onCheckedChange={() => {}}
+                        className="h-3.5 w-3.5 flex-shrink-0"
+                      />
+                      <span className={`truncate ${check.is_checked ? 'line-through text-green-600' : 'text-slate-700'}`}>
+                        {check.task_name}
+                      </span>
+                    </div>
+                  </HoverCardTrigger>
+                  <HoverCardContent className="w-80 p-0 overflow-hidden" align="start" side="right">
+                    <div className="bg-slate-50 p-2 border-b flex justify-between items-center">
+                      <span className="font-semibold text-xs text-slate-700">Volledige taakomschrijving</span>
+                      <X className="w-3 h-3 text-slate-400" />
+                    </div>
+                    <div className="p-3 max-h-60 overflow-y-auto">
+                      <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
+                        {check.full_description || check.task_name}
+                      </p>
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
               ))}
             </div>
           )}
