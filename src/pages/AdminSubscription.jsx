@@ -1,0 +1,255 @@
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { Plus, Pencil, Trash2, Save, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+export default function AdminSubscription() {
+  const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const { data: plans = [], isLoading } = useQuery({
+    queryKey: ['subscriptionPlans'],
+    queryFn: async () => {
+      const result = await base44.entities.SubscriptionPlan.list("order", 100);
+      return result || [];
+    },
+  });
+
+  const createPlanMutation = useMutation({
+    mutationFn: (data) => base44.entities.SubscriptionPlan.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscriptionPlans'] });
+      toast.success("Plan aangemaakt");
+      setDialogOpen(false);
+      resetForm();
+    },
+  });
+
+  const updatePlanMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.SubscriptionPlan.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscriptionPlans'] });
+      toast.success("Plan bijgewerkt");
+      setDialogOpen(false);
+      resetForm();
+    },
+  });
+
+  const deletePlanMutation = useMutation({
+    mutationFn: (id) => base44.entities.SubscriptionPlan.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subscriptionPlans'] });
+      toast.success("Plan verwijderd");
+    },
+  });
+
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    monthly_price_amount: 0,
+    monthly_price_id: "",
+    annual_price_amount: 0,
+    annual_price_id: "",
+    features: [],
+    is_active: true,
+    order: 0
+  });
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      description: "",
+      monthly_price_amount: 0,
+      monthly_price_id: "",
+      annual_price_amount: 0,
+      annual_price_id: "",
+      features: [],
+      is_active: true,
+      order: 0
+    });
+    setIsEditing(false);
+    setCurrentPlan(null);
+  };
+
+  const handleEdit = (plan) => {
+    setFormData({
+      name: plan.name,
+      description: plan.description,
+      monthly_price_amount: plan.monthly_price_amount,
+      monthly_price_id: plan.monthly_price_id,
+      annual_price_amount: plan.annual_price_amount,
+      annual_price_id: plan.annual_price_id,
+      features: plan.features || [],
+      is_active: plan.is_active,
+      order: plan.order
+    });
+    setCurrentPlan(plan);
+    setIsEditing(true);
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = () => {
+    if (isEditing && currentPlan) {
+      updatePlanMutation.mutate({ id: currentPlan.id, data: formData });
+    } else {
+      createPlanMutation.mutate(formData);
+    }
+  };
+
+  return (
+    <div className="p-8 max-w-6xl mx-auto">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-slate-900">Abonnementen Beheer</h1>
+        <Dialog open={dialogOpen} onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) resetForm();
+        }}>
+          <DialogTrigger asChild>
+            <Button className="bg-indigo-600 hover:bg-indigo-700">
+              <Plus className="w-4 h-4 mr-2" />
+              Nieuw Plan
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle>{isEditing ? "Plan Bewerken" : "Nieuw Plan"}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <Label>Naam</Label>
+                <Input 
+                  value={formData.name} 
+                  onChange={(e) => setFormData({...formData, name: e.target.value})} 
+                />
+              </div>
+              <div>
+                <Label>Beschrijving</Label>
+                <Textarea 
+                  value={formData.description} 
+                  onChange={(e) => setFormData({...formData, description: e.target.value})} 
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Maand Prijs (€)</Label>
+                  <Input 
+                    type="number" 
+                    step="0.01"
+                    value={formData.monthly_price_amount} 
+                    onChange={(e) => setFormData({...formData, monthly_price_amount: parseFloat(e.target.value)})} 
+                  />
+                </div>
+                <div>
+                  <Label>Maand Price ID</Label>
+                  <Input 
+                    value={formData.monthly_price_id} 
+                    onChange={(e) => setFormData({...formData, monthly_price_id: e.target.value})} 
+                    placeholder="price_..."
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Jaar Prijs (€)</Label>
+                  <Input 
+                    type="number" 
+                    step="0.01"
+                    value={formData.annual_price_amount} 
+                    onChange={(e) => setFormData({...formData, annual_price_amount: parseFloat(e.target.value)})} 
+                  />
+                </div>
+                <div>
+                  <Label>Jaar Price ID</Label>
+                  <Input 
+                    value={formData.annual_price_id} 
+                    onChange={(e) => setFormData({...formData, annual_price_id: e.target.value})} 
+                    placeholder="price_..."
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Features (komma gescheiden)</Label>
+                <Textarea 
+                  value={formData.features.join('\n')} 
+                  onChange={(e) => setFormData({...formData, features: e.target.value.split('\n').filter(f => f.trim())})} 
+                  placeholder="Feature 1&#10;Feature 2"
+                  className="min-h-[100px]"
+                />
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch 
+                    checked={formData.is_active} 
+                    onCheckedChange={(checked) => setFormData({...formData, is_active: checked})} 
+                  />
+                  <Label>Actief</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label>Volgorde</Label>
+                  <Input 
+                    type="number" 
+                    className="w-20"
+                    value={formData.order} 
+                    onChange={(e) => setFormData({...formData, order: parseInt(e.target.value)})} 
+                  />
+                </div>
+              </div>
+              <Button onClick={handleSubmit} className="w-full bg-indigo-600">
+                <Save className="w-4 h-4 mr-2" />
+                Opslaan
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="grid gap-6">
+        {plans.map((plan) => (
+          <Card key={plan.id} className={`border-l-4 ${plan.is_active ? 'border-l-green-500' : 'border-l-slate-300'}`}>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-3 mb-1">
+                  <h3 className="text-xl font-semibold">{plan.name}</h3>
+                  {!plan.is_active && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Inactief</span>}
+                </div>
+                <p className="text-slate-600 mb-2">{plan.description}</p>
+                <div className="flex gap-4 text-sm text-slate-500">
+                  <span>Maand: €{plan.monthly_price_amount}</span>
+                  <span>Jaar: €{plan.annual_price_amount}</span>
+                  <span>ID: {plan.monthly_price_id?.substring(0, 10)}...</span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="icon" onClick={() => handleEdit(plan)}>
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => deletePlanMutation.mutate(plan.id)} className="text-red-500 hover:bg-red-50">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {plans.length === 0 && (
+          <p className="text-center text-slate-500 py-12">Nog geen abonnementen geconfigureerd.</p>
+        )}
+      </div>
+    </div>
+  );
+}

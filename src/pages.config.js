@@ -6,6 +6,7 @@ import Multiprompt from './pages/Multiprompt';
 import AIBackoffice from './pages/AIBackoffice';
 import Subscription from './pages/Subscription';
 import Features from './pages/Features';
+import AdminSubscription from './pages/AdminSubscription';
 import __Layout from './Layout.jsx';
 
 
@@ -18,6 +19,7 @@ export const PAGES = {
     "AIBackoffice": AIBackoffice,
     "Subscription": Subscription,
     "Features": Features,
+    "AdminSubscription": AdminSubscription,
 }
 
 export const pagesConfig = {
