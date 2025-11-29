@@ -2,6 +2,8 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Zap, Shield, Database, Code, Cpu } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 
 export default function Features() {
   const features = [
@@ -100,20 +102,22 @@ export default function Features() {
           ))}
         </div>
 
-        <div className="mt-16 bg-indigo-900 rounded-2xl p-8 text-center text-white">
-          <h2 className="text-2xl font-bold mb-4">Klaar om te starten?</h2>
-          <p className="mb-6 text-indigo-200">
-            Probeer alle features gratis uit met ons Starter pakket.
-          </p>
-          <div className="flex justify-center gap-4">
-            <Badge variant="outline" className="text-white border-white px-4 py-1">
-              v1.2.0
-            </Badge>
-            <Badge variant="outline" className="text-white border-white px-4 py-1">
-              Uptime 99.9%
-            </Badge>
+        <Link to={createPageUrl("Subscription")} className="block mt-16 group">
+          <div className="bg-indigo-900 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 transition-colors cursor-pointer">
+            <h2 className="text-2xl font-bold mb-4">Klaar om te starten?</h2>
+            <p className="mb-6 text-indigo-200">
+              Probeer alle features gratis uit met ons Starter pakket.
+            </p>
+            <div className="flex justify-center gap-4">
+              <Badge variant="outline" className="text-white border-white px-4 py-1">
+                v1.2.0
+              </Badge>
+              <Badge variant="outline" className="text-white border-white px-4 py-1">
+                Uptime 99.9%
+              </Badge>
+            </div>
           </div>
-        </div>
+        </Link>
       </div>
     </div>
   );
