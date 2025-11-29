@@ -59,15 +59,13 @@ export default function SubscriptionPage() {
   });
 
   const handleSubscribe = async (plan) => {
-    // Check voor secrets (in backend) of toon melding
     setIsProcessing(true);
     try {
       const priceId = billingCycle === 'monthly' ? plan.monthly_price_id : plan.annual_price_id;
       
-      // Backend functie aanroep
       const result = await base44.functions.invoke("createStripeCheckoutSession", {
         planId: plan.id,
-        priceId: priceId, // Dit zou de Stripe Price ID moeten zijn
+        priceId: priceId,
         billingCycle: billingCycle,
         successUrl: window.location.origin + "/Subscription?success=true",
         cancelUrl: window.location.origin + "/Subscription?canceled=true"
@@ -76,12 +74,31 @@ export default function SubscriptionPage() {
       if (result.data?.url) {
         window.location.href = result.data.url;
       } else {
-        // Fallback voor demo zonder backend
-        toast.info("Stripe integratie is nog niet actief geconfigureerd (API keys ontbreken).");
+        toast.error("Kon geen checkout URL genereren.");
       }
     } catch (error) {
       console.error("Subscription error:", error);
-      toast.error("Kon checkout sessie niet starten. Controleer of Stripe API keys zijn ingesteld.");
+      toast.error("Er ging iets mis bij het starten van de betaling.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setIsProcessing(true);
+    try {
+      const result = await base44.functions.invoke("createStripePortalSession", {
+        returnUrl: window.location.href
+      });
+      
+      if (result.data?.url) {
+        window.location.href = result.data.url;
+      } else {
+        toast.error("Kon klantportaal niet openen.");
+      }
+    } catch (error) {
+      console.error("Portal error:", error);
+      toast.error("Er ging iets mis bij het openen van het beheerportaal.");
     } finally {
       setIsProcessing(false);
     }
@@ -122,6 +139,18 @@ export default function SubscriptionPage() {
             </Label>
           </div>
         </div>
+
+        {user?.subscription_status === 'active' && (
+          <div className="mb-8 p-4 bg-indigo-50 border border-indigo-100 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <h3 className="font-semibold text-indigo-900">Je abonnement is actief!</h3>
+              <p className="text-sm text-indigo-700">Je kunt je facturen en betaalmethode beheren in het klantportaal.</p>
+            </div>
+            <Button onClick={handleManageSubscription} disabled={isProcessing} variant="outline" className="border-indigo-200 hover:bg-indigo-100 text-indigo-700">
+              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Beheer Abonnement"}
+            </Button>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="flex justify-center py-12">
