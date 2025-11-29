@@ -77,6 +77,17 @@ const projectBorderColors = {
   pink: "border-pink-500"
 };
 
+const projectLightColors = {
+  red: "bg-red-50 text-red-700 border-red-200",
+  orange: "bg-orange-50 text-orange-700 border-orange-200",
+  yellow: "bg-yellow-50 text-yellow-700 border-yellow-200",
+  green: "bg-green-50 text-green-700 border-green-200",
+  blue: "bg-blue-50 text-blue-700 border-blue-200",
+  indigo: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  purple: "bg-purple-50 text-purple-700 border-purple-200",
+  pink: "bg-pink-50 text-pink-700 border-pink-200"
+};
+
 export default function Multiprompt() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -748,6 +759,9 @@ Geen uitleg, alleen de JSON.`;
   const filteredThoughtsUnsorted = selectedProjectId 
     ? localThoughts.filter(t => t.project_id === selectedProjectId)
     : localThoughts;
+    
+  // Check limit
+  const isProjectLimitReached = selectedProjectId && filteredThoughtsUnsorted.length >= 10;
 
   // Sort thoughts by target_page, then target_component
   const filteredThoughts = [...filteredThoughtsUnsorted].sort((a, b) => {
@@ -1066,7 +1080,7 @@ ${generatedPrompt}`,
                       <div className={`w-3 h-3 rounded-full ${projectColors[project.color]} mr-2`} />
                       {project.name}
                       {projectTaskCount > 0 && (
-                        <Badge variant="secondary" className="ml-1.5 text-xs h-5 min-w-5 px-1.5 bg-white/20">
+                        <Badge variant="secondary" className={`ml-1.5 text-xs h-5 min-w-5 px-1.5 ${projectTaskCount >= 10 ? 'bg-red-600 text-white animate-pulse' : 'bg-white/20'}`}>
                           {projectTaskCount}
                         </Badge>
                       )}
@@ -1345,7 +1359,7 @@ ${generatedPrompt}`,
                       onDragOver={(e) => e.preventDefault()}
                     >
                       {/* Combined input box with all controls inside */}
-                      <div className="border-2 border-slate-200 rounded-lg focus-within:border-indigo-400 transition-colors bg-white">
+                      <div className={`border-2 rounded-lg focus-within:border-indigo-400 transition-all bg-white ${selectedProject ? `border-dashed ${projectBorderColors[selectedProject.color]}` : 'border-slate-200'}`}>
                         <Textarea
                           ref={newThoughtInputRef}
                           placeholder={t("taskPlaceholder")}
@@ -1392,9 +1406,10 @@ ${generatedPrompt}`,
                             size="sm"
                             onClick={() => newThoughtFileInputRef.current?.click()}
                             disabled={isUploadingNewImage}
-                            className="h-7 px-2"
+                            className="h-7 w-7 p-0"
+                            title="Screenshot toevoegen"
                           >
-                            {isUploadingNewImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+                            {isUploadingNewImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-5 h-5" />}
                           </Button>
                           
                           {/* Focus Type Selector */}
@@ -1429,11 +1444,11 @@ ${generatedPrompt}`,
                     </div>
                     <Button 
                       onClick={handleAddThought} 
-                      disabled={!newThought.trim() && newThoughtImages.length === 0}
-                      className={`w-full ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'} hover:opacity-90 text-white`}
+                      disabled={(!newThought.trim() && newThoughtImages.length === 0) || isProjectLimitReached}
+                      className={`w-full ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'} hover:opacity-90 text-white transition-all`}
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      {selectedProject ? `${t("addTaskTo")} ${selectedProject.name}` : t("addTask")}
+                      {isProjectLimitReached ? "Limiet bereikt (max 10)" : (selectedProject ? `${t("addTaskTo")} ${selectedProject.name}` : t("addTask"))}
                     </Button>
                     <DragDropContext onDragEnd={handleThoughtsDragEnd}>
                       <Droppable droppableId="thoughts-list">
@@ -1496,9 +1511,9 @@ ${generatedPrompt}`,
                       onCheckedChange={setIncludePersonalPrefs}
                       disabled={!currentUser?.personal_preferences_markdown}
                     />
-                    <label htmlFor="personalPrefs" className="text-xs text-slate-700 cursor-pointer">
+                    <Link to={createPageUrl("AIBackoffice")} className="text-xs text-slate-700 underline hover:text-indigo-600">
                       Persoonlijk
-                    </label>
+                    </Link>
                     {!currentUser?.personal_preferences_markdown && (
                       <Badge variant="outline" className="text-xs text-orange-600 border-orange-300 h-5">!</Badge>
                     )}
@@ -1511,9 +1526,13 @@ ${generatedPrompt}`,
                       onCheckedChange={setIncludeProjectConfig}
                       disabled={!selectedProject?.technical_config_markdown}
                     />
-                    <label htmlFor="projectConfig" className="text-xs text-slate-700 cursor-pointer">
-                      Project
-                    </label>
+                    {selectedProject ? (
+                      <button onClick={() => handleEditProject(selectedProject)} className="text-xs text-slate-700 underline hover:text-indigo-600">
+                        Project
+                      </button>
+                    ) : (
+                      <span className="text-xs text-slate-400">Project</span>
+                    )}
                     {selectedProject && !selectedProject.technical_config_markdown && (
                       <Badge variant="outline" className="text-xs text-orange-600 border-orange-300 h-5">!</Badge>
                     )}
@@ -1587,12 +1606,12 @@ ${generatedPrompt}`,
                     {(startTemplateId && selectedStartTemplate) || (endTemplateId && selectedEndTemplate) ? (
                       <div className="grid grid-cols-2 gap-3 mt-2">
                         {startTemplateId && selectedStartTemplate && (
-                          <div className="p-2 bg-green-50 rounded text-xs text-green-700 max-h-20 overflow-auto">
+                          <div className={`p-2 rounded text-xs max-h-20 overflow-auto ${selectedProject ? projectLightColors[selectedProject.color] : 'bg-green-50 text-green-700 border-green-200'}`}>
                             {selectedStartTemplate.content}
                           </div>
                         )}
                         {endTemplateId && selectedEndTemplate && (
-                          <div className="p-2 bg-orange-50 rounded text-xs text-orange-700 max-h-20 overflow-auto">
+                          <div className={`p-2 rounded text-xs max-h-20 overflow-auto ${selectedProject ? projectLightColors[selectedProject.color] : 'bg-orange-50 text-orange-700 border-orange-200'}`}>
                             {selectedEndTemplate.content}
                           </div>
                         )}
