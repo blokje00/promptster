@@ -56,14 +56,14 @@ import ThoughtCard from "../components/multiprompt/ThoughtCard";
 import ContextSelector from "../components/multiprompt/ContextSelector";
 
 const projectColors = {
-  red: "bg-red-500",
-  orange: "bg-orange-500",
-  yellow: "bg-yellow-500",
-  green: "bg-green-500",
-  blue: "bg-blue-500",
-  indigo: "bg-indigo-500",
-  purple: "bg-purple-500",
-  pink: "bg-pink-500"
+  red: "bg-red-500 hover:bg-red-600",
+  orange: "bg-orange-500 hover:bg-orange-600",
+  yellow: "bg-yellow-500 hover:bg-yellow-600",
+  green: "bg-green-500 hover:bg-green-600",
+  blue: "bg-blue-500 hover:bg-blue-600",
+  indigo: "bg-indigo-500 hover:bg-indigo-600",
+  purple: "bg-purple-500 hover:bg-purple-600",
+  pink: "bg-pink-500 hover:bg-pink-600"
 };
 
 const projectBorderColors = {
@@ -356,7 +356,7 @@ export default function Multiprompt() {
     mutationFn: (data) => base44.entities.Item.create(data),
     onSuccess: (newItem) => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
-      toast.success("Multi-task opgeslagen!");
+      toast.success("Multi-Step opgeslagen!");
       // Reset builder state locally just in case
       resetBuilder();
     },
@@ -946,7 +946,7 @@ ${generatedPrompt}`,
       const finalPrompt = improvedPrompt || generatedPrompt;
       const defaultTitle = selectedProject 
         ? `[${selectedProject.name}] ${new Date().toLocaleString('nl-NL')}`
-        : `Multi-task ${new Date().toLocaleString('nl-NL')}`;
+        : `Multi-Step ${new Date().toLocaleString('nl-NL')}`;
         
       const title = promptTitle.trim() || defaultTitle;
 
@@ -1533,6 +1533,7 @@ ${generatedPrompt}`,
                       checked={includePersonalPrefs && !!currentUser?.personal_preferences_markdown}
                       onCheckedChange={setIncludePersonalPrefs}
                       disabled={!currentUser?.personal_preferences_markdown}
+                      className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 text-white"
                     />
                     <Link to={createPageUrl("AIBackoffice")} className="text-xs text-slate-700 underline hover:text-indigo-600">
                       Persoonlijk
@@ -1548,6 +1549,7 @@ ${generatedPrompt}`,
                       checked={includeProjectConfig && !!selectedProject?.technical_config_markdown}
                       onCheckedChange={setIncludeProjectConfig}
                       disabled={!selectedProject?.technical_config_markdown}
+                      className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 text-white"
                     />
                     {selectedProject ? (
                       <button onClick={() => handleEditProject(selectedProject)} className="text-xs text-slate-700 underline hover:text-indigo-600">

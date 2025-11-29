@@ -185,7 +185,7 @@ export default function Dashboard() {
                 Prompts <span className="ml-1 text-xs text-slate-500">({itemCounts.prompt})</span>
               </TabsTrigger>
               <TabsTrigger value="multiprompt" className="data-[state=active]:bg-white text-xs sm:text-sm">
-                Multi-tasks <span className="ml-1 text-xs text-slate-500">({itemCounts.multiprompt})</span>
+                Multi-Steps <span className="ml-1 text-xs text-slate-500">({itemCounts.multiprompt})</span>
               </TabsTrigger>
               <TabsTrigger value="code" className="data-[state=active]:bg-white text-xs sm:text-sm">
                 <Code2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />

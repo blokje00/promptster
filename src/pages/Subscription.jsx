@@ -21,7 +21,7 @@ export default function SubscriptionPage() {
     queryKey: ['subscriptionPlans'],
     queryFn: async () => {
       // In een echte app haal je dit uit de DB. Voor nu mocken we data als de DB leeg is of vullen we aan.
-      const dbPlans = await base44.entities.SubscriptionPlan.list("order", 100);
+      const dbPlans = await base44.entities.SubscriptionPlan.filter({ is_active: true }, "order", 100);
       if (dbPlans && dbPlans.length > 0) return dbPlans;
       
       // Fallback dummy data voor preview als er nog geen records zijn
