@@ -23,28 +23,17 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { priceId, successUrl, cancelUrl } = await req.json();
+    const { priceId, successUrl, cancelUrl, planId } = await req.json();
 
     if (!priceId) {
       return Response.json({ error: 'Missing priceId' }, { status: 400 });
     }
-
-    // Check if we have a stripe_customer_id for this user
-    // Note: We fetch the full user entity to be sure we get the custom field
-    // assuming the user entity was extended correctly.
-    // If not found, we pass email so Stripe can help or create a new one.
     
-    let customerId = user.stripe_customer_id;
+    const customerId = user.stripe_customer_id;
 
-    // Als er nog geen ID is, zoeken we in Stripe op email om dubbele klanten te voorkomen
-    if (!customerId) {
-        const existingCustomers = await stripe.customers.list({ email: user.email, limit: 1 });
-        if (existingCustomers.data.length > 0) {
-            customerId = existingCustomers.data[0].id;
-            // Optioneel: update user hier met het gevonden ID
-            await base44.auth.updateMe({ stripe_customer_id: customerId });
-        }
-    }
+    // We slaan de customer lookup over om permissie-fouten met restricted keys te voorkomen.
+    // Als er geen customerId is, vullen we het e-mailadres in en laat Stripe een nieuwe klant aanmaken.
+    // De webhook vangt dit later op en koppelt het ID aan de gebruiker.
 
     const sessionConfig = {
       payment_method_types: ['card'],
