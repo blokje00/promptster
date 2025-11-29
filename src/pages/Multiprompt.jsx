@@ -1937,9 +1937,9 @@ ${generatedPrompt}`,
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Templates List */}
               <div className="space-y-4">
-                <Card>
+                <Card className={selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : ''}>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-green-700">{t("startTexts")}</CardTitle>
+                    <CardTitle className={selectedProject ? `text-${selectedProject.color}-700` : "text-green-700"}>{t("startTexts")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {startTemplates.map(template => {
@@ -1986,9 +1986,9 @@ ${generatedPrompt}`,
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className={selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : ''}>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-orange-700">{t("endTexts")}</CardTitle>
+                    <CardTitle className={selectedProject ? `text-${selectedProject.color}-700` : "text-orange-700"}>{t("endTexts")}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {endTemplates.map(template => {
