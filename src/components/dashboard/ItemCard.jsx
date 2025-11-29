@@ -204,7 +204,7 @@ export default function ItemCard({ item, project }) {
                       <X className="w-3 h-3 text-slate-400" />
                     </div>
                     <div className="p-3 max-h-60 overflow-y-auto">
-                      <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
+                      <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed break-words">
                         {check.full_description || check.task_name}
                       </p>
                     </div>
