@@ -1,0 +1,151 @@
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import SubscriptionPlanCard from "../components/subscription/SubscriptionPlanCard";
+import { Badge } from "@/components/ui/badge";
+import { Loader2 } from "lucide-react";
+
+export default function SubscriptionPage() {
+  const [billingCycle, setBillingCycle] = useState("monthly"); // 'monthly' or 'annual'
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const { data: user } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => base44.auth.me(),
+  });
+
+  const { data: plans, isLoading } = useQuery({
+    queryKey: ['subscriptionPlans'],
+    queryFn: async () => {
+      // In een echte app haal je dit uit de DB. Voor nu mocken we data als de DB leeg is of vullen we aan.
+      const dbPlans = await base44.entities.SubscriptionPlan.list("order", 100);
+      if (dbPlans && dbPlans.length > 0) return dbPlans;
+      
+      // Fallback dummy data voor preview als er nog geen records zijn
+      return [
+        {
+          id: "basic",
+          name: "Starter",
+          description: "Perfect voor hobbyisten en kleine projecten.",
+          monthly_price_amount: 9.99,
+          annual_price_amount: 99.99,
+          features: ["Onbeperkte projecten", "500 items in vault", "Basis AI suggesties", "Community support"],
+          order: 1
+        },
+        {
+          id: "pro",
+          name: "Professional",
+          description: "Voor serieuze ontwikkelaars en teams.",
+          monthly_price_amount: 29.99,
+          annual_price_amount: 299.99,
+          features: ["Alles in Starter", "Onbeperkte items", "Geavanceerde AI modellen", "Prioriteit support", "Team samenwerking"],
+          is_recommended: true,
+          order: 2
+        },
+        {
+          id: "team",
+          name: "Enterprise",
+          description: "Op maat gemaakte oplossingen voor grote organisaties.",
+          monthly_price_amount: 99.99,
+          annual_price_amount: 999.99,
+          features: ["Alles in Professional", "SSO Integratie", "Custom AI fine-tuning", "Dedicated account manager", "SLA"],
+          order: 3
+        }
+      ];
+    }
+  });
+
+  const handleSubscribe = async (plan) => {
+    // Check voor secrets (in backend) of toon melding
+    setIsProcessing(true);
+    try {
+      const priceId = billingCycle === 'monthly' ? plan.monthly_price_id : plan.annual_price_id;
+      
+      // Backend functie aanroep
+      const result = await base44.functions.invoke("createStripeCheckoutSession", {
+        planId: plan.id,
+        priceId: priceId, // Dit zou de Stripe Price ID moeten zijn
+        billingCycle: billingCycle,
+        successUrl: window.location.origin + "/Subscription?success=true",
+        cancelUrl: window.location.origin + "/Subscription?canceled=true"
+      });
+
+      if (result.data?.url) {
+        window.location.href = result.data.url;
+      } else {
+        // Fallback voor demo zonder backend
+        toast.info("Stripe integratie is nog niet actief geconfigureerd (API keys ontbreken).");
+      }
+    } catch (error) {
+      console.error("Subscription error:", error);
+      toast.error("Kon checkout sessie niet starten. Controleer of Stripe API keys zijn ingesteld.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Check URL params voor succes/cancel
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success")) {
+      toast.success("Abonnement succesvol geactiveerd! Bedankt.");
+    }
+    if (params.get("canceled")) {
+      toast.info("Betaling geannuleerd.");
+    }
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-slate-900 mb-4">Kies het plan dat bij je past</h1>
+          <p className="text-xl text-slate-600">Start met Promptguard en verhoog je productiviteit.</p>
+          
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <Label htmlFor="billing-cycle" className={`cursor-pointer ${billingCycle === 'monthly' ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>
+              Maandelijks
+            </Label>
+            <Switch 
+              id="billing-cycle" 
+              checked={billingCycle === 'annual'}
+              onCheckedChange={(checked) => setBillingCycle(checked ? 'annual' : 'monthly')}
+            />
+            <Label htmlFor="billing-cycle" className={`cursor-pointer flex items-center gap-2 ${billingCycle === 'annual' ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>
+              Jaarlijks
+              <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">
+                1 jaar korting
+              </Badge>
+            </Label>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-8">
+            {plans.map(plan => (
+              <SubscriptionPlanCard 
+                key={plan.id} 
+                plan={plan} 
+                billingCycle={billingCycle}
+                onSubscribe={handleSubscribe}
+                isProcessing={isProcessing}
+                currentPlanId={user?.plan_id}
+              />
+            ))}
+          </div>
+        )}
+        
+        <div className="mt-12 text-center text-sm text-slate-500">
+          <p>Alle prijzen zijn in EUR en exclusief BTW indien van toepassing. Je kunt op elk moment opzeggen.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
