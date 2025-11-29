@@ -944,7 +944,11 @@ ${generatedPrompt}`,
 
   const handleSaveAsPrompt = async () => {
     const finalPrompt = improvedPrompt || generatedPrompt;
-    const title = promptTitle.trim() || `Multi-task ${new Date().toLocaleString('nl-NL')}`;
+    const defaultTitle = selectedProject 
+      ? `[${selectedProject.name}] ${new Date().toLocaleString('nl-NL')}`
+      : `Multi-task ${new Date().toLocaleString('nl-NL')}`;
+      
+    const title = promptTitle.trim() || defaultTitle;
 
     // Save template selection to project
     if (selectedProjectId && (startTemplateId || endTemplateId)) {
@@ -992,7 +996,11 @@ ${generatedPrompt}`,
       
       // Save as Item with is_pending_check flag
       const finalPrompt = improvedPrompt || generatedPrompt;
-      const title = promptTitle.trim() || `Controle ${new Date().toLocaleString('nl-NL')}`;
+      const defaultTitle = selectedProject 
+        ? `[${selectedProject.name}] Controle ${new Date().toLocaleString('nl-NL')}`
+        : `Controle ${new Date().toLocaleString('nl-NL')}`;
+        
+      const title = promptTitle.trim() || defaultTitle;
       
       createMultipromptMutation.mutate({
         title: title,

@@ -5,10 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Search, Plus, Star, Code2, Sparkles, FileArchive, GitBranch, ClipboardCheck } from "lucide-react";
+import { Search, Plus, Star, Code2, Sparkles, FileArchive, GitBranch, ClipboardCheck, FolderOpen, X } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import ItemCard from "../components/dashboard/ItemCard";
+
+const projectColors = {
+  red: "bg-red-500",
+  orange: "bg-orange-500",
+  yellow: "bg-yellow-500",
+  green: "bg-green-500",
+  blue: "bg-blue-500",
+  indigo: "bg-indigo-500",
+  purple: "bg-purple-500",
+  pink: "bg-pink-500"
+};
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -17,10 +30,21 @@ export default function Dashboard() {
   const [showZipOnly, setShowZipOnly] = useState(false);
   const [showPublishedOnly, setShowPublishedOnly] = useState(false);
   const [showPendingCheckOnly, setShowPendingCheckOnly] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState("all");
 
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me(),
+  });
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects', currentUser?.email],
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+      const result = await base44.entities.Project.filter({ created_by: currentUser.email });
+      return result || [];
+    },
+    enabled: !!currentUser?.email,
   });
 
   const { data: items, isLoading } = useQuery({
@@ -53,8 +77,9 @@ export default function Dashboard() {
     const matchesZip = !showZipOnly || (item.zip_files && item.zip_files.length > 0);
     const matchesPublished = !showPublishedOnly || item.is_publish_version;
     const matchesPendingCheck = !showPendingCheckOnly || item.is_pending_check;
+    const matchesProject = selectedProjectId === "all" || item.project_id === selectedProjectId;
     
-    return matchesSearch && matchesType && matchesFavorites && matchesZip && matchesPublished && matchesPendingCheck;
+    return matchesSearch && matchesType && matchesFavorites && matchesZip && matchesPublished && matchesPendingCheck && matchesProject;
   });
 
   return (
@@ -115,6 +140,38 @@ export default function Dashboard() {
                 <ClipboardCheck className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                 Te Controleren
               </Button>
+
+              <div className="flex items-center gap-2">
+                <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                  <SelectTrigger className="w-[180px] h-9">
+                    <div className="flex items-center gap-2 text-xs sm:text-sm">
+                      <FolderOpen className="w-3 h-3 sm:w-4 sm:h-4 text-slate-500" />
+                      <SelectValue placeholder="Filter op Project" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle Projecten</SelectItem>
+                    {projects.map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${projectColors[p.color]}`} />
+                          {p.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedProjectId !== "all" && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSelectedProjectId("all")}
+                    className="h-9 w-9"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
