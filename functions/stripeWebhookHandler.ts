@@ -39,27 +39,16 @@ Deno.serve(async (req) => {
       case 'checkout.session.completed': {
         const session = event.data.object;
         const userId = session.metadata.userId;
+        const planId = session.metadata.planId;
         const customerId = session.customer;
-        const subscriptionId = session.subscription;
 
         if (userId) {
-            // Update user with subscription info
-            // We need to find the plan based on the price ID if possible, or just mark active
-            // For now, we just mark subscription as active and save IDs
-            
-            // Fetch subscription details to get the plan/product if needed
-            // const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-            
-            // Update User entity (Assuming we can update by ID using service role)
-            // Since we don't have direct 'updateById' on auth, we use entities.User
-            // SECURITY: Only possible with service role
-            
             await client.entities.User.update(userId, {
                 stripe_customer_id: customerId,
                 subscription_status: 'active',
-                // plan_id: ... derive from session price ...
+                plan_id: planId,
             });
-            console.log(`User ${userId} subscription activated.`);
+            console.log(`User ${userId} subscription activated for plan ${planId}.`);
         }
         break;
       }

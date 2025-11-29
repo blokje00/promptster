@@ -61,6 +61,7 @@ Deno.serve(async (req) => {
       customer: customerId,
       metadata: {
         userId: user.id,
+        planId: planId,
       },
     };
 
