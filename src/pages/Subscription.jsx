@@ -75,7 +75,7 @@ export default function SubscriptionPage() {
         planId: plan.id,
         priceId: priceId,
         billingCycle: billingCycle,
-        successUrl: window.location.origin + "/Subscription?success=true",
+        successUrl: window.location.origin + "/Subscription?success=true&session_id={CHECKOUT_SESSION_ID}",
         cancelUrl: window.location.origin + "/Subscription?canceled=true"
       });
 
@@ -180,11 +180,24 @@ export default function SubscriptionPage() {
               <h3 className="font-semibold text-indigo-900">Je abonnement is actief!</h3>
               <p className="text-sm text-indigo-700">Je kunt je facturen en betaalmethode beheren in het klantportaal.</p>
             </div>
-            <Button onClick={handleManageSubscription} disabled={isProcessing} variant="outline" className="border-indigo-200 hover:bg-indigo-100 text-indigo-700">
-              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Beheer Abonnement"}
-            </Button>
-          </div>
-        )}
+            <div className="flex gap-2">
+              <Button onClick={async () => {
+                setIsProcessing(true);
+                try {
+                  await base44.functions.invoke("syncSubscriptionStatus");
+                  toast.success("Status gesynchroniseerd");
+                  base44.auth.me(); // Refresh local user
+                } catch(e) { toast.error("Sync mislukt"); }
+                setIsProcessing(false);
+              }} disabled={isProcessing} variant="outline" className="border-slate-200 hover:bg-slate-100 text-slate-700">
+                Sync Status
+              </Button>
+              <Button onClick={handleManageSubscription} disabled={isProcessing} variant="outline" className="border-indigo-200 hover:bg-indigo-100 text-indigo-700">
+                {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Beheer Abonnement"}
+              </Button>
+            </div>
+            </div>
+            )}
 
         {isLoading ? (
           <div className="flex justify-center py-12">
