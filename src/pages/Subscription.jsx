@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import SubscriptionPlanCard from "../components/subscription/SubscriptionPlanCard";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function SubscriptionPage() {
   const [billingCycle, setBillingCycle] = useState("monthly"); // 'monthly' only for now
