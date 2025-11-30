@@ -14,6 +14,7 @@ import { ArrowLeft, Save, X, Star, GitBranch } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import ImageUploadZone from "../components/dashboard/ImageUploadZone";
 import ZipUploadZone from "../components/dashboard/ZipUploadZone";
+import RequireSubscription from "../components/auth/RequireSubscription";
 
 const projectColors = {
   red: "bg-red-500",
@@ -106,6 +107,7 @@ export default function AddItem() {
   };
 
   return (
+    <RequireSubscription>
     <div className="p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">

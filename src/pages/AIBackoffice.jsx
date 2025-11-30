@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { createPageUrl } from "@/utils";
 import { useLanguage } from "../components/i18n/LanguageContext";
 import LanguageSelector from "../components/settings/LanguageSelector";
+import RequireSubscription from "../components/auth/RequireSubscription";
 
 const DEFAULT_INSTRUCTION = `Verbeter de volgende prompt technisch en taalkundig. Maak de tekst professioneler, duidelijker en beter gestructureerd. Behoud de originele intentie en inhoud, maar verbeter grammatica, spelling, en technische precisie. Geef alleen de verbeterde tekst terug, geen uitleg.`;
 
@@ -115,6 +116,7 @@ export default function AIBackoffice() {
   };
 
   return (
+    <RequireSubscription>
     <div className="p-4 md:p-8">
       <div className="max-w-3xl mx-auto">
         <div className="mb-8">

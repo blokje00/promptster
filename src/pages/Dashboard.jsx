@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import ItemCard from "../components/dashboard/ItemCard";
+import RequireSubscription from "../components/auth/RequireSubscription";
 
 const projectColors = {
   red: "bg-red-500",
@@ -83,6 +84,7 @@ export default function Dashboard() {
   });
 
   return (
+    <RequireSubscription>
     <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">

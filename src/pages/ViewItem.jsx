@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, Edit, Copy, CheckCircle, Star, MessageSquare, Image as ImageIcon, ZoomIn, FileArchive, Download, GitBranch, Calendar, ClipboardCheck, ClipboardPaste, Save, Loader2, ListChecks } from "lucide-react";
 import FileChangesFeedback from "../components/items/FileChangesFeedback";
+import RequireSubscription from "../components/auth/RequireSubscription";
 import {
   Dialog,
   DialogContent,
@@ -132,6 +133,7 @@ export default function ViewItem() {
   }
 
   return (
+    <RequireSubscription>
     <div className="p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-8">
