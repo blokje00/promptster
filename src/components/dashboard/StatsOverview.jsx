@@ -1,5 +1,6 @@
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Code2, Sparkles, FileText, Star } from "lucide-react";
+import { Code2, Sparkles, FileText, Star, TrendingUp, Users } from "lucide-react";
 
 export default function StatsOverview({ items }) {
   const stats = [
@@ -16,15 +17,15 @@ export default function StatsOverview({ items }) {
       color: "bg-purple-500"
     },
     {
-      label: "Code",
-      value: items.filter(i => i.type === "code").length,
-      icon: Code2,
-      color: "bg-blue-500"
+      label: "Bezoekers (24u)",
+      value: "1,234",
+      icon: Users,
+      color: "bg-green-500"
     },
     {
-      label: "Favorieten",
-      value: items.filter(i => i.is_favorite).length,
-      icon: Star,
+      label: "Omzet (30d)",
+      value: "€ 850",
+      icon: TrendingUp,
       color: "bg-yellow-500"
     }
   ];

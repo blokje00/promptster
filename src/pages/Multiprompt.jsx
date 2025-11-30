@@ -514,6 +514,26 @@ export default function Multiprompt() {
     base44.entities.Thought.update(thoughtId, { focus_type: newFocus });
   };
 
+  // Update context for a thought
+  const handleUpdateThoughtContext = (thoughtId, newContext) => {
+    setLocalThoughts(prev => prev.map(t => 
+      t.id === thoughtId ? { 
+        ...t, 
+        target_page: newContext.target_page,
+        target_component: newContext.target_component,
+        target_domain: newContext.target_domain,
+        ai_prediction: newContext.ai_prediction
+      } : t
+    ));
+    // Persist to DB
+    base44.entities.Thought.update(thoughtId, {
+      target_page: newContext.target_page,
+      target_component: newContext.target_component,
+      target_domain: newContext.target_domain,
+      ai_prediction: newContext.ai_prediction
+    });
+  };
+
   // Move thought to different project
   const updateThoughtProjectMutation = useMutation({
     mutationFn: ({ id, project_id }) => base44.entities.Thought.update(id, { project_id }),
@@ -1603,6 +1623,7 @@ ${generatedPrompt}`,
                                         onUpdateImages={handleUpdateThoughtImages}
                                         onUpdateContent={handleUpdateThoughtContent}
                                         onUpdateFocus={handleUpdateThoughtFocus}
+                                        onUpdateContext={handleUpdateThoughtContext}
                                         dragHandleProps={provided.dragHandleProps}
                                         showDragHandle={true}
                                       />

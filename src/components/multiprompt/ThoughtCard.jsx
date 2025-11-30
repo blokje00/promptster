@@ -4,8 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, GripVertical, Image as ImageIcon, Loader2, Plus, Palette, Code, Ban } from "lucide-react";
+import { X, GripVertical, Image as ImageIcon, Loader2, Plus, Palette, Code, Ban, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
+import ContextSelector from "./ContextSelector";
 
 const projectColors = {
   red: "bg-red-500",
@@ -45,6 +46,7 @@ export default function ThoughtCard({
   onUpdateImages,
   onUpdateContent,
   onUpdateFocus,
+  onUpdateContext,
   dragHandleProps,
   showDragHandle = true
 }) {
@@ -297,6 +299,38 @@ export default function ThoughtCard({
                     <Ban className="w-3 h-3" /> Geen Design
                   </span>
                 </SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="h-4 w-px bg-slate-300 mx-1" />
+
+            {/* Context Selector */}
+            <div onClick={(e) => e.stopPropagation()}>
+              <ContextSelector
+                value={{
+                  target_page: thought.target_page,
+                  target_component: thought.target_component,
+                  target_domain: thought.target_domain,
+                  ai_prediction: thought.ai_prediction
+                }}
+                onChange={(newContext) => onUpdateContext && onUpdateContext(thought.id, newContext)}
+                thoughtText={thought.content}
+                compact={true}
+                selectedProject={project}
+                enableAISuggestions={false} // Disable AI here to prevent popup spam on list
+              />
+            </div>
+
+            <div className="h-4 w-px bg-slate-300 mx-1" />
+
+            <Select onValueChange={(val) => onUpdateContent && onUpdateContent(thought.id, (thought.content || "") + "\n\n" + val)}>
+              <SelectTrigger className="h-6 text-xs w-auto min-w-[24px] px-1 border-dashed" onClick={(e) => e.stopPropagation()}>
+                <MoreHorizontal className="w-3 h-3" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Zoek en vervang in /pages/**/*">/pages/**/*</SelectItem>
+                <SelectItem value="Zoek en vervang in /components/**/*">/components/**/*</SelectItem>
+                <SelectItem value="Zoek en vervang in **/*">**/*</SelectItem>
               </SelectContent>
             </Select>
           </div>
