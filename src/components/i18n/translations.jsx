@@ -202,7 +202,7 @@ export const translations = {
     addFirstItem: "Add your first item",
     
     // Multiprompt
-    promptguardBuilder: "Promptguard Multi-step Builder",
+    promptguardBuilder: "Promptguard Multi-task Builder",
     collectThoughts: "Collect thoughts and build comprehensive multi-task prompts",
     project: "Project",
     allProjects: "All",
