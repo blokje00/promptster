@@ -418,5 +418,6 @@ export default function ViewItem() {
         </Card>
       </div>
     </div>
+    </RequireSubscription>
   );
 }

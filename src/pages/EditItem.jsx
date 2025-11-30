@@ -296,5 +296,6 @@ export default function EditItem() {
         </form>
       </div>
     </div>
+    </RequireSubscription>
   );
 }

@@ -24,7 +24,7 @@ export default function SubscriptionPage() {
       // Using configured Stripe plans
       return [
         {
-          id: "free",
+          id: "starter",
           name: "Starter",
           description: "Probeer PromptGuard gratis uit.",
           monthly_price_amount: 0,
@@ -59,9 +59,23 @@ export default function SubscriptionPage() {
   const handleSubscribe = async (plan) => {
     setIsProcessing(true);
     try {
+      if (plan.id === 'starter') {
+         // Handle Starter plan activation
+         const res = await base44.functions.invoke('setStarterPlan');
+         if (res.data?.success) {
+             toast.success("Starter plan geactiveerd!");
+             queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+             // Redirect to Dashboard
+             window.location.href = "/Dashboard";
+         } else {
+             toast.error("Kon Starter plan niet activeren.");
+         }
+         return;
+      }
+
       if (plan.monthly_price_amount === 0 || typeof plan.monthly_price_amount === 'string') {
-        // Handle free/contact plans without Stripe
-        toast.info("Dit plan vereist geen betaling of neem contact op.");
+        // Handle other free/contact plans without Stripe
+        toast.info("Neem contact op voor dit plan.");
         return;
       }
 

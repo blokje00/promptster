@@ -54,6 +54,7 @@ import {
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import ThoughtCard from "../components/multiprompt/ThoughtCard";
 import ContextSelector from "../components/multiprompt/ContextSelector";
+import RequireSubscription from "../components/auth/RequireSubscription";
 
 const projectColors = {
   red: "bg-red-500 hover:bg-red-600",
@@ -1150,6 +1151,7 @@ ${generatedPrompt}`,
   }, [selectedThoughts, improvedPrompt]);
 
   return (
+    <RequireSubscription>
     <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
@@ -2225,5 +2227,6 @@ ${generatedPrompt}`,
         </Tabs>
       </div>
     </div>
+    </RequireSubscription>
   );
 }

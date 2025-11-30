@@ -409,5 +409,6 @@ export default function AddItem() {
         </form>
       </div>
     </div>
+    </RequireSubscription>
   );
 }

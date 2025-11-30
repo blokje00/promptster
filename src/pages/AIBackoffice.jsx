@@ -255,5 +255,6 @@ export default function AIBackoffice() {
         </Card>
       </div>
     </div>
+    </RequireSubscription>
   );
 }
