@@ -18,7 +18,7 @@ export const translations = {
     
     // Dashboard
     myVault: "Mijn Vault",
-    allPromptsAndCode: "Al je prompts en code op één plek",
+    allPromptsAndCode: "Maak Multi Step prompts beter, intuitiever, sneller en bespaar credits !",
     searchInVault: "Zoek in je vault...",
     favorites: "Favorieten",
     published: "Published",
