@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 
 export default function SubscriptionPage() {
-  const [billingCycle, setBillingCycle] = useState("monthly"); // 'monthly' or 'annual'
+  const [billingCycle, setBillingCycle] = useState("monthly"); // 'monthly' only for now
   const [isProcessing, setIsProcessing] = useState(false);
 
   const { data: user } = useQuery({
@@ -20,38 +20,35 @@ export default function SubscriptionPage() {
   const { data: plans, isLoading } = useQuery({
     queryKey: ['subscriptionPlans'],
     queryFn: async () => {
-      // In een echte app haal je dit uit de DB. Voor nu mocken we data als de DB leeg is of vullen we aan.
-      const dbPlans = await base44.entities.SubscriptionPlan.filter({ is_active: true }, "order", 100);
-      if (dbPlans && dbPlans.length > 0) return dbPlans;
-      
-      // Fallback dummy data voor preview als er nog geen records zijn
+      // Using configured Stripe plans
       return [
         {
-          id: "basic",
+          id: "free",
           name: "Starter",
-          description: "Perfect voor hobbyisten en kleine projecten.",
-          monthly_price_amount: 9.99,
-          annual_price_amount: 99.99,
-          features: ["Onbeperkte projecten", "500 items in vault", "Basis AI suggesties", "Community support"],
+          description: "Probeer PromptGuard gratis uit.",
+          monthly_price_amount: 0,
+          annual_price_amount: 0,
+          features: ["Tot 10 items", "Basis features", "Community support"],
           order: 1
         },
         {
-          id: "pro",
-          name: "Professional",
-          description: "Voor serieuze ontwikkelaars en teams.",
-          monthly_price_amount: 29.99,
-          annual_price_amount: 299.99,
-          features: ["Alles in Starter", "Onbeperkte items", "Geavanceerde AI modellen", "Prioriteit support", "Team samenwerking"],
+          id: "prod_TVmxD3pUgsBYrn", 
+          name: "PromptGuard",
+          description: "Ongelimiteerde toegang tot alle features.",
+          monthly_price_amount: 9.99,
+          monthly_price_id: "price_1SYlNxKroSuhgudTiw1kLaQa",
+          annual_price_amount: null,
+          features: ["Onbeperkte items", "Multi-Step Builder", "Geavanceerde AI modellen", "Prioriteit support", "Stripe Integratie"],
           is_recommended: true,
           order: 2
         },
         {
-          id: "team",
+          id: "enterprise",
           name: "Enterprise",
-          description: "Op maat gemaakte oplossingen voor grote organisaties.",
-          monthly_price_amount: 99.99,
-          annual_price_amount: 999.99,
-          features: ["Alles in Professional", "SSO Integratie", "Custom AI fine-tuning", "Dedicated account manager", "SLA"],
+          description: "Voor grote organisaties.",
+          monthly_price_amount: "Contact",
+          annual_price_amount: "Contact",
+          features: ["SSO Integratie", "Custom AI fine-tuning", "Dedicated account manager", "SLA"],
           order: 3
         }
       ];
@@ -61,8 +58,19 @@ export default function SubscriptionPage() {
   const handleSubscribe = async (plan) => {
     setIsProcessing(true);
     try {
+      if (plan.monthly_price_amount === 0 || typeof plan.monthly_price_amount === 'string') {
+        // Handle free/contact plans without Stripe
+        toast.info("Dit plan vereist geen betaling of neem contact op.");
+        return;
+      }
+
       const priceId = billingCycle === 'monthly' ? plan.monthly_price_id : plan.annual_price_id;
       
+      if (!priceId) {
+         toast.error("Prijs niet beschikbaar voor deze periode.");
+         return;
+      }
+
       const result = await base44.functions.invoke("createStripeCheckoutSession", {
         planId: plan.id,
         priceId: priceId,
@@ -72,7 +80,7 @@ export default function SubscriptionPage() {
       });
 
       if (result.data?.url) {
-        window.open(result.data.url, '_blank');
+        window.location.href = result.data.url; // Redirect in same tab usually better for checkout
       } else {
         toast.error("Kon geen checkout URL genereren.");
       }
@@ -122,7 +130,8 @@ export default function SubscriptionPage() {
           <h1 className="text-4xl font-bold text-slate-900 mb-4">Start met Promptguard en verhoog je productiviteit.</h1>
           <p className="text-xl text-slate-600">En bespaar bij veel platforms hiermee credits</p>
           
-          <div className="flex items-center justify-center gap-4 mt-8">
+          {/* Billing cycle toggle hidden as only monthly is available */}
+          <div className="hidden flex items-center justify-center gap-4 mt-8">
             <Label htmlFor="billing-cycle" className={`cursor-pointer ${billingCycle === 'monthly' ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>
               Maandelijks
             </Label>
@@ -130,12 +139,10 @@ export default function SubscriptionPage() {
               id="billing-cycle" 
               checked={billingCycle === 'annual'}
               onCheckedChange={(checked) => setBillingCycle(checked ? 'annual' : 'monthly')}
+              disabled={true}
             />
             <Label htmlFor="billing-cycle" className={`cursor-pointer flex items-center gap-2 ${billingCycle === 'annual' ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>
               Jaarlijks
-              <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">
-                1 jaar korting
-              </Badge>
             </Label>
           </div>
         </div>

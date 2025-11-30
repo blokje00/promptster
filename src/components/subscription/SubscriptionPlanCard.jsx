@@ -8,11 +8,13 @@ export default function SubscriptionPlanCard({ plan, billingCycle, onSubscribe, 
   const price = billingCycle === 'monthly' ? plan.monthly_price_amount : plan.annual_price_amount;
   const isCurrent = currentPlanId === plan.id;
 
-  // Bereken besparing
-  const monthlyCost = plan.monthly_price_amount * 12;
-  const annualCost = plan.annual_price_amount;
-  const savings = monthlyCost - annualCost;
-  const savingsPercent = Math.round((savings / monthlyCost) * 100);
+  // Bereken besparing (alleen als jaarlijkse prijs bestaat)
+  const monthlyCost = plan.monthly_price_amount ? plan.monthly_price_amount * 12 : 0;
+  const annualCost = plan.annual_price_amount || 0;
+  const savings = (monthlyCost && annualCost) ? monthlyCost - annualCost : 0;
+  const savingsPercent = monthlyCost ? Math.round((savings / monthlyCost) * 100) : 0;
+  const isFree = price === 0;
+  const isContact = typeof price === 'string';
 
   return (
     <Card className={`flex flex-col relative ${isCurrent ? 'border-indigo-500 border-2 shadow-lg' : ''}`}>
@@ -27,8 +29,14 @@ export default function SubscriptionPlanCard({ plan, billingCycle, onSubscribe, 
       </CardHeader>
       <CardContent className="flex-1">
         <div className="mb-6">
-          <span className="text-3xl font-bold">€{price}</span>
-          <span className="text-slate-500">/{billingCycle === 'monthly' ? 'maand' : 'jaar'}</span>
+          {isContact ? (
+             <span className="text-3xl font-bold">{price}</span>
+          ) : (
+             <>
+               <span className="text-3xl font-bold">€{price}</span>
+               <span className="text-slate-500">/{billingCycle === 'monthly' ? 'maand' : 'jaar'}</span>
+             </>
+          )}
           {billingCycle === 'annual' && savings > 0 && (
             <p className="text-xs text-green-600 font-medium mt-1">
               Bespaar {savingsPercent}% met jaarlijkse betaling
@@ -48,15 +56,19 @@ export default function SubscriptionPlanCard({ plan, billingCycle, onSubscribe, 
         <Button 
           className={`w-full ${isCurrent ? 'bg-slate-100 text-slate-900 hover:bg-slate-200' : 'bg-indigo-600 hover:bg-indigo-700'}`}
           onClick={() => onSubscribe(plan)}
-          disabled={isProcessing || isCurrent}
+          disabled={isProcessing || isCurrent || isContact}
           variant={isCurrent ? "outline" : "default"}
         >
           {isProcessing ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : isCurrent ? (
             "Huidig Plan"
+          ) : isContact ? (
+            "Neem Contact Op"
+          ) : isFree ? (
+            "Gratis Starten"
           ) : (
-            billingCycle === 'monthly' ? "Abonneer Maandelijks" : "Abonneer Jaarlijks"
+            billingCycle === 'monthly' ? "Abonneer Nu" : "Abonneer Jaarlijks"
           )}
         </Button>
       </CardFooter>
