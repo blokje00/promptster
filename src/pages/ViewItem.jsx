@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -12,12 +12,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, Edit, Copy, CheckCircle, Star, MessageSquare, Image as ImageIcon, ZoomIn, FileArchive, Download, GitBranch, Calendar, ClipboardCheck, ClipboardPaste, Save, Loader2, ListChecks } from "lucide-react";
 import FileChangesFeedback from "../components/items/FileChangesFeedback";
-import RequireSubscription from "../components/auth/RequireSubscription";
 import {
   Dialog,
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import RequireSubscription from "../components/auth/RequireSubscription";
 
 export default function ViewItem() {
   const navigate = useNavigate();
