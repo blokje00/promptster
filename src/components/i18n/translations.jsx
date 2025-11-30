@@ -55,7 +55,7 @@ export const translations = {
     preview: "Preview",
     improveWithAI: "Verbeter met AI",
     improving: "Bezig...",
-    copyAndContinue: "Copy, Save and start fresh",
+    copyAndContinue: "Kopieer + Save + Sluit",
     copied: "Gekopieerd",
     selectTasksAndTemplates: "Selecteer steps en templates om een preview te zien...",
     selectTasksLeft: "Selecteer links steps en kies hierboven templates",

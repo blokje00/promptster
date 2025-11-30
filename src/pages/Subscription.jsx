@@ -112,15 +112,42 @@ export default function SubscriptionPage() {
     }
   };
 
-  // Check URL params voor succes/cancel
+  // Check URL params voor succes/cancel en verify session
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("success")) {
-      toast.success("Abonnement succesvol geactiveerd! Bedankt.");
-    }
-    if (params.get("canceled")) {
-      toast.info("Betaling geannuleerd.");
-    }
+    const verifySubscription = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get("session_id");
+      
+      if (sessionId) {
+        setIsProcessing(true);
+        try {
+          const result = await base44.functions.invoke("verifyStripeSession", { sessionId });
+          if (result.data?.success) {
+             toast.success("Betaling geverifieerd! Je abonnement is actief.");
+             // Refresh user data
+             queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+             // Clean URL
+             window.history.replaceState({}, document.title, window.location.pathname);
+          } else {
+             toast.error("Kon betaling niet verifiëren. Neem contact op met support.");
+          }
+        } catch (error) {
+          console.error("Verification error:", error);
+          toast.error("Fout bij verifiëren van betaling.");
+        } finally {
+          setIsProcessing(false);
+        }
+      } else if (params.get("success")) {
+        // Fallback voor oude flow of als session_id mist
+        toast.success("Abonnement succesvol geactiveerd! Bedankt.");
+      }
+      
+      if (params.get("canceled")) {
+        toast.info("Betaling geannuleerd.");
+      }
+    };
+
+    verifySubscription();
   }, []);
 
   return (
