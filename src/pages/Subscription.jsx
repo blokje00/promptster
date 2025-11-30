@@ -119,8 +119,8 @@ export default function SubscriptionPage() {
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-slate-900 mb-4">Kies het plan dat bij je past</h1>
-          <p className="text-xl text-slate-600">Start met Promptguard en verhoog je productiviteit.</p>
+          <h1 className="text-4xl font-bold text-slate-900 mb-4">Start met Promptguard en verhoog je productiviteit.</h1>
+          <p className="text-xl text-slate-600">En bespaar bij veel platforms hiermee credits</p>
           
           <div className="flex items-center justify-center gap-4 mt-8">
             <Label htmlFor="billing-cycle" className={`cursor-pointer ${billingCycle === 'monthly' ? 'text-slate-900 font-bold' : 'text-slate-500'}`}>
