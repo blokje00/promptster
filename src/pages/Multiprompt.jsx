@@ -1019,10 +1019,9 @@ ${generatedPrompt}`,
         project_id: selectedProjectId || null
       });
       
-      // Delete thoughts
-      const allThoughtIds = localThoughts.map(t => t.id);
-      if (allThoughtIds.length > 0) {
-        await deleteUsedThoughtsMutation.mutateAsync(allThoughtIds);
+      // Delete ONLY selected/used thoughts
+      if (selectedThoughts.length > 0) {
+        await deleteUsedThoughtsMutation.mutateAsync(selectedThoughts);
       }
 
       // Reload
@@ -1070,10 +1069,9 @@ ${generatedPrompt}`,
         project_id: selectedProjectId || null
       });
       
-      // 2. Delete ALL thoughts after saving
-      const allThoughtIds = localThoughts.map(t => t.id);
-      if (allThoughtIds.length > 0) {
-        await deleteUsedThoughtsMutation.mutateAsync(allThoughtIds);
+      // 2. Delete ONLY selected/used thoughts
+      if (selectedThoughts.length > 0) {
+        await deleteUsedThoughtsMutation.mutateAsync(selectedThoughts);
       }
 
       // 3. Close dialog and Hard Reload as requested to clear all state
