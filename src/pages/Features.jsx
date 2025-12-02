@@ -1,4 +1,5 @@
 import React from "react";
+import PromptGuardStory from "@/components/features/PromptGuardStory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Zap, Shield, Database, Code, Cpu } from "lucide-react";
@@ -75,6 +76,8 @@ export default function Features() {
             Alles wat je nodig hebt om je development workflow te versnellen
           </p>
         </div>
+
+        <PromptGuardStory />
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
