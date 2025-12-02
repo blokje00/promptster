@@ -60,9 +60,8 @@ export default function ImageUploadZone({ images, onImagesChange }) {
     setUploading(true);
     try {
       const uploadPromises = files.map(async (file) => {
-        // Use UploadFile for permanent public URLs as requested
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        return file_url;
+        // Use standardized upload util for universal Supabase URL
+        return await uploadImageToSupabase(file);
       });
 
       const newImageUrls = await Promise.all(uploadPromises);
