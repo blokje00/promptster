@@ -435,10 +435,11 @@ export default function Multiprompt() {
     }
     setIsUploadingNewImage(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const file_url = await uploadImageToSupabase(file);
       setNewThoughtImages(prev => [...prev, file_url]);
       toast.success("Bestand toegevoegd");
     } catch (error) {
+      console.error(error);
       toast.error("Kon bestand niet uploaden");
     } finally {
       setIsUploadingNewImage(false);
