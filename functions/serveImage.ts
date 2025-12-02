@@ -12,12 +12,12 @@ Deno.serve(async (req) => {
         }
 
         // Generate signed URL using service role (public access proxy)
-        // Note: expires_in is short (1 hour) because this proxy generates a FRESH link on every request.
-        // The proxy URL itself acts as the permanent link.
-        // Long expirations (e.g. 10 years) often fail due to provider limits (max 7 days).
+        // This fulfills the requirement for "Permanent URLs" by generating a fresh valid link on every access.
+        // We use 7 days (604800 seconds) which is typically the maximum allowed for signed URLs,
+        // ensuring the link remains valid during long LLM sessions even if cached.
         const result = await base44.asServiceRole.integrations.Core.CreateFileSignedUrl({
             file_uri: uri,
-            expires_in: 3600 
+            expires_in: 604800 
         });
 
         if (result && result.signed_url) {
