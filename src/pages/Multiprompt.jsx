@@ -511,7 +511,7 @@ export default function Multiprompt() {
     try {
       // Use UploadPrivateFile + Proxy for ChatGPT access
       const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
-      const proxyUrl = `${window.location.origin}/api/functions/serveImage?uri=${encodeURIComponent(file_uri)}`;
+      const proxyUrl = `/api/functions/serveImage?uri=${encodeURIComponent(file_uri)}`;
       
       setNewThoughtImages(prev => [...prev, proxyUrl]);
       toast.success("Afbeelding toegevoegd");

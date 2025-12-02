@@ -61,8 +61,8 @@ export default function ImageUploadZone({ images, onImagesChange }) {
       const uploadPromises = files.map(async (file) => {
         // Use UploadPrivateFile instead of UploadFile
         const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
-        // Construct public proxy URL
-        const proxyUrl = `${window.location.origin}/api/functions/serveImage?uri=${encodeURIComponent(file_uri)}`;
+        // Construct public proxy URL (relative path to avoid origin issues)
+        const proxyUrl = `/api/functions/serveImage?uri=${encodeURIComponent(file_uri)}`;
         return proxyUrl;
       });
 

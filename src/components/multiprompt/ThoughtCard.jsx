@@ -81,7 +81,7 @@ export default function ThoughtCard({
       
       // Use UploadPrivateFile + Proxy for ChatGPT access
       const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file: renamedFile });
-      const proxyUrl = `${window.location.origin}/api/functions/serveImage?uri=${encodeURIComponent(file_uri)}`;
+      const proxyUrl = `/api/functions/serveImage?uri=${encodeURIComponent(file_uri)}`;
       
       const newImages = [...imageUrls, proxyUrl];
       onUpdateImages(thought.id, newImages);
