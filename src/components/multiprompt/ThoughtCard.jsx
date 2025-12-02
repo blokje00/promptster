@@ -8,6 +8,7 @@ import { X, GripVertical, Image as ImageIcon, Loader2, Plus, Palette, Code, Ban,
 import { toast } from "sonner";
 import ContextSelector from "./ContextSelector";
 import { projectColors, projectBorderColors } from "@/components/lib/constants";
+import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 
 const focusLabels = {
   both: { label: "Design + Logica", icon: null, color: "text-slate-500" },
