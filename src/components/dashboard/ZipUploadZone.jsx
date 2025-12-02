@@ -1,9 +1,10 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { X, FileArchive, Download } from "lucide-react";
+import { Upload, X, FileArchive, Download } from "lucide-react";
 import { toast } from "sonner";
+import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 
 export default function ZipUploadZone({ zipFiles, onZipFilesChange }) {
   const [dragActive, setDragActive] = useState(false);
