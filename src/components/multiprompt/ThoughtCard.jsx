@@ -59,36 +59,27 @@ export default function ThoughtCard({
   const imageUrls = thought.image_urls || [];
 
   const handleImageUpload = React.useCallback(async (file) => {
-    if (!file || !file.type.startsWith('image/')) {
-      toast.error("Alleen afbeeldingen zijn toegestaan");
-      return;
-    }
+  if (!file || !file.type.startsWith('image/')) {
+    toast.error("Alleen afbeeldingen zijn toegestaan");
+    return;
+  }
 
-    setIsUploading(true);
-    
-    try {
-      // Create a new file with thought context in the name
-      const thoughtPreview = (thought.content || 'no-content').substring(0, 30).replace(/[^a-zA-Z0-9]/g, '_');
-      const timestamp = Date.now();
-      const extension = file.name.split('.').pop() || 'png';
-      const newFileName = `thought_${thought.id}_${thoughtPreview}_${timestamp}.${extension}`;
-      
-      // Create new file with renamed name
-      const renamedFile = new File([file], newFileName, { type: file.type });
-      
-      // Use UploadFile for permanent public URLs as requested
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: renamedFile });
-      
-      const newImages = [...imageUrls, file_url];
-      onUpdateImages(thought.id, newImages);
-      toast.success("Screenshot toegevoegd");
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast.error("Kon afbeelding niet uploaden");
-    } finally {
-      setIsUploading(false);
-    }
-  }, [imageUrls, onUpdateImages, thought.id, thought.content]);
+  setIsUploading(true);
+
+  try {
+    // Use standardized upload util for universal Supabase URL
+    const file_url = await uploadImageToSupabase(file);
+
+    const newImages = [...imageUrls, file_url];
+    onUpdateImages(thought.id, newImages);
+    toast.success("Screenshot toegevoegd");
+  } catch (error) {
+    console.error("Upload error:", error);
+    toast.error("Kon afbeelding niet uploaden");
+  } finally {
+    setIsUploading(false);
+  }
+  }, [imageUrls, onUpdateImages, thought.id]);
 
   // Handle paste from clipboard
   useEffect(() => {
