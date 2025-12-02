@@ -1040,7 +1040,8 @@ Geen uitleg, alleen de JSON.`;
     return selectedThoughtContents.map((content, i) => ({
       task_name: `Deeltaak ${i + 1}: ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`,
       full_description: content,
-      is_checked: false
+      is_checked: false,
+      status: 'open'
     }));
   };
 

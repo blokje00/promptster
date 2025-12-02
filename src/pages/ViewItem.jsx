@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowLeft, Edit, Copy, CheckCircle, Star, MessageSquare, Image as ImageIcon, ZoomIn, FileArchive, Download, GitBranch, Calendar, ClipboardCheck, ClipboardPaste, Save, Loader2, ListChecks } from "lucide-react";
+import { ArrowLeft, Edit, Copy, CheckCircle, Star, MessageSquare, Image as ImageIcon, ZoomIn, FileArchive, Download, GitBranch, Calendar, ClipboardCheck, ClipboardPaste, Save, Loader2, ListChecks, AlertCircle, RotateCcw, CheckCircle2, XCircle, Circle } from "lucide-react";
 import FileChangesFeedback from "../components/items/FileChangesFeedback";
 import {
   Dialog,
@@ -28,6 +28,7 @@ export default function ViewItem() {
   const [copied, setCopied] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [isSavingFeedback, setIsSavingFeedback] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const { data: item, isLoading, error } = useQuery({
     queryKey: ['item', itemId],
@@ -108,6 +109,54 @@ export default function ViewItem() {
     } catch (err) {
       toast.error('Kon status niet wijzigen');
     }
+  };
+
+  const handleRetryFailed = async () => {
+    if (!item?.task_checks) return;
+    
+    const failedTasks = item.task_checks.filter(check => check.status === 'failed');
+    
+    if (failedTasks.length === 0) {
+      toast.info("Geen mislukte taken om opnieuw te proberen.");
+      return;
+    }
+
+    setIsRetrying(true);
+    try {
+      // Create thoughts for each failed task
+      const promises = failedTasks.map(task => {
+        return base44.entities.Thought.create({
+          content: task.full_description || task.task_name,
+          project_id: item.project_id,
+          is_selected: true,
+          retry_from_item_id: item.id,
+          focus_type: 'both', // Default focus
+        });
+      });
+
+      await Promise.all(promises);
+      
+      toast.success(`${failedTasks.length} taken hersteld!`);
+      // Redirect to multiprompt
+      setTimeout(() => {
+        navigate(createPageUrl("Multiprompt"));
+      }, 1000);
+    } catch (error) {
+      console.error("Retry error:", error);
+      toast.error("Kon taken niet herstellen");
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
+  const handleStatusChange = (taskIndex, newStatus) => {
+    const newChecks = [...item.task_checks];
+    newChecks[taskIndex] = { 
+      ...newChecks[taskIndex], 
+      status: newStatus,
+      is_checked: newStatus === 'success' // Keep sync for backward compat if needed
+    };
+    updateItemMutation.mutate({ task_checks: newChecks });
   };
 
   if (isLoading) {
@@ -313,13 +362,79 @@ export default function ViewItem() {
             {/* Pending Check Section - Feedback Input */}
             {item.type === 'multiprompt' && item.is_pending_check && (
               <div className="p-4 bg-orange-50 border-2 border-orange-300 rounded-lg">
-                <h4 className="font-semibold text-orange-800 flex items-center gap-2 mb-3">
-                  <ClipboardCheck className="w-5 h-5" />
-                  Te Controleren - Plak Feedback
-                </h4>
-                <p className="text-sm text-orange-700 mb-3">
-                  Plak hier de feedback van Base44 (gewijzigde bestanden) om projectkennis op te bouwen.
-                </p>
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
+                  <div>
+                    <h4 className="font-semibold text-orange-800 flex items-center gap-2 mb-1">
+                      <ClipboardCheck className="w-5 h-5" />
+                      Controle & Feedback
+                    </h4>
+                    <p className="text-sm text-orange-700">
+                      Loop de checklist na en plak de feedback (gewijzigde bestanden).
+                    </p>
+                  </div>
+                  
+                  {item.task_checks?.some(c => c.status === 'failed') && (
+                    <Button 
+                      onClick={handleRetryFailed} 
+                      disabled={isRetrying}
+                      className="bg-red-100 text-red-700 hover:bg-red-200 border border-red-200 shadow-sm"
+                    >
+                      {isRetrying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-2" />}
+                      Re-try Niet-Gelukte Taken
+                    </Button>
+                  )}
+                </div>
+
+                {/* Interactive Checklist */}
+                {item.task_checks && item.task_checks.length > 0 && (
+                  <div className="mb-6 bg-white rounded-md border border-orange-200 overflow-hidden">
+                    <div className="px-4 py-2 bg-orange-100/50 border-b border-orange-200 font-medium text-sm text-orange-800">
+                      Checklist ({item.task_checks.filter(c => c.status === 'success').length}/{item.task_checks.length} voltooid)
+                    </div>
+                    <div className="divide-y divide-slate-100">
+                      {item.task_checks.map((check, index) => (
+                        <div key={index} className="p-3 flex items-start gap-3 hover:bg-slate-50 transition-colors">
+                          <div className="flex items-center gap-1 mt-0.5 flex-shrink-0">
+                            <button
+                              onClick={() => handleStatusChange(index, 'success')}
+                              className={`p-1 rounded-full transition-colors ${check.status === 'success' ? 'bg-green-100 text-green-600' : 'text-slate-300 hover:bg-slate-100'}`}
+                              title="Markeer als gelukt"
+                            >
+                              <CheckCircle2 className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() => handleStatusChange(index, 'failed')}
+                              className={`p-1 rounded-full transition-colors ${check.status === 'failed' ? 'bg-red-100 text-red-600' : 'text-slate-300 hover:bg-slate-100'}`}
+                              title="Markeer als niet gelukt"
+                            >
+                              <XCircle className="w-5 h-5" />
+                            </button>
+                            {check.status === 'open' && (
+                              <button
+                                onClick={() => handleStatusChange(index, 'open')}
+                                className="p-1 rounded-full text-blue-500 bg-blue-50"
+                                title="Nog open"
+                              >
+                                <Circle className="w-5 h-5" />
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm ${check.status === 'success' ? 'text-slate-400 line-through' : check.status === 'failed' ? 'text-red-700 font-medium' : 'text-slate-700'}`}>
+                              {check.task_name}
+                            </p>
+                            {check.status === 'failed' && (
+                              <span className="inline-flex items-center text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded mt-1">
+                                Wordt meegenomen in re-try
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   <div className="flex gap-2">
                     <Button
@@ -349,7 +464,7 @@ export default function ViewItem() {
                       ) : (
                         <Save className="w-4 h-4 mr-2" />
                       )}
-                      Feedback Opslaan
+                      Feedback Opslaan & Afronden
                     </Button>
                     <Button
                       variant="outline"
@@ -374,37 +489,9 @@ export default function ViewItem() {
             <div>
               <h4 className="font-semibold text-slate-800 mb-3">Inhoud</h4>
               <div className="relative">
-                <div className="bg-slate-900 rounded-xl p-4 max-h-[240px] overflow-auto">
+                <div className="bg-slate-900 rounded-xl p-4 max-h-[600px] overflow-auto">
                   <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap break-all">
-                    {item.type === 'multiprompt' && item.task_checks && item.task_checks.length > 0 
-                      ? item.content.split('\n').map((line, lineIdx) => {
-                          // Check if line starts a DEELTAAK section
-                          const taskMatch = line.match(/^---\s*DEELTAAK\s*(\d+)\s*---/i);
-                          if (taskMatch) {
-                            const taskNum = parseInt(taskMatch[1]) - 1;
-                            const check = item.task_checks[taskNum];
-                            if (check) {
-                              return (
-                                <span key={lineIdx} className="flex items-center gap-2">
-                                  <Checkbox 
-                                    checked={check.is_checked}
-                                    className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600 border-slate-500 inline-flex"
-                                    onCheckedChange={(checked) => {
-                                      const newChecks = [...item.task_checks];
-                                      newChecks[taskNum] = { ...newChecks[taskNum], is_checked: checked };
-                                      updateItemMutation.mutate({ task_checks: newChecks });
-                                    }}
-                                  />
-                                  <span className={check.is_checked ? 'text-green-400' : ''}>{line}</span>
-                                  {'\n'}
-                                </span>
-                              );
-                            }
-                          }
-                          return <span key={lineIdx}>{line}{'\n'}</span>;
-                        })
-                      : item.content
-                    }
+                    {item.content}
                   </pre>
                 </div>
                 <Button

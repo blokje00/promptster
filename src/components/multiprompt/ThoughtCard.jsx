@@ -201,11 +201,18 @@ export default function ThoughtCard({
           className="mt-1 data-[state=checked]:bg-slate-900 data-[state=checked]:border-slate-900"
         />
         <div className="flex-1 min-w-0">
-          {project && (
-            <Badge className={`${projectColors[project.color]} text-white text-xs mb-1`}>
-              {project.name}
-            </Badge>
-          )}
+          <div className="flex gap-1 mb-1 flex-wrap">
+            {project && (
+              <Badge className={`${projectColors[project.color]} text-white text-xs`}>
+                {project.name}
+              </Badge>
+            )}
+            {thought.retry_from_item_id && (
+              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs flex items-center gap-1">
+                <Loader2 className="w-3 h-3" /> Retry
+              </Badge>
+            )}
+          </div>
           {isEditing ? (
             <div className="space-y-2">
               <textarea

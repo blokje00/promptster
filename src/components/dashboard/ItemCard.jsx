@@ -70,7 +70,18 @@ export default function ItemCard({ item, project }) {
   const handleToggleTaskCheck = (e, index) => {
     e.stopPropagation();
     const newChecks = [...localTaskChecks];
-    newChecks[index] = { ...newChecks[index], is_checked: !newChecks[index].is_checked };
+    // Cycle status: open -> success -> failed -> open
+    const currentStatus = newChecks[index].status || (newChecks[index].is_checked ? 'success' : 'open');
+    let nextStatus = 'open';
+    if (currentStatus === 'open') nextStatus = 'success';
+    else if (currentStatus === 'success') nextStatus = 'failed';
+    else if (currentStatus === 'failed') nextStatus = 'open';
+    
+    newChecks[index] = { 
+      ...newChecks[index], 
+      status: nextStatus,
+      is_checked: nextStatus === 'success' // maintain legacy compat
+    };
     setLocalTaskChecks(newChecks);
     updateTaskChecksMutation.mutate({ id: item.id, task_checks: newChecks });
   };
@@ -180,20 +191,35 @@ export default function ItemCard({ item, project }) {
           {/* Task checks for pending multiprompts */}
           {item.is_pending_check && localTaskChecks.length > 0 && (
             <div className="space-y-1 p-2 bg-orange-50 rounded-lg border border-orange-200" onClick={handleActionClick}>
-              <p className="text-xs font-medium text-orange-700 mb-1">Taken checklist:</p>
+              <div className="flex justify-between items-center mb-1">
+                <p className="text-xs font-medium text-orange-700">Taken checklist:</p>
+                <span className="text-[10px] text-orange-600">
+                  {localTaskChecks.filter(c => c.status === 'success').length}/{localTaskChecks.length}
+                </span>
+              </div>
               {localTaskChecks.map((check, index) => (
                 <HoverCard key={index} openDelay={200}>
                   <HoverCardTrigger asChild>
                     <div 
-                      className={`flex items-center gap-2 p-1.5 rounded text-xs cursor-pointer hover:bg-orange-100 ${check.is_checked ? 'bg-green-50' : ''}`}
+                      className={`flex items-center gap-2 p-1.5 rounded text-xs cursor-pointer hover:bg-orange-100 ${
+                        check.status === 'success' ? 'bg-green-50' : 
+                        check.status === 'failed' ? 'bg-red-50' : ''
+                      }`}
                       onClick={(e) => handleToggleTaskCheck(e, index)}
                     >
-                      <Checkbox 
-                        checked={check.is_checked}
-                        onCheckedChange={() => {}}
-                        className="h-3.5 w-3.5 flex-shrink-0"
-                      />
-                      <span className={`truncate ${check.is_checked ? 'line-through text-green-600' : 'text-slate-700'}`}>
+                      <div className={`w-3 h-3 rounded-full border flex items-center justify-center flex-shrink-0 ${
+                        check.status === 'success' ? 'bg-green-500 border-green-500' : 
+                        check.status === 'failed' ? 'bg-red-500 border-red-500' : 
+                        'border-slate-400 bg-white'
+                      }`}>
+                        {check.status === 'success' && <CheckCircle className="w-2 h-2 text-white" />}
+                        {check.status === 'failed' && <X className="w-2 h-2 text-white" />}
+                      </div>
+                      <span className={`truncate ${
+                        check.status === 'success' ? 'line-through text-green-600' : 
+                        check.status === 'failed' ? 'text-red-600' : 
+                        'text-slate-700'
+                      }`}>
                         {check.task_name}
                       </span>
                     </div>
@@ -201,7 +227,15 @@ export default function ItemCard({ item, project }) {
                   <HoverCardContent className="w-80 p-0 overflow-hidden" align="start" side="right">
                     <div className="bg-slate-50 p-2 border-b flex justify-between items-center">
                       <span className="font-semibold text-xs text-slate-700">Volledige taakomschrijving</span>
-                      <X className="w-3 h-3 text-slate-400" />
+                      <div className="flex gap-1">
+                        <Badge variant="outline" className={`text-[10px] ${
+                          check.status === 'success' ? 'bg-green-100 text-green-700' :
+                          check.status === 'failed' ? 'bg-red-100 text-red-700' :
+                          'bg-blue-100 text-blue-700'
+                        }`}>
+                          {check.status === 'success' ? 'Gelukt' : check.status === 'failed' ? 'Niet gelukt' : 'Open'}
+                        </Badge>
+                      </div>
                     </div>
                     <div className="p-3 max-h-60 overflow-y-auto">
                       <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed break-words">
