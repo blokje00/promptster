@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Save, X, Star, GitBranch } from "lucide-react";
 import FileChangesFeedback from "../components/items/FileChangesFeedback";
+import TaskChecklist from "../components/items/TaskChecklist";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import ImageUploadZone from "../components/dashboard/ImageUploadZone";
@@ -161,6 +162,17 @@ export default function EditItem() {
                 <Label htmlFor="description">Beschrijving</Label>
                 <Input id="description" value={formData.description || ''} onChange={(e) => handleInputChange('description', e.target.value)} />
               </div>
+
+              {/* Task Checklist - alleen voor multiprompts */}
+              {formData.type === 'multiprompt' && formData.task_checks && formData.task_checks.length > 0 && (
+                <TaskChecklist
+                  taskChecks={formData.task_checks}
+                  onTaskChecksChange={(newChecks) => handleInputChange('task_checks', newChecks)}
+                  itemId={itemId}
+                  projectId={formData.project_id}
+                />
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="content">Inhoud *</Label>
                 <Textarea id="content" value={formData.content} onChange={(e) => handleInputChange('content', e.target.value)} required className="min-h-[300px] font-mono text-sm" />
