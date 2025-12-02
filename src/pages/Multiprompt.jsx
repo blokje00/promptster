@@ -167,31 +167,34 @@ export default function Multiprompt() {
   });
   
   // Sync DB thoughts to local state
-  // Use ref to track processed IDs and prevent infinite loops if dbThoughts reference changes but content doesn't
+  // Use ref to track processed IDs and prevent infinite loops
   const prevDbIdsRef = useRef("");
 
   useEffect(() => {
+    if (!dbThoughts) return;
     const currentDbIds = dbThoughts.map(t => t.id).join(',');
     
-    // If content hasn't changed, do nothing (prevents loop if dbThoughts is new ref but same data)
+    // Prevent reaction if DB data hasn't actually changed
     if (prevDbIdsRef.current === currentDbIds) return;
     prevDbIdsRef.current = currentDbIds;
 
-    // Initial load
-    if (localThoughts.length === 0 && dbThoughts.length > 0) {
-      setLocalThoughts(dbThoughts);
-      return;
-    }
-    
-    // Check for new items from other sessions/windows
-    // We only add items that are in DB but NOT in local state
-    const localIds = new Set(localThoughts.map(t => t.id));
-    const newItems = dbThoughts.filter(t => !localIds.has(t.id));
-    
-    if (newItems.length > 0) {
-      setLocalThoughts(prev => [...newItems, ...prev]);
-    }
-  }, [dbThoughts, localThoughts]);
+    setLocalThoughts(prev => {
+      // Initial load
+      if (prev.length === 0 && dbThoughts.length > 0) {
+        return dbThoughts;
+      }
+      
+      // Merge new items from DB that are missing locally
+      const localIds = new Set(prev.map(t => t.id));
+      const newItems = dbThoughts.filter(t => !localIds.has(t.id));
+      
+      if (newItems.length > 0) {
+        return [...newItems, ...prev];
+      }
+      
+      return prev;
+    });
+  }, [dbThoughts]);
 
   // Autosave for newThought - Safe version
   useEffect(() => {
