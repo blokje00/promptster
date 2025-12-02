@@ -259,6 +259,7 @@ export default function Multiprompt() {
         return [...prev, newThoughtData.id];
       });
       setNewThought("");
+      clearThoughtDraft(); // Clear autosave
       setNewThoughtImages([]);
       toast.success("Taak toegevoegd");
       // Background sync with DB
@@ -266,18 +267,52 @@ export default function Multiprompt() {
     },
   });
 
-  const deleteThoughtMutation = useMutation({
-    mutationFn: (id) => base44.entities.Thought.delete(id),
+  // Soft Delete Mutation for Recycle Bin
+  const softDeleteThoughtMutation = useMutation({
+    mutationFn: (id) => base44.entities.Thought.update(id, { 
+      is_deleted: true,
+      deleted_at: new Date().toISOString()
+    }),
     onMutate: (id) => {
+      // Store for undo
+      const thoughtToRestore = localThoughts.find(t => t.id === id);
+      
       // Immediately remove from local state
       setLocalThoughts(prev => prev.filter(t => t.id !== id));
       setSelectedThoughts(prev => prev.filter(tid => tid !== id));
+      
+      return { thoughtToRestore };
     },
-    onSuccess: () => {
+    onSuccess: (data, id, context) => {
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-      toast.success("Taak verwijderd");
+      queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] }); // Refresh bin if visible somewhere
+      
+      toast("Taak verplaatst naar prullenbak", {
+        action: {
+          label: "Ongedaan maken",
+          onClick: () => {
+            // Restore immediately via mutation
+            base44.entities.Thought.update(id, { is_deleted: false, deleted_at: null })
+              .then(() => {
+                 // Restore to local state
+                 if (context?.thoughtToRestore) {
+                   setLocalThoughts(prev => [context.thoughtToRestore, ...prev]);
+                   if (context.thoughtToRestore.is_selected) {
+                      setSelectedThoughts(prev => [...prev, id]);
+                   }
+                 }
+                 queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+                 toast.success("Hersteld!");
+              });
+          }
+        },
+        duration: 5000
+      });
     },
   });
+
+  // Use soft delete instead of hard delete for UI
+  const deleteThoughtMutation = softDeleteThoughtMutation;
 
   const createTemplateMutation = useMutation({
     mutationFn: (data) => base44.entities.PromptTemplate.create(data),

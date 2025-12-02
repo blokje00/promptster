@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -75,11 +75,57 @@ export default function AddItem() {
   });
   
   const [tagInput, setTagInput] = useState("");
+  const [isRestoringDraft, setIsRestoringDraft] = useState(true);
+
+  // Autosave effect
+  useEffect(() => {
+    if (!isRestoringDraft && currentUser?.id) {
+      const draftData = {
+        ...formData,
+        timestamp: new Date().getTime()
+      };
+      localStorage.setItem(`additem_draft_${currentUser.id}`, JSON.stringify(draftData));
+      localStorage.setItem(`additem_tag_draft_${currentUser.id}`, tagInput);
+    }
+  }, [formData, tagInput, currentUser, isRestoringDraft]);
+
+  // Restore autosave effect
+  useEffect(() => {
+    if (currentUser?.id) {
+      const savedDraft = localStorage.getItem(`additem_draft_${currentUser.id}`);
+      const savedTag = localStorage.getItem(`additem_tag_draft_${currentUser.id}`);
+      
+      if (savedDraft) {
+        try {
+          const parsedDraft = JSON.parse(savedDraft);
+          // Only restore if not too old (e.g. 24 hours)
+          if (new Date().getTime() - parsedDraft.timestamp < 24 * 60 * 60 * 1000) {
+             // Remove timestamp before setting state
+             delete parsedDraft.timestamp;
+             setFormData(prev => ({...prev, ...parsedDraft}));
+          }
+        } catch (e) {
+          console.error("Failed to parse draft", e);
+        }
+      }
+      
+      if (savedTag) {
+        setTagInput(savedTag);
+      }
+      
+      setIsRestoringDraft(false);
+    }
+  }, [currentUser]);
 
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Item.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
+      // Clear draft on success
+      if (currentUser?.id) {
+        localStorage.removeItem(`additem_draft_${currentUser.id}`);
+        localStorage.removeItem(`additem_tag_draft_${currentUser.id}`);
+      }
       navigate(createPageUrl("Dashboard"));
     },
   });
