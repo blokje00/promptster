@@ -12,7 +12,7 @@ import { toast } from "sonner";
  * @param {string} params.selectedProjectId - Actief project ID
  * @returns {Object} Thoughts state en handlers
  */
-export function useThoughts({ dbThoughts = [], selectedProjectId }) {
+export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser }) {
   const queryClient = useQueryClient();
   const [localThoughts, setLocalThoughts] = useState([]);
   const [selectedThoughts, setSelectedThoughts] = useState([]);

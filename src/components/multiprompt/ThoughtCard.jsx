@@ -16,6 +16,23 @@ const focusLabels = {
   no_design: { label: "Geen Design", icon: Ban, color: "text-orange-600" }
 };
 
+/**
+ * Thought card component voor weergave van individuele taken.
+ * 
+ * @component
+ * @param {Object} props - Component props
+ * @param {Object} props.thought - Thought data object
+ * @param {Object} props.project - Gekoppeld project (optioneel)
+ * @param {boolean} props.isSelected - Selectie status
+ * @param {Function} props.onToggleSelect - Toggle selectie handler
+ * @param {Function} props.onDelete - Delete handler
+ * @param {Function} props.onUpdateImages - Image update handler
+ * @param {Function} props.onUpdateContent - Content update handler
+ * @param {Function} props.onUpdateFocus - Focus type update handler
+ * @param {Function} props.onUpdateContext - Context update handler
+ * @param {Object} props.dragHandleProps - DnD drag handle props
+ * @param {boolean} props.showDragHandle - Toon drag handle
+ */
 export default function ThoughtCard({ 
   thought, 
   project, 
@@ -95,7 +112,7 @@ export default function ThoughtCard({
 
     document.addEventListener('paste', handlePaste);
     return () => document.removeEventListener('paste', handlePaste);
-  }, [handleImageUpload]);
+  }, [handleImageUpload]); // handleImageUpload is al useCallback
 
   const handleDrop = (e) => {
     e.preventDefault();

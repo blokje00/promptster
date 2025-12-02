@@ -92,7 +92,7 @@ function predictContext(text) {
   
   if (!hasAnyKeyword) return null;
 
-  // Calculate page scores
+  // Calculate scores alleen als er potentieel matches zijn
   const pageScores = Object.entries(PAGE_KEYWORDS)
     .map(([page, keywords]) => ({
       name: page,
@@ -102,7 +102,8 @@ function predictContext(text) {
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
 
-  // Calculate component scores
+  if (pageScores.length === 0) return null;
+
   const componentScores = Object.entries(COMPONENT_KEYWORDS)
     .map(([comp, keywords]) => ({
       name: comp,
@@ -112,7 +113,6 @@ function predictContext(text) {
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
 
-  // Calculate domain scores
   const domainScores = Object.entries(DOMAIN_KEYWORDS)
     .map(([domain, keywords]) => ({
       name: domain,
@@ -122,13 +122,11 @@ function predictContext(text) {
     .sort((a, b) => b.score - a.score)
     .slice(0, 2);
 
-  if (pageScores.length === 0 && componentScores.length === 0 && domainScores.length === 0) return null;
-
   return {
     predictedPages: pageScores,
     predictedComponents: componentScores,
     predictedDomains: domainScores,
-    explanation: `Keywords gevonden in: ${text.substring(0, 50)}...`
+    explanation: `Keywords in: ${text.substring(0, 50)}...`
   };
 }
 
