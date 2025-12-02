@@ -284,12 +284,15 @@ export default function Multiprompt() {
     });
   };
 
+  const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
+
   const createProjectMutation = useMutation({
     mutationFn: (data) => base44.entities.Project.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       setNewProjectName("");
       setNewProjectDescription("");
+      setNewProjectDialogOpen(false);
       toast.success("Project toegevoegd");
     },
   });
@@ -1209,7 +1212,7 @@ ${generatedPrompt}`,
                 })}
                 
                 {/* Quick Add Project Button */}
-                <Dialog>
+                <Dialog open={newProjectDialogOpen} onOpenChange={setNewProjectDialogOpen}>
                   <DialogTrigger asChild>
                     <Button
                       variant="outline"
