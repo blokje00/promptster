@@ -26,7 +26,9 @@ export default function TaskChecklist({
     return null;
   }
 
-  const handleStatusChange = (index, newStatus) => {
+  const handleStatusChange = (e, index, newStatus) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (readOnly) return;
     
     const newChecks = [...taskChecks];
@@ -38,7 +40,10 @@ export default function TaskChecklist({
     onTaskChecksChange(newChecks);
   };
 
-  const handleRetryFailed = async () => {
+  const handleRetryFailed = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     const failedTasks = taskChecks.filter(check => check.status === 'failed');
     
     if (failedTasks.length === 0) {
@@ -48,27 +53,26 @@ export default function TaskChecklist({
 
     setIsRetrying(true);
     try {
-      // Create thoughts for each failed task
-      const promises = failedTasks.map(task => {
-        return base44.entities.Thought.create({
+      // Create thoughts for each failed task - one by one to ensure all are created
+      for (const task of failedTasks) {
+        await base44.entities.Thought.create({
           content: task.full_description || task.task_name,
           project_id: projectId || null,
           is_selected: true,
           retry_from_item_id: itemId,
           focus_type: 'both',
         });
-      });
-
-      await Promise.all(promises);
+      }
       
       toast.success(`${failedTasks.length} taken teruggezet naar Multiprompt!`);
+      
+      // Wait a bit longer before navigating
       setTimeout(() => {
         navigate(createPageUrl("Multiprompt"));
-      }, 1000);
+      }, 1500);
     } catch (error) {
       console.error("Retry error:", error);
       toast.error("Kon taken niet herstellen");
-    } finally {
       setIsRetrying(false);
     }
   };
@@ -91,6 +95,7 @@ export default function TaskChecklist({
           
           {failedCount > 0 && !readOnly && (
             <Button
+              type="button"
               onClick={handleRetryFailed}
               disabled={isRetrying}
               size="sm"
@@ -148,7 +153,8 @@ export default function TaskChecklist({
             {!readOnly && (
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button
-                  onClick={() => handleStatusChange(index, 'open')}
+                  type="button"
+                  onClick={(e) => handleStatusChange(e, index, 'open')}
                   className={`p-1.5 rounded-full transition-colors ${
                     (!check.status || check.status === 'open') 
                       ? 'bg-blue-100 text-blue-600' 
@@ -159,7 +165,8 @@ export default function TaskChecklist({
                   <Circle className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => handleStatusChange(index, 'success')}
+                  type="button"
+                  onClick={(e) => handleStatusChange(e, index, 'success')}
                   className={`p-1.5 rounded-full transition-colors ${
                     check.status === 'success' 
                       ? 'bg-green-100 text-green-600' 
@@ -170,7 +177,8 @@ export default function TaskChecklist({
                   <CheckCircle2 className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => handleStatusChange(index, 'failed')}
+                  type="button"
+                  onClick={(e) => handleStatusChange(e, index, 'failed')}
                   className={`p-1.5 rounded-full transition-colors ${
                     check.status === 'failed' 
                       ? 'bg-red-100 text-red-600' 
