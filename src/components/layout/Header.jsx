@@ -76,6 +76,7 @@ export default function Header() {
               variant={isVault ? "default" : "ghost"}
               size="sm" 
               className={`gap-1.5 px-2 sm:px-3 ${isVault ? 'bg-slate-800 text-white' : 'text-slate-600 hover:text-slate-900'}`}
+              title={t("Overzicht van al je items")}
             >
               <Archive className="w-4 h-4" />
               <span className="hidden sm:inline">Vault</span>
@@ -87,6 +88,7 @@ export default function Header() {
               variant={isAddItem ? "default" : "ghost"}
               size="sm" 
               className={`gap-1.5 px-2 sm:px-3 ${isAddItem ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
+              title={t("Nieuwe prompt of item toevoegen")}
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Prompt</span>
@@ -98,6 +100,7 @@ export default function Header() {
               variant={isMultiprompt ? "default" : "ghost"}
               size="sm"
               className={`gap-1.5 px-2 sm:px-3 ${isMultiprompt ? 'bg-purple-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
+              title={t("Bouw complexe multi-step prompts")}
             >
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">Multi-Step</span>
@@ -107,9 +110,14 @@ export default function Header() {
 
         {/* Right side: Settings */}
         <div className="flex items-center gap-1">
-          <Link to={createPageUrl("Subscription")}>
-            <Button variant="ghost" size="sm" className="text-indigo-600 font-medium hover:text-indigo-700 hover:bg-indigo-50 hidden md:flex">
-              Pricing
+          <Link to={createPageUrl("Features")}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-indigo-600 font-medium hover:text-indigo-700 hover:bg-indigo-50 hidden md:flex"
+              title={t("Bekijk de features")}
+            >
+              Features
             </Button>
           </Link>
           <Link to={createPageUrl("AIBackoffice")}>
@@ -117,7 +125,7 @@ export default function Header() {
               variant="ghost" 
               size="icon"
               className="text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-              title={t("settings")}
+              title={t("Instellingen en AI-configuratie")}
             >
               <Settings className="w-5 h-5" />
             </Button>

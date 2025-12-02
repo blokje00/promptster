@@ -557,19 +557,17 @@ export default function Multiprompt() {
   };
 
   const uploadNewThoughtImage = async (file) => {
-    if (!file || !file.type.startsWith('image/')) {
-      toast.error("Alleen afbeeldingen zijn toegestaan");
+    if (!file || (!file.type.startsWith('image/') && file.type !== 'application/pdf')) {
+      toast.error("Alleen afbeeldingen en PDF's zijn toegestaan");
       return;
     }
     setIsUploadingNewImage(true);
     try {
-      // Use UploadFile for permanent public URLs as requested
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      
       setNewThoughtImages(prev => [...prev, file_url]);
-      toast.success("Afbeelding toegevoegd");
+      toast.success("Bestand toegevoegd");
     } catch (error) {
-      toast.error("Kon afbeelding niet uploaden");
+      toast.error("Kon bestand niet uploaden");
     } finally {
       setIsUploadingNewImage(false);
     }
@@ -918,13 +916,13 @@ Geen uitleg, alleen de JSON.`;
     // Personal preferences (if enabled)
     const personalPrefs = currentUser?.personal_preferences_markdown;
     if (includePersonalPrefs && personalPrefs) {
-      promptParts.push(`# PERSOONLIJKE VOORKEUREN\n${personalPrefs}`);
+      promptParts.push(personalPrefs);
     }
 
     // Project configuration (if enabled and project selected)
     const projectConfig = selectedProject?.technical_config_markdown;
     if (includeProjectConfig && projectConfig) {
-      promptParts.push(`# PROJECT CONFIGURATIE\n${projectConfig}`);
+      promptParts.push(projectConfig);
     }
     
     // Start template
@@ -938,7 +936,8 @@ Geen uitleg, alleen de JSON.`;
         both: "Design en logica aanpassen",
         design: "Alleen DESIGN aanpassen - geen logica wijzigen",
         logic: "Alleen LOGICA aanpassen - geen design wijzigen",
-        no_design: "BLIJF AF VAN HET DESIGN - alleen functionaliteit/logica"
+        no_design: "BLIJF AF VAN HET DESIGN - alleen functionaliteit/logica",
+        discuss: "DISCUSS - Bespreek en analyseer"
       };
       
       const subtasks = selectedThoughtData.map((thought, i) => buildSubtaskJson(thought, i, focusToChanges));
@@ -1593,7 +1592,7 @@ ${generatedPrompt}`,
                           <input
                             type="file"
                             ref={newThoughtFileInputRef}
-                            accept="image/*"
+                            accept="image/*,application/pdf"
                             className="hidden"
                             onChange={(e) => e.target.files[0] && uploadNewThoughtImage(e.target.files[0])}
                           />
@@ -1604,7 +1603,7 @@ ${generatedPrompt}`,
                             onClick={() => newThoughtFileInputRef.current?.click()}
                             disabled={isUploadingNewImage}
                             className="h-7 w-7 p-0"
-                            title="Screenshot toevoegen"
+                            title="Screenshot of PDF toevoegen"
                           >
                             {isUploadingNewImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-5 h-5" />}
                           </Button>
@@ -1614,7 +1613,7 @@ ${generatedPrompt}`,
                             value={newThoughtFocus} 
                             onValueChange={setNewThoughtFocus}
                           >
-                            <SelectTrigger className="h-7 text-xs w-auto min-w-[100px] border-dashed bg-white">
+                            <SelectTrigger className="h-7 text-xs w-auto min-w-[100px] border-dashed bg-white" title="Kies focus of type">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1622,6 +1621,7 @@ ${generatedPrompt}`,
                               <SelectItem value="design">Alleen Design</SelectItem>
                               <SelectItem value="logic">Alleen Logica</SelectItem>
                               <SelectItem value="no_design">Geen Design</SelectItem>
+                              <SelectItem value="discuss">Discuss</SelectItem>
                             </SelectContent>
                           </Select>
                           
@@ -1664,6 +1664,7 @@ ${generatedPrompt}`,
                         onClick={handleAddThought} 
                         disabled={(!newThought.trim() && newThoughtImages.length === 0) || isProjectLimitReached}
                         className={`flex-1 ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'} hover:opacity-90 text-white transition-all`}
+                        title="Voeg deze stap toe aan je lijst"
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         {isProjectLimitReached ? "Limiet bereikt" : "Step"}

@@ -77,6 +77,23 @@ export default function Features() {
           </p>
         </div>
 
+        <Link to={createPageUrl("Subscription")} className="block mb-16 group">
+          <div className="bg-indigo-900 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 transition-colors cursor-pointer">
+            <h2 className="text-2xl font-bold mb-4">Klaar om te starten?</h2>
+            <p className="mb-6 text-indigo-200">
+              Probeer alle features gratis 14 dagen uit met ons starter pakket.
+            </p>
+            <div className="flex justify-center gap-4">
+              <Badge variant="outline" className="text-white border-white px-4 py-1">
+                v1.2.0
+              </Badge>
+              <Badge variant="outline" className="text-white border-white px-4 py-1">
+                Uptime 99.9%
+              </Badge>
+            </div>
+          </div>
+        </Link>
+
         <PromptGuardStory />
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -109,7 +126,7 @@ export default function Features() {
           <div className="bg-indigo-900 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 transition-colors cursor-pointer">
             <h2 className="text-2xl font-bold mb-4">Klaar om te starten?</h2>
             <p className="mb-6 text-indigo-200">
-              Probeer alle features gratis uit met ons Starter pakket.
+              Probeer alle features gratis 14 dagen uit met ons starter pakket.
             </p>
             <div className="flex justify-center gap-4">
               <Badge variant="outline" className="text-white border-white px-4 py-1">

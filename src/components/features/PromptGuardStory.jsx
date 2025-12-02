@@ -40,11 +40,11 @@ export default function PromptGuardStory() {
             <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mb-4">
               <Layers className="w-8 h-8 text-indigo-600" />
             </div>
-            <h3 className="text-xl font-bold text-slate-900">Het Probleem met Micro-Prompts</h3>
-            <p className="text-slate-500">
-              Honderden losse opdrachten zorgen voor verlies van context, 
-              hoge kosten en een inconsistente applicatie.
-            </p>
+            <img 
+              src="https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/1ce69fe2e_Screenshot2025-12-02at125732.png"
+              alt="Het probleem"
+              className="w-full h-full object-cover"
+            />
           </div>
         </div>
       </div>
@@ -177,11 +177,16 @@ export default function PromptGuardStory() {
       </div>
 
       {/* Final Workflow Section */}
-      <div className="relative bg-slate-900 rounded-3xl p-8 md:p-12 overflow-hidden text-white text-center md:text-left">
+      <div className="relative bg-slate-900 rounded-3xl p-0 overflow-hidden text-white text-center md:text-left">
+        <img 
+          src="https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/02aea0f8a_Screenshot2025-12-02at125112.png"
+          alt="Workflow"
+          className="w-full h-auto object-cover"
+        />
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full opacity-20 blur-3xl -mr-16 -mt-16"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500 rounded-full opacity-20 blur-3xl -ml-16 -mb-16"></div>
         
-        <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
+        <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center p-8 md:p-12">
           <div className="space-y-6">
             <h3 className="text-2xl md:text-3xl font-bold">Zelflerende Checklist Workflow</h3>
             <p className="text-indigo-100 leading-relaxed">
