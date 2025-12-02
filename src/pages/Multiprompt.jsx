@@ -167,12 +167,22 @@ export default function Multiprompt() {
   });
   
   // Sync DB thoughts to local state
+  // Only initialize or append new items to prevent loops and preserve local order
   useEffect(() => {
-    // Only update if length changed or IDs changed to prevent loops
-    const dbIds = dbThoughts.map(t => t.id).join(',');
-    const localIds = localThoughts.map(t => t.id).join(',');
-    if (dbIds !== localIds || dbThoughts.length !== localThoughts.length) {
-        setLocalThoughts(dbThoughts);
+    // Initial load
+    if (localThoughts.length === 0 && dbThoughts.length > 0) {
+      setLocalThoughts(dbThoughts);
+      return;
+    }
+    
+    // Check for new items from other sessions/windows
+    if (dbThoughts.length > localThoughts.length) {
+       // Naive merge: Find items in DB not in local and add them to top
+       const localIds = new Set(localThoughts.map(t => t.id));
+       const newItems = dbThoughts.filter(t => !localIds.has(t.id));
+       if (newItems.length > 0) {
+         setLocalThoughts(prev => [...newItems, ...prev]);
+       }
     }
   }, [dbThoughts]);
 
@@ -543,11 +553,10 @@ export default function Multiprompt() {
     }
     setIsUploadingNewImage(true);
     try {
-      // Use UploadPrivateFile + Proxy for ChatGPT access
-      const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
-      const proxyUrl = `/api/functions/serveImage?uri=${encodeURIComponent(file_uri)}`;
+      // Use UploadFile for permanent public URLs as requested
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
       
-      setNewThoughtImages(prev => [...prev, proxyUrl]);
+      setNewThoughtImages(prev => [...prev, file_url]);
       toast.success("Afbeelding toegevoegd");
     } catch (error) {
       toast.error("Kon afbeelding niet uploaden");
