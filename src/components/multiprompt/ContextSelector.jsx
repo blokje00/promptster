@@ -74,28 +74,55 @@ function calculateScore(text, keywords) {
   return keywords.length > 0 ? Math.min(matches / keywords.length * 1.5, 1) : 0;
 }
 
+/**
+ * Voorspelt context (pagina, component, domein) op basis van keywords.
+ * @param {string} text - Input tekst om te analyseren
+ * @returns {Object|null} Predictie object of null
+ */
 function predictContext(text) {
-  if (!text || text.length < 3) return null;
+  // Early returns voor performance
+  if (!text || text.length < 5) return null;
+  
+  const lowerText = text.toLowerCase();
+  
+  // Quick check: bevat de tekst überhaupt relevante keywords?
+  const hasAnyKeyword = Object.values(PAGE_KEYWORDS)
+    .flat()
+    .some(kw => lowerText.includes(kw));
+  
+  if (!hasAnyKeyword) return null;
 
   // Calculate page scores
-  const pageScores = DEFAULT_PAGES.map(page => ({
-    name: page,
-    score: calculateScore(text, PAGE_KEYWORDS[page] || [])
-  })).filter(p => p.score > 0).sort((a, b) => b.score - a.score).slice(0, 3);
+  const pageScores = Object.entries(PAGE_KEYWORDS)
+    .map(([page, keywords]) => ({
+      name: page,
+      score: calculateScore(lowerText, keywords)
+    }))
+    .filter(p => p.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
 
   // Calculate component scores
-  const componentScores = Object.keys(COMPONENT_KEYWORDS).map(comp => ({
-    name: comp,
-    score: calculateScore(text, COMPONENT_KEYWORDS[comp])
-  })).filter(c => c.score > 0).sort((a, b) => b.score - a.score).slice(0, 3);
+  const componentScores = Object.entries(COMPONENT_KEYWORDS)
+    .map(([comp, keywords]) => ({
+      name: comp,
+      score: calculateScore(lowerText, keywords)
+    }))
+    .filter(c => c.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
 
   // Calculate domain scores
-  const domainScores = DEFAULT_DOMAINS.map(domain => ({
-    name: domain,
-    score: calculateScore(text, DOMAIN_KEYWORDS[domain] || [])
-  })).filter(d => d.score > 0).sort((a, b) => b.score - a.score).slice(0, 2);
+  const domainScores = Object.entries(DOMAIN_KEYWORDS)
+    .map(([domain, keywords]) => ({
+      name: domain,
+      score: calculateScore(lowerText, keywords)
+    }))
+    .filter(d => d.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2);
 
-  if (pageScores.length === 0 && componentScores.length === 0) return null;
+  if (pageScores.length === 0 && componentScores.length === 0 && domainScores.length === 0) return null;
 
   return {
     predictedPages: pageScores,
