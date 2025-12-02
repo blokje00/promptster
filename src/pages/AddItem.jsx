@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, X, Star, GitBranch } from "lucide-react";
+import { ArrowLeft, Save, X, Star, GitBranch, Circle, CheckCircle2, XCircle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import ImageUploadZone from "../components/dashboard/ImageUploadZone";
 import ZipUploadZone from "../components/dashboard/ZipUploadZone";
@@ -71,7 +71,8 @@ export default function AddItem() {
     is_publish_version: false,
     publish_timestamp: "",
     publish_working_notes: "",
-    publish_reason: ""
+    publish_reason: "",
+    status: "open"
   });
   
   const [tagInput, setTagInput] = useState("");
@@ -280,6 +281,43 @@ export default function AddItem() {
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                   className="border-slate-200"
                 />
+              </div>
+
+              {/* Status Selector */}
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={formData.status === "open" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFormData({...formData, status: "open"})}
+                    className={formData.status === "open" ? "bg-blue-500 hover:bg-blue-600" : ""}
+                  >
+                    <Circle className="w-4 h-4 mr-2" />
+                    Open
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.status === "success" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFormData({...formData, status: "success"})}
+                    className={formData.status === "success" ? "bg-green-500 hover:bg-green-600" : ""}
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                    Goed
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.status === "failed" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFormData({...formData, status: "failed"})}
+                    className={formData.status === "failed" ? "bg-red-500 hover:bg-red-600" : ""}
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Fout
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-2">

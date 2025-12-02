@@ -978,7 +978,8 @@ ${generatedPrompt}`,
         start_template_id: startTemplateId || null,
         end_template_id: endTemplateId || null,
         task_checks: generateTaskChecks(),
-        project_id: selectedProjectId || null
+        project_id: selectedProjectId || null,
+        status: "open"
       });
       
       // Delete ONLY selected/used thoughts
@@ -1029,7 +1030,8 @@ ${generatedPrompt}`,
         start_template_id: startTemplateId || null,
         end_template_id: endTemplateId || null,
         task_checks: taskChecks,
-        project_id: selectedProjectId || null
+        project_id: selectedProjectId || null,
+        status: "open"
       });
       
       // 2. Delete ONLY selected/used thoughts
@@ -1081,7 +1083,8 @@ ${generatedPrompt}`,
         task_checks: taskChecks,
         project_id: selectedProjectId || null,
         is_pending_check: true,
-        notes: controlNotes
+        notes: controlNotes,
+        status: "open"
       });
 
       // 3. Hard Reload to reset state
