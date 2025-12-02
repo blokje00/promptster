@@ -7,6 +7,7 @@ import AIBackoffice from './pages/AIBackoffice';
 import Subscription from './pages/Subscription';
 import Features from './pages/Features';
 import AdminSubscription from './pages/AdminSubscription';
+import RecycleBin from './pages/RecycleBin';
 import __Layout from './Layout.jsx';
 
 
@@ -20,6 +21,7 @@ export const PAGES = {
     "Subscription": Subscription,
     "Features": Features,
     "AdminSubscription": AdminSubscription,
+    "RecycleBin": RecycleBin,
 }
 
 export const pagesConfig = {
