@@ -849,56 +849,7 @@ Geen uitleg, alleen de JSON.`;
     selectedProject?.technical_config_markdown
   ]);
 
-  const buildSubtaskJson = (thought, i, focusToChanges) => {
-    // Build files array from context
-    const files = [];
-    if (thought.target_page) {
-      files.push(`pages/${thought.target_page}.jsx`);
-    }
-    if (thought.target_component) {
-      // Try to determine component path
-      const componentPath = thought.target_page 
-        ? `components/${thought.target_page.toLowerCase()}/${thought.target_component}.jsx`
-        : `components/${thought.target_component}.jsx`;
-      files.push(componentPath);
-    }
-    
-    // Build acceptance criteria
-    const acceptance = [];
-    if (thought.target_page) {
-      acceptance.push(`Test: Wijziging werkt correct op ${thought.target_page} pagina`);
-    }
-    if (thought.target_component) {
-      acceptance.push(`Test: ${thought.target_component} component functioneert naar verwachting`);
-    }
-    if (acceptance.length === 0) {
-      acceptance.push("Test: Functionaliteit werkt zoals beschreven");
-    }
-    
-    // Build the JSON subtask
-    const subtask = {
-      id: `TAAK-${i + 1}`,
-      title: (thought.content || '').substring(0, 50) + ((thought.content || '').length > 50 ? '...' : ''),
-      description: thought.content || '',
-      files: files.length > 0 ? files : ["te bepalen"],
-      changes: focusToChanges[thought.focus_type || "both"],
-      acceptance: acceptance,
-      priority: "Medium"
-    };
-    
-    // Add domain info if present
-    if (thought.target_domain) {
-      subtask.domain = thought.target_domain;
-    }
-    
-    // Add images if present
-    const images = thought.image_urls || [];
-    if (images.length > 0) {
-      subtask.screenshots = images;
-    }
-    
-    return subtask;
-  };
+
 
   // generatedPrompt is now a useMemo constant
   
