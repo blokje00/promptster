@@ -56,8 +56,8 @@ import ThoughtCard from "../components/multiprompt/ThoughtCard";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import ContextSelector from "../components/multiprompt/ContextSelector";
 import RequireSubscription from "../components/auth/RequireSubscription";
-import { projectColors, projectBorderColors, projectLightColors } from "@/lib/constants";
-import { useThoughts } from "@/hooks/useMultipromptState";
+import { projectColors, projectBorderColors, projectLightColors } from "@/components/lib/constants";
+import { useThoughts } from "@/components/hooks/useMultipromptState";
 
 /**
  * Multi-Step Builder pagina component.

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { X, GripVertical, Image as ImageIcon, Loader2, Plus, Palette, Code, Ban, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import ContextSelector from "./ContextSelector";
-import { projectColors, projectBorderColors } from "@/lib/constants";
+import { projectColors, projectBorderColors } from "@/components/lib/constants";
 
 const focusLabels = {
   both: { label: "Design + Logica", icon: null, color: "text-slate-500" },

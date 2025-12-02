@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import ItemCard from "../components/dashboard/ItemCard";
 import RequireSubscription from "../components/auth/RequireSubscription";
-import { projectColors } from "@/lib/constants";
+import { projectColors } from "@/components/lib/constants";
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
