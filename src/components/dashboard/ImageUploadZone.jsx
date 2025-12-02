@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -59,8 +59,11 @@ export default function ImageUploadZone({ images, onImagesChange }) {
     setUploading(true);
     try {
       const uploadPromises = files.map(async (file) => {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        return file_url;
+        // Use UploadPrivateFile instead of UploadFile
+        const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
+        // Construct public proxy URL
+        const proxyUrl = `${window.location.origin}/api/functions/serveImage?uri=${encodeURIComponent(file_uri)}`;
+        return proxyUrl;
       });
 
       const newImageUrls = await Promise.all(uploadPromises);

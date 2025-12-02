@@ -509,8 +509,11 @@ export default function Multiprompt() {
     }
     setIsUploadingNewImage(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setNewThoughtImages(prev => [...prev, file_url]);
+      // Use UploadPrivateFile + Proxy for ChatGPT access
+      const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
+      const proxyUrl = `${window.location.origin}/api/functions/serveImage?uri=${encodeURIComponent(file_uri)}`;
+      
+      setNewThoughtImages(prev => [...prev, proxyUrl]);
       toast.success("Afbeelding toegevoegd");
     } catch (error) {
       toast.error("Kon afbeelding niet uploaden");
