@@ -168,8 +168,35 @@ export default function Multiprompt() {
   
   // Sync DB thoughts to local state
   useEffect(() => {
-    setLocalThoughts(dbThoughts);
+    // Only update if length changed or IDs changed to prevent loops
+    const dbIds = dbThoughts.map(t => t.id).join(',');
+    const localIds = localThoughts.map(t => t.id).join(',');
+    if (dbIds !== localIds || dbThoughts.length !== localThoughts.length) {
+        setLocalThoughts(dbThoughts);
+    }
   }, [dbThoughts]);
+
+  // Autosave for newThought - Safe version
+  useEffect(() => {
+    if (currentUser?.id) {
+       const key = `multiprompt_draft_${currentUser.id}`;
+       const saved = localStorage.getItem(key);
+       if (newThought !== saved) {
+         localStorage.setItem(key, newThought);
+       }
+    }
+  }, [newThought, currentUser?.id]);
+
+  // Restore newThought on mount - Safe version
+  useEffect(() => {
+    if (currentUser?.id) {
+      const key = `multiprompt_draft_${currentUser.id}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        setNewThought(saved);
+      }
+    }
+  }, [currentUser?.id]);
 
   // Handle auto-selection logic
   useEffect(() => {
@@ -244,6 +271,13 @@ export default function Multiprompt() {
   const [editTemplateName, setEditTemplateName] = useState("");
   const [editTemplateContent, setEditTemplateContent] = useState("");
   const [editTemplateDialogOpen, setEditTemplateDialogOpen] = useState(false);
+
+  // Clear autosave helper
+  const clearThoughtDraft = () => {
+    if (currentUser?.id) {
+       localStorage.removeItem(`multiprompt_draft_${currentUser.id}`);
+    }
+  };
 
   const createThoughtMutation = useMutation({
     mutationFn: (data) => base44.entities.Thought.create(data),
