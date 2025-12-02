@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
         // Generate signed URL using service role (public access proxy)
         const result = await base44.asServiceRole.integrations.Core.CreateFileSignedUrl({
             file_uri: uri,
-            expires_in: 3600 // 1 hour
+            expires_in: 315360000 // 10 years
         });
 
         if (result && result.signed_url) {
