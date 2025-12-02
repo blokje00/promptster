@@ -67,7 +67,7 @@ export default function Dashboard() {
     snippet: items.filter(i => i.type === 'snippet').length,
   }), [items]);
 
-  const filteredItems = items.filter(item => {
+  const filteredItems = useMemo(() => items.filter(item => {
     const matchesSearch = !searchQuery || 
       item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -81,7 +81,7 @@ export default function Dashboard() {
     const matchesProject = selectedProjectId === "all" || item.project_id === selectedProjectId;
     
     return matchesSearch && matchesType && matchesFavorites && matchesZip && matchesPublished && matchesPendingCheck && matchesProject;
-  });
+  }), [items, searchQuery, filterType, showFavoritesOnly, showZipOnly, showPublishedOnly, showPendingCheckOnly, selectedProjectId]);
 
   return (
     <RequireSubscription>
