@@ -169,17 +169,30 @@ export default function ContextSelector({
   }, [selectedProject]);
 
   // AI Prediction on text change - only if enabled
+  /**
+   * Debounced AI prediction effect.
+   * Clears prediction wanneer AI suggestions uitgeschakeld zijn.
+   */
   useEffect(() => {
     if (!enableAISuggestions) {
       setPrediction(null);
       setShowPrediction(false);
-      return;
+      return undefined; // Explicit return voor cleanup
     }
+    
+    // Early return voor korte teksten
+    if (!thoughtText || thoughtText.length < 5) {
+      setPrediction(null);
+      setShowPrediction(false);
+      return undefined;
+    }
+
     const timer = setTimeout(() => {
       const pred = predictContext(thoughtText);
       setPrediction(pred);
       setShowPrediction(!!pred);
     }, 500);
+
     return () => clearTimeout(timer);
   }, [thoughtText, enableAISuggestions]);
 

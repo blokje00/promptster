@@ -12,17 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import ItemCard from "../components/dashboard/ItemCard";
 import RequireSubscription from "../components/auth/RequireSubscription";
-
-const projectColors = {
-  red: "bg-red-500",
-  orange: "bg-orange-500",
-  yellow: "bg-yellow-500",
-  green: "bg-green-500",
-  blue: "bg-blue-500",
-  indigo: "bg-indigo-500",
-  purple: "bg-purple-500",
-  pink: "bg-pink-500"
-};
+import { projectColors } from "@/lib/constants";
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");

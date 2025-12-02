@@ -2,6 +2,8 @@ import React from "react";
 import Header from "./components/layout/Header";
 import { LanguageProvider } from "./components/i18n/LanguageContext";
 
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+
 export default function Layout({ children }) {
   return (
     <LanguageProvider>
@@ -12,11 +14,13 @@ export default function Layout({ children }) {
             --primary-dark: #4f46e5;
           }
         `}</style>
-        
+
         <Header />
-        
+
         <main>
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </main>
       </div>
     </LanguageProvider>

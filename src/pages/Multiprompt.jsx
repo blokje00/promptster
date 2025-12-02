@@ -53,46 +53,26 @@ import {
 } from "@/components/ui/dialog";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import ThoughtCard from "../components/multiprompt/ThoughtCard";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import ContextSelector from "../components/multiprompt/ContextSelector";
 import RequireSubscription from "../components/auth/RequireSubscription";
+import { projectColors, projectBorderColors, projectLightColors } from "@/lib/constants";
+import { useThoughts } from "@/hooks/useMultipromptState";
 
-const projectColors = {
-  red: "bg-red-500 hover:bg-red-600",
-  orange: "bg-orange-500 hover:bg-orange-600",
-  yellow: "bg-yellow-500 hover:bg-yellow-600",
-  green: "bg-green-500 hover:bg-green-600",
-  blue: "bg-blue-500 hover:bg-blue-600",
-  indigo: "bg-indigo-500 hover:bg-indigo-600",
-  purple: "bg-purple-500 hover:bg-purple-600",
-  pink: "bg-pink-500 hover:bg-pink-600"
-};
-
-const projectBorderColors = {
-  red: "border-red-500",
-  orange: "border-orange-500",
-  yellow: "border-yellow-500",
-  green: "border-green-500",
-  blue: "border-blue-500",
-  indigo: "border-indigo-500",
-  purple: "border-purple-500",
-  pink: "border-pink-500"
-};
-
-const projectLightColors = {
-  red: "bg-red-50 text-red-700 border-red-200",
-  orange: "bg-orange-50 text-orange-700 border-orange-200",
-  yellow: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  green: "bg-green-50 text-green-700 border-green-200",
-  blue: "bg-blue-50 text-blue-700 border-blue-200",
-  indigo: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  purple: "bg-purple-50 text-purple-700 border-purple-200",
-  pink: "bg-pink-50 text-pink-700 border-pink-200"
-};
-
+/**
+ * Multi-Step Builder pagina component.
+ * Stelt gebruikers in staat om meerdere taken te verzamelen
+ * en om te zetten naar gestructureerde prompts.
+ * 
+ * @component
+ * @example
+ * <Multiprompt />
+ */
 export default function Multiprompt() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t } = useLanguage();
+  
   const [newThought, setNewThought] = useState("");
   const [newThoughtImages, setNewThoughtImages] = useState([]);
   const [isUploadingNewImage, setIsUploadingNewImage] = useState(false);
@@ -106,8 +86,7 @@ export default function Multiprompt() {
   const [groupBy, setGroupBy] = useState("date");
   const newThoughtInputRef = useRef(null);
   const newThoughtFileInputRef = useRef(null);
-  const [selectedThoughts, setSelectedThoughts] = useState([]);
-  const [localThoughts, setLocalThoughts] = useState([]); // UI source of truth
+  
   const [builderInstanceKey, setBuilderInstanceKey] = useState(Date.now()); // Force remount key
   const [startTemplateId, setStartTemplateId] = useState("");
   const [endTemplateId, setEndTemplateId] = useState("");
@@ -165,36 +144,21 @@ export default function Multiprompt() {
     },
     enabled: !!currentUser?.email,
   });
-  
-  // Sync DB thoughts to local state
-  // Use ref to track processed IDs and prevent infinite loops
-  const prevDbIdsRef = useRef("");
 
-  useEffect(() => {
-    if (!dbThoughts) return;
-    const currentDbIds = dbThoughts.map(t => t.id).join(',');
-    
-    // Prevent reaction if DB data hasn't actually changed
-    if (prevDbIdsRef.current === currentDbIds) return;
-    prevDbIdsRef.current = currentDbIds;
-
-    setLocalThoughts(prev => {
-      // Initial load
-      if (prev.length === 0 && dbThoughts.length > 0) {
-        return dbThoughts;
-      }
-      
-      // Merge new items from DB that are missing locally
-      const localIds = new Set(prev.map(t => t.id));
-      const newItems = dbThoughts.filter(t => !localIds.has(t.id));
-      
-      if (newItems.length > 0) {
-        return [...newItems, ...prev];
-      }
-      
-      return prev;
-    });
-  }, [dbThoughts]);
+  // Use custom hook for thought state
+  const {
+    localThoughts,
+    selectedThoughts,
+    setLocalThoughts,
+    setSelectedThoughts,
+    createThought,
+    deleteThought,
+    updateThought,
+    toggleSelection
+  } = useThoughts({ 
+    dbThoughts, 
+    selectedProjectId
+  });
 
   // Autosave for newThought - Safe version
   useEffect(() => {
@@ -217,44 +181,6 @@ export default function Multiprompt() {
       }
     }
   }, [currentUser?.id]);
-
-  // Handle auto-selection logic
-  useEffect(() => {
-    // Calculate relevant IDs for current view
-    const relevantIds = selectedProjectId 
-      ? (dbThoughts || []).filter(t => t.project_id === selectedProjectId).map(t => t.id)
-      : (dbThoughts || []).map(t => t.id);
-
-    // Auto-select if we have items but nothing selected (Initial Load)
-    // OR if we switched projects (we detect this by checking if current selection mismatches project)
-    // We use a ref or just simplified logic:
-    
-    setSelectedThoughts(prev => {
-      // If empty and we have items -> Select All (Initial load)
-      if (prev.length === 0 && relevantIds.length > 0) {
-        return relevantIds;
-      }
-      
-      // If we have a selection, but we switched to a project where these items aren't visible?
-      // The filteredThoughts logic handles visibility.
-      // But if we want to "Reset selection on project change", we need to detect project change.
-      // This effect runs on dbThoughts change.
-      
-      return prev;
-    });
-  }, [dbThoughts]);
-
-  // Explicitly handle project change to reset selection
-  useEffect(() => {
-    const relevantIds = selectedProjectId 
-      ? localThoughts.filter(t => t.project_id === selectedProjectId).map(t => t.id)
-      : localThoughts.map(t => t.id);
-    
-    if (relevantIds.length > 0) {
-      setSelectedThoughts(relevantIds);
-    }
-    setImprovedPrompt("");
-  }, [selectedProjectId]);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['templates', currentUser?.email],
@@ -299,74 +225,18 @@ export default function Multiprompt() {
     }
   };
 
-  const createThoughtMutation = useMutation({
-    mutationFn: (data) => base44.entities.Thought.create(data),
-    onSuccess: (newThoughtData) => {
-      // Immediately add to local state for instant UI update - use functional update
-      setLocalThoughts(prev => {
-        // Add new thought at beginning, ensure no duplicates
-        const filtered = prev.filter(t => t.id !== newThoughtData.id);
-        return [newThoughtData, ...filtered];
-      });
-      setSelectedThoughts(prev => {
-        if (prev.includes(newThoughtData.id)) return prev;
-        return [...prev, newThoughtData.id];
-      });
-      setNewThought("");
-      clearThoughtDraft(); // Clear autosave
-      setNewThoughtImages([]);
-      toast.success("Taak toegevoegd");
-      // Background sync with DB
-      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-    },
-  });
-
-  // Soft Delete Mutation for Recycle Bin
-  const softDeleteThoughtMutation = useMutation({
-    mutationFn: (id) => base44.entities.Thought.update(id, { 
-      is_deleted: true,
-      deleted_at: new Date().toISOString()
-    }),
-    onMutate: (id) => {
-      // Store for undo
-      const thoughtToRestore = localThoughts.find(t => t.id === id);
-      
-      // Immediately remove from local state
-      setLocalThoughts(prev => prev.filter(t => t.id !== id));
-      setSelectedThoughts(prev => prev.filter(tid => tid !== id));
-      
-      return { thoughtToRestore };
-    },
-    onSuccess: (data, id, context) => {
-      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-      queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] }); // Refresh bin if visible somewhere
-      
-      toast("Taak verplaatst naar prullenbak", {
-        action: {
-          label: "Ongedaan maken",
-          onClick: () => {
-            // Restore immediately via mutation
-            base44.entities.Thought.update(id, { is_deleted: false, deleted_at: null })
-              .then(() => {
-                 // Restore to local state
-                 if (context?.thoughtToRestore) {
-                   setLocalThoughts(prev => [context.thoughtToRestore, ...prev]);
-                   if (context.thoughtToRestore.is_selected) {
-                      setSelectedThoughts(prev => [...prev, id]);
-                   }
-                 }
-                 queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-                 toast.success("Hersteld!");
-              });
-          }
-        },
-        duration: 5000
-      });
-    },
-  });
-
-  // Use soft delete instead of hard delete for UI
-  const deleteThoughtMutation = softDeleteThoughtMutation;
+  // Note: Create and Delete mutations are now handled by useThoughts hook.
+  // We wrap createThought to handle UI clearing.
+  const handleCreateThought = (data) => {
+    createThought.mutate(data, {
+      onSuccess: () => {
+        setNewThought("");
+        clearThoughtDraft(); // Clear autosave
+        setNewThoughtImages([]);
+        toast.success("Taak toegevoegd");
+      }
+    });
+  };
 
   const createTemplateMutation = useMutation({
     mutationFn: (data) => base44.entities.PromptTemplate.create(data),
@@ -486,9 +356,10 @@ export default function Multiprompt() {
    * Templates worden NOOIT gereset - die blijven altijd behouden.
    */
   const resetBuilder = () => {
-    // Reset ALL thought-related states
+    // Reset ALL thought-related states via hook
     setLocalThoughts([]);
     setSelectedThoughts([]);
+    
     setNewThought("");
     setNewThoughtImages([]);
     setNewThoughtFocus("both");
@@ -518,7 +389,7 @@ export default function Multiprompt() {
   const handleAddThought = async () => {
     if (!newThought.trim() && newThoughtImages.length === 0) return;
     
-    createThoughtMutation.mutate({ 
+    handleCreateThought({ 
       content: newThought.trim(),
       project_id: selectedProjectId || null,
       image_urls: newThoughtImages,
@@ -529,6 +400,7 @@ export default function Multiprompt() {
       target_domain: newThoughtContext.target_domain,
       ai_prediction: newThoughtContext.ai_prediction
     });
+    
     setNewThoughtImages([]);
     setNewThoughtFocus("both");
     setNewThoughtContext({
@@ -581,41 +453,32 @@ export default function Multiprompt() {
     }
   };
 
-  // Update images for a thought in local state
+  // Update handlers using hook
   const handleUpdateThoughtImages = (thoughtId, newImages) => {
-    setLocalThoughts(prev => prev.map(t => 
-      t.id === thoughtId ? { ...t, image_urls: newImages } : t
-    ));
+    updateThought(thoughtId, { image_urls: newImages });
   };
 
-  // Update content for a thought in local state
   const handleUpdateThoughtContent = (thoughtId, newContent) => {
-    setLocalThoughts(prev => prev.map(t => 
-      t.id === thoughtId ? { ...t, content: newContent } : t
-    ));
+    updateThought(thoughtId, { content: newContent });
   };
 
-  // Update focus type for a thought in local state AND persist to DB
   const handleUpdateThoughtFocus = (thoughtId, newFocus) => {
-    setLocalThoughts(prev => prev.map(t => 
-      t.id === thoughtId ? { ...t, focus_type: newFocus } : t
-    ));
-    // Persist to DB
+    updateThought(thoughtId, { focus_type: newFocus });
+    // Persist to DB handled by optimistic update in hook? 
+    // Hook only updates local state. We should also persist.
+    // Actually, updateThought in hook is just local state update. 
+    // We need explicit persist here for these fields as they are "autosaved" behavior
     base44.entities.Thought.update(thoughtId, { focus_type: newFocus });
   };
 
-  // Update context for a thought
   const handleUpdateThoughtContext = (thoughtId, newContext) => {
-    setLocalThoughts(prev => prev.map(t => 
-      t.id === thoughtId ? { 
-        ...t, 
-        target_page: newContext.target_page,
-        target_component: newContext.target_component,
-        target_domain: newContext.target_domain,
-        ai_prediction: newContext.ai_prediction
-      } : t
-    ));
-    // Persist to DB
+    updateThought(thoughtId, {
+      target_page: newContext.target_page,
+      target_component: newContext.target_component,
+      target_domain: newContext.target_domain,
+      ai_prediction: newContext.ai_prediction
+    });
+    // Persist
     base44.entities.Thought.update(thoughtId, {
       target_page: newContext.target_page,
       target_component: newContext.target_component,
@@ -624,41 +487,45 @@ export default function Multiprompt() {
     });
   };
 
-  // Move thought to different project
-  const updateThoughtProjectMutation = useMutation({
-    mutationFn: ({ id, project_id }) => base44.entities.Thought.update(id, { project_id }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-      toast.success("Taak verplaatst naar project");
-    },
-  });
-
   const handleMoveThoughtToProject = (thoughtId, newProjectId) => {
-    // Update local state immediately
-    setLocalThoughts(prev => prev.map(t => 
-      t.id === thoughtId ? { ...t, project_id: newProjectId } : t
-    ));
-    // Persist to DB
-    updateThoughtProjectMutation.mutate({ id: thoughtId, project_id: newProjectId });
+    updateThought(thoughtId, { project_id: newProjectId });
+    base44.entities.Thought.update(thoughtId, { project_id: newProjectId })
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+        toast.success("Taak verplaatst naar project");
+      });
   };
 
   // Save all thoughts to database (for "Controle opslaan")
   const [isSavingAll, setIsSavingAll] = useState(false);
   
+  /**
+   * Slaat alle lokale thoughts op naar de database.
+   * Gebruikt Promise.allSettled voor parallelle verwerking met foutafhandeling.
+   */
   const handleSaveAllThoughts = async () => {
     setIsSavingAll(true);
     try {
-      for (const thought of localThoughts) {
-        // Update each thought with its current state including images
-        await base44.entities.Thought.update(thought.id, {
+      const updatePromises = localThoughts.map(thought => 
+        base44.entities.Thought.update(thought.id, {
           content: thought.content || "",
           image_urls: thought.image_urls || [],
           is_selected: selectedThoughts.includes(thought.id),
           project_id: thought.project_id
-        });
+        })
+      );
+
+      const results = await Promise.allSettled(updatePromises);
+      
+      const failures = results.filter(r => r.status === 'rejected');
+      if (failures.length > 0) {
+        console.error("Sommige updates faalden:", failures);
+        toast.warning(`${localThoughts.length - failures.length}/${localThoughts.length} taken opgeslagen`);
+      } else {
+        toast.success("Alle taken opgeslagen!");
       }
+      
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-      toast.success("Alle taken opgeslagen!");
     } catch (error) {
       console.error("Save error:", error);
       toast.error("Kon niet alle taken opslaan");
@@ -749,13 +616,7 @@ Geen uitleg, alleen de JSON.`;
     toast.success("Mapping prompt gekopieerd!");
   };
 
-  const toggleThoughtSelection = (thoughtId) => {
-    setSelectedThoughts(prev => 
-      prev.includes(thoughtId) 
-        ? prev.filter(id => id !== thoughtId)
-        : [...prev, thoughtId]
-    );
-  };
+  // toggleThoughtSelection is now toggleSelection from hook
 
   const toggleSelectAll = () => {
     const allFilteredIds = filteredThoughts.map(t => t.id);
@@ -904,9 +765,8 @@ Geen uitleg, alleen de JSON.`;
   const [includePersonalPrefs, setIncludePersonalPrefs] = useState(true);
   const [includeProjectConfig, setIncludeProjectConfig] = useState(true);
 
-  // Build multi-task prompt: voorkeuren + project config + starttekst + gedachten als deeltaken + eindtekst
-  const buildStructuredPrompt = () => {
-    // Als er geen enkele input is, toon placeholder
+  const generatedPrompt = useMemo(() => {
+    // Als er geen enkele input is, return empty
     if (selectedThoughtData.length === 0 && !startText && !endText) {
       return "";
     }
@@ -980,7 +840,15 @@ Geen uitleg, alleen de JSON.`;
     }
 
     return promptParts.join("\n\n---\n\n");
-  };
+  }, [
+    selectedThoughtData,
+    startText,
+    endText,
+    includePersonalPrefs,
+    includeProjectConfig,
+    currentUser?.personal_preferences_markdown,
+    selectedProject?.technical_config_markdown
+  ]);
 
   const buildSubtaskJson = (thought, i, focusToChanges) => {
     // Build files array from context
@@ -1033,7 +901,7 @@ Geen uitleg, alleen de JSON.`;
     return subtask;
   };
 
-  const generatedPrompt = buildStructuredPrompt();
+  // generatedPrompt is now a useMemo constant
   
   // Maak task checks gebaseerd op geselecteerde gedachten
   const generateTaskChecks = () => {
@@ -1117,7 +985,8 @@ ${generatedPrompt}`,
 
       // Reload
       resetBuilder();
-      window.location.href = "/Multiprompt";
+      navigate("/Multiprompt", { replace: true });
+      queryClient.invalidateQueries();
 
     } catch (e) {
       console.error("Direct save failed:", e);
@@ -1165,10 +1034,11 @@ ${generatedPrompt}`,
         await deleteUsedThoughtsMutation.mutateAsync(selectedThoughts);
       }
 
-      // 3. Close dialog and Hard Reload as requested to clear all state
+      // 3. Close dialog and Reload
       setShowControlDialog(false);
       resetBuilder();
-      window.location.href = "/Multiprompt";
+      navigate("/Multiprompt", { replace: true });
+      queryClient.invalidateQueries();
 
     } catch (e) {
       console.error("Save failed:", e);
@@ -1213,7 +1083,8 @@ ${generatedPrompt}`,
 
       // 3. Hard Reload to reset state
       resetBuilder();
-      window.location.href = "/Multiprompt";
+      navigate("/Multiprompt", { replace: true });
+      queryClient.invalidateQueries();
 
     } catch (error) {
       console.error("Save error:", error);
@@ -1723,8 +1594,8 @@ ${generatedPrompt}`,
                                         thought={thought}
                                         project={thoughtProject}
                                         isSelected={selectedThoughts.includes(thought.id)}
-                                        onToggleSelect={() => toggleThoughtSelection(thought.id)}
-                                        onDelete={() => deleteThoughtMutation.mutate(thought.id)}
+                                        onToggleSelect={() => toggleSelection(thought.id)}
+                                        onDelete={() => deleteThought.mutate(thought.id)}
                                         onUpdateImages={handleUpdateThoughtImages}
                                         onUpdateContent={handleUpdateThoughtContent}
                                         onUpdateFocus={handleUpdateThoughtFocus}
