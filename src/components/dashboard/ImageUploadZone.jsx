@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 
 export default function ImageUploadZone({ images, onImagesChange }) {
   const [dragActive, setDragActive] = useState(false);
