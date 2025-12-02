@@ -27,6 +27,19 @@ export default function Header() {
     queryFn: () => base44.auth.me(),
   });
 
+  const { data: deletedCount = 0 } = useQuery({
+    queryKey: ['deletedThoughtsCount', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return 0;
+      const result = await base44.entities.Thought.filter({ 
+        created_by: user.email,
+        is_deleted: true 
+      });
+      return result.length || 0;
+    },
+    enabled: !!user?.email,
+  });
+
   const handleLogout = async () => {
     await base44.auth.logout();
   };
@@ -64,7 +77,7 @@ export default function Header() {
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <img 
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68f4bcd57ca6479c7acf2f47/2e57f2099_Promptguardpurpletransbeta.png" 
+            src="https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/59f339046_Promptguardlogopurplebeta.png" 
             alt="PromptGuard" 
             className="h-20 w-auto object-contain"
           />
@@ -136,10 +149,13 @@ export default function Header() {
             <Button 
               variant="ghost" 
               size="icon"
-              className="text-slate-500 hover:text-red-600 hover:bg-red-50"
+              className="text-slate-500 hover:text-red-600 hover:bg-red-50 relative"
               title="Prullenbak"
             >
               <Trash2 className="w-5 h-5" />
+              {deletedCount > 0 && (
+                <span className="absolute top-2 right-2 w-2 h-2 bg-red-600 rounded-full border border-white" />
+              )}
             </Button>
           </Link>
           

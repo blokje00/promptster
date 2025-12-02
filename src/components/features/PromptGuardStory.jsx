@@ -36,10 +36,7 @@ export default function PromptGuardStory() {
         </div>
         <div className="relative">
           <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl opacity-20 blur-lg"></div>
-          <div className="relative bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden p-6 min-h-[300px] flex flex-col justify-center items-center text-center space-y-4">
-            <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mb-4">
-              <Layers className="w-8 h-8 text-indigo-600" />
-            </div>
+          <div className="relative bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden min-h-[300px]">
             <img 
               src="https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/1ce69fe2e_Screenshot2025-12-02at125732.png"
               alt="Het probleem"
