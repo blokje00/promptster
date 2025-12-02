@@ -54,7 +54,7 @@ export default function ZipUploadZone({ zipFiles, onZipFilesChange }) {
     setUploading(true);
     try {
       const uploadPromises = files.map(async (file) => {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const file_url = await uploadImageToSupabase(file);
         return {
           name: file.name,
           url: file_url
