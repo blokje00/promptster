@@ -63,7 +63,7 @@ export default function Header() {
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <img 
-            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68f4bcd57ca6479c7acf2f47/777ee7e69_promptguardtranscrop.png" 
+            src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68f4bcd57ca6479c7acf2f47/2e57f2099_Promptguardpurpletransbeta.png" 
             alt="PromptGuard" 
             className="h-20 w-auto object-contain"
           />
