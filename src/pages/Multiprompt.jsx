@@ -57,6 +57,7 @@ import ContextSelector from "../components/multiprompt/ContextSelector";
 import RequireSubscription from "../components/auth/RequireSubscription";
 import { projectColors, projectBorderColors, projectLightColors } from "@/components/lib/constants";
 import { useThoughts } from "@/components/hooks/useMultipromptState";
+import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 
 /**
  * Multi-Step Builder pagina component.
