@@ -79,8 +79,11 @@ export default function ThoughtCard({
       // Create new file with renamed name
       const renamedFile = new File([file], newFileName, { type: file.type });
       
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: renamedFile });
-      const newImages = [...imageUrls, file_url];
+      // Use UploadPrivateFile + Proxy for ChatGPT access
+      const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file: renamedFile });
+      const proxyUrl = `${window.location.origin}/api/functions/serveImage?uri=${encodeURIComponent(file_uri)}`;
+      
+      const newImages = [...imageUrls, proxyUrl];
       onUpdateImages(thought.id, newImages);
       toast.success("Screenshot toegevoegd");
     } catch (error) {
