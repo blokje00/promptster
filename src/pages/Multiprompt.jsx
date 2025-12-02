@@ -850,28 +850,38 @@ Geen uitleg, alleen de JSON.`;
         no_design: "BLIJF AF VAN HET DESIGN - alleen functionaliteit/logica"
       };
       
-      // Group tasks if needed
-      let tasksSection = "";
+      const subtasks = selectedThoughtData.map((thought, i) => buildSubtaskJson(thought, i, focusToChanges));
+      
+      // Calculate file scope
+      const allFiles = new Set();
+      subtasks.forEach(t => {
+        if (t.files && Array.isArray(t.files)) {
+          t.files.forEach(f => allFiles.add(f));
+        }
+      });
+      
+      const fileScope = allFiles.size > 0 ? Array.from(allFiles) : ["te bepalen"];
 
-      if (groupBy === 'date') {
-        tasksSection = selectedThoughtData.map((thought, i) => buildSubtaskJson(thought, i, focusToChanges)).join("\n\n");
-        promptParts.push(`# DEELTAKEN (verwerk in volgorde)\n\n${tasksSection}`);
-      } else {
-        // Group by page or component
-        const groups = {};
-        selectedThoughtData.forEach(thought => {
-          const key = groupBy === 'page' ? (thought.target_page || 'Overig') : (thought.target_component || 'Overig');
-          if (!groups[key]) groups[key] = [];
-          groups[key].push(thought);
-        });
+      const protocol = {
+        name: "MULTITASK_EXECUTION_v1.0",
+        max_subtasks: 10,
+        execution_mode: "serial",
+        file_scope: fileScope,
+        style: "volg 'Mijn Persoonlijke Development Voorkeuren' (camelCase, async/await, JSDoc)",
+        fallback: {
+          split_if_too_large: true,
+          max_loc: 200,
+          max_files: 3,
+          max_dependencies: 5
+        }
+      };
 
-        const groupedSection = Object.keys(groups).map(group => {
-          const groupTasks = groups[group].map((thought, i) => buildSubtaskJson(thought, i, focusToChanges)).join("\n\n");
-          return `## ${groupBy === 'page' ? 'Pagina' : 'Component'}: ${group}\n${groupTasks}`;
-        }).join("\n\n");
-
-        promptParts.push(`# DEELTAKEN (Gegroepeerd op ${groupBy})\n\n${groupedSection}`);
-      }
+      const jsonBlock = {
+        protocol,
+        subtasks
+      };
+      
+      promptParts.push("```json\n" + JSON.stringify(jsonBlock, null, 2) + "\n```");
     }
 
     // Eind template
@@ -930,7 +940,7 @@ Geen uitleg, alleen de JSON.`;
       subtask.screenshots = images;
     }
     
-    return `SUBTASK (JSON)\n${JSON.stringify(subtask, null, 2)}`;
+    return subtask;
   };
 
   const generatedPrompt = buildStructuredPrompt();
@@ -1447,26 +1457,7 @@ ${generatedPrompt}`,
                           </Badge>
                         )}
                       </div>
-                      {filteredThoughts.length > 0 && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={toggleSelectAll}
-                          className="text-xs"
-                        >
-                          {filteredThoughts.every(th => selectedThoughts.includes(th.id)) ? (
-                            <>
-                              <Square className="w-3 h-3 mr-1" />
-                              {t("deselectAll")}
-                            </>
-                          ) : (
-                            <>
-                              <CheckSquare className="w-3 h-3 mr-1" />
-                              {t("selectAll")}
-                            </>
-                          )}
-                        </Button>
-                      )}
+{/* Selection button moved to footer */}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -1579,15 +1570,36 @@ ${generatedPrompt}`,
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <Button 
                         onClick={handleAddThought} 
                         disabled={(!newThought.trim() && newThoughtImages.length === 0) || isProjectLimitReached}
                         className={`flex-1 ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'} hover:opacity-90 text-white transition-all`}
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        {isProjectLimitReached ? "Limiet bereikt" : "+ Step"}
+                        {isProjectLimitReached ? "Limiet bereikt" : "Step"}
                       </Button>
+
+                      {filteredThoughts.length > 0 && (
+                        <Button
+                          variant="outline"
+                          onClick={toggleSelectAll}
+                          className="flex-1 md:flex-none"
+                        >
+                          {filteredThoughts.every(th => selectedThoughts.includes(th.id)) ? (
+                            <>
+                              <Square className="w-4 h-4 mr-2" />
+                              {t("deselectAll")}
+                            </>
+                          ) : (
+                            <>
+                              <CheckSquare className="w-4 h-4 mr-2" />
+                              {t("selectAll")}
+                            </>
+                          )}
+                        </Button>
+                      )}
+
                       <Select value={groupBy} onValueChange={setGroupBy}>
                         <SelectTrigger className="w-[130px]">
                           <SelectValue placeholder="Groepeer" />
