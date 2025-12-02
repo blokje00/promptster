@@ -1111,9 +1111,11 @@ ${generatedPrompt}`,
     toast.info("Prompt gesloten");
   };
 
-  const toggleTaskCheck = (index) => {
+  const updateTaskStatus = (index, status) => {
     const newChecks = [...taskChecks];
-    newChecks[index].is_checked = !newChecks[index].is_checked;
+    newChecks[index].status = status;
+    // Sync is_checked for backward compatibility
+    newChecks[index].is_checked = status === 'success'; 
     setTaskChecks(newChecks);
   };
 
@@ -1847,26 +1849,31 @@ ${generatedPrompt}`,
                   </p>
 
                   {/* Task Checklist */}
-                  <div className="space-y-2 max-h-48 overflow-auto">
+                  <div className="space-y-2 max-h-64 overflow-auto">
                     {taskChecks.map((check, index) => (
                       <div 
                         key={index}
-                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                          check.is_checked 
-                            ? 'bg-green-50 border-green-300' 
-                            : 'bg-slate-50 border-slate-200 hover:border-slate-300'
-                        }`}
-                        onClick={() => toggleTaskCheck(index)}
+                        className="p-3 rounded-lg border bg-slate-50 border-slate-200 flex items-center justify-between gap-3"
                       >
-                        <div className="flex items-center gap-3">
-                          <Checkbox 
-                            checked={check.is_checked}
-                            onCheckedChange={() => toggleTaskCheck(index)}
-                          />
-                          <span className={`text-sm ${check.is_checked ? 'text-green-700 line-through' : 'text-slate-700'}`}>
-                            {check.task_name}
-                          </span>
-                        </div>
+                        <span className={`text-sm flex-1 ${check.status === 'success' ? 'text-green-700 font-medium' : check.status === 'failed' ? 'text-red-700' : 'text-slate-700'}`}>
+                          {check.task_name}
+                        </span>
+                        <Select 
+                          value={check.status || "open"} 
+                          onValueChange={(val) => updateTaskStatus(index, val)}
+                        >
+                          <SelectTrigger className={`w-[110px] h-8 text-xs ${
+                            check.status === 'success' ? 'bg-green-50 border-green-300 text-green-700' : 
+                            check.status === 'failed' ? 'bg-red-50 border-red-300 text-red-700' : ''
+                          }`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="open">Open</SelectItem>
+                            <SelectItem value="success">Goed</SelectItem>
+                            <SelectItem value="failed">Fout</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     ))}
                   </div>
