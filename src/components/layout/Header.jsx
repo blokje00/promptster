@@ -4,7 +4,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
-import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2 } from "lucide-react";
+import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../i18n/LanguageContext";
 import {
@@ -155,9 +155,10 @@ export default function Header() {
               className="text-slate-500 hover:text-red-600 hover:bg-red-50 relative"
               title="Prullenbak"
             >
-              <Trash2 className="w-5 h-5" />
-              {deletedCount > 0 && (
-                <span className="absolute top-2 right-2 w-2 h-2 bg-red-600 rounded-full border border-white" />
+              {deletedCount > 0 ? (
+                <Trash2 className="w-5 h-5 text-red-500" />
+              ) : (
+                <Trash className="w-5 h-5" />
               )}
             </Button>
           </Link>

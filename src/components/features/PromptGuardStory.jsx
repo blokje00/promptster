@@ -176,7 +176,7 @@ export default function PromptGuardStory() {
       {/* Final Workflow Section */}
       <div className="relative bg-slate-900 rounded-3xl p-0 overflow-hidden text-white text-center md:text-left">
         <img 
-          src="https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/02aea0f8a_Screenshot2025-12-02at125112.png"
+          src="https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/27e95fb3c_1764703710450_8sxj4k_Screenshot_2025_12_02_at_202629.png"
           alt="Workflow"
           className="w-full h-auto object-cover"
         />

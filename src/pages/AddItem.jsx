@@ -241,6 +241,7 @@ export default function AddItem() {
                       <SelectItem value="prompt">Prompt</SelectItem>
                       <SelectItem value="code">Code</SelectItem>
                       <SelectItem value="snippet">Snippet</SelectItem>
+                      <SelectItem value="idee">Idee</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
