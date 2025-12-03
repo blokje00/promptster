@@ -84,13 +84,13 @@ export default function Header() {
         </button>
 
         {/* Center: Main Navigation */}
-        <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
+        <div className="flex items-center gap-0.5 bg-slate-100 rounded-xl p-1">
           <Link to={createPageUrl("Dashboard")}>
             <div 
-              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
                 isVault 
                   ? 'bg-slate-800 text-white shadow-md' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
               }`}
             >
               <Archive className="w-4 h-4" />
@@ -100,10 +100,10 @@ export default function Header() {
           
           <Link to={createPageUrl("AddItem")}>
             <div 
-              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
                 isAddItem 
                   ? 'bg-indigo-600 text-white shadow-md' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
               }`}
             >
               <Plus className="w-4 h-4" />
@@ -113,10 +113,10 @@ export default function Header() {
           
           <Link to={createPageUrl("Multiprompt")}>
             <div 
-              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
                 isMultiprompt 
                   ? 'bg-purple-600 text-white shadow-md' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
               }`}
             >
               <Sparkles className="w-4 h-4" />
