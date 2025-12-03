@@ -45,7 +45,7 @@ export default function Header() {
   };
   
   const currentPath = location.pathname;
-  const isVault = currentPath.includes("Dashboard");
+  const isVault = currentPath.includes("Dashboard") || currentPath === "/" || currentPath === "";
   const isAddItem = currentPath.includes("AddItem");
   const isMultiprompt = currentPath.includes("Multiprompt");
   
