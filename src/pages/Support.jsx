@@ -39,7 +39,8 @@ export default function Support() {
   });
 
   /**
-   * Verstuurt support bericht via email.
+   * Verstuurt support bericht door het op te slaan als ticket.
+   * Admin ontvangt notificatie via het dashboard.
    */
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,38 +52,15 @@ export default function Support() {
 
     setIsSubmitting(true);
     try {
-      const categoryLabels = {
-        bug: "🐛 Bug Report",
-        payment: "💳 Betalingsprobleem",
-        feature: "✨ Feature Verzoek",
-        other: "❓ Overig"
-      };
-
-      const emailBody = `
-Support Verzoek van: ${currentUser?.full_name || "Onbekend"} (${currentUser?.email || "Geen email"})
-Categorie: ${categoryLabels[category]}
-Onderwerp: ${subject}
-
----
-
-${message}
-
----
-
-User ID: ${currentUser?.id || "N/A"}
-Tijdstip: ${new Date().toLocaleString('nl-NL')}
-`;
-
-      const result = await base44.integrations.Core.SendEmail({
-        to: "support@promptster.app",
-        subject: `[${categoryLabels[category]}] ${subject}`,
-        body: emailBody
+      // Save as support ticket in database
+      await base44.entities.SupportTicket.create({
+        category: category,
+        subject: subject.trim(),
+        message: message.trim(),
+        user_email: currentUser?.email || "onbekend",
+        user_name: currentUser?.full_name || "Onbekend",
+        status: "open"
       });
-
-      // Check if email was actually sent
-      if (result?.error) {
-        throw new Error(result.error);
-      }
 
       setSubmitted(true);
       toast.success("Support verzoek verzonden!");
@@ -96,7 +74,7 @@ Tijdstip: ${new Date().toLocaleString('nl-NL')}
       }, 3000);
     } catch (error) {
       console.error("Support error:", error);
-      toast.error("Kon support verzoek niet verzenden");
+      toast.error("Kon support verzoek niet verzenden: " + (error.message || "Onbekende fout"));
     } finally {
       setIsSubmitting(false);
     }
@@ -208,18 +186,10 @@ Tijdstip: ${new Date().toLocaleString('nl-NL')}
                   </Button>
                 </form>
 
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="font-semibold text-blue-800 mb-2">Email Configuratie Info</h4>
-                  <p className="text-sm text-blue-700 mb-3">
-                    Voor de domeinnaam <strong>promptster.app</strong> bij je hosting partij:
-                  </p>
-                  <div className="space-y-1 text-xs font-mono bg-white p-3 rounded border border-blue-200">
-                    <p><strong>Email:</strong> support@promptster.app</p>
-                    <p><strong>Type:</strong> Forward/Alias</p>
-                    <p><strong>Doel:</strong> Je persoonlijke email</p>
-                  </div>
-                  <p className="text-xs text-blue-600 mt-2">
-                    Configureer een email forward van support@promptster.app naar je persoonlijke email bij je DNS/hosting provider.
+                <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <h4 className="font-semibold text-green-800 mb-2">✓ Support systeem actief</h4>
+                  <p className="text-sm text-green-700">
+                    Je verzoek wordt opgeslagen en we nemen zo snel mogelijk contact met je op via <strong>{currentUser?.email}</strong>.
                   </p>
                 </div>
               </CardContent>
