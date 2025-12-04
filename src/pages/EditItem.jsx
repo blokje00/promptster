@@ -60,6 +60,10 @@ export default function EditItem() {
     },
   });
 
+  /**
+   * Slaat wijzigingen op inclusief task checks.
+   * @param {Event} e - Form submit event
+   */
   const handleSubmit = (e) => {
     e.preventDefault();
     const { id, created_date, updated_date, created_by, ...updateData } = formData;

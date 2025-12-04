@@ -1,0 +1,211 @@
+import React from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { BarChart, Users, FolderOpen, Sparkles, FileText, Loader2 } from "lucide-react";
+import RequireSubscription from "../components/auth/RequireSubscription";
+
+/**
+ * Admin statistieken pagina - alleen zichtbaar voor admin/superuser.
+ * Toont overzicht van app gebruik.
+ */
+export default function AdminStats() {
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+  });
+
+  const { data: allUsers = [], isLoading: loadingUsers } = useQuery({
+    queryKey: ['allUsers'],
+    queryFn: async () => {
+      const users = await base44.entities.User.list();
+      return users || [];
+    },
+    enabled: currentUser?.role === 'admin',
+  });
+
+  const { data: allItems = [], isLoading: loadingItems } = useQuery({
+    queryKey: ['allItems'],
+    queryFn: async () => {
+      const items = await base44.entities.Item.list();
+      return items || [];
+    },
+    enabled: currentUser?.role === 'admin',
+  });
+
+  const { data: allProjects = [], isLoading: loadingProjects } = useQuery({
+    queryKey: ['allProjects'],
+    queryFn: async () => {
+      const projects = await base44.entities.Project.list();
+      return projects || [];
+    },
+    enabled: currentUser?.role === 'admin',
+  });
+
+  const { data: allThoughts = [], isLoading: loadingThoughts } = useQuery({
+    queryKey: ['allThoughts'],
+    queryFn: async () => {
+      const thoughts = await base44.entities.Thought.list();
+      return thoughts || [];
+    },
+    enabled: currentUser?.role === 'admin',
+  });
+
+  // Redirect non-admins
+  if (currentUser && currentUser.role !== 'admin') {
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-2xl font-bold text-red-600">Geen Toegang</h2>
+        <p className="text-slate-600 mt-2">Deze pagina is alleen toegankelijk voor administrators.</p>
+      </div>
+    );
+  }
+
+  const isLoading = loadingUsers || loadingItems || loadingProjects || loadingThoughts;
+
+  if (isLoading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
+  const stats = [
+    {
+      title: "Totaal Gebruikers",
+      value: allUsers.length,
+      icon: Users,
+      color: "text-blue-600",
+      bgColor: "bg-blue-100"
+    },
+    {
+      title: "Totaal Items",
+      value: allItems.length,
+      icon: FileText,
+      color: "text-green-600",
+      bgColor: "bg-green-100",
+      breakdown: {
+        prompts: allItems.filter(i => i.type === 'prompt').length,
+        multiprompts: allItems.filter(i => i.type === 'multiprompt').length,
+        code: allItems.filter(i => i.type === 'code').length,
+        snippets: allItems.filter(i => i.type === 'snippet').length,
+      }
+    },
+    {
+      title: "Totaal Projecten",
+      value: allProjects.length,
+      icon: FolderOpen,
+      color: "text-purple-600",
+      bgColor: "bg-purple-100"
+    },
+    {
+      title: "Totaal Thoughts",
+      value: allThoughts.length,
+      icon: Sparkles,
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-100",
+      breakdown: {
+        active: allThoughts.filter(t => !t.is_deleted).length,
+        deleted: allThoughts.filter(t => t.is_deleted).length,
+      }
+    },
+  ];
+
+  return (
+    <RequireSubscription>
+      <div className="p-4 md:p-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-2">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Admin Statistieken
+              </h1>
+              <Badge variant="outline" className="bg-red-100 text-red-700 border-red-300">
+                ADMIN ONLY
+              </Badge>
+            </div>
+            <p className="text-slate-600">Applicatie statistieken en gebruik</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {stats.map((stat, index) => (
+              <Card key={index}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium text-slate-600">
+                      {stat.title}
+                    </CardTitle>
+                    <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                      <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-slate-900 mb-2">
+                    {stat.value}
+                  </div>
+                  {stat.breakdown && (
+                    <div className="space-y-1">
+                      {Object.entries(stat.breakdown).map(([key, value]) => (
+                        <div key={key} className="flex items-center justify-between text-xs text-slate-500">
+                          <span className="capitalize">{key}:</span>
+                          <span className="font-medium">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart className="w-5 h-5 text-indigo-600" />
+                Gebruikers Overzicht
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-auto">
+                <table className="w-full text-sm">
+                  <thead className="border-b border-slate-200">
+                    <tr className="text-left">
+                      <th className="pb-2 font-semibold text-slate-700">Naam</th>
+                      <th className="pb-2 font-semibold text-slate-700">Email</th>
+                      <th className="pb-2 font-semibold text-slate-700">Plan</th>
+                      <th className="pb-2 font-semibold text-slate-700">Items</th>
+                      <th className="pb-2 font-semibold text-slate-700">Projecten</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {allUsers.map((user) => {
+                      const userItems = allItems.filter(i => i.created_by === user.email);
+                      const userProjects = allProjects.filter(p => p.created_by === user.email);
+                      
+                      return (
+                        <tr key={user.id} className="hover:bg-slate-50">
+                          <td className="py-3">{user.full_name || "—"}</td>
+                          <td className="py-3 text-slate-600">{user.email}</td>
+                          <td className="py-3">
+                            <Badge variant={user.plan_id ? "default" : "secondary"}>
+                              {user.plan_id || "Free"}
+                            </Badge>
+                          </td>
+                          <td className="py-3">{userItems.length}</td>
+                          <td className="py-3">{userProjects.length}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </RequireSubscription>
+  );
+}

@@ -10,6 +10,7 @@ import { useLanguage } from "../i18n/LanguageContext";
 
 // Default Page to Component mapping (fallback)
 const DEFAULT_PAGE_COMPONENT_MAP = {
+  "**/*": ["*"],
   Dashboard: ["ItemCard"],
   AddItem: ["ImageUploadZone", "ZipUploadZone"],
   ViewItem: ["FileChangesFeedback"],

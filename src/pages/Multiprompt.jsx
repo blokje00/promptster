@@ -382,7 +382,7 @@ export default function Multiprompt() {
       target_domain: null,
       ai_prediction: null
     });
-    setGroupBy("date");
+    setGroupBy("component");
     
     // Reset prompt generation state
     setCustomStartText("");
@@ -1653,10 +1653,10 @@ ${generatedPrompt}`,
                         onClick={handleAddThought} 
                         disabled={(!newThought.trim() && newThoughtImages.length === 0) || isProjectLimitReached}
                         className={`flex-1 ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'} hover:opacity-90 text-white transition-all`}
-                        title={t("addStepTitle") || "Voeg deze stap toe aan je lijst"}
+                        title="Voeg deze taak toe aan je lijst"
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        {isProjectLimitReached ? (t("limitReached") || "Limiet bereikt") : (t("stepLabel") || "Step")}
+                        {isProjectLimitReached ? (t("limitReached") || "Limiet bereikt") : "Task"}
                       </Button>
 
                       {filteredThoughts.length > 0 && (

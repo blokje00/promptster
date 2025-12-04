@@ -195,8 +195,8 @@ export default function TaskChecklist({
             )}
               </div>
             </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-md p-3 bg-slate-900 text-white">
-              <p className="text-sm whitespace-pre-wrap">{check.full_description || check.task_name}</p>
+            <TooltipContent side="top" className="max-w-2xl max-h-96 overflow-auto p-4 bg-slate-900 text-white">
+              <p className="text-sm whitespace-pre-wrap leading-relaxed">{check.full_description || check.task_name}</p>
             </TooltipContent>
           </Tooltip>
         ))}

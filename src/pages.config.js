@@ -8,6 +8,8 @@ import Subscription from './pages/Subscription';
 import Features from './pages/Features';
 import AdminSubscription from './pages/AdminSubscription';
 import RecycleBin from './pages/RecycleBin';
+import Support from './pages/Support';
+import AdminStats from './pages/AdminStats';
 import __Layout from './Layout.jsx';
 
 
@@ -22,6 +24,8 @@ export const PAGES = {
     "Features": Features,
     "AdminSubscription": AdminSubscription,
     "RecycleBin": RecycleBin,
+    "Support": Support,
+    "AdminStats": AdminStats,
 }
 
 export const pagesConfig = {

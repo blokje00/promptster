@@ -17,6 +17,8 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import RequireSubscription from "../components/auth/RequireSubscription";
 
 export default function ViewItem() {
@@ -385,53 +387,55 @@ export default function ViewItem() {
                   )}
                 </div>
 
-                {/* Interactive Checklist */}
+                {/* Interactive Checklist with Tooltips */}
                 {item.task_checks && item.task_checks.length > 0 && (
                   <div className="mb-6 bg-white rounded-md border border-orange-200 overflow-hidden">
-                    <div className="px-4 py-2 bg-orange-100/50 border-b border-orange-200 font-medium text-sm text-orange-800">
-                      Checklist ({item.task_checks.filter(c => c.status === 'success').length}/{item.task_checks.length} voltooid)
+                    <div className="px-4 py-2 bg-orange-100/50 border-b border-orange-200 font-medium text-sm text-orange-800 flex items-center justify-between">
+                      <span>Checklist ({item.task_checks.filter(c => c.status === 'success').length}/{item.task_checks.length} voltooid)</span>
+                      <ListChecks className="w-4 h-4" />
                     </div>
-                    <div className="divide-y divide-slate-100">
-                      {item.task_checks.map((check, index) => (
-                        <div key={index} className="p-3 flex items-start gap-3 hover:bg-slate-50 transition-colors">
-                          <div className="flex items-center gap-1 mt-0.5 flex-shrink-0">
-                            <button
-                              onClick={() => handleStatusChange(index, 'success')}
-                              className={`p-1 rounded-full transition-colors ${check.status === 'success' ? 'bg-green-100 text-green-600' : 'text-slate-300 hover:bg-slate-100'}`}
-                              title="Markeer als gelukt"
-                            >
-                              <CheckCircle2 className="w-5 h-5" />
-                            </button>
-                            <button
-                              onClick={() => handleStatusChange(index, 'failed')}
-                              className={`p-1 rounded-full transition-colors ${check.status === 'failed' ? 'bg-red-100 text-red-600' : 'text-slate-300 hover:bg-slate-100'}`}
-                              title="Markeer als niet gelukt"
-                            >
-                              <XCircle className="w-5 h-5" />
-                            </button>
-                            {check.status === 'open' && (
-                              <button
-                                onClick={() => handleStatusChange(index, 'open')}
-                                className="p-1 rounded-full text-blue-500 bg-blue-50"
-                                title="Nog open"
-                              >
-                                <Circle className="w-5 h-5" />
-                              </button>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm ${check.status === 'success' ? 'text-slate-400 line-through' : check.status === 'failed' ? 'text-red-700 font-medium' : 'text-slate-700'}`}>
-                              {check.task_name}
-                            </p>
-                            {check.status === 'failed' && (
-                              <span className="inline-flex items-center text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded mt-1">
-                                Wordt meegenomen in re-try
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <TooltipProvider>
+                      <div className="divide-y divide-slate-100">
+                        {item.task_checks.map((check, index) => (
+                          <Tooltip key={index}>
+                            <TooltipTrigger asChild>
+                              <div className="p-3 flex items-start gap-3 hover:bg-slate-50 transition-colors cursor-pointer">
+                                <Select 
+                                  value={check.status || "open"} 
+                                  onValueChange={(newStatus) => handleStatusChange(index, newStatus)}
+                                >
+                                  <SelectTrigger className={`w-[110px] h-8 text-xs ${
+                                    check.status === 'success' ? 'bg-green-50 border-green-300 text-green-700' : 
+                                    check.status === 'failed' ? 'bg-red-50 border-red-300 text-red-700' : 
+                                    'bg-blue-50 border-blue-300 text-blue-700'
+                                  }`}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="open">Open</SelectItem>
+                                    <SelectItem value="success">Gelukt</SelectItem>
+                                    <SelectItem value="failed">Mislukt</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-sm ${check.status === 'success' ? 'text-green-700 line-through font-medium' : check.status === 'failed' ? 'text-red-700 font-medium' : 'text-slate-700'}`}>
+                                    {check.task_name}
+                                  </p>
+                                  {check.status === 'failed' && (
+                                    <span className="inline-flex items-center text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded mt-1">
+                                      Wordt meegenomen in re-try
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="max-w-2xl max-h-96 overflow-auto p-4 bg-slate-900 text-white">
+                              <p className="text-sm whitespace-pre-wrap leading-relaxed">{check.full_description || check.task_name}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        ))}
+                      </div>
+                    </TooltipProvider>
                   </div>
                 )}
 

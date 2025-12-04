@@ -4,7 +4,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
-import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash } from "lucide-react";
+import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../i18n/LanguageContext";
 import {
@@ -56,10 +56,10 @@ export default function Header() {
     else if (isMultiprompt) localStorage.setItem('lastMainPage', 'Multiprompt');
   }, [isVault, isAddItem, isMultiprompt]);
 
-  // Redirect to last page on initial load
+  // Redirect to last page on initial load - default to Multiprompt for existing users
   useEffect(() => {
     if (currentPath === "/" || currentPath === "") {
-      const lastPage = localStorage.getItem('lastMainPage') || 'Dashboard';
+      const lastPage = localStorage.getItem('lastMainPage') || 'Multiprompt';
       navigate(createPageUrl(lastPage), { replace: true });
     }
   }, [currentPath, navigate]);
@@ -137,6 +137,19 @@ export default function Header() {
               Features
             </Button>
           </Link>
+          {user?.role === 'admin' && (
+            <Link to={createPageUrl("AdminStats")}>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-red-600 font-medium hover:text-red-700 hover:bg-red-50"
+                title="Admin Statistieken"
+              >
+                <BarChart className="w-4 h-4 mr-1" />
+                Stats
+              </Button>
+            </Link>
+          )}
           <Link to={createPageUrl("AIBackoffice")}>
             <Button 
               variant="ghost" 
@@ -183,6 +196,12 @@ export default function Header() {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to={createPageUrl("Support")} className="cursor-pointer">
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    <span>Support</span>
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Uitloggen</span>
