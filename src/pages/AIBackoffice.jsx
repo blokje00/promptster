@@ -115,7 +115,7 @@ export default function AIBackoffice() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['aiSettings'] });
-      toast.success("AI instellingen opgeslagen");
+      toast.success(t("aiSettingsSaved") || "AI instellingen opgeslagen");
     },
   });
 
@@ -132,9 +132,9 @@ export default function AIBackoffice() {
     try {
       await base44.auth.updateMe({ personal_preferences_markdown: personalPreferences });
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      toast.success("Persoonlijke voorkeuren opgeslagen");
+      toast.success(t("preferencesSaved") || "Persoonlijke voorkeuren opgeslagen");
     } catch (error) {
-      toast.error("Kon voorkeuren niet opslaan");
+      toast.error(t("preferencesSaveFailed") || "Kon voorkeuren niet opslaan");
     } finally {
       setIsSavingPreferences(false);
     }

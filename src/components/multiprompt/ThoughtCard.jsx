@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import ContextSelector from "./ContextSelector";
 import { projectColors, projectBorderColors } from "@/components/lib/constants";
 import { uploadImageToSupabase } from "@/components/lib/uploadImage";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const focusLabels = {
   both: { label: "Design + Logica", icon: null, color: "text-slate-500" },
@@ -47,6 +48,7 @@ export default function ThoughtCard({
   dragHandleProps,
   showDragHandle = true
 }) {
+  const { t } = useLanguage();
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -60,7 +62,7 @@ export default function ThoughtCard({
 
   const handleImageUpload = React.useCallback(async (file) => {
   if (!file || !file.type.startsWith('image/')) {
-    toast.error("Alleen afbeeldingen zijn toegestaan");
+    toast.error(t("onlyImagesAllowed") || "Alleen afbeeldingen zijn toegestaan");
     return;
   }
 
@@ -72,14 +74,14 @@ export default function ThoughtCard({
 
     const newImages = [...imageUrls, file_url];
     onUpdateImages(thought.id, newImages);
-    toast.success("Screenshot toegevoegd");
+    toast.success(t("screenshotAdded") || "Screenshot toegevoegd");
   } catch (error) {
     console.error("Upload error:", error);
-    toast.error("Kon afbeelding niet uploaden");
+    toast.error(t("imageUploadFailed") || "Kon afbeelding niet uploaden");
   } finally {
     setIsUploading(false);
   }
-  }, [imageUrls, onUpdateImages, thought.id]);
+  }, [imageUrls, onUpdateImages, thought.id, t]);
 
   // Handle paste from clipboard
   useEffect(() => {
@@ -126,7 +128,7 @@ export default function ThoughtCard({
     e.stopPropagation();
     const newImages = imageUrls.filter((_, idx) => idx !== indexToRemove);
     onUpdateImages(thought.id, newImages);
-    toast.success("Screenshot verwijderd");
+    toast.success(t("screenshotRemoved") || "Screenshot verwijderd");
   };
 
   const handleStartEditing = (e) => {
@@ -216,9 +218,9 @@ export default function ThoughtCard({
             <div 
               className="text-sm text-slate-700 whitespace-pre-wrap cursor-text hover:bg-slate-50 rounded p-1 -m-1 h-[12em] md:h-[4.5em] overflow-y-auto" 
               onClick={handleStartEditing}
-              title="Klik om te bewerken"
+              title={t("clickToEdit") || "Klik om te bewerken"}
             >
-              {thought.content || <span className="text-slate-400 italic">Klik om tekst toe te voegen...</span>}
+              {thought.content || <span className="text-slate-400 italic">{t("clickToAddText") || "Klik om tekst toe te voegen..."}</span>}
             </div>
           )}
           
@@ -265,7 +267,7 @@ export default function ThoughtCard({
               ) : (
                 <Plus className="w-3 h-3" />
               )}
-              {isUploading ? "Uploaden..." : "Afbeelding"}
+              {isUploading ? (t("uploading") || "Uploaden...") : (t("addImage") || "Afbeelding")}
             </button>
 
             {/* Focus Type Selector */}

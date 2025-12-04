@@ -325,7 +325,7 @@ export default function ContextSelector({
           size="sm"
           onClick={() => setIsAddingItem('page')}
           className="h-7 w-7 p-0 text-slate-500 hover:text-slate-700 bg-white border-dashed"
-          title="Nieuwe pagina toevoegen"
+          title={t("addPage") || "Nieuwe pagina toevoegen"}
         >
           <Plus className="w-3 h-3" />
         </Button>
@@ -351,7 +351,7 @@ export default function ContextSelector({
               ))
             ) : (
               <SelectItem value="_none" disabled className="text-xs text-slate-400">
-                Kies eerst pagina
+                {t("choosePageFirst") || "Kies eerst pagina"}
               </SelectItem>
             )}
           </SelectContent>
@@ -363,7 +363,7 @@ export default function ContextSelector({
           onClick={() => setIsAddingItem('component')}
           disabled={!target_page}
           className="h-7 w-7 p-0 text-slate-500 hover:text-slate-700 bg-white border-dashed disabled:opacity-30"
-          title="Nieuw component toevoegen"
+          title={t("addComponent") || "Nieuw component toevoegen"}
         >
           <Plus className="w-3 h-3" />
         </Button>
@@ -411,20 +411,20 @@ export default function ContextSelector({
       <Dialog open={!!isAddingItem} onOpenChange={(open) => !open && setIsAddingItem(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Nieuwe {isAddingItem === 'page' ? 'Pagina' : 'Component'} toevoegen</DialogTitle>
+            <DialogTitle>{isAddingItem === 'page' ? (t("addNewPage") || "Nieuwe Pagina toevoegen") : (t("addNewComponent") || "Nieuwe Component toevoegen")}</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <Input
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
-              placeholder={`Naam van ${isAddingItem === 'page' ? 'pagina' : 'component'}...`}
+              placeholder={isAddingItem === 'page' ? (t("pageName") || "Naam van pagina...") : (t("componentName") || "Naam van component...")}
               onKeyDown={(e) => e.key === 'Enter' && handleAddItem()}
               autoFocus
             />
           </div>
           <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => setIsAddingItem(null)}>Annuleren</Button>
-            <Button type="submit" onClick={handleAddItem}>Toevoegen</Button>
+            <Button type="button" variant="secondary" onClick={() => setIsAddingItem(null)}>{t("cancel") || "Annuleren"}</Button>
+            <Button type="submit" onClick={handleAddItem}>{t("add") || "Toevoegen"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

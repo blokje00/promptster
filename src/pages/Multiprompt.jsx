@@ -244,7 +244,7 @@ export default function Multiprompt() {
       queryClient.invalidateQueries({ queryKey: ['templates'] });
       setNewTemplateName("");
       setNewTemplateContent("");
-      toast.success("Template opgeslagen");
+      toast.success(t("templateSaved") || "Template opgeslagen");
     },
   });
 
@@ -252,7 +252,7 @@ export default function Multiprompt() {
     mutationFn: (id) => base44.entities.PromptTemplate.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['templates'] });
-      toast.success("Template verwijderd");
+      toast.success(t("templateDeleted") || "Template verwijderd");
     },
   });
 
@@ -262,7 +262,7 @@ export default function Multiprompt() {
       queryClient.invalidateQueries({ queryKey: ['templates'] });
       setEditTemplateDialogOpen(false);
       setEditingTemplate(null);
-      toast.success("Template bijgewerkt");
+      toast.success(t("templateUpdated") || "Template bijgewerkt");
     },
   });
 
@@ -293,7 +293,7 @@ export default function Multiprompt() {
       setNewProjectName("");
       setNewProjectDescription("");
       setNewProjectDialogOpen(false);
-      toast.success("Project toegevoegd");
+      toast.success(t("projectAdded") || "Project toegevoegd");
     },
   });
 
@@ -302,7 +302,7 @@ export default function Multiprompt() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       if (selectedProjectId === editingProject?.id) setSelectedProjectId("");
-      toast.success("Project verwijderd");
+      toast.success(t("projectDeleted") || "Project verwijderd");
     },
   });
 
@@ -312,7 +312,7 @@ export default function Multiprompt() {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       setEditDialogOpen(false);
       setEditingProject(null);
-      toast.success("Project bijgewerkt");
+      toast.success(t("projectUpdated") || "Project bijgewerkt");
     },
   });
 
@@ -320,7 +320,7 @@ export default function Multiprompt() {
     mutationFn: (data) => base44.entities.Item.create(data),
     onSuccess: (newItem) => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
-      toast.success("Multi-Step opgeslagen!");
+      toast.success(t("multiStepSaved") || "Multi-Step opgeslagen!");
       // Reset builder state locally just in case
       resetBuilder();
     },
@@ -580,15 +580,15 @@ export default function Multiprompt() {
       const failures = results.filter(r => r.status === 'rejected');
       if (failures.length > 0) {
         console.error("Sommige updates faalden:", failures);
-        toast.warning(`${localThoughts.length - failures.length}/${localThoughts.length} taken opgeslagen`);
+        toast.warning(`${localThoughts.length - failures.length}/${localThoughts.length} ${t("someTasksFailed") || "taken opgeslagen"}`);
       } else {
-        toast.success("Alle taken opgeslagen!");
+        toast.success(t("allTasksSaved") || "Alle taken opgeslagen!");
       }
       
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
     } catch (error) {
       console.error("Save error:", error);
-      toast.error("Kon niet alle taken opslaan");
+      toast.error(t("saveFailed") || "Kon niet alle taken opslaan");
     } finally {
       setIsSavingAll(false);
     }
@@ -634,7 +634,7 @@ export default function Multiprompt() {
         componentMapping = JSON.parse(editProjectMapping);
         setEditMappingError("");
       } catch (e) {
-        setEditMappingError("Ongeldige JSON format");
+        setEditMappingError(t("invalidJsonFormat") || "Ongeldige JSON format");
         return;
       }
     }
@@ -673,7 +673,7 @@ Geen uitleg, alleen de JSON.`;
     if (!editingProject) return;
     const prompt = generateMappingPrompt(editingProject.name);
     navigator.clipboard.writeText(prompt);
-    toast.success("Mapping prompt gekopieerd!");
+    toast.success(t("mappingPromptCopied") || "Mapping prompt gekopieerd!");
   };
 
   // toggleThoughtSelection is now toggleSelection from hook
@@ -991,9 +991,9 @@ Originele prompt:
 ${generatedPrompt}`,
       });
       setImprovedPrompt(result);
-      toast.success("Prompt verbeterd!");
+      toast.success(t("promptImproved") || "Prompt verbeterd!");
     } catch (error) {
-      toast.error("Kon prompt niet verbeteren");
+      toast.error(t("promptImproveFailed") || "Kon prompt niet verbeteren");
     } finally {
       setIsImproving(false);
     }
@@ -1008,7 +1008,7 @@ ${generatedPrompt}`,
     const textToCopy = improvedPrompt || generatedPrompt;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
-    toast.success("Prompt gekopieerd! Opslaan...");
+    toast.success(t("promptCopying") || "Prompt gekopieerd! Opslaan...");
     
     // Direct save logic
     try {
@@ -1053,7 +1053,7 @@ ${generatedPrompt}`,
 
     } catch (e) {
       console.error("Direct save failed:", e);
-      toast.error("Opslaan mislukt: " + e.message);
+      toast.error((t("saveFailed") || "Opslaan mislukt") + ": " + e.message);
       setCopied(false);
     }
   };
@@ -1106,7 +1106,7 @@ ${generatedPrompt}`,
 
     } catch (e) {
       console.error("Save failed:", e);
-      toast.error("Opslaan mislukt: " + (e.message || "Onbekende fout"));
+      toast.error((t("saveFailed") || "Opslaan mislukt") + ": " + (e.message || t("unknownError") || "Onbekende fout"));
     }
   };
 
@@ -1182,7 +1182,7 @@ ${generatedPrompt}`,
     setPromptTitle("");
     setTaskChecks([]);
     setControlNotes("");
-    toast.info("Prompt gesloten");
+    toast.info(t("promptClosed") || "Prompt gesloten");
   };
 
   const updateTaskStatus = (index, status) => {
@@ -1889,7 +1889,7 @@ ${generatedPrompt}`,
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(improvedPrompt || generatedPrompt);
-                            toast.success("Prompt gekopieerd!");
+                            toast.success(t("copied") || "Prompt gekopieerd!");
                           }}
                           className="absolute top-2 right-2 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
                           title="Kopieer naar klembord"
