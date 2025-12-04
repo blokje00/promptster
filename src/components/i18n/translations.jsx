@@ -34,7 +34,7 @@ export const translations = {
     addFirstItem: "Voeg je eerste item toe",
     
     // Multiprompt
-    promptguardBuilder: "Promptguard Multi-step Builder",
+    promptsterBuilder: "Promptster Multi-step Builder",
     collectThoughts: "Verzamel gedachten en bouw uitgebreide multi-step prompts",
     project: "Project",
     allProjects: "Alle",
@@ -118,7 +118,7 @@ export const translations = {
     type: "Type",
     prompt: "Prompt",
     snippet: "Snippet",
-    language: "Taal",
+    programmingLanguage: "Taal",
     description: "Beschrijving",
     descriptionPlaceholder: "Korte beschrijving van dit item",
     content: "Inhoud",
@@ -147,7 +147,7 @@ export const translations = {
     copiedToClipboard: "Inhoud gekopieerd naar klembord!",
     
     // Language
-    language: "Taal",
+    languageLabel: "Taal",
     languageSelection: "Taalkeuze",
     
     // Image upload
@@ -202,7 +202,7 @@ export const translations = {
     addFirstItem: "Add your first item",
     
     // Multiprompt
-    promptguardBuilder: "Promptguard Multi-task Builder",
+    promptsterBuilder: "Promptster Multi-task Builder",
     collectThoughts: "Collect thoughts and build comprehensive multi-task prompts",
     project: "Project",
     allProjects: "All",
@@ -286,7 +286,7 @@ export const translations = {
     type: "Type",
     prompt: "Prompt",
     snippet: "Snippet",
-    language: "Language",
+    programmingLanguage: "Language",
     description: "Description",
     descriptionPlaceholder: "Short description of this item",
     content: "Content",
@@ -315,7 +315,7 @@ export const translations = {
     copiedToClipboard: "Content copied to clipboard!",
     
     // Language
-    language: "Language",
+    languageLabel: "Language",
     languageSelection: "Language selection",
     
     // Image upload
@@ -370,7 +370,7 @@ export const translations = {
     addFirstItem: "Ajouter votre premier élément",
     
     // Multiprompt
-    promptguardBuilder: "Constructeur Multi-tâche Promptguard",
+    promptsterBuilder: "Constructeur Multi-tâche Promptster",
     collectThoughts: "Collectez vos pensées et construisez des prompts multi-tâches complets",
     project: "Projet",
     allProjects: "Tous",
@@ -454,7 +454,7 @@ export const translations = {
     type: "Type",
     prompt: "Prompt",
     snippet: "Extrait",
-    language: "Langue",
+    programmingLanguage: "Langue",
     description: "Description",
     descriptionPlaceholder: "Courte description de cet élément",
     content: "Contenu",
@@ -483,7 +483,7 @@ export const translations = {
     copiedToClipboard: "Contenu copié dans le presse-papiers!",
     
     // Language
-    language: "Langue",
+    languageLabel: "Langue",
     languageSelection: "Sélection de la langue",
     
     // Image upload
@@ -527,7 +527,7 @@ export const translations = {
     addFirstItem: "Erstes Element hinzufügen",
     
     // Multiprompt
-    promptguardBuilder: "Promptguard Multi-Task Builder",
+    promptsterBuilder: "Promptster Multi-Task Builder",
     collectThoughts: "Sammeln Sie Gedanken und erstellen Sie umfassende Multi-Task-Prompts",
     project: "Projekt",
     allProjects: "Alle",
@@ -611,7 +611,7 @@ export const translations = {
     type: "Typ",
     prompt: "Prompt",
     snippet: "Snippet",
-    language: "Sprache",
+    programmingLanguage: "Sprache",
     description: "Beschreibung",
     descriptionPlaceholder: "Kurze Beschreibung dieses Elements",
     content: "Inhalt",
@@ -640,7 +640,7 @@ export const translations = {
     copiedToClipboard: "Inhalt in die Zwischenablage kopiert!",
     
     // Language
-    language: "Sprache",
+    languageLabel: "Sprache",
     languageSelection: "Sprachauswahl",
     
     // Image upload
@@ -684,7 +684,7 @@ export const translations = {
     addFirstItem: "添加第一个项目",
     
     // Multiprompt
-    promptguardBuilder: "Promptguard 多任务构建器",
+    promptsterBuilder: "Promptster 多任务构建器",
     collectThoughts: "收集想法并构建全面的多任务提示词",
     project: "项目",
     allProjects: "全部",
@@ -768,7 +768,7 @@ export const translations = {
     type: "类型",
     prompt: "提示词",
     snippet: "代码片段",
-    language: "语言",
+    programmingLanguage: "语言",
     description: "描述",
     descriptionPlaceholder: "此项目的简短描述",
     content: "内容",
@@ -797,7 +797,7 @@ export const translations = {
     copiedToClipboard: "内容已复制到剪贴板！",
     
     // Language
-    language: "语言",
+    languageLabel: "语言",
     languageSelection: "语言选择",
     
     // Image upload
