@@ -1,5 +1,5 @@
 import React from "react";
-import PromptGuardStory from "@/components/features/PromptGuardStory";
+import PromptsterStory from "@/components/features/PromptsterStory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Zap, Shield, Database, Code, Cpu } from "lucide-react";
@@ -70,7 +70,7 @@ export default function Features() {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            PromptGuard Features
+            Promptster Features
           </h1>
           <p className="text-xl text-slate-600">
             Alles wat je nodig hebt om je development workflow te versnellen
@@ -94,7 +94,7 @@ export default function Features() {
           </div>
         </Link>
 
-        <PromptGuardStory />
+        <PromptsterStory />
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (

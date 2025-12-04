@@ -78,7 +78,7 @@ export default function Header() {
         >
           <img 
             src="https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/59f339046_Promptguardlogopurplebeta.png" 
-            alt="PromptGuard" 
+            alt="Promptster" 
             className="h-20 w-auto object-contain"
           />
         </button>

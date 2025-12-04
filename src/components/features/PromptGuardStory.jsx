@@ -2,7 +2,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, ArrowRight, Cpu, Layers, TrendingUp, Target } from "lucide-react";
 
-export default function PromptGuardStory() {
+export default function PromptsterStory() {
   return (
     <div className="max-w-5xl mx-auto mb-20 space-y-16">
       {/* Intro Section */}
@@ -53,7 +53,7 @@ export default function PromptGuardStory() {
             De Oplossing
           </Badge>
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">
-            Daar is nu een oplossing voor: <span className="text-indigo-600">PromptGuard</span>
+            Daar is nu een oplossing voor: <span className="text-indigo-600">Promptster</span>
           </h2>
           <p className="text-lg text-slate-600">
             Verzamel al je kleine wijzigingen als <strong>Steps</strong>, en de app voegt ze – AI-gestuurd – samen tot één extreem sterke multi-step prompt.
@@ -71,7 +71,7 @@ export default function PromptGuardStory() {
                   <div className="w-3 h-3 rounded-full bg-yellow-500/20"></div>
                   <div className="w-3 h-3 rounded-full bg-green-500/20"></div>
                 </div>
-                <div className="ml-4 text-xs text-slate-500 font-mono">PromptGuard Multi-Step Builder</div>
+                <div className="ml-4 text-xs text-slate-500 font-mono">Promptster Multi-Step Builder</div>
               </div>
               <div className="p-6 space-y-4">
                 <div className="flex gap-3">
@@ -145,7 +145,7 @@ export default function PromptGuardStory() {
             NOCODE platforms zoals Base44.com, Make.com of Zapier AI hanteren heel andere businessmodellen dan de AI-providers zelf.
           </p>
           <p className="text-slate-600">
-            Promptguard werkt niet op provider-niveau en berekent geen tokenprijzen — want tokens zijn niet het probleem. 
+            Promptster werkt niet op provider-niveau en berekent geen tokenprijzen — want tokens zijn niet het probleem. 
             <span className="font-semibold text-slate-900 block mt-2">
               De echte kosten komen voort uit de honderden micro-prompts, flows en actions die je na de eerste versie van je app nodig hebt.
             </span>
@@ -198,7 +198,7 @@ export default function PromptGuardStory() {
           </div>
           <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700 backdrop-blur-sm">
             <p className="text-lg font-medium text-indigo-200 italic mb-4">
-              "Promptguard verandert hoe je AI gebruikt binnen nocode-platformen — van chaotische losse opdrachten naar één strak, voorspelbaar, zelflerend en schaalbaar proces."
+              "Promptster verandert hoe je AI gebruikt binnen nocode-platformen — van chaotische losse opdrachten naar één strak, voorspelbaar, zelflerend en schaalbaar proces."
             </p>
           </div>
         </div>
