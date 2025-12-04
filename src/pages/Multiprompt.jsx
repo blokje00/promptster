@@ -58,6 +58,7 @@ import RequireSubscription from "../components/auth/RequireSubscription";
 import { projectColors, projectBorderColors, projectLightColors } from "@/components/lib/constants";
 import { useThoughts } from "@/components/hooks/useMultipromptState";
 import { uploadImageToSupabase } from "@/components/lib/uploadImage";
+import { useAutosaveField } from "@/components/hooks/useAutosaveField";
 
 /**
  * Multi-Step Builder pagina component.
@@ -73,7 +74,31 @@ export default function Multiprompt() {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
   
-  const [newThought, setNewThought] = useState("");
+  // Get current user first (needed for autosave keys)
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      return user;
+    },
+  });
+
+  // Selected project state
+  const [selectedProjectId, setSelectedProjectId] = useState(() => {
+    return localStorage.getItem('lastSelectedProjectId') || "";
+  });
+
+  // Autosave for create task field using generic hook
+  const { 
+    value: newThought, 
+    setValue: setNewThought, 
+    resetValue: resetNewThought 
+  } = useAutosaveField({
+    storageKey: `promptster:multiprompt:createTask:${selectedProjectId || 'all'}:${currentUser?.id ?? 'anon'}`,
+    initialValue: "",
+    debounceMs: 500,
+    enabled: !!currentUser?.id,
+  });
   const [newThoughtImages, setNewThoughtImages] = useState([]);
   const [isUploadingNewImage, setIsUploadingNewImage] = useState(false);
   const [newThoughtFocus, setNewThoughtFocus] = useState("both");
@@ -94,10 +119,6 @@ export default function Multiprompt() {
   const [customEndText, setCustomEndText] = useState("");
   const [promptTitle, setPromptTitle] = useState("");
   const [copied, setCopied] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState(() => {
-    // Load last selected project from localStorage
-    return localStorage.getItem('lastSelectedProjectId') || "";
-  });
   const [improvedPrompt, setImprovedPrompt] = useState("");
   const [isImproving, setIsImproving] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
@@ -127,15 +148,6 @@ export default function Multiprompt() {
   const [taskChecks, setTaskChecks] = useState([]);
   const [controlNotes, setControlNotes] = useState("");
 
-  // Get current user for personal preferences - MUST be first
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: async () => {
-      const user = await base44.auth.me();
-      return user;
-    },
-  });
-
   const { data: dbThoughts = [] } = useQuery({
     queryKey: ['thoughts', currentUser?.email],
     queryFn: async () => {
@@ -161,79 +173,7 @@ export default function Multiprompt() {
     selectedProjectId
   });
 
-  /**
-   * Genereert localStorage key voor create task draft.
-   * @param {string} userId - User ID
-   * @param {string} projectId - Project ID (optioneel)
-   * @returns {string} localStorage key
-   */
-  const getCreateTaskDraftKey = (userId, projectId) => {
-    return `promptster:multiprompt:createTaskDraft:${userId}:${projectId || 'all'}`;
-  };
 
-  /**
-   * Laadt opgeslagen create task draft uit localStorage.
-   * Wordt aangeroepen bij mount en project switch.
-   */
-  const loadCreateTaskDraft = () => {
-    if (!currentUser?.id) return;
-    try {
-      const key = getCreateTaskDraftKey(currentUser.id, selectedProjectId);
-      const saved = localStorage.getItem(key);
-      if (saved && saved !== newThought) {
-        setNewThought(saved);
-      }
-    } catch (error) {
-      console.error("Error loading create task draft:", error);
-    }
-  };
-
-  /**
-   * Slaat create task draft op naar localStorage.
-   * @param {string} text - Te bewaren tekst
-   */
-  const saveCreateTaskDraft = (text) => {
-    if (!currentUser?.id) return;
-    try {
-      const key = getCreateTaskDraftKey(currentUser.id, selectedProjectId);
-      if (text) {
-        localStorage.setItem(key, text);
-      } else {
-        localStorage.removeItem(key);
-      }
-    } catch (error) {
-      console.error("Error saving create task draft:", error);
-    }
-  };
-
-  /**
-   * Wist de create task draft uit localStorage.
-   */
-  const clearCreateTaskDraft = () => {
-    if (!currentUser?.id) return;
-    try {
-      const key = getCreateTaskDraftKey(currentUser.id, selectedProjectId);
-      localStorage.removeItem(key);
-    } catch (error) {
-      console.error("Error clearing create task draft:", error);
-    }
-  };
-
-  // Restore draft on mount and when project changes
-  useEffect(() => {
-    loadCreateTaskDraft();
-  }, [currentUser?.id, selectedProjectId]);
-
-  // Debounced autosave for newThought (500ms delay)
-  useEffect(() => {
-    if (!currentUser?.id) return;
-    
-    const timer = setTimeout(() => {
-      saveCreateTaskDraft(newThought);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [newThought, currentUser?.id, selectedProjectId]);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['templates', currentUser?.email],
@@ -271,9 +211,9 @@ export default function Multiprompt() {
   const [editTemplateContent, setEditTemplateContent] = useState("");
   const [editTemplateDialogOpen, setEditTemplateDialogOpen] = useState(false);
 
-  // Clear autosave helper (legacy - kept for backwards compatibility)
+  // Clear autosave helper
   const clearThoughtDraft = () => {
-    clearCreateTaskDraft();
+    resetNewThought();
   };
 
   /**
@@ -283,8 +223,7 @@ export default function Multiprompt() {
   const handleCreateThought = (data) => {
     createThought.mutate(data, {
       onSuccess: () => {
-        setNewThought("");
-        clearCreateTaskDraft(); // Clear autosave for current project
+        resetNewThought(); // Clear autosave via hook
         setNewThoughtImages([]);
         toast.success(t("taskAdded") || "Taak toegevoegd");
       }
