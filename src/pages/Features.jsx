@@ -81,7 +81,7 @@ export default function Features() {
           <div className="bg-indigo-900 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 transition-colors cursor-pointer">
             <h2 className="text-2xl font-bold mb-4">Klaar om te starten?</h2>
             <p className="mb-6 text-indigo-200">
-              Probeer alle features gratis 14 dagen uit met ons starter pakket.
+              Probeer alle features gratis 14 dagen uit.
             </p>
             <div className="flex justify-center gap-4">
               <Badge variant="outline" className="text-white border-white px-4 py-1">
