@@ -64,34 +64,34 @@ export default function AIBackoffice() {
     },
   });
 
-  // Autosave for AI instruction field
+  // Autosave for AI instruction
   const { value: instruction, setValue: setInstruction, resetValue: resetInstruction } = useAutosaveField({
     storageKey: `promptster:aibackoffice:instruction:${currentUser?.id ?? 'anon'}`,
     initialValue: settings[0]?.improve_prompt_instruction || getDefaultInstruction(t),
     enabled: !!currentUser?.id,
   });
 
-  // Autosave for personal preferences field
+  // Autosave for personal preferences
   const { value: personalPreferences, setValue: setPersonalPreferences, resetValue: resetPersonalPreferences } = useAutosaveField({
-    storageKey: `promptster:aibackoffice:personalPrefs:${currentUser?.id ?? 'anon'}`,
+    storageKey: `promptster:aibackoffice:personalPreferences:${currentUser?.id ?? 'anon'}`,
     initialValue: currentUser?.personal_preferences_markdown || "",
     enabled: !!currentUser?.id,
   });
 
-  // Sync settings from DB when loaded
   useEffect(() => {
     if (settings.length > 0) {
-      // Only set if hook hasn't restored from localStorage
       if (!instruction) {
         setInstruction(settings[0].improve_prompt_instruction || getDefaultInstruction(t));
       }
       setModelPreference(settings[0].model_preference || "default");
       setEnableContextSuggestions(settings[0].enable_context_suggestions !== false);
       setSettingsId(settings[0].id);
+    } else if (!instruction) {
+      setInstruction(getDefaultInstruction(t));
     }
   }, [settings, t]);
 
-  // Sync personal preferences from user when loaded
+  // Load personal preferences from user if not in autosave
   useEffect(() => {
     if (currentUser?.personal_preferences_markdown && !personalPreferences) {
       setPersonalPreferences(currentUser.personal_preferences_markdown);
@@ -108,6 +108,7 @@ export default function AIBackoffice() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['aiSettings'] });
+      resetInstruction(); // Clear autosave after successful save
       toast.success(t("aiSettingsSaved") || "AI instellingen opgeslagen");
     },
   });
@@ -118,8 +119,6 @@ export default function AIBackoffice() {
       model_preference: modelPreference,
       enable_context_suggestions: enableContextSuggestions
     });
-    // Clear draft after successful save (sync with DB is now source of truth)
-    resetInstruction();
   };
 
   const handleSavePersonalPreferences = async () => {
@@ -127,9 +126,8 @@ export default function AIBackoffice() {
     try {
       await base44.auth.updateMe({ personal_preferences_markdown: personalPreferences });
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      resetPersonalPreferences(); // Clear autosave after successful save
       toast.success(t("preferencesSaved") || "Persoonlijke voorkeuren opgeslagen");
-      // Clear draft after successful save
-      resetPersonalPreferences();
     } catch (error) {
       toast.error(t("preferencesSaveFailed") || "Kon voorkeuren niet opslaan");
     } finally {
