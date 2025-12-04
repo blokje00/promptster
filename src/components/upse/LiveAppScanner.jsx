@@ -56,6 +56,9 @@ export default function LiveAppScanner({
   // Captured pages in this session
   const [capturedPages, setCapturedPages] = useState([]);
 
+  // Track timeout ref for cleanup
+  const timeoutRef = useRef(null);
+
   /**
    * Opent de app in het iframe
    */
@@ -71,27 +74,46 @@ export default function LiveAppScanner({
       setBaseUrl(url);
     }
     
+    // Check if it's a Base44 app URL - these won't work in iframe
+    const isBase44Url = url.includes("base44.com") || url.includes(".base44.app");
+    
+    if (isBase44Url) {
+      setCurrentUrl(url);
+      setIsLoaded(true);
+      setCorsBlocked(true);
+      toast.info("Base44 apps kunnen niet in een iframe geladen worden. Vul de pagina-informatie handmatig in.");
+      return;
+    }
+    
     setIsLoaded(false);
     setCorsBlocked(false);
     setCurrentUrl(url);
+    
+    // Clear previous timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
     
     if (iframeRef.current) {
       iframeRef.current.src = url;
     }
     
-    // Fallback timeout - als iframe niet laadt binnen 10 seconden, toon CORS warning
-    setTimeout(() => {
-      if (!isLoaded) {
-        setIsLoaded(true);
-        setCorsBlocked(true);
-      }
-    }, 10000);
+    // Fallback timeout - als iframe niet laadt binnen 5 seconden, toon CORS warning
+    timeoutRef.current = setTimeout(() => {
+      setIsLoaded(true);
+      setCorsBlocked(true);
+    }, 5000);
   };
 
   /**
    * Iframe load handler
    */
   const handleIframeLoad = () => {
+    // Clear the timeout since iframe loaded
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
     setIsLoaded(true);
     
     try {
