@@ -73,10 +73,19 @@ export default function LiveAppScanner({
     
     setIsLoaded(false);
     setCorsBlocked(false);
+    setCurrentUrl(url);
     
     if (iframeRef.current) {
       iframeRef.current.src = url;
     }
+    
+    // Fallback timeout - als iframe niet laadt binnen 10 seconden, toon CORS warning
+    setTimeout(() => {
+      if (!isLoaded) {
+        setIsLoaded(true);
+        setCorsBlocked(true);
+      }
+    }, 10000);
   };
 
   /**
@@ -261,15 +270,20 @@ De beschrijving moet bruikbaar zijn als context voor een AI die code moet genere
               {currentUrl || "Geen app geladen"}
             </span>
           </div>
-          <div className="h-[400px] bg-white">
+          <div className="h-[400px] bg-white relative">
             <iframe
               ref={iframeRef}
               className="w-full h-full border-0"
-              sandbox="allow-scripts allow-same-origin allow-forms"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
               onLoad={handleIframeLoad}
+              onError={() => {
+                setIsLoaded(true);
+                setCorsBlocked(true);
+                setCurrentUrl(baseUrl);
+              }}
               title="App Preview"
             />
-            {!isLoaded && baseUrl && (
+            {!isLoaded && baseUrl && iframeRef.current?.src && (
               <div className="absolute inset-0 flex items-center justify-center bg-white/80">
                 <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
               </div>
