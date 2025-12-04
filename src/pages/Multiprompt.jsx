@@ -100,6 +100,7 @@ export default function Multiprompt() {
   });
   const [improvedPrompt, setImprovedPrompt] = useState("");
   const [isImproving, setIsImproving] = useState(false);
+  const [showBanner, setShowBanner] = useState(false);
 
   // Template form state
   const [newTemplateName, setNewTemplateName] = useState("");
@@ -1007,17 +1008,19 @@ ${generatedPrompt}`,
     setImprovedPrompt("");
   }, [generatedPrompt]);
 
+  /**
+   * Kopieert prompt, slaat op, verwijdert taken en toont banner.
+   */
   const handleCopyPrompt = async () => {
     const textToCopy = improvedPrompt || generatedPrompt;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
-    toast.success(t("promptCopying") || "Prompt gekopieerd! Opslaan...");
     
     // Direct save logic
     try {
       const defaultTitle = selectedProject 
         ? `[${selectedProject.name}] ${new Date().toLocaleString('nl-NL')}`
-        : `Multi-Step ${new Date().toLocaleString('nl-NL')}`;
+        : `Multi-Task ${new Date().toLocaleString('nl-NL')}`;
         
       // Save template preferences
       if (selectedProjectId && (startTemplateId || endTemplateId)) {
@@ -1058,7 +1061,9 @@ ${generatedPrompt}`,
         queryClient.invalidateQueries({ queryKey: ['thoughts'] });
       }
 
-      // Reload and scroll to top
+      // Show banner, reset, scroll to top
+      setShowBanner(true);
+      setTimeout(() => setShowBanner(false), 10000);
       resetBuilder();
       navigate("/Multiprompt", { replace: true });
       queryClient.invalidateQueries();
@@ -1226,6 +1231,15 @@ ${generatedPrompt}`,
     <RequireSubscription>
     <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
+        {/* Banner notification */}
+        {showBanner && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg shadow-lg animate-in fade-in slide-in-from-top-4">
+            <p className="text-sm font-medium">
+              ✓ De Multi-prompt is gekopieerd, plan in je project en vink de taken straks af via de opgeslagen versie van deze multi-prompt in Vault.
+            </p>
+          </div>
+        )}
+
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
             Multi-Task Builder
@@ -1892,7 +1906,7 @@ ${generatedPrompt}`,
                           className="bg-indigo-600 hover:bg-indigo-700"
                         >
                           {copied ? <CheckCircle className="w-4 h-4 sm:mr-2" /> : <Copy className="w-4 h-4 sm:mr-2" />}
-                          <span className="hidden sm:inline">{copied ? t("copied") : t("copyAndContinue")}</span>
+                          <span className="hidden sm:inline">{copied ? "Bezig..." : "Copy & Close & Restart"}</span>
                         </Button>
                       </div>
                     </CardTitle>
