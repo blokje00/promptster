@@ -1,5 +1,5 @@
 import React from "react";
-import PromptsterStory from "@/components/features/PromptsterStory";
+import PromptsterStory from "@/components/features/PromptsterStory.jsx";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Zap, Shield, Database, Code, Cpu } from "lucide-react";
