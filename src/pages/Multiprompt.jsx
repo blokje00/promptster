@@ -233,7 +233,7 @@ export default function Multiprompt() {
         setNewThought("");
         clearThoughtDraft(); // Clear autosave
         setNewThoughtImages([]);
-        toast.success("Taak toegevoegd");
+        toast.success(t("taskAdded") || "Taak toegevoegd");
       }
     });
   };
@@ -337,20 +337,29 @@ export default function Multiprompt() {
 
   const deleteUsedThoughtsMutation = useMutation({
     mutationFn: async (thoughtIds) => {
-      for (const id of thoughtIds) {
-        await base44.entities.Thought.delete(id);
-      }
+      await Promise.all(thoughtIds.map(id => base44.entities.Thought.delete(id)));
     },
-    onMutate: () => {
-      // Immediately clear ALL local thoughts
+    onMutate: (thoughtIds) => {
+      // Store for potential rollback
+      const previousThoughts = [...localThoughts];
+      const previousSelected = [...selectedThoughts];
+      // Immediately clear local thoughts
       setLocalThoughts([]);
       setSelectedThoughts([]);
+      return { previousThoughts, previousSelected };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-      toast.success("Taken verwijderd!");
-      // Full reset (templates stay intact)
+      toast.success(t("tasksDeleted") || "Taken verwijderd!");
       resetBuilder();
+    },
+    onError: (error, _, context) => {
+      // Rollback on error
+      if (context?.previousThoughts) {
+        setLocalThoughts(context.previousThoughts);
+        setSelectedThoughts(context.previousSelected);
+      }
+      toast.error(t("deleteFailed") || "Verwijderen mislukt");
     },
   });
 
@@ -431,28 +440,36 @@ export default function Multiprompt() {
     }
   };
 
+  /**
+   * Upload afbeelding of PDF naar Supabase.
+   * @param {File} file - Het te uploaden bestand
+   */
   const uploadNewThoughtImage = async (file) => {
     if (!file || (!file.type.startsWith('image/') && file.type !== 'application/pdf')) {
-      toast.error("Alleen afbeeldingen en PDF's zijn toegestaan");
+      toast.error(t("fileTypeError") || "Alleen afbeeldingen en PDF's zijn toegestaan");
       return;
     }
     setIsUploadingNewImage(true);
     try {
       const file_url = await uploadImageToSupabase(file);
       setNewThoughtImages(prev => [...prev, file_url]);
-      toast.success("Bestand toegevoegd");
+      toast.success(t("fileAdded") || "Bestand toegevoegd");
     } catch (error) {
       console.error(error);
-      toast.error("Kon bestand niet uploaden");
+      toast.error(t("fileUploadError") || "Kon bestand niet uploaden");
     } finally {
       setIsUploadingNewImage(false);
     }
   };
 
+  /**
+   * Handler voor drag-and-drop van afbeeldingen en PDFs.
+   * @param {DragEvent} e - Drop event
+   */
   const handleNewThoughtDrop = async (e) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
+    if (file && (file.type.startsWith('image/') || file.type === 'application/pdf')) {
       await uploadNewThoughtImage(file);
     }
   };
@@ -466,38 +483,77 @@ export default function Multiprompt() {
     updateThought(thoughtId, { content: newContent });
   };
 
-  const handleUpdateThoughtFocus = (thoughtId, newFocus) => {
+  /**
+   * Update focus type van een thought met rollback bij fout.
+   * @param {string} thoughtId - ID van de thought
+   * @param {string} newFocus - Nieuwe focus type
+   */
+  const handleUpdateThoughtFocus = async (thoughtId, newFocus) => {
+    const previousFocus = localThoughts.find(t => t.id === thoughtId)?.focus_type;
     updateThought(thoughtId, { focus_type: newFocus });
-    // Persist to DB handled by optimistic update in hook? 
-    // Hook only updates local state. We should also persist.
-    // Actually, updateThought in hook is just local state update. 
-    // We need explicit persist here for these fields as they are "autosaved" behavior
-    base44.entities.Thought.update(thoughtId, { focus_type: newFocus });
+    
+    try {
+      await base44.entities.Thought.update(thoughtId, { focus_type: newFocus });
+    } catch (error) {
+      // Rollback on error
+      updateThought(thoughtId, { focus_type: previousFocus });
+      toast.error(t("updateFailed") || "Update mislukt");
+    }
   };
 
-  const handleUpdateThoughtContext = (thoughtId, newContext) => {
+  /**
+   * Update context van een thought met rollback bij fout.
+   * @param {string} thoughtId - ID van de thought
+   * @param {Object} newContext - Nieuwe context object
+   */
+  const handleUpdateThoughtContext = async (thoughtId, newContext) => {
+    const thought = localThoughts.find(t => t.id === thoughtId);
+    const previousContext = {
+      target_page: thought?.target_page,
+      target_component: thought?.target_component,
+      target_domain: thought?.target_domain,
+      ai_prediction: thought?.ai_prediction
+    };
+    
     updateThought(thoughtId, {
       target_page: newContext.target_page,
       target_component: newContext.target_component,
       target_domain: newContext.target_domain,
       ai_prediction: newContext.ai_prediction
     });
-    // Persist
-    base44.entities.Thought.update(thoughtId, {
-      target_page: newContext.target_page,
-      target_component: newContext.target_component,
-      target_domain: newContext.target_domain,
-      ai_prediction: newContext.ai_prediction
-    });
+    
+    try {
+      await base44.entities.Thought.update(thoughtId, {
+        target_page: newContext.target_page,
+        target_component: newContext.target_component,
+        target_domain: newContext.target_domain,
+        ai_prediction: newContext.ai_prediction
+      });
+    } catch (error) {
+      // Rollback on error
+      updateThought(thoughtId, previousContext);
+      toast.error(t("updateFailed") || "Update mislukt");
+    }
   };
 
-  const handleMoveThoughtToProject = (thoughtId, newProjectId) => {
+  /**
+   * Verplaats thought naar ander project met rollback bij fout.
+   * @param {string} thoughtId - ID van de thought
+   * @param {string} newProjectId - ID van nieuw project
+   */
+  const handleMoveThoughtToProject = async (thoughtId, newProjectId) => {
+    const previousProjectId = localThoughts.find(t => t.id === thoughtId)?.project_id;
     updateThought(thoughtId, { project_id: newProjectId });
-    base44.entities.Thought.update(thoughtId, { project_id: newProjectId })
-      .then(() => {
-        queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-        toast.success("Taak verplaatst naar project");
-      });
+    
+    try {
+      await base44.entities.Thought.update(thoughtId, { project_id: newProjectId });
+      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+      toast.success(t("taskMoved") || "Taak verplaatst naar project");
+    } catch (error) {
+      // Rollback on error
+      updateThought(thoughtId, { project_id: previousProjectId });
+      toast.error(t("updateFailed") || "Update mislukt");
+    }
   };
 
   // Save all thoughts to database (for "Controle opslaan")
@@ -1054,25 +1110,37 @@ ${generatedPrompt}`,
     }
   };
 
+  /**
+   * Slaat huidige state op als controle item.
+   * Gebruikt Promise.allSettled voor parallelle thought updates.
+   */
   const handleSaveAsCheck = async () => {
     setIsSavingAll(true);
     try {
-      // 1. Save all thoughts state to DB
-      for (const thought of localThoughts) {
-        await base44.entities.Thought.update(thought.id, {
+      // 1. Save all thoughts state to DB in parallel
+      const updatePromises = localThoughts.map(thought => 
+        base44.entities.Thought.update(thought.id, {
           content: thought.content || "",
           image_urls: thought.image_urls || [],
           is_selected: selectedThoughts.includes(thought.id),
           project_id: thought.project_id
-        });
+        })
+      );
+      
+      const results = await Promise.allSettled(updatePromises);
+      const failures = results.filter(r => r.status === 'rejected');
+      
+      if (failures.length > 0) {
+        console.warn("Sommige thought updates faalden:", failures);
       }
+      
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
       
       // 2. Save as Item with is_pending_check flag
       const finalPrompt = improvedPrompt || generatedPrompt;
       const defaultTitle = selectedProject 
-        ? `[${selectedProject.name}] Controle ${new Date().toLocaleString('nl-NL')}`
-        : `Controle ${new Date().toLocaleString('nl-NL')}`;
+        ? `[${selectedProject.name}] ${t("control") || "Controle"} ${new Date().toLocaleString('nl-NL')}`
+        : `${t("control") || "Controle"} ${new Date().toLocaleString('nl-NL')}`;
         
       const title = promptTitle.trim() || defaultTitle;
       
@@ -1097,7 +1165,7 @@ ${generatedPrompt}`,
 
     } catch (error) {
       console.error("Save error:", error);
-      toast.error("Kon niet opslaan: " + (error.message || "Onbekende fout"));
+      toast.error((t("saveFailed") || "Kon niet opslaan") + ": " + (error.message || t("unknownError") || "Onbekende fout"));
     } finally {
       setIsSavingAll(false);
     }
@@ -1547,10 +1615,10 @@ ${generatedPrompt}`,
                         onClick={handleAddThought} 
                         disabled={(!newThought.trim() && newThoughtImages.length === 0) || isProjectLimitReached}
                         className={`flex-1 ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'} hover:opacity-90 text-white transition-all`}
-                        title="Voeg deze stap toe aan je lijst"
+                        title={t("addStepTitle") || "Voeg deze stap toe aan je lijst"}
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        {isProjectLimitReached ? "Limiet bereikt" : "Step"}
+                        {isProjectLimitReached ? (t("limitReached") || "Limiet bereikt") : (t("stepLabel") || "Step")}
                       </Button>
 
                       {filteredThoughts.length > 0 && (

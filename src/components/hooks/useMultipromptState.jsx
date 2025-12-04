@@ -6,6 +6,7 @@ import { toast } from "sonner";
 /**
  * Hook voor beheer van Multiprompt thoughts state.
  * Handelt synchronisatie tussen lokale en database state.
+ * Behoudt handmatige selecties bij project wisseling.
  * 
  * @param {Object} params - Hook parameters
  * @param {Array} params.dbThoughts - Thoughts uit database query
@@ -17,10 +18,20 @@ export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser })
   const [localThoughts, setLocalThoughts] = useState([]);
   const [selectedThoughts, setSelectedThoughts] = useState([]);
   const prevDbIdsRef = useRef("");
+  const hasManualSelectionRef = useRef(false);
+  const prevProjectIdRef = useRef(selectedProjectId);
 
-  // Sync DB naar lokale state
+  // Sync DB naar lokale state - inclusief lege state afhandeling
   useEffect(() => {
-    if (!dbThoughts || dbThoughts.length === 0) return;
+    // Handle empty dbThoughts - clear local state for immediate deletion visibility
+    if (!dbThoughts || dbThoughts.length === 0) {
+      if (localThoughts.length > 0) {
+        setLocalThoughts([]);
+        setSelectedThoughts([]);
+      }
+      prevDbIdsRef.current = "";
+      return;
+    }
     
     const currentDbIds = dbThoughts.map(t => t.id).sort().join(',');
     if (prevDbIdsRef.current === currentDbIds) return;
@@ -32,10 +43,21 @@ export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser })
       const newItems = dbThoughts.filter(t => !localIds.has(t.id));
       return newItems.length > 0 ? [...newItems, ...prev] : prev;
     });
-  }, [dbThoughts]);
+  }, [dbThoughts, localThoughts.length]);
 
-  // Project change handler
+  // Reset manual selection flag when project changes
   useEffect(() => {
+    if (prevProjectIdRef.current !== selectedProjectId) {
+      hasManualSelectionRef.current = false;
+      prevProjectIdRef.current = selectedProjectId;
+    }
+  }, [selectedProjectId]);
+
+  // Project change handler - only auto-select if no manual selection made
+  useEffect(() => {
+    // Skip auto-selection if user made manual selections
+    if (hasManualSelectionRef.current) return;
+    
     const relevantIds = selectedProjectId 
       ? localThoughts.filter(t => t.project_id === selectedProjectId).map(t => t.id)
       : localThoughts.map(t => t.id);
@@ -90,7 +112,13 @@ export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser })
     ));
   }, []);
 
+  /**
+   * Toggle selectie van een thought.
+   * Markeert dat gebruiker handmatige selectie heeft gemaakt.
+   * @param {string} thoughtId - ID van de thought
+   */
   const toggleSelection = useCallback((thoughtId) => {
+    hasManualSelectionRef.current = true;
     setSelectedThoughts(prev => 
       prev.includes(thoughtId) 
         ? prev.filter(id => id !== thoughtId)
