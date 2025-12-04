@@ -73,11 +73,16 @@ User ID: ${currentUser?.id || "N/A"}
 Tijdstip: ${new Date().toLocaleString('nl-NL')}
 `;
 
-      await base44.integrations.Core.SendEmail({
+      const result = await base44.integrations.Core.SendEmail({
         to: "support@promptster.app",
         subject: `[${categoryLabels[category]}] ${subject}`,
         body: emailBody
       });
+
+      // Check if email was actually sent
+      if (result?.error) {
+        throw new Error(result.error);
+      }
 
       setSubmitted(true);
       toast.success("Support verzoek verzonden!");

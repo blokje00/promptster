@@ -35,9 +35,10 @@ export default function Header() {
         created_by: user.email,
         is_deleted: true 
       });
-      return result.length || 0;
+      return result?.length || 0;
     },
     enabled: !!user?.email,
+    refetchInterval: 5000, // Refresh every 5 seconds for accurate count
   });
 
   const handleLogout = async () => {

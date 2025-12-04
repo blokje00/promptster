@@ -3,7 +3,9 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart, Users, FolderOpen, Sparkles, FileText, Loader2 } from "lucide-react";
+import { BarChart, Users, FolderOpen, Sparkles, FileText, Loader2, Calendar, Clock, CreditCard } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
+import { nl } from "date-fns/locale";
 import RequireSubscription from "../components/auth/RequireSubscription";
 
 /**
@@ -175,7 +177,9 @@ export default function AdminStats() {
                     <tr className="text-left">
                       <th className="pb-2 font-semibold text-slate-700">Naam</th>
                       <th className="pb-2 font-semibold text-slate-700">Email</th>
+                      <th className="pb-2 font-semibold text-slate-700">Lid sinds</th>
                       <th className="pb-2 font-semibold text-slate-700">Plan</th>
+                      <th className="pb-2 font-semibold text-slate-700">Trial/Status</th>
                       <th className="pb-2 font-semibold text-slate-700">Items</th>
                       <th className="pb-2 font-semibold text-slate-700">Projecten</th>
                     </tr>
@@ -185,14 +189,52 @@ export default function AdminStats() {
                       const userItems = allItems.filter(i => i.created_by === user.email);
                       const userProjects = allProjects.filter(p => p.created_by === user.email);
                       
+                      // Calculate membership info
+                      const createdDate = user.created_date ? new Date(user.created_date) : null;
+                      const daysSinceCreation = createdDate ? differenceInDays(new Date(), createdDate) : 0;
+                      const trialDaysLeft = 14 - daysSinceCreation;
+                      const isTrialActive = trialDaysLeft > 0 && !user.subscription_status;
+                      const isPaying = user.subscription_status === 'active' || user.plan_id === 'pro';
+                      const daysPaying = isPaying && user.subscription_start_date 
+                        ? differenceInDays(new Date(), new Date(user.subscription_start_date))
+                        : 0;
+                      
                       return (
                         <tr key={user.id} className="hover:bg-slate-50">
                           <td className="py-3">{user.full_name || "—"}</td>
                           <td className="py-3 text-slate-600">{user.email}</td>
                           <td className="py-3">
+                            {createdDate ? (
+                              <div className="flex items-center gap-1 text-xs">
+                                <Calendar className="w-3 h-3 text-slate-400" />
+                                {format(createdDate, "d MMM yyyy", { locale: nl })}
+                              </div>
+                            ) : "—"}
+                          </td>
+                          <td className="py-3">
                             <Badge variant={user.plan_id ? "default" : "secondary"}>
                               {user.plan_id || "Free"}
                             </Badge>
+                          </td>
+                          <td className="py-3">
+                            {isPaying ? (
+                              <div className="flex items-center gap-1">
+                                <Badge className="bg-green-100 text-green-700 border-green-300">
+                                  <CreditCard className="w-3 h-3 mr-1" />
+                                  Betalend
+                                </Badge>
+                                <span className="text-xs text-slate-500">({daysPaying}d)</span>
+                              </div>
+                            ) : isTrialActive ? (
+                              <Badge className={`${trialDaysLeft <= 3 ? 'bg-red-100 text-red-700 border-red-300 animate-pulse' : 'bg-yellow-100 text-yellow-700 border-yellow-300'}`}>
+                                <Clock className="w-3 h-3 mr-1" />
+                                Trial: {trialDaysLeft}d over
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-slate-500">
+                                Trial verlopen
+                              </Badge>
+                            )}
                           </td>
                           <td className="py-3">{userItems.length}</td>
                           <td className="py-3">{userProjects.length}</td>

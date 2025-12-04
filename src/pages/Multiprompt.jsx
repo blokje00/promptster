@@ -1039,25 +1039,32 @@ ${generatedPrompt}`,
       });
       
       // Soft-delete ONLY selected/used thoughts (move to recycle bin)
-      if (selectedThoughts.length > 0) {
-        await Promise.all(selectedThoughts.map(id => 
+      const thoughtsToDelete = [...selectedThoughts];
+      if (thoughtsToDelete.length > 0) {
+        // First update in DB
+        await Promise.all(thoughtsToDelete.map(id => 
           base44.entities.Thought.update(id, { 
             is_deleted: true, 
             deleted_at: new Date().toISOString() 
           })
         ));
-        // Clear from local state
-        setLocalThoughts(prev => prev.filter(t => !selectedThoughts.includes(t.id)));
+
+        // Then clear from local state
+        setLocalThoughts(prev => prev.filter(t => !thoughtsToDelete.includes(t.id)));
         setSelectedThoughts([]);
-        queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+
+        // Force refresh thoughts query to ensure sync
+        await queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+        await queryClient.refetchQueries({ queryKey: ['thoughts'] });
+
+        // Also refresh deleted count for recycle bin
+        queryClient.invalidateQueries({ queryKey: ['deletedThoughtsCount'] });
       }
 
       // Show banner, reset, scroll to top
       setShowBanner(true);
       setTimeout(() => setShowBanner(false), 10000);
       resetBuilder();
-      navigate("/Multiprompt", { replace: true });
-      queryClient.invalidateQueries();
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (e) {
@@ -1103,24 +1110,29 @@ ${generatedPrompt}`,
       });
       
       // 2. Soft-delete ONLY selected/used thoughts (move to recycle bin)
-      if (selectedThoughts.length > 0) {
-        await Promise.all(selectedThoughts.map(id => 
+      const thoughtsToDelete = [...selectedThoughts];
+      if (thoughtsToDelete.length > 0) {
+        await Promise.all(thoughtsToDelete.map(id => 
           base44.entities.Thought.update(id, { 
             is_deleted: true, 
             deleted_at: new Date().toISOString() 
           })
         ));
         // Clear from local state
-        setLocalThoughts(prev => prev.filter(t => !selectedThoughts.includes(t.id)));
+        setLocalThoughts(prev => prev.filter(t => !thoughtsToDelete.includes(t.id)));
         setSelectedThoughts([]);
-        queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+
+        // Force refresh thoughts query to ensure sync
+        await queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+        await queryClient.refetchQueries({ queryKey: ['thoughts'] });
+
+        // Also refresh deleted count for recycle bin
+        queryClient.invalidateQueries({ queryKey: ['deletedThoughtsCount'] });
       }
 
-      // 3. Close dialog and Reload, scroll to top
+      // 3. Close dialog and scroll to top
       setShowControlDialog(false);
       resetBuilder();
-      navigate("/Multiprompt", { replace: true });
-      queryClient.invalidateQueries();
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (e) {

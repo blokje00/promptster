@@ -121,25 +121,28 @@ export default function AIBackoffice() {
     enabled: !!currentUser?.id,
   });
 
-  // Sync settings from DB when loaded
+  // Sync settings from DB when loaded - only once on initial load
   useEffect(() => {
-    if (settings.length > 0) {
-      // Only set if hook hasn't restored from localStorage
-      if (!instruction) {
-        setInstruction(settings[0].improve_prompt_instruction || getDefaultInstruction(t));
+    if (settings.length > 0 && !settingsId) {
+      // Only set from DB if this is the initial load (settingsId not yet set)
+      const dbInstruction = settings[0].improve_prompt_instruction;
+      if (dbInstruction) {
+        setInstruction(dbInstruction);
       }
       setModelPreference(settings[0].model_preference || "default");
       setEnableContextSuggestions(settings[0].enable_context_suggestions !== false);
       setSettingsId(settings[0].id);
     }
-  }, [settings, t]);
+  }, [settings, settingsId]);
 
-  // Sync personal preferences from user when loaded
+  // Sync personal preferences from user when loaded - only once
+  const [prefsLoaded, setPrefsLoaded] = useState(false);
   useEffect(() => {
-    if (currentUser?.personal_preferences_markdown && !personalPreferences) {
+    if (currentUser?.personal_preferences_markdown && !prefsLoaded) {
       setPersonalPreferences(currentUser.personal_preferences_markdown);
+      setPrefsLoaded(true);
     }
-  }, [currentUser]);
+  }, [currentUser, prefsLoaded]);
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
