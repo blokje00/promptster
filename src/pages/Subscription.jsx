@@ -27,7 +27,7 @@ export default function SubscriptionPage() {
         {
           id: "starter",
           name: "Starter",
-          description: "Probeer PromptGuard gratis uit.",
+          description: "Probeer Promptster gratis uit.",
           monthly_price_amount: 0,
           annual_price_amount: 0,
           features: ["Tot 10 items", "Basis features", "Community support"],
@@ -35,7 +35,7 @@ export default function SubscriptionPage() {
         },
         {
           id: "prod_TVmxD3pUgsBYrn", 
-          name: "PromptGuard",
+          name: "Promptster Pro",
           description: "Ongelimiteerde toegang tot alle features.",
           monthly_price_amount: 9.99,
           monthly_price_id: "price_1SYlNxKroSuhgudTiw1kLaQa",
@@ -170,7 +170,7 @@ export default function SubscriptionPage() {
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold text-slate-900 mb-4">Start met Promptguard en verhoog je productiviteit.</h1>
+          <h1 className="text-4xl font-bold text-slate-900 mb-4">Start met Promptster en verhoog je productiviteit.</h1>
           <p className="text-xl text-slate-600">En bespaar bij veel platforms hiermee credits</p>
           
           {/* Billing cycle toggle hidden as only monthly is available */}
