@@ -161,27 +161,79 @@ export default function Multiprompt() {
     selectedProjectId
   });
 
-  // Autosave for newThought - Safe version
-  useEffect(() => {
-    if (currentUser?.id) {
-       const key = `multiprompt_draft_${currentUser.id}`;
-       const saved = localStorage.getItem(key);
-       if (newThought !== saved) {
-         localStorage.setItem(key, newThought);
-       }
-    }
-  }, [newThought, currentUser?.id]);
+  /**
+   * Genereert localStorage key voor create task draft.
+   * @param {string} userId - User ID
+   * @param {string} projectId - Project ID (optioneel)
+   * @returns {string} localStorage key
+   */
+  const getCreateTaskDraftKey = (userId, projectId) => {
+    return `promptster:multiprompt:createTaskDraft:${userId}:${projectId || 'all'}`;
+  };
 
-  // Restore newThought on mount - Safe version
-  useEffect(() => {
-    if (currentUser?.id) {
-      const key = `multiprompt_draft_${currentUser.id}`;
+  /**
+   * Laadt opgeslagen create task draft uit localStorage.
+   * Wordt aangeroepen bij mount en project switch.
+   */
+  const loadCreateTaskDraft = () => {
+    if (!currentUser?.id) return;
+    try {
+      const key = getCreateTaskDraftKey(currentUser.id, selectedProjectId);
       const saved = localStorage.getItem(key);
-      if (saved) {
+      if (saved && saved !== newThought) {
         setNewThought(saved);
       }
+    } catch (error) {
+      console.error("Error loading create task draft:", error);
     }
-  }, [currentUser?.id]);
+  };
+
+  /**
+   * Slaat create task draft op naar localStorage.
+   * @param {string} text - Te bewaren tekst
+   */
+  const saveCreateTaskDraft = (text) => {
+    if (!currentUser?.id) return;
+    try {
+      const key = getCreateTaskDraftKey(currentUser.id, selectedProjectId);
+      if (text) {
+        localStorage.setItem(key, text);
+      } else {
+        localStorage.removeItem(key);
+      }
+    } catch (error) {
+      console.error("Error saving create task draft:", error);
+    }
+  };
+
+  /**
+   * Wist de create task draft uit localStorage.
+   */
+  const clearCreateTaskDraft = () => {
+    if (!currentUser?.id) return;
+    try {
+      const key = getCreateTaskDraftKey(currentUser.id, selectedProjectId);
+      localStorage.removeItem(key);
+    } catch (error) {
+      console.error("Error clearing create task draft:", error);
+    }
+  };
+
+  // Restore draft on mount and when project changes
+  useEffect(() => {
+    loadCreateTaskDraft();
+  }, [currentUser?.id, selectedProjectId]);
+
+  // Debounced autosave for newThought (500ms delay)
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    
+    const timer = setTimeout(() => {
+      saveCreateTaskDraft(newThought);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [newThought, currentUser?.id, selectedProjectId]);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['templates', currentUser?.email],
@@ -219,20 +271,20 @@ export default function Multiprompt() {
   const [editTemplateContent, setEditTemplateContent] = useState("");
   const [editTemplateDialogOpen, setEditTemplateDialogOpen] = useState(false);
 
-  // Clear autosave helper
+  // Clear autosave helper (legacy - kept for backwards compatibility)
   const clearThoughtDraft = () => {
-    if (currentUser?.id) {
-       localStorage.removeItem(`multiprompt_draft_${currentUser.id}`);
-    }
+    clearCreateTaskDraft();
   };
 
-  // Note: Create and Delete mutations are now handled by useThoughts hook.
-  // We wrap createThought to handle UI clearing.
+  /**
+   * Maakt nieuwe thought aan en wist draft.
+   * @param {Object} data - Thought data
+   */
   const handleCreateThought = (data) => {
     createThought.mutate(data, {
       onSuccess: () => {
         setNewThought("");
-        clearThoughtDraft(); // Clear autosave
+        clearCreateTaskDraft(); // Clear autosave for current project
         setNewThoughtImages([]);
         toast.success(t("taskAdded") || "Taak toegevoegd");
       }
