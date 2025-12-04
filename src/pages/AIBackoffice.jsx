@@ -13,6 +13,7 @@ import { createPageUrl } from "@/utils";
 import { useLanguage } from "../components/i18n/LanguageContext";
 import LanguageSelector from "../components/settings/LanguageSelector";
 import RequireSubscription from "../components/auth/RequireSubscription";
+import { useAutosaveField } from "@/components/hooks/useAutosaveField";
 
 const getDefaultInstruction = (t) => t("defaultAIInstruction") || `Verbeter de volgende prompt technisch en taalkundig. Maak de tekst professioneler, duidelijker en beter gestructureerd. Behoud de originele intentie en inhoud, maar verbeter grammatica, spelling, en technische precisie. Geef alleen de verbeterde tekst terug, geen uitleg.`;
 
@@ -42,11 +43,9 @@ const DEFAULT_PERSONAL_PREFERENCES = `# Mijn Persoonlijke Development Voorkeuren
 export default function AIBackoffice() {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
-  const [instruction, setInstruction] = useState("");
   const [modelPreference, setModelPreference] = useState("default");
   const [enableContextSuggestions, setEnableContextSuggestions] = useState(true);
   const [settingsId, setSettingsId] = useState(null);
-  const [personalPreferences, setPersonalPreferences] = useState("");
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
   const { data: settings = [] } = useQuery({

@@ -12,18 +12,30 @@ import { MessageCircle, Send, CheckCircle, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import RequireSubscription from "../components/auth/RequireSubscription";
+import { useAutosaveField } from "@/components/hooks/useAutosaveField";
 
 export default function Support() {
   const navigate = useNavigate();
-  const [subject, setSubject] = useState("");
   const [category, setCategory] = useState("bug");
-  const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me(),
+  });
+
+  // Autosave for subject and message fields
+  const { value: subject, setValue: setSubject, resetValue: resetSubject } = useAutosaveField({
+    storageKey: `promptster:support:subject:${currentUser?.id ?? 'anon'}`,
+    initialValue: "",
+    enabled: !!currentUser?.id,
+  });
+
+  const { value: message, setValue: setMessage, resetValue: resetMessage } = useAutosaveField({
+    storageKey: `promptster:support:message:${currentUser?.id ?? 'anon'}`,
+    initialValue: "",
+    enabled: !!currentUser?.id,
   });
 
   /**
@@ -70,10 +82,10 @@ Tijdstip: ${new Date().toLocaleString('nl-NL')}
       setSubmitted(true);
       toast.success("Support verzoek verzonden!");
       
-      // Reset form after 3 seconds
+      // Clear autosave drafts and reset form after 3 seconds
+      resetSubject();
+      resetMessage();
       setTimeout(() => {
-        setSubject("");
-        setMessage("");
         setCategory("bug");
         setSubmitted(false);
       }, 3000);
