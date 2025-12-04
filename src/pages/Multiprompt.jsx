@@ -669,11 +669,14 @@ Antwoord ALLEEN met valide JSON in dit format:
 Geen uitleg, alleen de JSON.`;
   };
 
+  /**
+   * Kopieert mapping prompt en toont instructies.
+   */
   const handleCopyMappingPrompt = () => {
     if (!editingProject) return;
     const prompt = generateMappingPrompt(editingProject.name);
     navigator.clipboard.writeText(prompt);
-    toast.success(t("mappingPromptCopied") || "Mapping prompt gekopieerd!");
+    toast.success("✓ Gekopieerd! Plak in AI, kopieer JSON terug en plak hieronder", { duration: 5000 });
   };
 
   // toggleThoughtSelection is now toggleSelection from hook
@@ -1451,9 +1454,10 @@ ${generatedPrompt}`,
                     size="sm"
                     onClick={handleCopyMappingPrompt}
                     className="text-xs bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100"
+                    title="Kopieer AI prompt → Plak in AI → Kopieer JSON resultaat → Plak hieronder"
                   >
                     <Copy className="w-3 h-3 mr-1" />
-                    Mapping Prompt
+                    📋 Kopieer AI Prompt
                   </Button>
                 </div>
                 <Textarea
