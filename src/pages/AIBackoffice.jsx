@@ -166,15 +166,15 @@ export default function AIBackoffice() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="w-5 h-5 text-blue-500" />
-              Persoonlijke Voorkeuren
+              {t("personalPreferences")}
             </CardTitle>
             <CardDescription>
-              Je herbruikbare voorkeuren die automatisch aan Multi-Step prompts worden toegevoegd.
+              {t("personalPreferencesDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Voorkeuren (Markdown)</Label>
+              <Label>{t("preferencesMarkdown")}</Label>
               <Textarea
                 value={personalPreferences}
                 onChange={(e) => setPersonalPreferences(e.target.value)}
@@ -182,7 +182,7 @@ export default function AIBackoffice() {
                 className="min-h-[300px] font-mono text-sm"
               />
               <p className="text-xs text-slate-500">
-                Definieer hier je persoonlijke code stijl, UI/UX filosofie, testing voorkeuren, etc. Deze worden eenmalig opgeslagen en hergebruikt in al je prompts.
+                {t("preferencesHelp")}
               </p>
             </div>
             <div className="flex gap-2">
@@ -190,18 +190,18 @@ export default function AIBackoffice() {
                 onClick={handleSavePersonalPreferences} 
                 disabled={isSavingPreferences}
                 className="bg-blue-600 hover:bg-blue-700"
-                title="Sla je persoonlijke voorkeuren op"
+                title={t("savePreferences")}
               >
                 <Save className="w-4 h-4 mr-2" />
-                {isSavingPreferences ? "Opslaan..." : "Voorkeuren Opslaan"}
+                {isSavingPreferences ? t("saving") : t("savePreferences")}
               </Button>
               <Button 
                 variant="outline" 
                 onClick={() => setPersonalPreferences(DEFAULT_PERSONAL_PREFERENCES)}
-                title="Laad een standaard voorbeeld"
+                title={t("loadExample")}
               >
                 <FileText className="w-4 h-4 mr-2" />
-                Laad Voorbeeld
+                {t("loadExample")}
               </Button>
             </div>
           </CardContent>
@@ -212,17 +212,17 @@ export default function AIBackoffice() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Lightbulb className="w-5 h-5 text-yellow-500" />
-              AI Context Suggesties
+              {t("aiContextSuggestions")}
             </CardTitle>
             <CardDescription>
-              Automatische AI-suggesties voor Pagina, Component en Domein tijdens het typen van taken.
+              {t("aiContextSuggestionsDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">AI-suggesties inschakelen</p>
-                <p className="text-xs text-slate-500">Krijg automatisch voorgestelde context op basis van je tekst</p>
+                <p className="text-sm font-medium">{t("enableAISuggestions")}</p>
+                <p className="text-xs text-slate-500">{t("enableAISuggestionsDesc")}</p>
               </div>
               <Switch
                 checked={enableContextSuggestions}

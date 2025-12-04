@@ -24,9 +24,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import RequireSubscription from "../components/auth/RequireSubscription";
+import { useLanguage } from "../components/i18n/LanguageContext";
 
 export default function RecycleBin() {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [isRestoring, setIsRestoring] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -56,8 +58,8 @@ export default function RecycleBin() {
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
-      queryClient.invalidateQueries({ queryKey: ['thoughts'] }); // Refresh main list too
-      toast.success("Item hersteld");
+      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+      toast.success(t("itemRestored"));
     },
   });
 
@@ -65,7 +67,7 @@ export default function RecycleBin() {
     mutationFn: (id) => base44.entities.Thought.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
-      toast.success("Item definitief verwijderd");
+      toast.success(t("itemPermanentlyDeleted"));
     },
   });
 
@@ -77,7 +79,7 @@ export default function RecycleBin() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
-      toast.success("Prullenbak geleegd");
+      toast.success(t("recycleBinEmptied"));
     },
   });
 
@@ -103,10 +105,10 @@ export default function RecycleBin() {
           <div>
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
               <Trash2 className="w-8 h-8 text-red-500" />
-              Prullenbak
+              {t("recycleBin")}
             </h1>
             <p className="text-slate-600 mt-1">
-              Beheer verwijderde taken. Items hier kunnen nog worden hersteld.
+              {t("recycleBinDesc")}
             </p>
           </div>
           {deletedThoughts.length > 0 && (
@@ -114,21 +116,20 @@ export default function RecycleBin() {
               <AlertDialogTrigger asChild>
                 <Button variant="destructive">
                   <AlertTriangle className="w-4 h-4 mr-2" />
-                  Prullenbak Legen
+                  {t("emptyRecycleBin")}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Weet je het zeker?</AlertDialogTitle>
+                  <AlertDialogTitle>{t("areYouSure")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Dit zal alle items in de prullenbak <strong>permanent</strong> verwijderen. 
-                    Deze actie kan niet ongedaan worden gemaakt.
+                    {t("permanentDeleteWarning")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                  <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                   <AlertDialogAction onClick={handleEmptyBin} className="bg-red-600 hover:bg-red-700">
-                    Definitief Verwijderen
+                    {t("permanentlyDelete")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -146,10 +147,10 @@ export default function RecycleBin() {
           <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-slate-200">
             <Trash2 className="w-16 h-16 mx-auto text-slate-300 mb-4" />
             <h3 className="text-xl font-semibold text-slate-600 mb-2">
-              Prullenbak is leeg
+              {t("recycleBinEmpty")}
             </h3>
             <p className="text-slate-500">
-              Verwijderde taken verschijnen hier.
+              {t("deletedItemsAppearHere")}
             </p>
           </div>
         ) : (
@@ -159,11 +160,11 @@ export default function RecycleBin() {
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start gap-4">
                     <CardTitle className="text-base font-medium line-clamp-1">
-                      {thought.content.substring(0, 60) || "Naamloze taak"}
+                      {thought.content.substring(0, 60) || t("unnamed")}
                       {thought.content.length > 60 && "..."}
                     </CardTitle>
                     <span className="text-xs text-slate-400 whitespace-nowrap">
-                      Verwijderd: {new Date(thought.deleted_at).toLocaleDateString()}
+                      {t("deleted")}: {new Date(thought.deleted_at).toLocaleDateString()}
                     </span>
                   </div>
                 </CardHeader>
@@ -180,7 +181,7 @@ export default function RecycleBin() {
                     className="text-green-600 border-green-200 hover:bg-green-50"
                   >
                     <RefreshCw className="w-3 h-3 mr-2" />
-                    Herstellen
+                    {t("restore")}
                   </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -190,20 +191,20 @@ export default function RecycleBin() {
                         className="text-red-500 hover:text-red-700 hover:bg-red-50"
                       >
                         <Trash2 className="w-3 h-3 mr-2" />
-                        Definitief
+                        {t("permanently")}
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Definitief verwijderen?</AlertDialogTitle>
+                        <AlertDialogTitle>{t("permanentlyDeleteQuestion")}</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Je staat op het punt om dit item permanent te verwijderen. Dit kan niet ongedaan worden gemaakt.
+                          {t("permanentDeleteDesc")}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                        <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                         <AlertDialogAction onClick={() => handleDeletePermanent(thought.id)} className="bg-red-600 hover:bg-red-700">
-                          Verwijderen
+                          {t("delete")}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
