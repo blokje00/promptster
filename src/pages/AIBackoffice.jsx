@@ -6,14 +6,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Save, Sparkles, User, FileText, Lightbulb } from "lucide-react";
+import { Save, Sparkles, User, FileText, Lightbulb, FolderTree, Settings } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { createPageUrl } from "@/utils";
 import { useLanguage } from "../components/i18n/LanguageContext";
 import LanguageSelector from "../components/settings/LanguageSelector";
 import RequireSubscription from "../components/auth/RequireSubscription";
 import { useAutosaveField } from "@/components/hooks/useAutosaveField";
+import UPSEPanel from "../components/upse/UPSEPanel";
 
 const getDefaultInstruction = (t) => t("defaultAIInstruction") || `Verbeter de volgende prompt technisch en taalkundig. Maak de tekst professioneler, duidelijker en beter gestructureerd. Behoud de originele intentie en inhoud, maar verbeter grammatica, spelling, en technische precisie. Geef alleen de verbeterde tekst terug, geen uitleg.`;
 
@@ -64,34 +66,75 @@ export default function AIBackoffice() {
     },
   });
 
-  // Autosave for AI instruction
+  // Projects for UPSE
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects', currentUser?.email],
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+      return await base44.entities.Project.filter({ created_by: currentUser.email });
+    },
+    enabled: !!currentUser?.email,
+  });
+
+  // Project Structures
+  const { data: projectStructures = [] } = useQuery({
+    queryKey: ['projectStructures', currentUser?.email],
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+      return await base44.entities.ProjectStructure.filter({ created_by: currentUser.email });
+    },
+    enabled: !!currentUser?.email,
+  });
+
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  
+  const currentProjectStructure = projectStructures.find(
+    ps => ps.project_id === selectedProjectId
+  );
+
+  const structureMutation = useMutation({
+    mutationFn: async (data) => {
+      const existing = projectStructures.find(ps => ps.project_id === data.project_id);
+      if (existing) {
+        return base44.entities.ProjectStructure.update(existing.id, data);
+      } else {
+        return base44.entities.ProjectStructure.create(data);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projectStructures'] });
+      toast.success("Project structuur opgeslagen");
+    },
+  });
+
+  // Autosave for AI instruction field
   const { value: instruction, setValue: setInstruction, resetValue: resetInstruction } = useAutosaveField({
     storageKey: `promptster:aibackoffice:instruction:${currentUser?.id ?? 'anon'}`,
     initialValue: settings[0]?.improve_prompt_instruction || getDefaultInstruction(t),
     enabled: !!currentUser?.id,
   });
 
-  // Autosave for personal preferences
+  // Autosave for personal preferences field
   const { value: personalPreferences, setValue: setPersonalPreferences, resetValue: resetPersonalPreferences } = useAutosaveField({
-    storageKey: `promptster:aibackoffice:personalPreferences:${currentUser?.id ?? 'anon'}`,
+    storageKey: `promptster:aibackoffice:personalPrefs:${currentUser?.id ?? 'anon'}`,
     initialValue: currentUser?.personal_preferences_markdown || "",
     enabled: !!currentUser?.id,
   });
 
+  // Sync settings from DB when loaded
   useEffect(() => {
     if (settings.length > 0) {
+      // Only set if hook hasn't restored from localStorage
       if (!instruction) {
         setInstruction(settings[0].improve_prompt_instruction || getDefaultInstruction(t));
       }
       setModelPreference(settings[0].model_preference || "default");
       setEnableContextSuggestions(settings[0].enable_context_suggestions !== false);
       setSettingsId(settings[0].id);
-    } else if (!instruction) {
-      setInstruction(getDefaultInstruction(t));
     }
   }, [settings, t]);
 
-  // Load personal preferences from user if not in autosave
+  // Sync personal preferences from user when loaded
   useEffect(() => {
     if (currentUser?.personal_preferences_markdown && !personalPreferences) {
       setPersonalPreferences(currentUser.personal_preferences_markdown);
@@ -108,7 +151,6 @@ export default function AIBackoffice() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['aiSettings'] });
-      resetInstruction(); // Clear autosave after successful save
       toast.success(t("aiSettingsSaved") || "AI instellingen opgeslagen");
     },
   });
@@ -119,6 +161,8 @@ export default function AIBackoffice() {
       model_preference: modelPreference,
       enable_context_suggestions: enableContextSuggestions
     });
+    // Clear draft after successful save (sync with DB is now source of truth)
+    resetInstruction();
   };
 
   const handleSavePersonalPreferences = async () => {
@@ -126,8 +170,9 @@ export default function AIBackoffice() {
     try {
       await base44.auth.updateMe({ personal_preferences_markdown: personalPreferences });
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      resetPersonalPreferences(); // Clear autosave after successful save
       toast.success(t("preferencesSaved") || "Persoonlijke voorkeuren opgeslagen");
+      // Clear draft after successful save
+      resetPersonalPreferences();
     } catch (error) {
       toast.error(t("preferencesSaveFailed") || "Kon voorkeuren niet opslaan");
     } finally {
@@ -138,7 +183,7 @@ export default function AIBackoffice() {
   return (
     <RequireSubscription>
     <div className="p-4 md:p-8">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
             {t("aiSettings")}
@@ -146,140 +191,167 @@ export default function AIBackoffice() {
           <p className="text-slate-600 mt-1">{t("configureAI")}</p>
         </div>
 
-        {/* Language Selection Card */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>{t("languageSelection")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <LanguageSelector />
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="settings" className="space-y-6">
+          <TabsList className="bg-slate-100">
+            <TabsTrigger value="settings" className="data-[state=active]:bg-white">
+              <Settings className="w-4 h-4 mr-2" />
+              Instellingen
+            </TabsTrigger>
+            <TabsTrigger value="upse" className="data-[state=active]:bg-white">
+              <FolderTree className="w-4 h-4 mr-2" />
+              Project Structuur (UPSE)
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Personal Preferences Card */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5 text-blue-500" />
-              {t("personalPreferences")}
-            </CardTitle>
-            <CardDescription>
-              {t("personalPreferencesDesc")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>{t("preferencesMarkdown")}</Label>
-              <Textarea
-                value={personalPreferences}
-                onChange={(e) => setPersonalPreferences(e.target.value)}
-                placeholder="# Mijn Persoonlijke Voorkeuren&#10;&#10;## Code Stijl&#10;- Naming: camelCase..."
-                className="min-h-[300px] font-mono text-sm"
-              />
-              <p className="text-xs text-slate-500">
-                {t("preferencesHelp")}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleSavePersonalPreferences} 
-                disabled={isSavingPreferences}
-                className="bg-blue-600 hover:bg-blue-700"
-                title={t("savePreferences")}
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {isSavingPreferences ? t("saving") : t("savePreferences")}
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setPersonalPreferences(DEFAULT_PERSONAL_PREFERENCES)}
-                title={t("loadExample")}
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                {t("loadExample")}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          <TabsContent value="settings" className="space-y-6">
+            <div className="max-w-3xl">
+              {/* Language Selection Card */}
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>{t("languageSelection")}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <LanguageSelector />
+                </CardContent>
+              </Card>
 
-        {/* Context Suggestions Toggle */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Lightbulb className="w-5 h-5 text-yellow-500" />
-              {t("aiContextSuggestions")}
-            </CardTitle>
-            <CardDescription>
-              {t("aiContextSuggestionsDesc")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">{t("enableAISuggestions")}</p>
-                <p className="text-xs text-slate-500">{t("enableAISuggestionsDesc")}</p>
-              </div>
-              <Switch
-                checked={enableContextSuggestions}
-                onCheckedChange={setEnableContextSuggestions}
-              />
-            </div>
-          </CardContent>
-        </Card>
+              {/* Personal Preferences Card */}
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="w-5 h-5 text-blue-500" />
+                    {t("personalPreferences")}
+                  </CardTitle>
+                  <CardDescription>
+                    {t("personalPreferencesDesc")}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>{t("preferencesMarkdown")}</Label>
+                    <Textarea
+                      value={personalPreferences}
+                      onChange={(e) => setPersonalPreferences(e.target.value)}
+                      placeholder="# Mijn Persoonlijke Voorkeuren&#10;&#10;## Code Stijl&#10;- Naming: camelCase..."
+                      className="min-h-[300px] font-mono text-sm"
+                    />
+                    <p className="text-xs text-slate-500">
+                      {t("preferencesHelp")}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleSavePersonalPreferences} 
+                      disabled={isSavingPreferences}
+                      className="bg-blue-600 hover:bg-blue-700"
+                      title={t("savePreferences")}
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      {isSavingPreferences ? t("saving") : t("savePreferences")}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setPersonalPreferences(DEFAULT_PERSONAL_PREFERENCES)}
+                      title={t("loadExample")}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      {t("loadExample")}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-500" />
-              {t("improveWithAI")} - {t("aiInstruction")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label>{t("aiInstruction")}</Label>
-              <Textarea
-                value={instruction}
-                onChange={(e) => setInstruction(e.target.value)}
-                placeholder="Instructie voor de AI..."
-                className="min-h-[200px] font-mono text-sm"
-              />
-              <p className="text-xs text-slate-500">
-                {t("aiInstructionDesc")}
-              </p>
-            </div>
+              {/* Context Suggestions Toggle */}
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5 text-yellow-500" />
+                    {t("aiContextSuggestions")}
+                  </CardTitle>
+                  <CardDescription>
+                    {t("aiContextSuggestionsDesc")}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">{t("enableAISuggestions")}</p>
+                      <p className="text-xs text-slate-500">{t("enableAISuggestionsDesc")}</p>
+                    </div>
+                    <Switch
+                      checked={enableContextSuggestions}
+                      onCheckedChange={setEnableContextSuggestions}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
 
-            <div className="space-y-2">
-              <Label>{t("modelPreference")}</Label>
-              <Select value={modelPreference} onValueChange={setModelPreference}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="default">{t("standard")}</SelectItem>
-                  <SelectItem value="creative">{t("creative")}</SelectItem>
-                  <SelectItem value="precise">{t("precise")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-purple-500" />
+                    {t("improveWithAI")} - {t("aiInstruction")}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label>{t("aiInstruction")}</Label>
+                    <Textarea
+                      value={instruction}
+                      onChange={(e) => setInstruction(e.target.value)}
+                      placeholder="Instructie voor de AI..."
+                      className="min-h-[200px] font-mono text-sm"
+                    />
+                    <p className="text-xs text-slate-500">
+                      {t("aiInstructionDesc")}
+                    </p>
+                  </div>
 
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleSave} 
-                disabled={saveMutation.isPending}
-                className="bg-indigo-600 hover:bg-indigo-700"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {saveMutation.isPending ? (t("saving") || "Opslaan...") : t("save")}
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setInstruction(getDefaultInstruction(t))}
-              >
-                {t("resetToDefault")}
-              </Button>
+                  <div className="space-y-2">
+                    <Label>{t("modelPreference")}</Label>
+                    <Select value={modelPreference} onValueChange={setModelPreference}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">{t("standard")}</SelectItem>
+                        <SelectItem value="creative">{t("creative")}</SelectItem>
+                        <SelectItem value="precise">{t("precise")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleSave} 
+                      disabled={saveMutation.isPending}
+                      className="bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      {saveMutation.isPending ? (t("saving") || "Opslaan...") : t("save")}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setInstruction(getDefaultInstruction(t))}
+                    >
+                      {t("resetToDefault")}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
+
+          <TabsContent value="upse">
+            <UPSEPanel
+              projects={projects}
+              currentStructure={currentProjectStructure}
+              onStructureUpdate={(data) => structureMutation.mutate(data)}
+              selectedProjectId={selectedProjectId}
+              onProjectSelect={setSelectedProjectId}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
     </RequireSubscription>
