@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, GripVertical, Image as ImageIcon, Loader2, Plus, Palette, Code, Ban, MoreHorizontal } from "lucide-react";
+import { X, GripVertical, Image as ImageIcon, Loader2, Plus, Palette, Code, Ban, MoreHorizontal, Copy } from "lucide-react";
 import { toast } from "sonner";
 import ContextSelector from "./ContextSelector";
 import { projectColors, projectBorderColors } from "@/components/lib/constants";
@@ -129,6 +129,12 @@ export default function ThoughtCard({
     const newImages = imageUrls.filter((_, idx) => idx !== indexToRemove);
     onUpdateImages(thought.id, newImages);
     toast.success(t("screenshotRemoved") || "Screenshot verwijderd");
+  };
+
+  const handleCopyContent = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(thought.content || "");
+    toast.success(t("copied") || "Gekopieerd!");
   };
 
   const handleStartEditing = (e) => {
@@ -333,17 +339,28 @@ export default function ThoughtCard({
             </Select>
           </div>
           </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 text-slate-400 hover:text-red-500 shrink-0"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-        >
-          <X className="w-4 h-4" />
-        </Button>
+        <div className="flex flex-col gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-slate-400 hover:text-indigo-500 shrink-0"
+            onClick={handleCopyContent}
+            title={t("copy") || "Kopieer"}
+          >
+            <Copy className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-slate-400 hover:text-red-500 shrink-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

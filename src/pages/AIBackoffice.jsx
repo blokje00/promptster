@@ -268,9 +268,13 @@ export default function AIBackoffice() {
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700">
+              <Button 
+                onClick={handleSave} 
+                disabled={saveMutation.isPending}
+                className="bg-indigo-600 hover:bg-indigo-700"
+              >
                 <Save className="w-4 h-4 mr-2" />
-                {t("save")}
+                {saveMutation.isPending ? (t("saving") || "Opslaan...") : t("save")}
               </Button>
               <Button 
                 variant="outline" 

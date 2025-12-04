@@ -83,7 +83,7 @@ export default function Multiprompt() {
     target_domain: null,
     ai_prediction: null
   });
-  const [groupBy, setGroupBy] = useState("date");
+  const [groupBy, setGroupBy] = useState("component");
   const newThoughtInputRef = useRef(null);
   const newThoughtFileInputRef = useRef(null);
   
@@ -1046,10 +1046,11 @@ ${generatedPrompt}`,
         await deleteUsedThoughtsMutation.mutateAsync(selectedThoughts);
       }
 
-      // Reload
+      // Reload and scroll to top
       resetBuilder();
       navigate("/Multiprompt", { replace: true });
       queryClient.invalidateQueries();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (e) {
       console.error("Direct save failed:", e);
@@ -1098,11 +1099,12 @@ ${generatedPrompt}`,
         await deleteUsedThoughtsMutation.mutateAsync(selectedThoughts);
       }
 
-      // 3. Close dialog and Reload
+      // 3. Close dialog and Reload, scroll to top
       setShowControlDialog(false);
       resetBuilder();
       navigate("/Multiprompt", { replace: true });
       queryClient.invalidateQueries();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (e) {
       console.error("Save failed:", e);
@@ -1205,7 +1207,7 @@ ${generatedPrompt}`,
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            Multi-Step Builder
+            Multi-Task Builder
           </h1>
           <p className="text-slate-600 mt-2">{t("collectThoughts")}</p>
         </div>
