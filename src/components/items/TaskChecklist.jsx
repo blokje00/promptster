@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Circle, RotateCcw, Loader2, ListChecks } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -126,29 +127,31 @@ export default function TaskChecklist({
       </CardHeader>
       
       <CardContent className="space-y-2">
+        <TooltipProvider>
         {taskChecks.map((check, index) => (
-          <div 
-            key={index}
-            className={`p-3 rounded-lg border bg-white flex items-center justify-between gap-3 ${
-              check.status === 'success' ? 'border-green-300' :
-              check.status === 'failed' ? 'border-red-300' :
-              'border-slate-200'
-            }`}
-          >
-            <div className="flex-1 min-w-0">
-              <p className={`text-sm ${
-                check.status === 'success' ? 'text-green-700 line-through' : 
-                check.status === 'failed' ? 'text-red-700 font-medium' : 
-                'text-slate-700'
-              }`}>
-                {check.task_name}
-              </p>
-              {check.status === 'failed' && (
-                <span className="inline-flex items-center text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded mt-1">
-                  Wordt meegenomen in re-try
-                </span>
-              )}
-            </div>
+          <Tooltip key={index}>
+            <TooltipTrigger asChild>
+              <div 
+                className={`p-3 rounded-lg border bg-white flex items-center justify-between gap-3 cursor-pointer hover:shadow-sm transition-shadow ${
+                  check.status === 'success' ? 'border-green-300' :
+                  check.status === 'failed' ? 'border-red-300' :
+                  'border-slate-200'
+                }`}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm ${
+                    check.status === 'success' ? 'text-green-700 line-through' : 
+                    check.status === 'failed' ? 'text-red-700 font-medium' : 
+                    'text-slate-700'
+                  }`}>
+                    {check.task_name}
+                  </p>
+                  {check.status === 'failed' && (
+                    <span className="inline-flex items-center text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded mt-1">
+                      Wordt meegenomen in re-try
+                    </span>
+                  )}
+                </div>
             
             {!readOnly && (
               <div className="flex items-center gap-1 flex-shrink-0">
@@ -190,8 +193,14 @@ export default function TaskChecklist({
                 </button>
               </div>
             )}
-          </div>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-md p-3 bg-slate-900 text-white">
+              <p className="text-sm whitespace-pre-wrap">{check.full_description || check.task_name}</p>
+            </TooltipContent>
+          </Tooltip>
         ))}
+        </TooltipProvider>
       </CardContent>
     </Card>
   );

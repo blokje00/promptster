@@ -14,7 +14,7 @@ import { useLanguage } from "../components/i18n/LanguageContext";
 import LanguageSelector from "../components/settings/LanguageSelector";
 import RequireSubscription from "../components/auth/RequireSubscription";
 
-const DEFAULT_INSTRUCTION = `Verbeter de volgende prompt technisch en taalkundig. Maak de tekst professioneler, duidelijker en beter gestructureerd. Behoud de originele intentie en inhoud, maar verbeter grammatica, spelling, en technische precisie. Geef alleen de verbeterde tekst terug, geen uitleg.`;
+const getDefaultInstruction = (t) => t("defaultAIInstruction") || `Verbeter de volgende prompt technisch en taalkundig. Maak de tekst professioneler, duidelijker en beter gestructureerd. Behoud de originele intentie en inhoud, maar verbeter grammatica, spelling, en technische precisie. Geef alleen de verbeterde tekst terug, geen uitleg.`;
 
 const DEFAULT_PERSONAL_PREFERENCES = `# Mijn Persoonlijke Development Voorkeuren
 
@@ -42,7 +42,7 @@ const DEFAULT_PERSONAL_PREFERENCES = `# Mijn Persoonlijke Development Voorkeuren
 export default function AIBackoffice() {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
-  const [instruction, setInstruction] = useState(DEFAULT_INSTRUCTION);
+  const [instruction, setInstruction] = useState("");
   const [modelPreference, setModelPreference] = useState("default");
   const [enableContextSuggestions, setEnableContextSuggestions] = useState(true);
   const [settingsId, setSettingsId] = useState(null);
@@ -67,12 +67,14 @@ export default function AIBackoffice() {
 
   useEffect(() => {
     if (settings.length > 0) {
-      setInstruction(settings[0].improve_prompt_instruction || DEFAULT_INSTRUCTION);
+      setInstruction(settings[0].improve_prompt_instruction || getDefaultInstruction(t));
       setModelPreference(settings[0].model_preference || "default");
       setEnableContextSuggestions(settings[0].enable_context_suggestions !== false);
       setSettingsId(settings[0].id);
+    } else {
+      setInstruction(getDefaultInstruction(t));
     }
-  }, [settings]);
+  }, [settings, t]);
 
   // Load autosaved or user data
   useEffect(() => {
@@ -278,7 +280,7 @@ export default function AIBackoffice() {
               </Button>
               <Button 
                 variant="outline" 
-                onClick={() => setInstruction(DEFAULT_INSTRUCTION)}
+                onClick={() => setInstruction(getDefaultInstruction(t))}
               >
                 {t("resetToDefault")}
               </Button>

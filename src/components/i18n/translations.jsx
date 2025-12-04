@@ -251,6 +251,7 @@ export const translations = {
     aiSettingsSaved: "AI instellingen opgeslagen",
     preferencesSaved: "Persoonlijke voorkeuren opgeslagen",
     preferencesSaveFailed: "Kon voorkeuren niet opslaan",
+    defaultAIInstruction: "Verbeter de volgende prompt technisch en taalkundig. Maak de tekst professioneler, duidelijker en beter gestructureerd. Behoud de originele intentie en inhoud, maar verbeter grammatica, spelling, en technische precisie. Geef alleen de verbeterde tekst terug, geen uitleg.",
   },
   
   en: {
@@ -504,6 +505,7 @@ export const translations = {
     aiSettingsSaved: "AI settings saved",
     preferencesSaved: "Personal preferences saved",
     preferencesSaveFailed: "Could not save preferences",
+    defaultAIInstruction: "Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.",
   },
   
   fr: {
@@ -757,6 +759,7 @@ export const translations = {
     aiSettingsSaved: "Paramètres IA enregistrés",
     preferencesSaved: "Préférences personnelles enregistrées",
     preferencesSaveFailed: "Impossible d'enregistrer les préférences",
+    defaultAIInstruction: "Améliorez le prompt suivant techniquement et linguistiquement. Rendez le texte plus professionnel, plus clair et mieux structuré. Conservez l'intention et le contenu d'origine, mais améliorez la grammaire, l'orthographe et la précision technique. Retournez uniquement le texte amélioré, sans explication.",
   },
   
   de: {
@@ -1010,6 +1013,7 @@ export const translations = {
     aiSettingsSaved: "KI-Einstellungen gespeichert",
     preferencesSaved: "Persönliche Einstellungen gespeichert",
     preferencesSaveFailed: "Einstellungen konnten nicht gespeichert werden",
+    defaultAIInstruction: "Verbessern Sie den folgenden Prompt technisch und sprachlich. Machen Sie den Text professioneller, klarer und besser strukturiert. Bewahren Sie die ursprüngliche Absicht und den Inhalt, verbessern Sie jedoch Grammatik, Rechtschreibung und technische Präzision. Geben Sie nur den verbesserten Text zurück, keine Erklärung.",
   },
   
   "zh-CN": {
@@ -1263,6 +1267,7 @@ export const translations = {
     aiSettingsSaved: "AI设置已保存",
     preferencesSaved: "个人偏好已保存",
     preferencesSaveFailed: "无法保存偏好",
+    defaultAIInstruction: "从技术和语言上改进以下提示词。使文本更专业、更清晰、结构更好。保留原始意图和内容，但改进语法、拼写和技术精度。只返回改进后的文本，不要解释。",
   },
 };
 

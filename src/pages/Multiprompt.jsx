@@ -1041,9 +1041,18 @@ ${generatedPrompt}`,
         status: "open"
       });
       
-      // Delete ONLY selected/used thoughts
+      // Soft-delete ONLY selected/used thoughts (move to recycle bin)
       if (selectedThoughts.length > 0) {
-        await deleteUsedThoughtsMutation.mutateAsync(selectedThoughts);
+        await Promise.all(selectedThoughts.map(id => 
+          base44.entities.Thought.update(id, { 
+            is_deleted: true, 
+            deleted_at: new Date().toISOString() 
+          })
+        ));
+        // Clear from local state
+        setLocalThoughts(prev => prev.filter(t => !selectedThoughts.includes(t.id)));
+        setSelectedThoughts([]);
+        queryClient.invalidateQueries({ queryKey: ['thoughts'] });
       }
 
       // Reload and scroll to top
@@ -1094,9 +1103,18 @@ ${generatedPrompt}`,
         status: "open"
       });
       
-      // 2. Delete ONLY selected/used thoughts
+      // 2. Soft-delete ONLY selected/used thoughts (move to recycle bin)
       if (selectedThoughts.length > 0) {
-        await deleteUsedThoughtsMutation.mutateAsync(selectedThoughts);
+        await Promise.all(selectedThoughts.map(id => 
+          base44.entities.Thought.update(id, { 
+            is_deleted: true, 
+            deleted_at: new Date().toISOString() 
+          })
+        ));
+        // Clear from local state
+        setLocalThoughts(prev => prev.filter(t => !selectedThoughts.includes(t.id)));
+        setSelectedThoughts([]);
+        queryClient.invalidateQueries({ queryKey: ['thoughts'] });
       }
 
       // 3. Close dialog and Reload, scroll to top
