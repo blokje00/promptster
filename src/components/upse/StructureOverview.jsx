@@ -7,7 +7,7 @@ import {
   FileText, 
   Database, 
   Workflow, 
-  Navigation, 
+  Navigation as NavigationIcon, 
   ChevronRight,
   ChevronDown,
   Copy,
@@ -340,7 +340,7 @@ export default function StructureOverview({ structure, project, onRefresh }) {
                 <CardContent className="py-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {expandedSections.navigation ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                    <Navigation className="w-4 h-4 text-purple-600" />
+                    <NavigationIcon className="w-4 h-4 text-purple-600" />
                     <span className="font-medium">Navigatie</span>
                     <Badge variant="outline">{stats.navigation}</Badge>
                   </div>
