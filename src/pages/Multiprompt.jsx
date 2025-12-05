@@ -116,6 +116,17 @@ export default function Multiprompt() {
     enabled: !!currentUser
   });
 
+  // Task 6: Fetch Subscription Plans for Limits
+  const { data: subscriptionPlans = [] } = useQuery({
+    queryKey: ['subscriptionPlans'],
+    queryFn: () => base44.entities.SubscriptionPlan.list(),
+  });
+
+  // Determine Max Thoughts based on plan
+  const currentPlan = subscriptionPlans.find(p => p.id === currentUser?.plan_id || p.monthly_price_id === currentUser?.plan_id) || {};
+  const maxThoughts = currentPlan.max_thoughts || 10; // Default limit
+  const isLimitReached = thoughts.length >= maxThoughts;
+
   // --- 3. UI State Management ---
 
   // New Thought Input State
@@ -155,6 +166,9 @@ export default function Multiprompt() {
   
   // Helper: Get Selected Project Object
   const selectedProject = projects.find(p => p.id === selectedProjectId);
+
+  // Task 1: Count thoughts per project
+  const getProjectCount = (pid) => thoughts.filter(t => t.project_id === pid).length;
 
   // --- Template Autosave & Persistence ---
   
@@ -199,6 +213,11 @@ export default function Multiprompt() {
     if (!newThoughtContent.trim() && newThoughtImages.length === 0) return;
     if (!currentUser?.email) {
       toast.error("Je moet ingelogd zijn om een task toe te voegen");
+      return;
+    }
+
+    if (isLimitReached) {
+      toast.error(`Limit reached: Max ${maxThoughts} tasks allowed on your plan.`);
       return;
     }
 
@@ -314,6 +333,18 @@ export default function Multiprompt() {
     return parts.join("\n\n---\n\n");
   }, [thoughts, selectedThoughtIds, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, currentUser, selectedProject, templates]);
 
+  // Task 7: Autosave Improved Prompt
+  useEffect(() => {
+    const savedImproved = localStorage.getItem(`promptster:improved:${selectedProjectId || 'all'}`);
+    if (savedImproved) setImprovedPrompt(savedImproved);
+  }, [selectedProjectId]);
+
+  useEffect(() => {
+    if (improvedPrompt) {
+      localStorage.setItem(`promptster:improved:${selectedProjectId || 'all'}`, improvedPrompt);
+    }
+  }, [improvedPrompt, selectedProjectId]);
+
   // AI Improve
   const handleImprovePrompt = async () => {
     if (!generatedPrompt) return;
@@ -368,12 +399,19 @@ export default function Multiprompt() {
     }
   });
 
-  const handleCopyAndSave = async () => {
+  // Task 2: Quick Save (Auto-Generated Title)
+  const handleQuickSave = async () => {
     const content = improvedPrompt || generatedPrompt;
     navigator.clipboard.writeText(content);
     
+    const timestamp = new Date().toLocaleString('nl-NL', { 
+        day: '2-digit', month: '2-digit', year: '2-digit', 
+        hour: '2-digit', minute: '2-digit' 
+    }).replace(',', '');
+    const autoTitle = `${selectedProject?.name || 'Multi-Task'} ${timestamp}`;
+
     createItemMutation.mutate({
-      title: promptTitle || `${selectedProject?.name || 'Multi-Task'} ${new Date().toLocaleDateString()}`,
+      title: autoTitle,
       type: "multiprompt",
       content: content,
       used_thoughts: selectedThoughtIds,
@@ -404,11 +442,11 @@ export default function Multiprompt() {
       <div className="p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
           
-          {/* Success Banner */}
+          {/* Success Banner - Task 8 Fixes */}
           {showBanner && (
-             <div className="mb-6 p-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg shadow-lg animate-in fade-in slide-in-from-top-4">
-               <p className="text-sm font-medium text-center">
-                 ✓ Copied & Saved! Tasks moved to Recycle Bin. Check progress in Vault.
+             <div className="mb-6 p-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg shadow-lg animate-in fade-in slide-in-from-top-4 text-center">
+               <p className="text-sm font-medium">
+                 ✓ Copied & Saved! Tekst zit op je plakbord. Tasks moved to Recycle Bin. Check progress in Vault.
                </p>
              </div>
           )}
@@ -447,7 +485,7 @@ export default function Multiprompt() {
                       className={selectedProjectId === p.id ? `${projectColors[p.color]} border-0` : ""}
                     >
                       <div className={`w-2 h-2 rounded-full mr-2 bg-${p.color}-400`} />
-                      {p.name}
+                      {p.name} ({getProjectCount(p.id)})
                     </Button>
                   ))}
                 </div>
@@ -486,10 +524,11 @@ export default function Multiprompt() {
                       {/* Input Area */}
                       <div className={`border-2 rounded-lg focus-within:border-indigo-400 transition-all bg-white ${selectedProject ? `border-dashed ${projectBorderColors[selectedProject.color]}` : 'border-slate-200'}`}>
                         <Textarea
-                          placeholder="Type task..."
+                          placeholder={isLimitReached ? `Plan limit of ${maxThoughts} tasks reached.` : "Type task..."}
                           value={newThoughtContent}
                           onChange={(e) => setNewThoughtContent(e.target.value)}
-                          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleAddThought())}
+                          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), !isLimitReached && handleAddThought())}
+                          disabled={isLimitReached}
                           className="min-h-[60px] border-0 focus-visible:ring-0 resize-none"
                         />
                         
@@ -524,8 +563,12 @@ export default function Multiprompt() {
 
                       {/* Add Button */}
                       <div className="flex gap-2">
-                        <Button onClick={handleAddThought} className={`flex-1 ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'}`}>
-                          <Plus className="w-4 h-4 mr-2" /> Add Task
+                        <Button 
+                          onClick={handleAddThought} 
+                          disabled={isLimitReached}
+                          className={`flex-1 ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'} ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <Plus className="w-4 h-4 mr-2" /> {isLimitReached ? `Limit Reached (${maxThoughts})` : 'Add Task'}
                         </Button>
                         <Select value={groupBy} onValueChange={setGroupBy}>
                           <SelectTrigger className="w-[120px]"><SelectValue placeholder="Group" /></SelectTrigger>
@@ -645,26 +688,17 @@ export default function Multiprompt() {
                     <CardHeader className="pb-3 flex flex-row items-center justify-between">
                       <CardTitle>Preview</CardTitle>
                       <div className="flex gap-2">
-                         <Button size="sm" variant="outline" onClick={handleImprovePrompt} disabled={!generatedPrompt}>
-                           {isImproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />} Improve
-                         </Button>
-                         <Dialog open={showControlDialog} onOpenChange={setShowControlDialog}>
-                           <DialogTrigger asChild>
-                             <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" disabled={!generatedPrompt && !improvedPrompt}>
-                               <Copy className="w-4 h-4 mr-1" /> Copy & Save
-                             </Button>
-                           </DialogTrigger>
-                           <DialogContent>
-                             <DialogHeader><DialogTitle>Save Prompt</DialogTitle></DialogHeader>
-                             <div className="space-y-4 py-4">
-                               <Input placeholder="Prompt Title (optional)" value={promptTitle} onChange={e => setPromptTitle(e.target.value)} />
-                               <div className="flex justify-end gap-2">
-                                 <Button variant="ghost" onClick={() => setShowControlDialog(false)}>Cancel</Button>
-                                 <Button onClick={handleCopyAndSave}>Confirm Copy & Save</Button>
-                               </div>
-                             </div>
-                           </DialogContent>
-                         </Dialog>
+                        <Button size="sm" variant="outline" onClick={handleImprovePrompt} disabled={!generatedPrompt}>
+                          {isImproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />} Improve
+                        </Button>
+                        <Button 
+                           size="sm" 
+                           className="bg-indigo-600 hover:bg-indigo-700" 
+                           disabled={!generatedPrompt && !improvedPrompt}
+                           onClick={handleQuickSave}
+                        >
+                          <Copy className="w-4 h-4 mr-1" /> Copy & Save
+                        </Button>
                       </div>
                     </CardHeader>
                     <CardContent className="flex-1">

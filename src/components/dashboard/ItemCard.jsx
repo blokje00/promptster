@@ -122,6 +122,18 @@ export default function ItemCard({ item, project }) {
                     {project.name}
                   </Badge>
                 )}
+                {/* Task 5: Unvalidated Items Count */}
+                {(() => {
+                   const uncheckedCount = item.task_checks?.filter(c => !c.is_checked).length || 0;
+                   if (uncheckedCount > 0) {
+                     return (
+                       <Badge variant="outline" className="ml-2 mb-1 text-[10px] px-1.5 py-0 h-4 border-orange-300 text-orange-600 bg-orange-50">
+                         {uncheckedCount} open
+                       </Badge>
+                     );
+                   }
+                   return null;
+                })()}
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-slate-900 truncate hover:text-indigo-600 transition-colors">{item.title}</h3>
                   {item.is_publish_version && (

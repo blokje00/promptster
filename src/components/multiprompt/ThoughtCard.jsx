@@ -85,8 +85,11 @@ export default function ThoughtCard({
   const currentFocus = focusConfig[thought.focus_type] || focusConfig.both;
 
   return (
+    {/* Task 3: Dynamic Border Color */}
     <div className={`group relative flex gap-3 p-3 rounded-lg border transition-all ${
-      isSelected ? 'bg-indigo-50/50 border-indigo-200' : 'bg-white border-slate-200 hover:border-indigo-300'
+      isSelected 
+        ? 'bg-indigo-50/50 border-indigo-200' 
+        : `bg-white ${project ? `border-${project.color}-200 hover:border-${project.color}-300` : 'border-slate-200 hover:border-indigo-300'}`
     }`}>
       {/* Drag Handle */}
       {showDragHandle && (

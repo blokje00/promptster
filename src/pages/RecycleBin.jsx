@@ -168,10 +168,16 @@ export default function RecycleBin() {
                         <Badge variant="secondary" className="text-xs">
                           {new Date(thought.deleted_at || thought.updated_date).toLocaleDateString()}
                         </Badge>
+                        {/* Task 4: RecycleBin Project Colors */}
                         {thought.project_id && (
-                          <Badge variant="outline" className="text-xs text-blue-600 border-blue-200 bg-blue-50">
-                            {projects.find(p => p.id === thought.project_id)?.name || "Promptster.app"}
-                          </Badge>
+                          (() => {
+                            const p = projects.find(p => p.id === thought.project_id);
+                            return (
+                              <Badge variant="outline" className={`text-xs ${p ? `text-${p.color}-600 border-${p.color}-200 bg-${p.color}-50` : 'text-blue-600 border-blue-200 bg-blue-50'}`}>
+                                {p?.name || "Promptster.app"}
+                              </Badge>
+                            );
+                          })()
                         )}
                       </div>
                       <p className="text-slate-700 whitespace-pre-wrap line-clamp-2">
