@@ -48,7 +48,7 @@ export default function TaskChecklist({
     const failedTasks = taskChecks.filter(check => check.status === 'failed');
     
     if (failedTasks.length === 0) {
-      toast.info("Geen mislukte taken om opnieuw te proberen.");
+      toast.info("No failed tasks to retry.");
       return;
     }
 
@@ -65,7 +65,7 @@ export default function TaskChecklist({
         });
       }
       
-      toast.success(`${failedTasks.length} taken teruggezet naar Multiprompt!`);
+      toast.success(`${failedTasks.length} tasks sent back to Multiprompt!`);
       
       // Wait a bit longer before navigating
       setTimeout(() => {
@@ -73,7 +73,7 @@ export default function TaskChecklist({
       }, 1500);
     } catch (error) {
       console.error("Retry error:", error);
-      toast.error("Kon taken niet herstellen");
+      toast.error("Could not restore tasks");
       setIsRetrying(false);
     }
   };
@@ -88,9 +88,9 @@ export default function TaskChecklist({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-indigo-800">
             <ListChecks className="w-5 h-5" />
-            Taak Checklist
+            Task Checklist
             <Badge variant="outline" className="ml-2 text-xs">
-              {successCount}/{taskChecks.length} voltooid
+              {successCount}/{taskChecks.length} completed
             </Badge>
           </CardTitle>
           
@@ -107,7 +107,7 @@ export default function TaskChecklist({
               ) : (
                 <RotateCcw className="w-4 h-4 mr-2" />
               )}
-              Re-try {failedCount} mislukte taken
+              Retry {failedCount} failed tasks
             </Button>
           )}
         </div>
@@ -115,10 +115,10 @@ export default function TaskChecklist({
         {/* Status summary */}
         <div className="flex gap-3 mt-2 text-xs">
           <span className="flex items-center gap-1 text-green-600">
-            <CheckCircle2 className="w-3 h-3" /> {successCount} goed
+            <CheckCircle2 className="w-3 h-3" /> {successCount} success
           </span>
           <span className="flex items-center gap-1 text-red-600">
-            <XCircle className="w-3 h-3" /> {failedCount} fout
+            <XCircle className="w-3 h-3" /> {failedCount} failed
           </span>
           <span className="flex items-center gap-1 text-blue-600">
             <Circle className="w-3 h-3" /> {openCount} open
@@ -148,7 +148,7 @@ export default function TaskChecklist({
                   </p>
                   {check.status === 'failed' && (
                     <span className="inline-flex items-center text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded mt-1">
-                      Wordt meegenomen in re-try
+                      Will be included in retry
                     </span>
                   )}
                 </div>
@@ -175,7 +175,7 @@ export default function TaskChecklist({
                       ? 'bg-green-100 text-green-600' 
                       : 'text-slate-300 hover:bg-slate-100'
                   }`}
-                  title="Goed"
+                  title="Success"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                 </button>
@@ -187,7 +187,7 @@ export default function TaskChecklist({
                       ? 'bg-red-100 text-red-600' 
                       : 'text-slate-300 hover:bg-slate-100'
                   }`}
-                  title="Fout"
+                  title="Failed"
                 >
                   <XCircle className="w-4 h-4" />
                 </button>

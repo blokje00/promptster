@@ -21,9 +21,9 @@ export default function FileChangesFeedback({
       const text = await navigator.clipboard.readText();
       setLocalValue(text);
       if (onChange) onChange(text);
-      toast.success("Feedback geplakt vanuit klembord");
+      toast.success("Feedback pasted from clipboard");
     } catch (err) {
-      toast.error("Kon niet plakken - geef toegang tot klembord");
+      toast.error("Could not paste - grant clipboard access");
     }
   };
 
@@ -69,11 +69,11 @@ export default function FileChangesFeedback({
           <div className="flex items-center gap-2">
             <Brain className="w-5 h-5 text-purple-600" />
             <CardTitle className="text-lg text-purple-800">
-              Project Kennis Feedback
+              Project Knowledge Feedback
             </CardTitle>
             {localValue && (
               <Badge className="bg-purple-200 text-purple-700 text-xs">
-                {detectedFiles.length} bestanden gedetecteerd
+                {detectedFiles.length} files detected
               </Badge>
             )}
           </div>
@@ -84,7 +84,7 @@ export default function FileChangesFeedback({
           )}
         </div>
         <CardDescription className="text-purple-600">
-          Plak hier de Base44 feedback met gewijzigde bestanden om projectkennis op te bouwen
+          Paste the Base44 feedback with changed files here to build project knowledge
         </CardDescription>
       </CardHeader>
 
@@ -93,7 +93,7 @@ export default function FileChangesFeedback({
           {/* Detected Files Preview */}
           {detectedFiles.length > 0 && (
             <div className="p-3 bg-white rounded-lg border border-purple-200">
-              <p className="text-xs font-medium text-purple-700 mb-2">Gedetecteerde bestanden:</p>
+              <p className="text-xs font-medium text-purple-700 mb-2">Detected files:</p>
               <div className="flex flex-wrap gap-1">
                 {detectedFiles.map((file, idx) => (
                   <Badge key={idx} variant="outline" className="text-xs bg-white border-purple-300 text-purple-700">
@@ -114,18 +114,18 @@ export default function FileChangesFeedback({
                   setLocalValue(e.target.value);
                   if (onChange) onChange(e.target.value);
                 }}
-                placeholder={`Plak hier de Base44 feedback na uitvoering van de taken...
+                placeholder={`Paste the Base44 feedback here after executing the tasks...
 
-Voorbeeld:
---- DEELTAAK 1 ---
-Bestand: pages/Dashboard.jsx
-Wijziging: Filter toegevoegd op created_by
-Regels: 20-35
+Example:
+--- SUBTASK 1 ---
+File: pages/Dashboard.jsx
+Change: Added filter on created_by
+Lines: 20-35
 
---- DEELTAAK 2 ---  
-Bestand: components/TaskCard.jsx
-Wijziging: Drag & drop functionaliteit
-Nieuw bestand: components/DragHandle.jsx`}
+--- SUBTASK 2 ---  
+File: components/TaskCard.jsx
+Change: Drag & drop functionality
+New file: components/DragHandle.jsx`}
                 className="min-h-[200px] font-mono text-sm bg-white"
               />
               <div className="flex gap-2">
@@ -136,7 +136,7 @@ Nieuw bestand: components/DragHandle.jsx`}
                   className="border-purple-300 text-purple-700 hover:bg-purple-100"
                 >
                   <ClipboardPaste className="w-4 h-4 mr-2" />
-                  Plak uit klembord
+                  Paste from clipboard
                 </Button>
                 {onSave && (
                   <Button
@@ -146,7 +146,7 @@ Nieuw bestand: components/DragHandle.jsx`}
                     className="bg-purple-600 hover:bg-purple-700"
                   >
                     <Save className="w-4 h-4 mr-2" />
-                    {isSaving ? "Opslaan..." : "Feedback Opslaan"}
+                    {isSaving ? "Saving..." : "Save Feedback"}
                   </Button>
                 )}
               </div>
@@ -154,14 +154,14 @@ Nieuw bestand: components/DragHandle.jsx`}
           ) : (
             <div className="bg-white rounded-lg border border-purple-200 p-4">
               <pre className="text-sm text-slate-700 whitespace-pre-wrap font-mono">
-                {localValue || "Geen feedback opgeslagen"}
+                {localValue || "No feedback saved"}
               </pre>
             </div>
           )}
 
           <p className="text-xs text-purple-600">
-            💡 Deze feedback wordt gebruikt om de AI beter te laten begrijpen hoe je project is opgebouwd. 
-            Bij toekomstige taken kan de AI hierdoor preciezere suggesties doen.
+            💡 This feedback is used to help the AI better understand how your project is structured. 
+            For future tasks, the AI can make more precise suggestions.
           </p>
         </CardContent>
       )}
