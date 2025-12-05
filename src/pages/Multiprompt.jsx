@@ -152,7 +152,14 @@ export default function Multiprompt() {
     queryKey: ['thoughts', currentUser?.email],
     queryFn: async () => {
       if (!currentUser?.email) return [];
-      const result = await base44.entities.Thought.filter({ created_by: currentUser.email }, "-created_date");
+      // Only fetch non-deleted thoughts (is_deleted === false or not set)
+      const result = await base44.entities.Thought.filter({ 
+        created_by: currentUser.email,
+        $or: [
+          { is_deleted: false },
+          { is_deleted: { $exists: false } }
+        ]
+      }, "-created_date");
       return result || [];
     },
     enabled: !!currentUser?.email,
