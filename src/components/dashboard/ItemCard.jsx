@@ -98,6 +98,18 @@ export default function ItemCard({ item, project }) {
     e.stopPropagation();
   };
 
+  const handleCardClick = () => {
+    const hasOpenTasks = item.task_checks?.some(check => check.status !== 'success');
+    
+    // 1. Als er open items zijn: ga naar ViewItem (waar checklist staat)
+    // 2. Als alles afgevinkt is (of geen checks): ga direct naar EditItem
+    if (hasOpenTasks) {
+      navigate(createPageUrl(`ViewItem?id=${item.id}`));
+    } else {
+      navigate(createPageUrl(`EditItem?id=${item.id}`));
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -105,7 +117,7 @@ export default function ItemCard({ item, project }) {
       whileHover={{ y: -4 }}
       transition={{ duration: 0.2 }}
       className="cursor-pointer h-full"
-      onClick={() => navigate(createPageUrl(`ViewItem?id=${item.id}`))}
+      onClick={handleCardClick}
     >
       <Card className={`h-full overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col ${
         item.is_publish_version ? 'border-2 border-green-400' : 'border-slate-200'
