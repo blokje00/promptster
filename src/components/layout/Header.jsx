@@ -41,20 +41,28 @@ export default function Header() {
     refetchInterval: 5000, 
   });
 
-  // Task 3: Open Items Count for Vault
-  const { data: openItemsCount = 0 } = useQuery({
-    queryKey: ['openItemsCount', user?.email],
+  // Task 3: Open Tasks Count (Checklist items)
+  const { data: openTasksCount = 0 } = useQuery({
+    queryKey: ['openTasksCount', user?.email],
     queryFn: async () => {
       if (!user?.email) return 0;
-      // Assuming 'open' status items or check pending logic. 
-      // "taken die nog geen status hebben gehad, cq open staan voor review"
-      // If this means Items in the vault with status 'open' OR pending checks.
-      // Checking 'status' field on Item entity.
-      const result = await base44.entities.Item.filter({ 
-        created_by: user.email,
-        status: 'open'
+      // Fetch all items to count their open tasks
+      const items = await base44.entities.Item.filter({ 
+        created_by: user.email
       });
-      return result?.length || 0;
+      
+      let count = 0;
+      items.forEach(item => {
+        if (item.task_checks && Array.isArray(item.task_checks)) {
+          item.task_checks.forEach(check => {
+            // Count if status is missing or explicitly 'open'
+            if (!check.status || check.status === 'open') {
+              count++;
+            }
+          });
+        }
+      });
+      return count;
     },
     enabled: !!user?.email,
     refetchInterval: 10000,
@@ -141,10 +149,10 @@ export default function Header() {
             >
               <Archive className="w-4 h-4" />
               <span className="hidden sm:inline">Vault</span>
-              {/* Task 3: Open Items Badge */}
-              {openItemsCount > 0 && (
+              {/* Task 3: Open Tasks Badge */}
+              {openTasksCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
-                  {openItemsCount}
+                  {openTasksCount}
                 </span>
               )}
             </div>

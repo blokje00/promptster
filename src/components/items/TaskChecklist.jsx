@@ -67,8 +67,8 @@ export default function TaskChecklist({
       })
         .then(() => {
           queryClient.invalidateQueries({ queryKey: ['item', itemId] });
-          // Invalidate openItemsCount for Header badge
-          queryClient.invalidateQueries({ queryKey: ['openItemsCount'] });
+          // Invalidate openTasksCount for Header badge
+          queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'openTasksCount' });
         })
         .catch(() => {
           toast.error("Failed to update task status");
