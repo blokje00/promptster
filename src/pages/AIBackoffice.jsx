@@ -17,29 +17,29 @@ import RequireSubscription from "../components/auth/RequireSubscription";
 import { useAutosaveField } from "@/components/hooks/useAutosaveField";
 import UPSEPanel from "../components/upse/UPSEPanel";
 
-const getDefaultInstruction = (t) => t("defaultAIInstruction") || `Verbeter de volgende prompt technisch en taalkundig. Maak de tekst professioneler, duidelijker en beter gestructureerd. Behoud de originele intentie en inhoud, maar verbeter grammatica, spelling, en technische precisie. Geef alleen de verbeterde tekst terug, geen uitleg.`;
+const getDefaultInstruction = () => `Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.`;
 
-const DEFAULT_PERSONAL_PREFERENCES = `# Mijn Persoonlijke Development Voorkeuren
+const DEFAULT_PERSONAL_PREFERENCES = `# My Personal Development Preferences
 
-## Code Stijl
-- Naming: camelCase voor variabelen, PascalCase voor componenten
-- Async: Altijd async/await, nooit promise chains
-- Error handling: Try-catch rond alle async operations
-- Comments: JSDoc voor functies, inline voor complexe logica
+## Code Style
+- Naming: camelCase for variables, PascalCase for components
+- Async: Always async/await, never promise chains
+- Error handling: Try-catch around all async operations
+- Comments: JSDoc for functions, inline for complex logic
 
-## UI/UX Filosofie
-- Design: Minimalistisch, focus op usability
-- Icons: Lucide React (eerste keuze)
-- Responsiveness: Mobile-first aanpak
+## UI/UX Philosophy
+- Design: Minimalist, focus on usability
+- Icons: Lucide React (first choice)
+- Responsiveness: Mobile-first approach
 - Accessibility: WCAG 2.1 AA minimum
 
-## Testing & Validatie
-- Coverage target: 80% voor kritische paden
-- Edge cases: Altijd minimaal 3 edge cases per feature
+## Testing & Validation
+- Coverage target: 80% for critical paths
+- Edge cases: Always at least 3 edge cases per feature
 
-## Taak Structuur
-- Prioriteit labels: Kritisch/Hoog/Medium/Laag
-- Taak format: Wat/Waar/Waarom structuur
+## Task Structure
+- Priority labels: Critical/High/Medium/Low
+- Task format: What/Where/Why structure
 `;
 
 export default function AIBackoffice() {
@@ -103,7 +103,7 @@ export default function AIBackoffice() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projectStructures'] });
-      toast.success("Project structuur opgeslagen");
+      toast.success("Project structure saved");
     },
   });
 
@@ -154,9 +154,9 @@ export default function AIBackoffice() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['aiSettings'] });
-      toast.success(t("aiSettingsSaved") || "AI instellingen opgeslagen");
-    },
-  });
+      toast.success("AI settings saved");
+      },
+      });
 
   const handleSave = () => {
     saveMutation.mutate({
@@ -173,11 +173,11 @@ export default function AIBackoffice() {
     try {
       await base44.auth.updateMe({ personal_preferences_markdown: personalPreferences });
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      toast.success(t("preferencesSaved") || "Persoonlijke voorkeuren opgeslagen");
+      toast.success("Personal preferences saved");
       // Clear draft after successful save
       resetPersonalPreferences();
     } catch (error) {
-      toast.error(t("preferencesSaveFailed") || "Kon voorkeuren niet opslaan");
+      toast.error("Could not save preferences");
     } finally {
       setIsSavingPreferences(false);
     }
@@ -189,20 +189,20 @@ export default function AIBackoffice() {
       <div className="max-w-5xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            {t("aiSettings")}
+            AI Settings
           </h1>
-          <p className="text-slate-600 mt-1">{t("configureAI")}</p>
+          <p className="text-slate-600 mt-1">Configure how the AI improvement feature works</p>
         </div>
 
         <Tabs defaultValue="settings" className="space-y-6">
           <TabsList className="bg-slate-100">
             <TabsTrigger value="settings" className="data-[state=active]:bg-white">
               <Settings className="w-4 h-4 mr-2" />
-              Instellingen
+              Settings
             </TabsTrigger>
             <TabsTrigger value="upse" className="data-[state=active]:bg-white">
               <FolderTree className="w-4 h-4 mr-2" />
-              Project Structuur (UPSE)
+              Project Structure (UPSE)
             </TabsTrigger>
           </TabsList>
 
@@ -211,7 +211,7 @@ export default function AIBackoffice() {
               {/* Language Selection Card */}
               <Card className="mb-6">
                 <CardHeader>
-                  <CardTitle>{t("languageSelection")}</CardTitle>
+                  <CardTitle>Language Selection</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <LanguageSelector />
@@ -223,23 +223,23 @@ export default function AIBackoffice() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <User className="w-5 h-5 text-blue-500" />
-                    {t("personalPreferences")}
+                    Personal Preferences
                   </CardTitle>
                   <CardDescription>
-                    {t("personalPreferencesDesc")}
+                    Your reusable preferences that are automatically added to Multi-Step prompts.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label>{t("preferencesMarkdown")}</Label>
+                    <Label>Preferences (Markdown)</Label>
                     <Textarea
                       value={personalPreferences}
                       onChange={(e) => setPersonalPreferences(e.target.value)}
-                      placeholder="# Mijn Persoonlijke Voorkeuren&#10;&#10;## Code Stijl&#10;- Naming: camelCase..."
+                      placeholder="# My Personal Preferences&#10;&#10;## Code Style&#10;- Naming: camelCase..."
                       className="min-h-[300px] font-mono text-sm"
                     />
                     <p className="text-xs text-slate-500">
-                      {t("preferencesHelp")}
+                      Define your personal code style, UI/UX philosophy, testing preferences, etc. These are saved once and reused in all your prompts.
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -247,18 +247,18 @@ export default function AIBackoffice() {
                       onClick={handleSavePersonalPreferences} 
                       disabled={isSavingPreferences}
                       className="bg-blue-600 hover:bg-blue-700"
-                      title={t("savePreferences")}
+                      title="Save Preferences"
                     >
                       <Save className="w-4 h-4 mr-2" />
-                      {isSavingPreferences ? t("saving") : t("savePreferences")}
+                      {isSavingPreferences ? "Saving..." : "Save Preferences"}
                     </Button>
                     <Button 
                       variant="outline" 
                       onClick={() => setPersonalPreferences(DEFAULT_PERSONAL_PREFERENCES)}
-                      title={t("loadExample")}
+                      title="Load Example"
                     >
                       <FileText className="w-4 h-4 mr-2" />
-                      {t("loadExample")}
+                      Load Example
                     </Button>
                   </div>
                 </CardContent>
@@ -269,17 +269,17 @@ export default function AIBackoffice() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Lightbulb className="w-5 h-5 text-yellow-500" />
-                    {t("aiContextSuggestions")}
+                    AI Context Suggestions
                   </CardTitle>
                   <CardDescription>
-                    {t("aiContextSuggestionsDesc")}
+                    Automatic AI suggestions for Page, Component and Domain while typing tasks.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium">{t("enableAISuggestions")}</p>
-                      <p className="text-xs text-slate-500">{t("enableAISuggestionsDesc")}</p>
+                      <p className="text-sm font-medium">Enable AI suggestions</p>
+                      <p className="text-xs text-slate-500">Get automatic suggested context based on your text</p>
                     </div>
                     <Switch
                       checked={enableContextSuggestions}
@@ -293,33 +293,33 @@ export default function AIBackoffice() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-purple-500" />
-                    {t("improveWithAI")} - {t("aiInstruction")}
+                    Improve with AI - Instruction
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="space-y-2">
-                    <Label>{t("aiInstruction")}</Label>
+                    <Label>AI Instruction</Label>
                     <Textarea
                       value={instruction}
                       onChange={(e) => setInstruction(e.target.value)}
-                      placeholder="Instructie voor de AI..."
+                      placeholder="Instruction for the AI..."
                       className="min-h-[200px] font-mono text-sm"
                     />
                     <p className="text-xs text-slate-500">
-                      {t("aiInstructionDesc")}
+                      This instruction is used when you click "Improve with AI". The original prompt is automatically added.
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label>{t("modelPreference")}</Label>
+                    <Label>Model Preference</Label>
                     <Select value={modelPreference} onValueChange={setModelPreference}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="default">{t("standard")}</SelectItem>
-                        <SelectItem value="creative">{t("creative")}</SelectItem>
-                        <SelectItem value="precise">{t("precise")}</SelectItem>
+                        <SelectItem value="default">Standard</SelectItem>
+                        <SelectItem value="creative">Creative (more variation)</SelectItem>
+                        <SelectItem value="precise">Precise (conservative)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -331,13 +331,13 @@ export default function AIBackoffice() {
                       className="bg-indigo-600 hover:bg-indigo-700"
                     >
                       <Save className="w-4 h-4 mr-2" />
-                      {saveMutation.isPending ? (t("saving") || "Opslaan...") : t("save")}
+                      {saveMutation.isPending ? "Saving..." : "Save"}
                     </Button>
                     <Button 
                       variant="outline" 
-                      onClick={() => setInstruction(getDefaultInstruction(t))}
+                      onClick={() => setInstruction(getDefaultInstruction())}
                     >
-                      {t("resetToDefault")}
+                      Reset to default
                     </Button>
                   </div>
                 </CardContent>
