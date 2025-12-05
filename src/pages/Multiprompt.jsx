@@ -209,7 +209,8 @@ export default function Multiprompt() {
     toggleSelection
   } = useThoughts({ 
     dbThoughts, 
-    selectedProjectId
+    selectedProjectId,
+    onExternalThoughts: handleExternalThoughts
   });
 
 
@@ -260,18 +261,26 @@ export default function Multiprompt() {
     navigate(location.pathname, { replace: true, state: null });
   }, [incomingProjectId, navigate, location.pathname]);
 
-  // Auto-select retry thoughts when they arrive in dbThoughts
-  useEffect(() => {
-    if (retryThoughtIds.length === 0) return;
-    // Wait for thoughts to be loaded, then select them
-    const retryIds = retryThoughtIds.filter((id) => 
-      dbThoughts.some((t) => t.id === id)
-    );
-    if (retryIds.length > 0) {
-      setSelectedThoughts((prev) => [...new Set([...prev, ...retryIds])]);
-      toast.info(`${retryIds.length} retry tasks reopened`);
+  // Handle external thought updates (like from retry or other users)
+  const handleExternalThoughts = (newItems) => {
+    // If we have pending retries, check if any new items match
+    if (retryThoughtIds.length > 0) {
+      const matchingRetries = newItems.filter(t => retryThoughtIds.includes(t.id));
+      
+      if (matchingRetries.length > 0) {
+        // Add to selection
+        setSelectedThoughts(prev => [...new Set([...prev, ...matchingRetries.map(t => t.id)])]);
+        toast.info(`${matchingRetries.length} retry tasks reopened`);
+      }
     }
-  }, [retryThoughtIds, dbThoughts, setSelectedThoughts]);
+  };
+
+  // Sanity check for empty results when expecting retries
+  useEffect(() => {
+    if (retryThoughtIds.length > 0 && dbThoughts.length === 0 && !queryClient.isFetching()) {
+      console.warn("Expected retry tasks but query returned empty. Check filters.");
+    }
+  }, [retryThoughtIds, dbThoughts, queryClient]);
 
   // Clear autosave helper
   const clearThoughtDraft = () => {
