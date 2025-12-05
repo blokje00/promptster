@@ -13,7 +13,7 @@ import { toast } from "sonner";
  * @param {string} params.selectedProjectId - Actief project ID
  * @returns {Object} Thoughts state en handlers
  */
-export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser, onExternalThoughts }) {
+export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser, idsToAutoSelect = [] }) {
   const queryClient = useQueryClient();
   const [localThoughts, setLocalThoughts] = useState([]);
   const [selectedThoughts, setSelectedThoughts] = useState([]);
@@ -50,18 +50,32 @@ export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser, o
       // Add new thoughts from DB that aren't in local state
       const localIds = new Set(filteredPrev.map(t => t.id));
       const newItems = activeDbThoughts.filter(t => !localIds.has(t.id));
-      
-      // Notify parent about new items from external sources (DB)
-      if (newItems.length > 0 && onExternalThoughts) {
-        onExternalThoughts(newItems);
-      }
-
       return newItems.length > 0 ? [...newItems, ...filteredPrev] : filteredPrev;
     });
     
     // Also clean up selected thoughts that no longer exist
     setSelectedThoughts(prev => prev.filter(id => dbIdSet.has(id)));
-  }, [dbThoughts, onExternalThoughts]);
+  }, [dbThoughts]);
+
+  // Auto-select specific IDs when they appear (e.g. retried tasks)
+  useEffect(() => {
+    if (!idsToAutoSelect || idsToAutoSelect.length === 0) return;
+    
+    // Find items that should be selected but aren't yet
+    // Using a Set for O(1) lookup
+    const selectedSet = new Set(selectedThoughts);
+    const itemsToSelect = localThoughts.filter(t => 
+      idsToAutoSelect.includes(t.id) && !selectedSet.has(t.id)
+    );
+    
+    if (itemsToSelect.length > 0) {
+      const newIds = itemsToSelect.map(t => t.id);
+      setSelectedThoughts(prev => [...prev, ...newIds]);
+      toast.info(`${newIds.length} retry tasks reopened`);
+      // Mark as manual selection so they stick around if project changes (though retries usually set project too)
+      hasManualSelectionRef.current = true; 
+    }
+  }, [localThoughts, idsToAutoSelect, selectedThoughts]);
 
   // Reset manual selection flag when project changes
   useEffect(() => {
