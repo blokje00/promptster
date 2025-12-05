@@ -25,7 +25,7 @@ export const useMultipromptData = ({
       if (!currentUser?.email) return [];
 
       // Simpele filter - Base44 API ondersteunt geen $or/$exists queries
-      const filter = {};
+      const filter = { is_deleted: false };
 
       if (selectedProjectId) {
         filter.project_id = selectedProjectId;
@@ -35,9 +35,7 @@ export const useMultipromptData = ({
 
       const result = await base44.entities.Thought.filter(filter, "-created_date");
       
-      // Client-side filter: verwijder deleted items
-      const filtered = (result || []).filter(item => !item.is_deleted);
-      return filtered;
+      return result || [];
     },
     enabled: !!currentUser?.email,
     staleTime: 0, // Always fetch fresh on mount/invalidate
