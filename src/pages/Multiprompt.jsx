@@ -489,7 +489,7 @@ export default function Multiprompt() {
     } catch (error) {
       // Rollback on error
       updateThought(thoughtId, { focus_type: previousFocus });
-      toast.error(t("updateFailed") || "Update mislukt");
+      toast.error("Update failed");
     }
   };
 
@@ -524,7 +524,7 @@ export default function Multiprompt() {
     } catch (error) {
       // Rollback on error
       updateThought(thoughtId, previousContext);
-      toast.error(t("updateFailed") || "Update mislukt");
+      toast.error("Update failed");
     }
   };
 
@@ -544,7 +544,7 @@ export default function Multiprompt() {
     } catch (error) {
       // Rollback on error
       updateThought(thoughtId, { project_id: previousProjectId });
-      toast.error(t("updateFailed") || "Update mislukt");
+      toast.error("Update failed");
     }
   };
 
@@ -668,7 +668,7 @@ Geen uitleg, alleen de JSON.`;
     if (!editingProject) return;
     const prompt = generateMappingPrompt(editingProject.name);
     navigator.clipboard.writeText(prompt);
-    toast.success("✓ Gekopieerd! Plak in AI, kopieer JSON terug en plak hieronder", { duration: 5000 });
+    toast.success("✓ Copied! Paste in AI, copy JSON back and paste below", { duration: 5000 });
   };
 
   // toggleThoughtSelection is now toggleSelection from hook
