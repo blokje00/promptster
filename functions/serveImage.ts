@@ -4,6 +4,12 @@ Deno.serve(async (req) => {
     try {
         const base44 = createClientFromRequest(req);
         
+        // TAAK-8: Authentication check before generating signed URL
+        const user = await base44.auth.me();
+        if (!user) {
+            return Response.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        
         const url = new URL(req.url);
         const uri = url.searchParams.get("uri");
 

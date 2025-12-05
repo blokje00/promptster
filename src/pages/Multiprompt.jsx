@@ -1237,8 +1237,8 @@ ${generatedPrompt}`,
         {/* Banner notification */}
         {showBanner && (
           <div className="mb-6 p-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg shadow-lg animate-in fade-in slide-in-from-top-4">
-            <p className="text-sm font-medium">
-              ✓ De Multi-prompt is gekopieerd, plan in je project en vink de taken straks af via de opgeslagen versie van deze multi-prompt in Vault.
+            <p className="text-sm font-medium text-center">
+              ✓ The Multi-prompt has been copied. Paste it in your project and check off the tasks later via the saved version in Vault.
             </p>
           </div>
         )}

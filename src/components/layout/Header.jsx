@@ -66,7 +66,7 @@ export default function Header() {
   }, [currentPath, navigate]);
   
   const handleLogoClick = () => {
-    window.location.reload();
+    window.location.href = createPageUrl("Multiprompt");
   };
 
   return (

@@ -412,17 +412,23 @@ export default function AdminSupportTickets() {
                 </div>
 
                 {/* Quick reply link */}
-                <div className="pt-4 border-t">
+                <div className="pt-4 border-t flex gap-2">
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className="flex-1"
                     onClick={() => {
                       window.open(`mailto:${selectedTicket.user_email}?subject=Re: ${encodeURIComponent(selectedTicket.subject)}`, '_blank');
                     }}
                   >
                     <Mail className="w-4 h-4 mr-2" />
-                    Reageer via email
+                    Reply via email
                   </Button>
+                  <TicketStatusChanger 
+                    ticket={selectedTicket} 
+                    onStatusChange={(newStatus) => {
+                      handleStatusChange(selectedTicket.id, newStatus);
+                    }}
+                  />
                 </div>
               </div>
             )}
