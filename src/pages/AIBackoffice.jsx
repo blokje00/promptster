@@ -189,29 +189,12 @@ export default function AIBackoffice() {
   const handleFixVault = async () => {
     setIsFixing(true);
     try {
-      const { invoke } = base44.functions; // Assuming base44.functions.invoke exists or similar
-      // Check how to call functions. Instructions say: 
-      // "import { someFunction } from '@/functions/someFunction'; const response = await someFunction(...)"
-      // But we created it dynamically. 
-      // If platform V2, we can import.
-      // Let's try dynamic import or just using the SDK if available.
-      // The instructions say "THE ONLY WAY TO USE A FUNCTION ... is to import it".
-      // But I can't add an import to the top easily without reading the whole file again or using find_replace carefully.
-      // Wait, I can use base44.functions.invoke('functionName') if the SDK supports it.
-      // The instructions say: "base44.asServiceRole.functions - Call backend functions." (Admin only?)
-      // "You can invoke another backend function via the SDK: const res = await base44.functions.invoke('myFunction', { foo: 'bar' });"
-      // So `base44.functions.invoke` should work for user-scoped calls too if exposed.
-      
-      // Let's try to import it dynamically or assume invoke works.
-      // In `functions/exportTasks.js` example: `const { data } = await base44.functions.invoke('exportTasks');`
-      // So yes, `base44.functions.invoke` is the way.
-      
       const res = await base44.functions.invoke('fixVaultTasks');
-      const data = res.data || res; // Handle axios response or direct data
+      const data = res.data || res;
       
       if (data.success) {
         toast.success(data.message);
-        queryClient.invalidateQueries({ queryKey: ['openTasksCount'] }); // Refresh header badge
+        queryClient.invalidateQueries({ queryKey: ['openTasksCount'] });
       } else {
         toast.error("Fix failed: " + (data.error || "Unknown error"));
       }
@@ -221,6 +204,44 @@ export default function AIBackoffice() {
     } finally {
       setIsFixing(false);
     }
+  };
+
+  const HardDeleteButton = () => {
+    const [isRunning, setIsRunning] = useState(false);
+    
+    const runCleanup = async () => {
+      if (!confirm("Are you sure? This will PERMANENTLY delete old tasks from the recycle bin.")) return;
+      
+      setIsRunning(true);
+      try {
+        const res = await base44.functions.invoke('hardDeleteOldTasks');
+        const data = res.data || res;
+        
+        if (data.success) {
+          toast.success(data.message);
+        } else {
+          toast.error("Cleanup failed: " + (data.error || "Unknown error"));
+        }
+      } catch (error) {
+        toast.error("Failed to run cleanup");
+      } finally {
+        setIsRunning(false);
+      }
+    };
+
+    return (
+      <div className="flex items-center gap-3">
+        <Button 
+          onClick={runCleanup} 
+          disabled={isRunning}
+          variant="destructive"
+          size="sm"
+        >
+          {isRunning ? "Cleaning..." : "Run Hard Delete Cleanup (>30 days)"}
+        </Button>
+        <span className="text-xs text-slate-500">Admin only</span>
+      </div>
+    );
   };
 
   return (
@@ -263,6 +284,11 @@ export default function AIBackoffice() {
                   <p className="text-xs text-orange-600 mt-2">
                     Use this once to mark all pending tasks as success and reset the Vault counter.
                   </p>
+                  
+                  <div className="mt-4 border-t border-orange-200 pt-4">
+                    <h4 className="text-sm font-bold text-orange-800 mb-2">Hard Delete Cleanup</h4>
+                    <HardDeleteButton />
+                  </div>
                 </CardContent>
               </Card>
 
