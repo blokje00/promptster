@@ -210,7 +210,7 @@ export default function Multiprompt() {
   } = useThoughts({ 
     dbThoughts, 
     selectedProjectId,
-    onExternalThoughts: handleExternalThoughts
+    idsToAutoSelect: retryThoughtIds
   });
 
 
@@ -261,19 +261,7 @@ export default function Multiprompt() {
     navigate(location.pathname, { replace: true, state: null });
   }, [incomingProjectId, navigate, location.pathname]);
 
-  // Handle external thought updates (like from retry or other users)
-  const handleExternalThoughts = (newItems) => {
-    // If we have pending retries, check if any new items match
-    if (retryThoughtIds.length > 0) {
-      const matchingRetries = newItems.filter(t => retryThoughtIds.includes(t.id));
-      
-      if (matchingRetries.length > 0) {
-        // Add to selection
-        setSelectedThoughts(prev => [...new Set([...prev, ...matchingRetries.map(t => t.id)])]);
-        toast.info(`${matchingRetries.length} retry tasks reopened`);
-      }
-    }
-  };
+
 
   // Sanity check for empty results when expecting retries
   useEffect(() => {
