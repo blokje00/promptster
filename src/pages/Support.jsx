@@ -46,7 +46,7 @@ export default function Support() {
     e.preventDefault();
     
     if (!subject.trim() || !message.trim()) {
-      toast.error("Vul alle verplichte velden in");
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -57,13 +57,13 @@ export default function Support() {
         category: category,
         subject: subject.trim(),
         message: message.trim(),
-        user_email: currentUser?.email || "onbekend",
-        user_name: currentUser?.full_name || "Onbekend",
+        user_email: currentUser?.email || "unknown",
+        user_name: currentUser?.full_name || "Unknown",
         status: "open"
       });
 
       setSubmitted(true);
-      toast.success("Support verzoek verzonden!");
+      toast.success("Support request submitted!");
       
       // Clear autosave drafts and reset form after 3 seconds
       resetSubject();
@@ -74,7 +74,7 @@ export default function Support() {
       }, 3000);
     } catch (error) {
       console.error("Support error:", error);
-      toast.error("Kon support verzoek niet verzenden: " + (error.message || "Onbekende fout"));
+      toast.error("Could not submit support request: " + (error.message || "Unknown error"));
     } finally {
       setIsSubmitting(false);
     }
@@ -97,7 +97,7 @@ export default function Support() {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 Support
               </h1>
-              <p className="text-slate-600 mt-1">We helpen je graag verder</p>
+              <p className="text-slate-600 mt-1">We're happy to help</p>
             </div>
           </div>
 
@@ -106,10 +106,10 @@ export default function Support() {
               <CardContent className="p-8 text-center">
                 <CheckCircle className="w-16 h-16 mx-auto text-green-600 mb-4" />
                 <h3 className="text-xl font-semibold text-green-800 mb-2">
-                  Bericht verzonden!
+                  Message sent!
                 </h3>
                 <p className="text-green-700">
-                  We hebben je verzoek ontvangen en nemen zo snel mogelijk contact op.
+                  We have received your request and will contact you as soon as possible.
                 </p>
               </CardContent>
             </Card>
@@ -118,52 +118,52 @@ export default function Support() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MessageCircle className="w-5 h-5 text-indigo-600" />
-                  Nieuwe Support Aanvraag
+                  New Support Request
                 </CardTitle>
                 <CardDescription>
-                  Meld een bug, betalingsprobleem of dien een feature verzoek in
+                  Report a bug, payment issue or submit a feature request
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-2">
-                    <Label htmlFor="category">Categorie *</Label>
+                    <Label htmlFor="category">Category *</Label>
                     <Select value={category} onValueChange={setCategory}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="bug">🐛 Bug / Fout</SelectItem>
-                        <SelectItem value="payment">💳 Betalingsprobleem</SelectItem>
-                        <SelectItem value="feature">✨ Feature Verzoek</SelectItem>
-                        <SelectItem value="other">❓ Overig</SelectItem>
+                        <SelectItem value="bug">🐛 Bug / Error</SelectItem>
+                        <SelectItem value="payment">💳 Payment Issue</SelectItem>
+                        <SelectItem value="feature">✨ Feature Request</SelectItem>
+                        <SelectItem value="other">❓ Other</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="subject">Onderwerp *</Label>
+                    <Label htmlFor="subject">Subject *</Label>
                     <Input
                       id="subject"
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      placeholder="Korte beschrijving van je verzoek..."
+                      placeholder="Short description of your request..."
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="message">Beschrijving *</Label>
+                    <Label htmlFor="message">Description *</Label>
                     <Textarea
                       id="message"
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Geef een gedetailleerde beschrijving van je probleem of verzoek..."
+                      placeholder="Give a detailed description of your problem or request..."
                       className="min-h-[200px]"
                       required
                     />
                     <p className="text-xs text-slate-500">
-                      Tip: Voeg zoveel mogelijk details toe voor snellere hulp
+                      Tip: Add as many details as possible for faster help
                     </p>
                   </div>
 
@@ -175,21 +175,21 @@ export default function Support() {
                     {isSubmitting ? (
                       <>
                         <Send className="w-4 h-4 mr-2 animate-pulse" />
-                        Verzenden...
+                        Sending...
                       </>
                     ) : (
                       <>
                         <Send className="w-4 h-4 mr-2" />
-                        Verstuur Support Verzoek
+                        Submit Support Request
                       </>
                     )}
                   </Button>
                 </form>
 
                 <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
-                  <h4 className="font-semibold text-green-800 mb-2">✓ Support systeem actief</h4>
+                  <h4 className="font-semibold text-green-800 mb-2">✓ Support system active</h4>
                   <p className="text-sm text-green-700">
-                    Je verzoek wordt opgeslagen en we nemen zo snel mogelijk contact met je op via <strong>{currentUser?.email}</strong>.
+                    Your request will be saved and we will contact you as soon as possible via <strong>{currentUser?.email}</strong>.
                   </p>
                 </div>
               </CardContent>
