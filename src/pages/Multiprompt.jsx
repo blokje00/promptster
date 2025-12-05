@@ -1083,11 +1083,14 @@ ${generatedPrompt}`,
   };
 
   const handleSaveAsPrompt = async () => {
+    // Store thoughts to delete before any state changes
+    const thoughtsToDelete = [...selectedThoughts];
+    
     try {
       const finalPrompt = improvedPrompt || generatedPrompt;
       const defaultTitle = selectedProject 
         ? `[${selectedProject.name}] ${new Date().toLocaleString('en-US')}`
-                    : `Multi-Step ${new Date().toLocaleString('en-US')}`;
+        : `Multi-Step ${new Date().toLocaleString('en-US')}`;
         
       const title = promptTitle.trim() || defaultTitle;
 
@@ -1109,7 +1112,7 @@ ${generatedPrompt}`,
         title: title,
         type: "multiprompt",
         content: finalPrompt,
-        used_thoughts: selectedThoughts,
+        used_thoughts: thoughtsToDelete,
         start_template_id: startTemplateId || null,
         end_template_id: endTemplateId || null,
         task_checks: taskChecks,
@@ -1117,8 +1120,7 @@ ${generatedPrompt}`,
         status: "open"
       });
       
-      // 2. Soft-delete ONLY selected/used thoughts (move to recycle bin)
-      const thoughtsToDelete = [...selectedThoughts];
+      // 2. Soft-delete selected thoughts (move to recycle bin)
       if (thoughtsToDelete.length > 0) {
         await Promise.all(thoughtsToDelete.map(id => 
           base44.entities.Thought.update(id, { 
@@ -1126,21 +1128,15 @@ ${generatedPrompt}`,
             deleted_at: new Date().toISOString() 
           })
         ));
-        // Clear from local state
-        setLocalThoughts(prev => prev.filter(t => !thoughtsToDelete.includes(t.id)));
-        setSelectedThoughts([]);
 
-        // Force refresh thoughts query to ensure sync
+        // Invalidate and refetch queries - DB is source of truth
         await queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-        await queryClient.refetchQueries({ queryKey: ['thoughts'] });
-
-        // Also refresh deleted count for recycle bin
-        queryClient.invalidateQueries({ queryKey: ['deletedThoughtsCount'] });
+        await queryClient.invalidateQueries({ queryKey: ['deletedThoughtsCount'] });
+        await queryClient.refetchQueries({ queryKey: ['thoughts', currentUser?.email] });
       }
 
       // 3. Close dialog and scroll to top
       setShowControlDialog(false);
-      resetBuilder();
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (e) {
