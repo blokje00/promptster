@@ -197,17 +197,23 @@ export default function Multiprompt() {
   // Add Thought
   const handleAddThought = () => {
     if (!newThoughtContent.trim() && newThoughtImages.length === 0) return;
+    if (!currentUser?.email) {
+      toast.error("Je moet ingelogd zijn om een task toe te voegen");
+      return;
+    }
 
     createThought.mutate({
       content: newThoughtContent.trim(),
       project_id: selectedProjectId || null,
+      is_deleted: false, // Expliciet false voor filter
       image_urls: newThoughtImages,
       is_selected: true, // Auto-select new thoughts
       focus_type: newThoughtFocus,
       target_page: newThoughtContext.target_page,
       target_component: newThoughtContext.target_component,
       target_domain: newThoughtContext.target_domain,
-      ai_prediction: newThoughtContext.ai_prediction
+      ai_prediction: newThoughtContext.ai_prediction,
+      created_by: currentUser.email // KRITIEK: nodig voor filter in query
     }, {
       onSuccess: () => {
         setNewThoughtContent(""); // Clear input

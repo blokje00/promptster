@@ -76,10 +76,16 @@ export const useMultipromptData = ({
 
   const createThought = useMutation({
     mutationFn: (data) => base44.entities.Thought.create(data),
-    onSuccess: (newThought) => {
-      invalidateAllThoughts();
-      setSelectedThoughtIds(prev => [...prev, newThought.id]);
+    onSuccess: async (newThought) => {
+      await invalidateAllThoughts(); // Wacht op invalidatie
+      if (newThought?.id) {
+        setSelectedThoughtIds(prev => [...prev, newThought.id]);
+      }
     },
+    onError: (error) => {
+      console.error("Failed to create thought:", error);
+      toast.error("Kon task niet aanmaken. Probeer opnieuw.");
+    }
   });
 
   const updateThought = useMutation({
