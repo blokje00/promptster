@@ -1008,17 +1008,20 @@ ${generatedPrompt}`,
 
   /**
    * Kopieert prompt, slaat op, verwijdert taken en toont banner.
+   * Uses soft-delete (is_deleted=true) which is the same pattern as deleteThought mutation.
    */
   const handleCopyPrompt = async () => {
     const textToCopy = improvedPrompt || generatedPrompt;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     
-    // Direct save logic
+    // Store thoughts to delete before any state changes
+    const thoughtsToDelete = [...selectedThoughts];
+    
     try {
       const defaultTitle = selectedProject 
         ? `[${selectedProject.name}] ${new Date().toLocaleString('en-US')}`
-                      : `Multi-Task ${new Date().toLocaleString('en-US')}`;
+        : `Multi-Task ${new Date().toLocaleString('en-US')}`;
         
       // Save template preferences
       if (selectedProjectId && (startTemplateId || endTemplateId)) {
@@ -1032,12 +1035,12 @@ ${generatedPrompt}`,
         }
       }
 
-      // Create item
+      // Create item first
       await createMultipromptMutation.mutateAsync({
         title: defaultTitle,
         type: "multiprompt",
         content: textToCopy,
-        used_thoughts: selectedThoughts,
+        used_thoughts: thoughtsToDelete,
         start_template_id: startTemplateId || null,
         end_template_id: endTemplateId || null,
         task_checks: generateTaskChecks(),
@@ -1045,10 +1048,9 @@ ${generatedPrompt}`,
         status: "open"
       });
       
-      // Soft-delete ONLY selected/used thoughts (move to recycle bin)
-      const thoughtsToDelete = [...selectedThoughts];
+      // Soft-delete selected thoughts (move to recycle bin) - same pattern as deleteThought mutation
       if (thoughtsToDelete.length > 0) {
-        // First update in DB
+        // Update all thoughts in DB to mark as deleted
         await Promise.all(thoughtsToDelete.map(id => 
           base44.entities.Thought.update(id, { 
             is_deleted: true, 
@@ -1056,22 +1058,21 @@ ${generatedPrompt}`,
           })
         ));
 
-        // Then clear from local state
-        setLocalThoughts(prev => prev.filter(t => !thoughtsToDelete.includes(t.id)));
-        setSelectedThoughts([]);
-
-        // Force refresh thoughts query to ensure sync
+        // Invalidate and refetch queries BEFORE clearing local state
+        // This ensures the query refetches from DB with the filter (is_deleted: false)
         await queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-        await queryClient.refetchQueries({ queryKey: ['thoughts'] });
-
-        // Also refresh deleted count for recycle bin
-        queryClient.invalidateQueries({ queryKey: ['deletedThoughtsCount'] });
+        
+        // Also refresh deleted count for recycle bin header badge
+        await queryClient.invalidateQueries({ queryKey: ['deletedThoughtsCount'] });
+        
+        // Force refetch to get fresh data from server
+        await queryClient.refetchQueries({ queryKey: ['thoughts', currentUser?.email] });
       }
 
-      // Show banner, reset, scroll to top
+      // Show banner and scroll to top
       setShowBanner(true);
       setTimeout(() => setShowBanner(false), 10000);
-      resetBuilder();
+      setCopied(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (e) {
