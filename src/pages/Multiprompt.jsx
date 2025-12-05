@@ -1247,7 +1247,7 @@ ${generatedPrompt}`,
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
             Multi-Task Builder
           </h1>
-          <p className="text-slate-600 mt-2">{t("collectThoughts")}</p>
+          <p className="text-slate-600 mt-2">Collect thoughts and build comprehensive multi-task prompts</p>
         </div>
 
         {/* Project Selector Bar */}
@@ -1509,15 +1509,15 @@ ${generatedPrompt}`,
           <TabsList className="bg-slate-100">
             <TabsTrigger value="build" className="data-[state=active]:bg-white">
               <Layers className="w-4 h-4 mr-2" />
-              {t("buildPrompt")}
+              Build Prompt
             </TabsTrigger>
             <TabsTrigger value="templates" className="data-[state=active]:bg-white">
               <FileText className="w-4 h-4 mr-2" />
-              {t("templates")}
+              Templates
             </TabsTrigger>
             <TabsTrigger value="projects" className="data-[state=active]:bg-white">
               <FolderOpen className="w-4 h-4 mr-2" />
-              {t("myProjects")}
+              My Projects
             </TabsTrigger>
           </TabsList>
 
@@ -1528,9 +1528,9 @@ ${generatedPrompt}`,
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Lightbulb className="w-5 h-5 text-yellow-500" />
-                        {t("tasks")}
+                        <div className="flex items-center gap-2">
+                          <Lightbulb className="w-5 h-5 text-yellow-500" />
+                          Tasks
                         {selectedProject && (
                           <Badge className={`${projectColors[selectedProject.color]} text-white ml-2`}>
                             {selectedProject.name}
@@ -1550,7 +1550,7 @@ ${generatedPrompt}`,
                       <div className={`border-2 rounded-lg focus-within:border-indigo-400 transition-all bg-white ${selectedProject ? `border-dashed ${projectBorderColors[selectedProject.color]}` : 'border-slate-200'}`}>
                         <Textarea
                           ref={newThoughtInputRef}
-                          placeholder={t("taskPlaceholder")}
+                          placeholder="Type task and/or drop image"
                           value={newThought}
                           onChange={(e) => setNewThought(e.target.value)}
                           onPaste={handleNewThoughtPaste}
@@ -1656,10 +1656,10 @@ ${generatedPrompt}`,
                         onClick={handleAddThought} 
                         disabled={(!newThought.trim() && newThoughtImages.length === 0) || isProjectLimitReached}
                         className={`flex-1 ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'} hover:opacity-90 text-white transition-all`}
-                        title="Voeg deze taak toe aan je lijst"
+                        title="Add this task to your list"
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        {isProjectLimitReached ? (t("limitReached") || "Limiet bereikt") : "Task"}
+                        {isProjectLimitReached ? "Limit reached" : "Task"}
                       </Button>
 
                       {filteredThoughts.length > 0 && (
@@ -1671,12 +1671,12 @@ ${generatedPrompt}`,
                           {filteredThoughts.every(th => selectedThoughts.includes(th.id)) ? (
                             <>
                               <Square className="w-4 h-4 mr-2" />
-                              {t("deselectAll")}
+                              Deselect all
                             </>
                           ) : (
                             <>
                               <CheckSquare className="w-4 h-4 mr-2" />
-                              {t("selectAll")}
+                              Select all
                             </>
                           )}
                         </Button>
@@ -1684,11 +1684,11 @@ ${generatedPrompt}`,
 
                       <Select value={groupBy} onValueChange={setGroupBy}>
                         <SelectTrigger className="w-[130px]">
-                          <SelectValue placeholder="Groepeer" />
+                          <SelectValue placeholder="Group by" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="date">Op invoer</SelectItem>
-                          <SelectItem value="page">Pagina</SelectItem>
+                          <SelectItem value="date">By input</SelectItem>
+                          <SelectItem value="page">Page</SelectItem>
                           <SelectItem value="component">Component</SelectItem>
                         </SelectContent>
                       </Select>
@@ -1731,7 +1731,7 @@ ${generatedPrompt}`,
                             {provided.placeholder}
                             {filteredThoughts.length === 0 && (
                               <p className="text-center text-slate-400 py-8">
-                                {t("noTasksYet")}{selectedProject ? ` ${selectedProject.name}` : ''}. {t("startTyping")}
+                                No tasks yet{selectedProject ? ` for ${selectedProject.name}` : ''}. Start typing!
                               </p>
                             )}
                           </div>
@@ -1791,13 +1791,13 @@ ${generatedPrompt}`,
                 {/* Template Selection */}
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle>{t("templates")}</CardTitle>
+                    <CardTitle>Templates</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="text-sm font-medium text-slate-700 mb-2 block">
-                          {t("startText")}
+                          Start text
                         </label>
                         <Select value={startTemplateId || "none"} onValueChange={(val) => {
                           const newVal = val === "none" ? "" : val;
@@ -1824,7 +1824,7 @@ ${generatedPrompt}`,
                       
                       <div>
                         <label className="text-sm font-medium text-slate-700 mb-2 block">
-                          {t("endText")}
+                          End text
                         </label>
                         <Select value={endTemplateId || "none"} onValueChange={(val) => {
                           const newVal = val === "none" ? "" : val;
@@ -1871,7 +1871,7 @@ ${generatedPrompt}`,
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                      <span>{t("preview")}</span>
+                      <span>Preview</span>
                       <div className="flex flex-wrap gap-2">
                         <Link to={createPageUrl("AIBackoffice")}>
                           <Button variant="ghost" size="sm" className="text-slate-500">
@@ -1889,7 +1889,7 @@ ${generatedPrompt}`,
                           ) : (
                             <Sparkles className="w-4 h-4 sm:mr-2" />
                           )}
-                          <span className="hidden sm:inline">{isImproving ? t("improving") : t("improveWithAI")}</span>
+                          <span className="hidden sm:inline">{isImproving ? "Processing..." : "Improve with AI"}</span>
                         </Button>
                         {improvedPrompt && (
                           <Button
@@ -1917,20 +1917,20 @@ ${generatedPrompt}`,
                   <CardContent>
                     {improvedPrompt && (
                       <div className="mb-3">
-                        <Badge className="bg-green-100 text-green-700 mb-2">{t("aiImproved")}</Badge>
+                        <Badge className="bg-green-100 text-green-700 mb-2">AI Improved</Badge>
                       </div>
                     )}
                     <div className="bg-slate-900 rounded-xl relative group">
                       <div className="p-4 max-h-[400px] overflow-auto">
                         <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap">
-                          {improvedPrompt || generatedPrompt || t("selectTasksAndTemplates")}
+                          {improvedPrompt || generatedPrompt || "Select tasks and templates to see a preview..."}
                         </pre>
                       </div>
                       {(generatedPrompt || improvedPrompt) && (
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(improvedPrompt || generatedPrompt);
-                            toast.success(t("copied") || "Prompt gekopieerd!");
+                            toast.success("Prompt copied!");
                           }}
                           className="absolute top-2 right-2 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
                           title="Kopieer naar klembord"
@@ -1941,7 +1941,7 @@ ${generatedPrompt}`,
                     </div>
                     {!generatedPrompt && (
                       <p className="text-sm text-slate-500 mt-3 text-center">
-                        {t("selectTasksLeft")}
+                        Select tasks on the left and choose templates above
                       </p>
                     )}
                   </CardContent>
