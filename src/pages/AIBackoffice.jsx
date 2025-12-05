@@ -248,6 +248,24 @@ export default function AIBackoffice() {
 
           <TabsContent value="settings" className="space-y-6">
             <div className="max-w-3xl">
+              {/* Maintenance Card */}
+              <Card className="mb-6 border-orange-200 bg-orange-50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-orange-700">
+                    <Wrench className="w-5 h-5" />
+                    Maintenance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={handleFixVault} disabled={isFixing} className="bg-orange-600 hover:bg-orange-700 text-white">
+                    {isFixing ? "Fixing..." : "Fix Vault Data (Set all to Success)"}
+                  </Button>
+                  <p className="text-xs text-orange-600 mt-2">
+                    Use this once to mark all pending tasks as success and reset the Vault counter.
+                  </p>
+                </CardContent>
+              </Card>
+
               {/* Language Selection Removed (Task 6) */}
 
               {/* Personal Preferences Card */}
