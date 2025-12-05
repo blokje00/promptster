@@ -211,6 +211,7 @@ export default function TaskChecklist({
                   // Interactive Horizontal Buttons
                   <>
                     <button
+                      type="button" // Task 5: Prevent form submission
                       onClick={(e) => handleStatusChange(e, index, 'success')}
                       className={`p-1.5 rounded-md border transition-all ${
                         check.status === 'success' 
@@ -223,6 +224,7 @@ export default function TaskChecklist({
                     </button>
 
                     <button
+                      type="button" // Task 5: Prevent form submission
                       onClick={(e) => handleStatusChange(e, index, 'failed')}
                       className={`p-1.5 rounded-md border transition-all ${
                         check.status === 'failed' 
@@ -235,6 +237,7 @@ export default function TaskChecklist({
                     </button>
 
                     <button
+                      type="button" // Task 5: Prevent form submission
                       onClick={(e) => handleStatusChange(e, index, 'open')}
                       className={`p-1.5 rounded-md border transition-all ${
                         !check.status || check.status === 'open' || check.status === 'retried'

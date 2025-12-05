@@ -38,7 +38,26 @@ export default function Header() {
       return result?.length || 0;
     },
     enabled: !!user?.email,
-    refetchInterval: 5000, // Refresh every 5 seconds for accurate count
+    refetchInterval: 5000, 
+  });
+
+  // Task 3: Open Items Count for Vault
+  const { data: openItemsCount = 0 } = useQuery({
+    queryKey: ['openItemsCount', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return 0;
+      // Assuming 'open' status items or check pending logic. 
+      // "taken die nog geen status hebben gehad, cq open staan voor review"
+      // If this means Items in the vault with status 'open' OR pending checks.
+      // Checking 'status' field on Item entity.
+      const result = await base44.entities.Item.filter({ 
+        created_by: user.email,
+        status: 'open'
+      });
+      return result?.length || 0;
+    },
+    enabled: !!user?.email,
+    refetchInterval: 10000,
   });
 
   const handleLogout = async () => {
@@ -114,7 +133,7 @@ export default function Header() {
           
           <Link to={createPageUrl("Dashboard")}>
             <div 
-              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+              className={`relative flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
                 isVault 
                   ? 'bg-slate-800 text-white shadow-md' 
                   : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
@@ -122,6 +141,12 @@ export default function Header() {
             >
               <Archive className="w-4 h-4" />
               <span className="hidden sm:inline">Vault</span>
+              {/* Task 3: Open Items Badge */}
+              {openItemsCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
+                  {openItemsCount}
+                </span>
+              )}
             </div>
           </Link>
         </div>

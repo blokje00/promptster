@@ -48,6 +48,18 @@ export default function EditItem() {
         publish_reason: item.publish_reason || "",
         file_changes_feedback: item.file_changes_feedback || ""
       });
+
+      // Task 2: Handle scrolling logic
+      setTimeout(() => {
+        const hash = window.location.hash;
+        if (hash === '#checklist') {
+          const element = document.getElementById('task-checklist-section');
+          if (element) element.scrollIntoView({ behavior: 'smooth' });
+        } else if (hash === '#content') {
+          const element = document.getElementById('content-section');
+          if (element) element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 500); // Small delay to ensure rendering
     }
   }, [item]);
 
@@ -169,15 +181,17 @@ export default function EditItem() {
 
               {/* Task Checklist - alleen voor multiprompts */}
               {formData.type === 'multiprompt' && formData.task_checks && formData.task_checks.length > 0 && (
-                <TaskChecklist
-                  taskChecks={formData.task_checks}
-                  onTaskChecksChange={(newChecks) => handleInputChange('task_checks', newChecks)}
-                  itemId={itemId}
-                  projectId={formData.project_id}
-                />
+                <div id="task-checklist-section">
+                  <TaskChecklist
+                    taskChecks={formData.task_checks}
+                    onTaskChecksChange={(newChecks) => handleInputChange('task_checks', newChecks)}
+                    itemId={itemId}
+                    projectId={formData.project_id}
+                  />
+                </div>
               )}
 
-              <div className="space-y-2">
+              <div className="space-y-2" id="content-section">
                 <Label htmlFor="content">Content *</Label>
                 <Textarea id="content" value={formData.content} onChange={(e) => handleInputChange('content', e.target.value)} required className="min-h-[300px] font-mono text-sm" />
               </div>

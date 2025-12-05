@@ -406,6 +406,8 @@ export default function Multiprompt() {
     }
   });
 
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
   // Task 2: Quick Save (Auto-Generated Title)
   const handleQuickSave = async () => {
     const content = improvedPrompt || generatedPrompt;
@@ -416,6 +418,10 @@ export default function Multiprompt() {
         hour: '2-digit', minute: '2-digit' 
     }).replace(',', '');
     const autoTitle = `${selectedProject?.name || 'Multi-Task'} ${timestamp}`;
+
+    // Task 6: Show success on button
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 2000);
 
     createItemMutation.mutate({
       title: autoTitle,
@@ -490,6 +496,12 @@ export default function Multiprompt() {
                      className={!selectedProjectId ? "bg-slate-700" : ""}
                   >
                     All Projects
+                    {/* Task 4: Total tasks badge */}
+                    {thoughts.length > 0 && (
+                      <Badge variant="secondary" className="ml-2 bg-red-500 text-white hover:bg-red-600 border-0 px-1.5 py-0 h-4 text-[10px]">
+                        {thoughts.length}
+                      </Badge>
+                    )}
                   </Button>
                   {projects.map(p => (
                     <Button
@@ -582,10 +594,10 @@ export default function Multiprompt() {
                           <Button 
                             onClick={handleAddThought} 
                             disabled={isLimitReached}
-                            // Task 1: Ensure button color is full
+                            // Task 1: Rename + Add Task to + Task
                             className={`flex-1 text-white ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800 hover:bg-slate-900'} ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
-                            <Plus className="w-4 h-4 mr-2" /> {isLimitReached ? `Limit Reached (${maxThoughts})` : 'Add Task'}
+                            <Plus className="w-4 h-4 mr-2" /> {isLimitReached ? `Limit Reached (${maxThoughts})` : 'Task'}
                           </Button>
                           <Select value={groupBy} onValueChange={setGroupBy}>
                             <SelectTrigger className="w-[120px]"><SelectValue placeholder="Group" /></SelectTrigger>
@@ -717,18 +729,40 @@ export default function Multiprompt() {
                         </Button>
                         <Button 
                            size="sm" 
-                           className="bg-indigo-600 hover:bg-indigo-700" 
+                           className={`transition-all duration-300 ${saveSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
                            disabled={!generatedPrompt && !improvedPrompt}
                            onClick={handleQuickSave}
                         >
-                          <Copy className="w-4 h-4 mr-1" /> Copy & Save
+                          {saveSuccess ? (
+                            <>
+                              <CheckCircle className="w-4 h-4 mr-1" /> Success
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4 mr-1" /> Copy & Save
+                            </>
+                          )}
                         </Button>
                       </div>
                     </CardHeader>
-                    <CardContent className="flex-1">
+                    <CardContent className="flex-1 relative group/preview">
                       <div className="bg-slate-900 rounded-lg p-4 min-h-[300px] max-h-[500px] overflow-auto text-slate-300 font-mono text-sm whitespace-pre-wrap">
                         {improvedPrompt || generatedPrompt || "// Select tasks to generate prompt..."}
                       </div>
+                      {/* Task 7: Floating Copy Icon */}
+                      {(improvedPrompt || generatedPrompt) && (
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="absolute top-6 right-6 opacity-0 group-hover/preview:opacity-100 transition-opacity bg-white/10 hover:bg-white/20 text-white"
+                          onClick={() => {
+                            navigator.clipboard.writeText(improvedPrompt || generatedPrompt);
+                            toast.success("Copied to clipboard");
+                          }}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
 

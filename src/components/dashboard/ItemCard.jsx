@@ -101,12 +101,13 @@ export default function ItemCard({ item, project }) {
   const handleCardClick = () => {
     const hasOpenTasks = item.task_checks?.some(check => check.status !== 'success');
     
-    // 1. Als er open items zijn: ga naar ViewItem (waar checklist staat)
-    // 2. Als alles afgevinkt is (of geen checks): ga direct naar EditItem
+    // Task 2: Always navigate to EditItem, with hash anchor
     if (hasOpenTasks) {
-      navigate(createPageUrl(`ViewItem?id=${item.id}`));
+      // If open tasks -> scroll to checklist
+      navigate(createPageUrl(`EditItem?id=${item.id}#checklist`));
     } else {
-      navigate(createPageUrl(`EditItem?id=${item.id}`));
+      // If all done -> scroll to content
+      navigate(createPageUrl(`EditItem?id=${item.id}#content`));
     }
   };
 
