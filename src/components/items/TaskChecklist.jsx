@@ -6,12 +6,14 @@ import { CheckCircle2, XCircle, Circle, RotateCcw, Loader2, ListChecks } from "l
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
 import { toast } from "sonner";
 
 /**
  * TaskChecklist component voor weergave en beheer van task_checks in een item.
  * Toont elke taak met status knoppen (Open/Goed/Fout) en een retry-knop voor mislukte taken.
+ * Autosaves status changes directly to the database.
  */
 export default function TaskChecklist({ 
   taskChecks = [], 
@@ -21,16 +23,22 @@ export default function TaskChecklist({
   readOnly = false 
 }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isRetrying, setIsRetrying] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   if (!taskChecks || taskChecks.length === 0) {
     return null;
   }
 
-  const handleStatusChange = (e, index, newStatus) => {
+  /**
+   * Handles status change with autosave to database.
+   * Updates UI immediately, then persists to DB.
+   */
+  const handleStatusChange = async (e, index, newStatus) => {
     e.preventDefault();
     e.stopPropagation();
-    if (readOnly) return;
+    if (readOnly || isSaving) return;
     
     const newChecks = [...taskChecks];
     newChecks[index] = {
@@ -38,7 +46,24 @@ export default function TaskChecklist({
       status: newStatus,
       is_checked: newStatus === 'success'
     };
+    
+    // Update UI immediately
     onTaskChecksChange(newChecks);
+    
+    // Autosave to database
+    if (itemId) {
+      setIsSaving(true);
+      try {
+        await base44.entities.Item.update(itemId, { task_checks: newChecks });
+        // Invalidate queries to keep data in sync
+        queryClient.invalidateQueries({ queryKey: ['item', itemId] });
+      } catch (error) {
+        console.error("Autosave failed:", error);
+        toast.error("Could not save status change");
+      } finally {
+        setIsSaving(false);
+      }
+    }
   };
 
   const handleRetryFailed = async (e) => {
