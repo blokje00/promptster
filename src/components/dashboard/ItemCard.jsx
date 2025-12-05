@@ -49,7 +49,7 @@ export default function ItemCard({ item, project }) {
     mutationFn: (id) => base44.entities.Item.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
-      toast.success('Item verwijderd');
+      toast.success('Item deleted');
     },
   });
 
@@ -90,7 +90,7 @@ export default function ItemCard({ item, project }) {
     e.stopPropagation();
     navigator.clipboard.writeText(item.content);
     setCopied(true);
-    toast.success('Gekopieerd naar klembord!');
+    toast.success('Copied to clipboard!');
     setTimeout(() => setCopied(false), 2000);
   };
   
@@ -137,7 +137,7 @@ export default function ItemCard({ item, project }) {
                       </HoverCardTrigger>
                       <HoverCardContent className="w-auto">
                         <p className="text-sm">
-                          {item.publish_timestamp ? new Date(item.publish_timestamp).toLocaleString('nl-NL') : 'Geen datum beschikbaar'}
+                          {item.publish_timestamp ? new Date(item.publish_timestamp).toLocaleString('en-US') : 'No date available'}
                         </p>
                       </HoverCardContent>
                     </HoverCard>
@@ -145,7 +145,7 @@ export default function ItemCard({ item, project }) {
                   {item.is_pending_check && (
                     <Badge variant="outline" className="bg-orange-50 border-orange-300 text-orange-700 flex-shrink-0">
                       <ClipboardCheck className="w-3 h-3 mr-1" />
-                      Te controleren
+                      To check
                     </Badge>
                   )}
                 </div>
@@ -192,7 +192,7 @@ export default function ItemCard({ item, project }) {
           {item.is_pending_check && localTaskChecks.length > 0 && (
             <div className="space-y-1 p-2 bg-orange-50 rounded-lg border border-orange-200" onClick={handleActionClick}>
               <div className="flex justify-between items-center mb-1">
-                <p className="text-xs font-medium text-orange-700">Taken checklist:</p>
+                <p className="text-xs font-medium text-orange-700">Task checklist:</p>
                 <span className="text-[10px] text-orange-600">
                   {localTaskChecks.filter(c => c.status === 'success').length}/{localTaskChecks.length}
                 </span>
@@ -226,14 +226,14 @@ export default function ItemCard({ item, project }) {
                   </HoverCardTrigger>
                   <HoverCardContent className="w-80 p-0 overflow-hidden" align="start" side="right">
                     <div className="bg-slate-50 p-2 border-b flex justify-between items-center">
-                      <span className="font-semibold text-xs text-slate-700">Volledige taakomschrijving</span>
+                      <span className="font-semibold text-xs text-slate-700">Full task description</span>
                       <div className="flex gap-1">
                         <Badge variant="outline" className={`text-[10px] ${
                           check.status === 'success' ? 'bg-green-100 text-green-700' :
                           check.status === 'failed' ? 'bg-red-100 text-red-700' :
                           'bg-blue-100 text-blue-700'
                         }`}>
-                          {check.status === 'success' ? 'Gelukt' : check.status === 'failed' ? 'Niet gelukt' : 'Open'}
+                          {check.status === 'success' ? 'Success' : check.status === 'failed' ? 'Failed' : 'Open'}
                         </Badge>
                       </div>
                     </div>
@@ -271,7 +271,7 @@ export default function ItemCard({ item, project }) {
                     </Badge>
                   </HoverCardTrigger>
                   <HoverCardContent className="w-80">
-                    <p className="text-sm font-semibold mb-2">Notities</p>
+                    <p className="text-sm font-semibold mb-2">Notes</p>
                     <p className="text-sm text-slate-600 whitespace-pre-wrap">{item.notes}</p>
                   </HoverCardContent>
                 </HoverCard>
@@ -317,12 +317,12 @@ export default function ItemCard({ item, project }) {
               {copied ? (
                 <>
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Gekopieerd!
+                  Copied!
                 </>
               ) : (
                 <>
                   <Copy className="w-4 h-4 mr-2" />
-                  Kopieer
+                  Copy
                 </>
               )}
             </Button>
@@ -333,7 +333,7 @@ export default function ItemCard({ item, project }) {
                 className="w-full"
               >
                 <Edit className="w-4 h-4 mr-2" />
-                Bewerk
+                Edit
               </Button>
             </Link>
             <Button

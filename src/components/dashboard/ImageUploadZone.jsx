@@ -36,7 +36,7 @@ export default function ImageUploadZone({ images, onImagesChange }) {
     );
 
     if (droppedFiles.length === 0) {
-      toast.error("Alleen afbeeldingen zijn toegestaan");
+      toast.error("Only images are allowed");
       return;
     }
 
@@ -49,7 +49,7 @@ export default function ImageUploadZone({ images, onImagesChange }) {
     );
 
     if (selectedFiles.length === 0) {
-      toast.error("Alleen afbeeldingen zijn toegestaan");
+      toast.error("Only images are allowed");
       return;
     }
 
@@ -66,9 +66,9 @@ export default function ImageUploadZone({ images, onImagesChange }) {
 
       const newImageUrls = await Promise.all(uploadPromises);
       onImagesChange([...(images || []), ...newImageUrls]);
-      toast.success(`${files.length} afbeelding(en) geüpload`);
+      toast.success(`${files.length} image(s) uploaded`);
     } catch (error) {
-      toast.error("Fout bij uploaden van afbeeldingen");
+      toast.error("Error uploading images");
       console.error(error);
     }
     setUploading(false);
@@ -76,7 +76,7 @@ export default function ImageUploadZone({ images, onImagesChange }) {
 
   const removeImage = (indexToRemove) => {
     onImagesChange(images.filter((_, index) => index !== indexToRemove));
-    toast.success("Afbeelding verwijderd");
+    toast.success("Image removed");
   };
 
   const handleDragEnd = (result) => {
@@ -120,16 +120,16 @@ export default function ImageUploadZone({ images, onImagesChange }) {
             )}
           </div>
           <p className="text-slate-700 font-medium mb-1">
-            {uploading ? "Uploaden..." : "Sleep afbeeldingen hierheen"}
+            {uploading ? "Uploading..." : "Drop images here"}
           </p>
-          <p className="text-sm text-slate-500">of klik om bestanden te selecteren</p>
+          <p className="text-sm text-slate-500">or click to select files</p>
         </label>
       </div>
 
       {images && images.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm text-slate-600 font-medium">
-            {images.length} afbeelding(en) • Sleep om volgorde te wijzigen
+            {images.length} image(s) • Drag to reorder
           </p>
           <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="images" direction="horizontal">

@@ -30,7 +30,7 @@ export default function ZipUploadZone({ zipFiles, onZipFilesChange }) {
     );
 
     if (droppedFiles.length === 0) {
-      toast.error("Alleen ZIP bestanden zijn toegestaan");
+      toast.error("Only ZIP files are allowed");
       return;
     }
 
@@ -43,7 +43,7 @@ export default function ZipUploadZone({ zipFiles, onZipFilesChange }) {
     );
 
     if (selectedFiles.length === 0) {
-      toast.error("Alleen ZIP bestanden zijn toegestaan");
+      toast.error("Only ZIP files are allowed");
       return;
     }
 
@@ -63,9 +63,9 @@ export default function ZipUploadZone({ zipFiles, onZipFilesChange }) {
 
       const newZipFiles = await Promise.all(uploadPromises);
       onZipFilesChange([...(zipFiles || []), ...newZipFiles]);
-      toast.success(`${files.length} ZIP bestand(en) geüpload`);
+      toast.success(`${files.length} ZIP file(s) uploaded`);
     } catch (error) {
-      toast.error("Fout bij uploaden van ZIP bestanden");
+      toast.error("Error uploading ZIP files");
       console.error(error);
     }
     setUploading(false);
@@ -73,7 +73,7 @@ export default function ZipUploadZone({ zipFiles, onZipFilesChange }) {
 
   const removeZipFile = (indexToRemove) => {
     onZipFilesChange(zipFiles.filter((_, index) => index !== indexToRemove));
-    toast.success("ZIP bestand verwijderd");
+    toast.success("ZIP file removed");
   };
 
   return (
@@ -107,16 +107,16 @@ export default function ZipUploadZone({ zipFiles, onZipFilesChange }) {
             )}
           </div>
           <p className="text-slate-700 font-medium mb-1">
-            {uploading ? "Uploaden..." : "Sleep ZIP bestanden hierheen"}
+            {uploading ? "Uploading..." : "Drop ZIP files here"}
           </p>
-          <p className="text-sm text-slate-500">of klik om bestanden te selecteren</p>
+          <p className="text-sm text-slate-500">or click to select files</p>
         </label>
       </div>
 
       {zipFiles && zipFiles.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm text-slate-600 font-medium">
-            {zipFiles.length} ZIP bestand(en)
+            {zipFiles.length} ZIP file(s)
           </p>
           <div className="space-y-2">
             {zipFiles.map((zipFile, index) => (
@@ -127,7 +127,7 @@ export default function ZipUploadZone({ zipFiles, onZipFilesChange }) {
                   </div>
                   <div>
                     <p className="font-medium text-slate-900">{zipFile.name}</p>
-                    <p className="text-xs text-slate-500">ZIP bestand</p>
+                    <p className="text-xs text-slate-500">ZIP file</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
