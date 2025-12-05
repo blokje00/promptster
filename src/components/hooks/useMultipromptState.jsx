@@ -102,9 +102,9 @@ export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser })
     },
     onSuccess: (_, id, context) => {
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-      toast("Taak verplaatst naar prullenbak", {
+      toast("Task moved to recycle bin", {
         action: {
-          label: "Ongedaan maken",
+          label: "Undo",
           onClick: async () => {
             await base44.entities.Thought.update(id, { is_deleted: false, deleted_at: null });
             if (context?.thoughtToRestore) {
