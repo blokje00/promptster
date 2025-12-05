@@ -76,6 +76,12 @@ export default function TaskChecklist({
     e.preventDefault();
     e.stopPropagation();
 
+    // Guard: require a project to be assigned
+    if (!projectId) {
+      toast.error("Assign this item to a project before retrying failed tasks.");
+      return;
+    }
+
     const failedTasks = taskChecks.filter((check) => check.status === "failed");
 
     if (failedTasks.length === 0) {
@@ -85,7 +91,7 @@ export default function TaskChecklist({
 
     setIsRetrying(true);
     try {
-      const targetProjectId = projectId || null;
+      const targetProjectId = projectId;
 
       // Create thoughts for each failed task - one by one to ensure all are created
       const createdThoughts = [];
@@ -116,27 +122,33 @@ export default function TaskChecklist({
       }
 
       // Invalidate thoughts queries so Multiprompt sees the new tasks
-      // (breed invalideren op key "thoughts", plus project-specifiek)
       queryClient.invalidateQueries({
         predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "thoughts",
       });
 
-      if (targetProjectId) {
-        queryClient.invalidateQueries({ queryKey: ["thoughts", targetProjectId] });
-      }
+      queryClient.invalidateQueries({ queryKey: ["thoughts", targetProjectId] });
+
+      // Store project in localStorage so Multiprompt can read it as default
+      localStorage.setItem("lastSelectedProjectId", targetProjectId);
 
       toast.success(`${failedTasks.length} tasks sent back to Multiprompt!`);
 
-      // Navigate to Multiprompt with the project pre-selected if available
+      // Navigate to Multiprompt with state containing projectId and new thought IDs
       const targetUrl = createPageUrl("Multiprompt");
+      const retryThoughtIds = createdThoughts.map((t) => t.id).filter(Boolean);
+
       setTimeout(() => {
-        navigate(targetUrl);
+        navigate(targetUrl, {
+          state: {
+            projectId: targetProjectId,
+            retryThoughtIds: retryThoughtIds,
+          },
+        });
       }, 800);
     } catch (error) {
       console.error("Retry error:", error);
       toast.error("Could not restore tasks");
     } finally {
-      // zorg dat de knop altijd weer enabled wordt
       setIsRetrying(false);
     }
   };
