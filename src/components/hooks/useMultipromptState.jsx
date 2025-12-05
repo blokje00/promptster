@@ -21,9 +21,9 @@ export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser })
   const hasManualSelectionRef = useRef(false);
   const prevProjectIdRef = useRef(selectedProjectId);
 
-  // Sync DB naar lokale state - inclusief lege state afhandeling
+  // Sync DB naar lokale state - DB is source of truth
   useEffect(() => {
-    // Handle empty dbThoughts - clear local state for immediate deletion visibility
+    // Handle empty dbThoughts - clear local state
     if (!dbThoughts || dbThoughts.length === 0) {
       if (localThoughts.length > 0) {
         setLocalThoughts([]);
@@ -33,17 +33,29 @@ export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser })
       return;
     }
     
-    const currentDbIds = dbThoughts.map(t => t.id).sort().join(',');
+    // Filter out any deleted thoughts (should already be filtered by query, but double-check)
+    const activeDbThoughts = dbThoughts.filter(t => !t.is_deleted);
+    
+    const currentDbIds = activeDbThoughts.map(t => t.id).sort().join(',');
     if (prevDbIdsRef.current === currentDbIds) return;
     prevDbIdsRef.current = currentDbIds;
 
+    // When DB changes, sync local state to match DB (DB is source of truth)
+    // Remove any local thoughts that no longer exist in DB
+    const dbIdSet = new Set(activeDbThoughts.map(t => t.id));
+    
     setLocalThoughts(prev => {
-      if (prev.length === 0) return dbThoughts;
-      const localIds = new Set(prev.map(t => t.id));
-      const newItems = dbThoughts.filter(t => !localIds.has(t.id));
-      return newItems.length > 0 ? [...newItems, ...prev] : prev;
+      // Filter out thoughts that are no longer in DB
+      const filteredPrev = prev.filter(t => dbIdSet.has(t.id));
+      // Add new thoughts from DB that aren't in local state
+      const localIds = new Set(filteredPrev.map(t => t.id));
+      const newItems = activeDbThoughts.filter(t => !localIds.has(t.id));
+      return newItems.length > 0 ? [...newItems, ...filteredPrev] : filteredPrev;
     });
-  }, [dbThoughts, localThoughts.length]);
+    
+    // Also clean up selected thoughts that no longer exist
+    setSelectedThoughts(prev => prev.filter(id => dbIdSet.has(id)));
+  }, [dbThoughts]);
 
   // Reset manual selection flag when project changes
   useEffect(() => {
