@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { uploadImageToSupabase } from "@/components/lib/uploadImage";
+import { projectColors, projectLightColors, projectBorderColors } from "@/components/lib/constants";
 import ContextSelector from "./ContextSelector";
 import { toast } from "sonner";
 
@@ -99,7 +100,7 @@ export default function ThoughtCard({
   };
 
   return (
-    <Card className={`group relative transition-all duration-200 ${isSelected ? 'ring-2 ring-indigo-500 shadow-md' : 'hover:shadow-sm border-slate-200'}`}>
+    <Card className={`group relative transition-all duration-200 ${isSelected ? 'ring-2 ring-indigo-500 shadow-md' : 'hover:shadow-sm'} ${project ? `border-l-4 ${projectBorderColors[project.color].replace('text', 'border')}` : 'border-l-4 border-l-transparent border-slate-200'}`}>
       <div className="p-3 flex gap-3 items-start">
         {/* Drag Handle & Checkbox */}
         <div className="flex flex-col items-center gap-2 pt-1">
@@ -120,8 +121,7 @@ export default function ThoughtCard({
           {/* Header: Project Badge & Context */}
           <div className="flex flex-wrap items-center gap-2">
             {project && (
-              <Badge variant="outline" className={`text-[10px] px-1.5 h-5 bg-white border-slate-200 text-slate-600`}>
-                <span className={`w-1.5 h-1.5 rounded-full mr-1.5 bg-${project.color}-500`} />
+              <Badge variant="outline" className={`text-[10px] px-1.5 h-5 ${projectLightColors[project.color]}`}>
                 {project.name}
               </Badge>
             )}
