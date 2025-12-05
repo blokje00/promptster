@@ -16,6 +16,7 @@ import LanguageSelector from "../components/settings/LanguageSelector";
 import RequireSubscription from "../components/auth/RequireSubscription";
 import { useAutosaveField } from "@/components/hooks/useAutosaveField";
 import UPSEPanel from "../components/upse/UPSEPanel";
+import { Wrench } from "lucide-react";
 
 const getDefaultInstruction = () => `Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.`;
 
@@ -180,6 +181,45 @@ export default function AIBackoffice() {
       toast.error("Could not save preferences");
     } finally {
       setIsSavingPreferences(false);
+    }
+  };
+
+  // Temporary function to fix vault data
+  const [isFixing, setIsFixing] = useState(false);
+  const handleFixVault = async () => {
+    setIsFixing(true);
+    try {
+      const { invoke } = base44.functions; // Assuming base44.functions.invoke exists or similar
+      // Check how to call functions. Instructions say: 
+      // "import { someFunction } from '@/functions/someFunction'; const response = await someFunction(...)"
+      // But we created it dynamically. 
+      // If platform V2, we can import.
+      // Let's try dynamic import or just using the SDK if available.
+      // The instructions say "THE ONLY WAY TO USE A FUNCTION ... is to import it".
+      // But I can't add an import to the top easily without reading the whole file again or using find_replace carefully.
+      // Wait, I can use base44.functions.invoke('functionName') if the SDK supports it.
+      // The instructions say: "base44.asServiceRole.functions - Call backend functions." (Admin only?)
+      // "You can invoke another backend function via the SDK: const res = await base44.functions.invoke('myFunction', { foo: 'bar' });"
+      // So `base44.functions.invoke` should work for user-scoped calls too if exposed.
+      
+      // Let's try to import it dynamically or assume invoke works.
+      // In `functions/exportTasks.js` example: `const { data } = await base44.functions.invoke('exportTasks');`
+      // So yes, `base44.functions.invoke` is the way.
+      
+      const res = await base44.functions.invoke('fixVaultTasks');
+      const data = res.data || res; // Handle axios response or direct data
+      
+      if (data.success) {
+        toast.success(data.message);
+        queryClient.invalidateQueries({ queryKey: ['openTasksCount'] }); // Refresh header badge
+      } else {
+        toast.error("Fix failed: " + (data.error || "Unknown error"));
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to run fix script");
+    } finally {
+      setIsFixing(false);
     }
   };
 
