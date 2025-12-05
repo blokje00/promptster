@@ -24,25 +24,20 @@ export const useMultipromptData = ({
     queryFn: async () => {
       if (!currentUser?.email) return [];
 
-      // Robust filter: not deleted
-      const filter = {
-        $or: [
-          { is_deleted: false },
-          { is_deleted: null },
-          { is_deleted: { $exists: false } }
-        ]
-      };
+      // Simpele filter - Base44 API ondersteunt geen $or/$exists queries
+      const filter = {};
 
       if (selectedProjectId) {
-        // Project view: Show all tasks in this project (team view)
         filter.project_id = selectedProjectId;
       } else {
-        // All projects view: Show only my tasks
         filter.created_by = currentUser.email;
       }
 
       const result = await base44.entities.Thought.filter(filter, "-created_date");
-      return result || [];
+      
+      // Client-side filter: verwijder deleted items
+      const filtered = (result || []).filter(item => !item.is_deleted);
+      return filtered;
     },
     enabled: !!currentUser?.email,
     staleTime: 0, // Always fetch fresh on mount/invalidate
@@ -67,24 +62,37 @@ export const useMultipromptData = ({
   }, [idsToAutoSelect, thoughts]); // Re-run when data arrives
 
   // 3. Mutations with Global Invalidation
-  const invalidateAllThoughts = () => {
-    // Invalidate everything starting with 'thoughts' to ensure all views (project/global) update
-    return queryClient.invalidateQueries({ 
-      predicate: (query) => query.queryKey[0] === 'thoughts'
-    });
+  const invalidateAllThoughts = async () => {
+    try {
+      await queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0] === 'thoughts'
+      });
+    } catch (error) {
+      console.error("Invalidate failed:", error);
+    }
   };
 
   const createThought = useMutation({
     mutationFn: (data) => base44.entities.Thought.create(data),
     onSuccess: async (newThought) => {
-      await invalidateAllThoughts(); // Wacht op invalidatie
+      // Optimistic update: direct toevoegen aan cache
+      if (newThought) {
+        const queryKey = ['thoughts', { 
+          userEmail: currentUser?.email, 
+          projectId: selectedProjectId || 'all' 
+        }];
+        queryClient.setQueryData(queryKey, (old) => [newThought, ...(old || [])]);
+      }
+      
+      await invalidateAllThoughts();
+      
       if (newThought?.id) {
         setSelectedThoughtIds(prev => [...prev, newThought.id]);
       }
     },
     onError: (error) => {
       console.error("Failed to create thought:", error);
-      toast.error("Kon task niet aanmaken. Probeer opnieuw.");
+      toast.error("Kon task niet aanmaken");
     }
   });
 
