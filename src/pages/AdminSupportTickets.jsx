@@ -365,10 +365,21 @@ export default function AdminSupportTickets() {
                             <p className="text-slate-500 text-xs">{ticket.user_email}</p>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge className={statusLabels[ticket.status]?.color || "bg-slate-100"}>
-                            {statusLabels[ticket.status]?.label || ticket.status}
-                          </Badge>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Select 
+                            value={ticket.status} 
+                            onValueChange={(newStatus) => handleStatusChange(ticket.id, newStatus)}
+                          >
+                            <SelectTrigger className={`w-[130px] h-8 text-xs ${statusLabels[ticket.status]?.color || ""}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="open">Open</SelectItem>
+                              <SelectItem value="in_progress">In Progress</SelectItem>
+                              <SelectItem value="resolved">Resolved</SelectItem>
+                              <SelectItem value="closed">Closed</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>
                           <Button
