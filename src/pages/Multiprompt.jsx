@@ -223,6 +223,29 @@ export default function Multiprompt() {
   const [editTemplateContent, setEditTemplateContent] = useState("");
   const [editTemplateDialogOpen, setEditTemplateDialogOpen] = useState(false);
 
+  // Handle incoming navigation state from TaskChecklist retry
+  // Clear navigation state after processing to prevent re-triggering
+  useEffect(() => {
+    if (!incomingProjectId) return;
+    setSelectedProjectId(incomingProjectId);
+    localStorage.setItem("lastSelectedProjectId", incomingProjectId);
+    // Clear navigation state to prevent re-triggering on refresh
+    navigate(location.pathname, { replace: true, state: null });
+  }, [incomingProjectId, navigate, location.pathname]);
+
+  // Auto-select retry thoughts when they arrive in dbThoughts
+  useEffect(() => {
+    if (retryThoughtIds.length === 0) return;
+    // Wait for thoughts to be loaded, then select them
+    const retryIds = retryThoughtIds.filter((id) => 
+      dbThoughts.some((t) => t.id === id)
+    );
+    if (retryIds.length > 0) {
+      setSelectedThoughts((prev) => [...new Set([...prev, ...retryIds])]);
+      toast.info(`${retryIds.length} retry tasks reopened`);
+    }
+  }, [retryThoughtIds, dbThoughts, setSelectedThoughts]);
+
   // Clear autosave helper
   const clearThoughtDraft = () => {
     resetNewThought();
