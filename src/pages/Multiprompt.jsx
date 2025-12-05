@@ -438,17 +438,17 @@ export default function Multiprompt() {
    */
   const uploadNewThoughtImage = async (file) => {
     if (!file || (!file.type.startsWith('image/') && file.type !== 'application/pdf')) {
-      toast.error(t("fileTypeError") || "Alleen afbeeldingen en PDF's zijn toegestaan");
+      toast.error("Only images and PDFs are allowed");
       return;
     }
     setIsUploadingNewImage(true);
     try {
       const file_url = await uploadImageToSupabase(file);
       setNewThoughtImages(prev => [...prev, file_url]);
-      toast.success(t("fileAdded") || "Bestand toegevoegd");
+      toast.success("File added");
     } catch (error) {
       console.error(error);
-      toast.error(t("fileUploadError") || "Kon bestand niet uploaden");
+      toast.error("Could not upload file");
     } finally {
       setIsUploadingNewImage(false);
     }
@@ -540,7 +540,7 @@ export default function Multiprompt() {
     try {
       await base44.entities.Thought.update(thoughtId, { project_id: newProjectId });
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-      toast.success(t("taskMoved") || "Taak verplaatst naar project");
+      toast.success("Task moved to project");
     } catch (error) {
       // Rollback on error
       updateThought(thoughtId, { project_id: previousProjectId });
@@ -572,15 +572,15 @@ export default function Multiprompt() {
       const failures = results.filter(r => r.status === 'rejected');
       if (failures.length > 0) {
         console.error("Sommige updates faalden:", failures);
-        toast.warning(`${localThoughts.length - failures.length}/${localThoughts.length} ${t("someTasksFailed") || "taken opgeslagen"}`);
+        toast.warning(`${localThoughts.length - failures.length}/${localThoughts.length} tasks saved`);
       } else {
-        toast.success(t("allTasksSaved") || "Alle taken opgeslagen!");
+        toast.success("All tasks saved!");
       }
       
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
     } catch (error) {
       console.error("Save error:", error);
-      toast.error(t("saveFailed") || "Kon niet alle taken opslaan");
+      toast.error("Could not save all tasks");
     } finally {
       setIsSavingAll(false);
     }
@@ -1069,7 +1069,7 @@ ${generatedPrompt}`,
 
     } catch (e) {
       console.error("Direct save failed:", e);
-      toast.error((t("saveFailed") || "Opslaan mislukt") + ": " + e.message);
+      toast.error("Save failed: " + e.message);
       setCopied(false);
     }
   };
@@ -1137,7 +1137,7 @@ ${generatedPrompt}`,
 
     } catch (e) {
       console.error("Save failed:", e);
-      toast.error((t("saveFailed") || "Opslaan mislukt") + ": " + (e.message || t("unknownError") || "Onbekende fout"));
+      toast.error("Save failed: " + (e.message || "Unknown error"));
     }
   };
 
@@ -1196,7 +1196,7 @@ ${generatedPrompt}`,
 
     } catch (error) {
       console.error("Save error:", error);
-      toast.error((t("saveFailed") || "Kon niet opslaan") + ": " + (error.message || t("unknownError") || "Onbekende fout"));
+      toast.error("Save failed: " + (error.message || "Unknown error"));
     } finally {
       setIsSavingAll(false);
     }
