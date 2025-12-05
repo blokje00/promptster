@@ -71,8 +71,13 @@ import { useAutosaveField } from "@/components/hooks/useAutosaveField";
  */
 export default function Multiprompt() {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   // Removed useLanguage - all text is now hardcoded in English
+  
+  // Check for incoming navigation state (from TaskChecklist retry)
+  const incomingProjectId = location.state?.projectId ?? null;
+  const retryThoughtIds = location.state?.retryThoughtIds ?? [];
   
   // Get current user first (needed for autosave keys)
   const { data: currentUser } = useQuery({
@@ -83,9 +88,9 @@ export default function Multiprompt() {
     },
   });
 
-  // Selected project state
+  // Selected project state - prefer incoming projectId from navigation state
   const [selectedProjectId, setSelectedProjectId] = useState(() => {
-    return localStorage.getItem('lastSelectedProjectId') || "";
+    return incomingProjectId ?? localStorage.getItem('lastSelectedProjectId') ?? "";
   });
 
   // Autosave for create task field using generic hook
