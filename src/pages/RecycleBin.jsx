@@ -1,17 +1,11 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Trash2, RefreshCw, AlertTriangle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Trash2, RotateCcw, AlertTriangle, Loader2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,225 +18,206 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import RequireSubscription from "../components/auth/RequireSubscription";
-import { useLanguage } from "../components/i18n/LanguageContext";
 
 export default function RecycleBin() {
   const queryClient = useQueryClient();
-  const { t } = useLanguage();
-  const [isRestoring, setIsRestoring] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isConfirmingDeleteAll, setIsConfirmingDeleteAll] = useState(false);
 
+  // 1. Fetch Current User
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me(),
   });
 
+  // 2. Fetch Deleted Thoughts
   const { data: deletedThoughts = [], isLoading } = useQuery({
     queryKey: ['deletedThoughts', currentUser?.email],
     queryFn: async () => {
       if (!currentUser?.email) return [];
-      // Fetch thoughts marked as deleted
-      const result = await base44.entities.Thought.filter({ 
-        created_by: currentUser.email,
-        is_deleted: true 
-      }, "-deleted_at");
-      return result || [];
+      // Fetch ONLY deleted items
+      return await base44.entities.Thought.filter({ is_deleted: true }, "-deleted_at");
     },
     enabled: !!currentUser?.email,
+    staleTime: 0, // Always fresh
   });
 
+  // Helper: Global Invalidate
+  const invalidateGlobalThoughts = async () => {
+    // Invalidate ALL thoughts caches to ensure Multiprompt sees restored items
+    await queryClient.invalidateQueries({ 
+      predicate: (query) => query.queryKey[0] === 'thoughts' 
+    });
+    // Also invalidate deleted list
+    await queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
+  };
+
+  // 3. Restore Mutation
   const restoreMutation = useMutation({
     mutationFn: async (id) => {
-      // Guarantee Restore: Set is_deleted to false explicitly
-      // Also ensure project_id is preserved or patched if needed (though update usually patches what's there)
-      const updated = await base44.entities.Thought.update(id, { 
+      return await base44.entities.Thought.update(id, { 
         is_deleted: false, 
         deleted_at: null 
       });
-      return updated;
     },
     onSuccess: async (restoredItem) => {
-      // 1. Invalideer deleted thoughts cache
-      await queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
-      
-      // 2. Reset ALLE thoughts caches volledig (niet alleen invalideren, maar ook data clearen)
-      await queryClient.resetQueries({ 
-        predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === 'thoughts'
-      });
-      
-      // 3. Forceer refetch van alle thoughts queries
-      await queryClient.refetchQueries({
-        predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === 'thoughts'
-      });
+      // Critical: Ensure Multiprompt updates
+      await invalidateGlobalThoughts();
 
-      // 4. Force assignment handling met expliciete project context
+      // Context Switching: Update Project ID
       if (restoredItem?.project_id) {
         localStorage.setItem('lastSelectedProjectId', restoredItem.project_id);
-        // Dispatch storage event zodat andere tabs/components het oppikken
+        // Dispatch event for Multiprompt to pick up instantly
         window.dispatchEvent(new StorageEvent('storage', {
           key: 'lastSelectedProjectId',
           newValue: restoredItem.project_id
         }));
-        toast.success(`${t("itemRestored")} to project.`);
+        toast.success("Task restored to project");
       } else {
-        toast.success(t("itemRestored"));
+        toast.success("Task restored");
       }
     },
+    onError: () => toast.error("Failed to restore task")
   });
 
-  const permanentDeleteMutation = useMutation({
+  // 4. Permanent Delete Mutation
+  const deletePermanentMutation = useMutation({
     mutationFn: (id) => base44.entities.Thought.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
-      toast.success(t("itemPermanentlyDeleted"));
-    },
+      toast.success("Task permanently deleted");
+    }
   });
 
+  // 5. Empty Bin Mutation
   const emptyBinMutation = useMutation({
-    mutationFn: async (ids) => {
-      for (const id of ids) {
-        await base44.entities.Thought.delete(id);
-      }
+    mutationFn: async () => {
+      const promises = deletedThoughts.map(t => base44.entities.Thought.delete(t.id));
+      await Promise.all(promises);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
-      toast.success(t("recycleBinEmptied"));
-    },
+      toast.success("Recycle bin emptied");
+      setIsConfirmingDeleteAll(false);
+    }
   });
-
-  const handleRestore = (id) => {
-    restoreMutation.mutate(id);
-  };
-
-  const handleDeletePermanent = (id) => {
-    permanentDeleteMutation.mutate(id);
-  };
-
-  const handleEmptyBin = () => {
-    if (deletedThoughts.length === 0) return;
-    const ids = deletedThoughts.map(t => t.id);
-    emptyBinMutation.mutate(ids);
-  };
 
   return (
     <RequireSubscription>
-    <div className="p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
-              <Trash2 className="w-8 h-8 text-red-500" />
-              {t("recycleBin")}
-            </h1>
-            <p className="text-slate-600 mt-1">
-              {t("recycleBinDesc")}
-            </p>
+      <div className="p-4 md:p-8">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">Recycle Bin</h1>
+              <p className="text-slate-500 mt-1">Recover deleted tasks or remove them permanently</p>
+            </div>
+            {deletedThoughts.length > 0 && (
+              <AlertDialog open={isConfirmingDeleteAll} onOpenChange={setIsConfirmingDeleteAll}>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Empty Bin
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Empty Recycle Bin?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete all {deletedThoughts.length} items. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={() => emptyBinMutation.mutate()}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      {emptyBinMutation.isPending ? "Deleting..." : "Yes, Empty Bin"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
-          {deletedThoughts.length > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">
-                  <AlertTriangle className="w-4 h-4 mr-2" />
-                  {t("emptyRecycleBin")}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{t("areYouSure")}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {t("permanentDeleteWarning")}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleEmptyBin} className="bg-red-600 hover:bg-red-700">
-                    {t("permanentlyDelete")}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+            </div>
+          ) : deletedThoughts.length === 0 ? (
+            <Card className="bg-slate-50 border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <Trash2 className="w-12 h-12 text-slate-300 mb-4" />
+                <h3 className="text-lg font-medium text-slate-900">Recycle Bin is Empty</h3>
+                <p className="text-slate-500">Deleted tasks will appear here.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {deletedThoughts.map((thought) => (
+                <Card key={thought.id} className="group hover:shadow-md transition-shadow">
+                  <CardContent className="p-4 flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {new Date(thought.deleted_at || thought.updated_date).toLocaleDateString()}
+                        </Badge>
+                        {thought.project_id && (
+                          <Badge variant="outline" className="text-xs text-blue-600 border-blue-200 bg-blue-50">
+                            Project Task
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-slate-700 whitespace-pre-wrap line-clamp-2">
+                        {thought.content}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => restoreMutation.mutate(thought.id)}
+                        disabled={restoreMutation.isPending}
+                        className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                      >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Restore
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="text-red-400 hover:text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Permanently?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => deletePermanentMutation.mutate(thought.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </div>
-
-        {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-24 bg-slate-100 rounded-xl animate-pulse" />
-            ))}
-          </div>
-        ) : deletedThoughts.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-slate-200">
-            <Trash2 className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-            <h3 className="text-xl font-semibold text-slate-600 mb-2">
-              {t("recycleBinEmpty")}
-            </h3>
-            <p className="text-slate-500">
-              {t("deletedItemsAppearHere")}
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {deletedThoughts.map((thought) => (
-              <Card key={thought.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start gap-4">
-                    <CardTitle className="text-base font-medium line-clamp-1">
-                      {thought.content.substring(0, 60) || t("unnamed")}
-                      {thought.content.length > 60 && "..."}
-                    </CardTitle>
-                    <span className="text-xs text-slate-400 whitespace-nowrap">
-                      {t("deleted")}: {new Date(thought.deleted_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent className="pb-2">
-                  <p className="text-sm text-slate-600 line-clamp-2">
-                    {thought.content}
-                  </p>
-                </CardContent>
-                <CardFooter className="flex justify-end gap-2 pt-2 border-t bg-slate-50/50">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleRestore(thought.id)}
-                    className="text-green-600 border-green-200 hover:bg-green-50"
-                  >
-                    <RefreshCw className="w-3 h-3 mr-2" />
-                    {t("restore")}
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-3 h-3 mr-2" />
-                        {t("permanently")}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>{t("permanentlyDeleteQuestion")}</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {t("permanentDeleteDesc")}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDeletePermanent(thought.id)} className="bg-red-600 hover:bg-red-700">
-                          {t("delete")}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        )}
       </div>
-    </div>
     </RequireSubscription>
   );
 }

@@ -1,365 +1,247 @@
-import React, { useState, useRef, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { Badge } from "@/components/ui/badge";
+import React, { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, GripVertical, Image as ImageIcon, Loader2, Plus, Palette, Code, Ban, MoreHorizontal, Copy } from "lucide-react";
-import { toast } from "sonner";
-import ContextSelector from "./ContextSelector";
-import { projectColors, projectBorderColors } from "@/components/lib/constants";
+import { Badge } from "@/components/ui/badge";
+import { CheckSquare, Square, Trash2, MoreHorizontal, GripVertical, Calendar, Image as ImageIcon, X } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { uploadImageToSupabase } from "@/components/lib/uploadImage";
-import { useLanguage } from "../i18n/LanguageContext";
-
-const focusLabels = {
-  both: { label: "Design + Logic", icon: null, color: "text-slate-500" },
-  design: { label: "Design Only", icon: Palette, color: "text-pink-600" },
-  logic: { label: "Logic Only", icon: Code, color: "text-blue-600" },
-  no_design: { label: "No Design", icon: Ban, color: "text-orange-600" }
-};
+import ImageUploadZone from "../dashboard/ImageUploadZone";
+import ContextSelector from "./ContextSelector";
 
 /**
- * Thought card component voor weergave van individuele taken.
- * 
- * @component
- * @param {Object} props - Component props
- * @param {Object} props.thought - Thought data object
- * @param {Object} props.project - Gekoppeld project (optioneel)
- * @param {boolean} props.isSelected - Selectie status
- * @param {Function} props.onToggleSelect - Toggle selectie handler
- * @param {Function} props.onDelete - Delete handler
- * @param {Function} props.onUpdateImages - Image update handler
- * @param {Function} props.onUpdateContent - Content update handler
- * @param {Function} props.onUpdateFocus - Focus type update handler
- * @param {Function} props.onUpdateContext - Context update handler
- * @param {Object} props.dragHandleProps - DnD drag handle props
- * @param {boolean} props.showDragHandle - Toon drag handle
+ * ThoughtCard - UI Component
+ * Purely presentational logic for editing a single thought.
+ * Delegates actual data mutations to parent callbacks.
  */
-export default function ThoughtCard({ 
-  thought, 
-  project, 
-  isSelected, 
-  onToggleSelect, 
+export default function ThoughtCard({
+  thought,
+  project,
+  isSelected,
+  onToggleSelect,
   onDelete,
-  onUpdateImages,
   onUpdateContent,
+  onUpdateImages,
   onUpdateFocus,
   onUpdateContext,
   dragHandleProps,
   showDragHandle = true
 }) {
-  const { t } = useLanguage();
-  const [isUploading, setIsUploading] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState(thought.content || "");
-  const fileInputRef = useRef(null);
-  const cardRef = useRef(null);
-  const textareaRef = useRef(null);
+  const [editedContent, setEditedContent] = useState(thought.content || "");
 
-  // Get images from thought - always ensure array
-  const imageUrls = thought.image_urls || [];
-
-  const handleImageUpload = React.useCallback(async (file) => {
-  if (!file || !file.type.startsWith('image/')) {
-    toast.error(t("onlyImagesAllowed") || "Alleen afbeeldingen zijn toegestaan");
-    return;
-  }
-
-  setIsUploading(true);
-
-  try {
-    // Use standardized upload util for universal Supabase URL
-    const file_url = await uploadImageToSupabase(file);
-
-    const newImages = [...imageUrls, file_url];
-    onUpdateImages(thought.id, newImages);
-    toast.success(t("screenshotAdded") || "Screenshot toegevoegd");
-  } catch (error) {
-    console.error("Upload error:", error);
-    toast.error(t("imageUploadFailed") || "Kon afbeelding niet uploaden");
-  } finally {
-    setIsUploading(false);
-  }
-  }, [imageUrls, onUpdateImages, thought.id, t]);
-
-  // Handle paste from clipboard
-  useEffect(() => {
-    const handlePaste = async (e) => {
-      if (!cardRef.current?.contains(document.activeElement) && 
-          document.activeElement !== cardRef.current) {
-        return;
-      }
-      
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          e.preventDefault();
-          const file = item.getAsFile();
-          if (file) handleImageUpload(file);
-          break;
-        }
-      }
-    };
-
-    document.addEventListener('paste', handlePaste);
-    return () => document.removeEventListener('paste', handlePaste);
-  }, [handleImageUpload]); // handleImageUpload is al useCallback
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleImageUpload(file);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragOver(false);
-  };
-
-  const handleRemoveImage = (e, indexToRemove) => {
-    e.stopPropagation();
-    const newImages = imageUrls.filter((_, idx) => idx !== indexToRemove);
-    onUpdateImages(thought.id, newImages);
-    toast.success(t("screenshotRemoved") || "Screenshot verwijderd");
-  };
-
-  const handleCopyContent = (e) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(thought.content || "");
-    toast.success(t("copied") || "Gekopieerd!");
-  };
-
-  const handleStartEditing = (e) => {
-    e.stopPropagation();
-    setEditContent(thought.content || "");
-    setIsEditing(true);
-    setTimeout(() => textareaRef.current?.focus(), 0);
-  };
-
-  const handleSaveEdit = () => {
-    if (onUpdateContent) {
-      onUpdateContent(thought.id, editContent);
+  // Update handlers
+  const handleContentSave = () => {
+    if (editedContent !== thought.content) {
+      onUpdateContent(thought.id, editedContent);
     }
     setIsEditing(false);
   };
 
-  const handleCancelEdit = () => {
-    setEditContent(thought.content || "");
-    setIsEditing(false);
-  };
-
-  const handleEditKeyDown = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSaveEdit();
-    } else if (e.key === 'Escape') {
-      handleCancelEdit();
+      handleContentSave();
     }
   };
 
+  // Image handlers
+  const handleImageUpload = async (files) => {
+    if (!files || files.length === 0) return;
+    
+    try {
+      // Upload all files
+      const uploadPromises = Array.from(files).map(file => uploadImageToSupabase(file));
+      const urls = await Promise.all(uploadPromises);
+      
+      const currentImages = thought.image_urls || [];
+      onUpdateImages(thought.id, [...currentImages, ...urls]);
+    } catch (error) {
+      console.error("Upload failed:", error);
+    }
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    const currentImages = thought.image_urls || [];
+    const newImages = currentImages.filter((_, index) => index !== indexToRemove);
+    onUpdateImages(thought.id, newImages);
+  };
+
+  // Focus type display mapping
+  const focusConfig = {
+    both: { label: "Design & Logic", color: "bg-blue-100 text-blue-700 border-blue-200" },
+    design: { label: "Design Only", color: "bg-purple-100 text-purple-700 border-purple-200" },
+    logic: { label: "Logic Only", color: "bg-amber-100 text-amber-700 border-amber-200" },
+    no_design: { label: "No Design", color: "bg-red-100 text-red-700 border-red-200" },
+    discuss: { label: "Discuss", color: "bg-green-100 text-green-700 border-green-200" }
+  };
+
+  const currentFocus = focusConfig[thought.focus_type] || focusConfig.both;
+
   return (
-    <div 
-      ref={cardRef}
-      tabIndex={0}
-      className={`p-3 rounded-lg border-2 transition-all outline-none focus:ring-2 focus:ring-indigo-300 ${
-        isDragOver ? 'border-indigo-400 bg-indigo-50' :
-        isSelected
-          ? 'border-indigo-500 bg-indigo-50'
-          : project 
-            ? `${projectBorderColors[project.color]} bg-white`
-            : 'border-slate-200 hover:border-slate-300'
-      }`}
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-    >
-      <div className="flex items-start gap-3">
-        {showDragHandle && (
-          <div 
-            {...(dragHandleProps || {})}
-            className="text-slate-400 cursor-grab active:cursor-grabbing mt-1"
-          >
-            <GripVertical className="w-4 h-4" />
-          </div>
-        )}
-        <Checkbox 
-          checked={isSelected}
-          onCheckedChange={onToggleSelect}
-          className="mt-1 data-[state=checked]:bg-slate-900 data-[state=checked]:border-slate-900"
-        />
-        <div className="flex-1 min-w-0">
-          <div className="flex gap-1 mb-1 flex-wrap">
+    <div className={`group relative flex gap-3 p-3 rounded-lg border transition-all ${
+      isSelected ? 'bg-indigo-50/50 border-indigo-200' : 'bg-white border-slate-200 hover:border-indigo-300'
+    }`}>
+      {/* Drag Handle */}
+      {showDragHandle && (
+        <div 
+          {...dragHandleProps}
+          className="mt-2 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical className="w-5 h-5" />
+        </div>
+      )}
+
+      {/* Selection Checkbox */}
+      <div className="mt-2">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect();
+          }}
+          className={`transition-colors ${isSelected ? 'text-indigo-600' : 'text-slate-300 hover:text-slate-500'}`}
+        >
+          {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+        </button>
+      </div>
+
+      {/* Content Area */}
+      <div className="flex-1 min-w-0 space-y-3">
+        {/* Header: Project Badge & Actions */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
             {project && (
-              <Badge className={`${projectColors[project.color]} text-white text-xs`}>
+              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-slate-100 text-slate-600 border-slate-200">
+                <div className={`w-1.5 h-1.5 rounded-full mr-1.5 bg-${project.color}-500`} />
                 {project.name}
               </Badge>
             )}
             {thought.retry_from_item_id && (
-              <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs flex items-center gap-1">
-                <Loader2 className="w-3 h-3" /> Retry
+              <Badge variant="outline" className="text-[10px] h-5 px-1.5 text-orange-600 border-orange-200 bg-orange-50">
+                Retry
               </Badge>
             )}
           </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem 
+                onClick={() => onDelete(thought.id)}
+                className="text-red-600 focus:text-red-600 focus:bg-red-50"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Task
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Editable Content */}
+        <div onClick={() => setIsEditing(true)}>
           {isEditing ? (
-            <div className="space-y-2">
-              <textarea
-                ref={textareaRef}
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                onKeyDown={handleEditKeyDown}
-                onBlur={handleSaveEdit}
-                className="w-full text-sm text-slate-700 p-2 border rounded-md min-h-[60px] focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
+            <Textarea
+              autoFocus
+              value={editedContent}
+              onChange={(e) => setEditedContent(e.target.value)}
+              onBlur={handleContentSave}
+              onKeyDown={handleKeyDown}
+              className="min-h-[60px] text-sm resize-none bg-white"
+            />
           ) : (
-            <div 
-              className="text-sm text-slate-700 whitespace-pre-wrap cursor-text hover:bg-slate-50 rounded p-1 -m-1 h-[12em] md:h-[4.5em] overflow-y-auto" 
-              onClick={handleStartEditing}
-              title={t("clickToEdit") || "Klik om te bewerken"}
-            >
-              {thought.content || <span className="text-slate-400 italic">{t("clickToAddText") || "Klik om tekst toe te voegen..."}</span>}
-            </div>
+            <p className="text-sm text-slate-700 whitespace-pre-wrap break-words leading-relaxed cursor-text">
+              {thought.content}
+            </p>
           )}
-          
-          {/* Images display - show ALL images */}
-          {imageUrls.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {imageUrls.map((url, idx) => (
-                <div key={idx} className="relative inline-block">
-                  <img 
-                    src={url} 
-                    alt={`Screenshot ${idx + 1}`} 
-                    className="w-16 h-16 object-cover rounded border border-slate-200"
-                  />
-                  <button
-                    onClick={(e) => handleRemoveImage(e, idx)}
-                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs hover:bg-red-600"
-                  >
-                    ×
-                  </button>
-                </div>
+        </div>
+
+        {/* Images */}
+        {thought.image_urls && thought.image_urls.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {thought.image_urls.map((url, idx) => (
+              <div key={idx} className="relative group/image">
+                <img 
+                  src={url} 
+                  alt={`Attachment ${idx}`} 
+                  className="w-16 h-16 object-cover rounded-md border border-slate-200"
+                />
+                <button
+                  onClick={() => handleRemoveImage(idx)}
+                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover/image:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Controls Footer */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          {/* Focus Selector */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={`px-2 py-1 rounded text-[10px] font-medium border transition-colors ${currentFocus.color}`}>
+                {currentFocus.label}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {Object.entries(focusConfig).map(([key, config]) => (
+                <DropdownMenuItem 
+                  key={key}
+                  onClick={() => onUpdateFocus(thought.id, key)}
+                  className="text-xs"
+                >
+                  {config.label}
+                </DropdownMenuItem>
               ))}
-            </div>
-          )}
-          
-          {/* Upload zone and Focus selector */}
-          <div className="mt-2 flex items-center gap-3 flex-wrap">
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="h-3 w-px bg-slate-200" />
+
+          {/* Context Selector */}
+          <ContextSelector 
+            value={{
+              target_page: thought.target_page,
+              target_component: thought.target_component,
+              target_domain: thought.target_domain
+            }}
+            onChange={(newCtx) => onUpdateContext(thought.id, newCtx)}
+            compact={true}
+            thoughtText={thought.content}
+          />
+
+          <div className="h-3 w-px bg-slate-200" />
+
+          {/* Add Image Button */}
+          <div className="relative">
             <input
               type="file"
-              ref={fileInputRef}
+              multiple
               accept="image/*"
               className="hidden"
-              onChange={(e) => e.target.files[0] && handleImageUpload(e.target.files[0])}
+              id={`img-upload-${thought.id}`}
+              onChange={(e) => handleImageUpload(e.target.files)}
             />
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                fileInputRef.current?.click();
-              }}
-              disabled={isUploading}
-              className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1"
+            <label 
+              htmlFor={`img-upload-${thought.id}`}
+              className="cursor-pointer flex items-center gap-1 text-[10px] text-slate-500 hover:text-indigo-600 px-1.5 py-1 rounded hover:bg-slate-100"
             >
-              {isUploading ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Plus className="w-3 h-3" />
-              )}
-              {isUploading ? (t("uploading") || "Uploaden...") : (t("addImage") || "Afbeelding")}
-            </button>
-
-            {/* Focus Type Selector */}
-            <Select 
-              value={thought.focus_type || "both"} 
-              onValueChange={(value) => onUpdateFocus && onUpdateFocus(thought.id, value)}
-            >
-              <SelectTrigger className="h-6 text-xs w-auto min-w-[100px] border-dashed" onClick={(e) => e.stopPropagation()}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="both">
-                  <span className="text-slate-600">Design + Logic</span>
-                </SelectItem>
-                <SelectItem value="design">
-                  <span className="flex items-center gap-1 text-pink-600">
-                    <Palette className="w-3 h-3" /> Design Only
-                  </span>
-                </SelectItem>
-                <SelectItem value="logic">
-                  <span className="flex items-center gap-1 text-blue-600">
-                    <Code className="w-3 h-3" /> Logic Only
-                  </span>
-                </SelectItem>
-                <SelectItem value="no_design">
-                  <span className="flex items-center gap-1 text-orange-600">
-                    <Ban className="w-3 h-3" /> No Design
-                  </span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="h-4 w-px bg-slate-300 mx-1" />
-
-            {/* Context Selector */}
-            <div onClick={(e) => e.stopPropagation()}>
-              <ContextSelector
-                value={{
-                  target_page: thought.target_page,
-                  target_component: thought.target_component,
-                  target_domain: thought.target_domain,
-                  ai_prediction: thought.ai_prediction
-                }}
-                onChange={(newContext) => onUpdateContext && onUpdateContext(thought.id, newContext)}
-                thoughtText={thought.content}
-                compact={true}
-                selectedProject={project}
-                enableAISuggestions={false} // Disable AI here to prevent popup spam on list
-              />
-            </div>
-
-            <div className="h-4 w-px bg-slate-300 mx-1" />
-
-            <Select onValueChange={(val) => onUpdateContent && onUpdateContent(thought.id, (thought.content || "") + "\n\n" + val)}>
-              <SelectTrigger className="h-6 text-xs w-auto min-w-[24px] px-1 border-dashed" onClick={(e) => e.stopPropagation()}>
-                <MoreHorizontal className="w-3 h-3" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Search and replace in /pages/**/*">/pages/**/*</SelectItem>
-                <SelectItem value="Search and replace in /components/**/*">/components/**/*</SelectItem>
-                <SelectItem value="Search and replace in **/*">**/*</SelectItem>
-              </SelectContent>
-            </Select>
+              <ImageIcon className="w-3 h-3" />
+              Add Image
+            </label>
           </div>
-          </div>
-        <div className="flex flex-col gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-slate-400 hover:text-indigo-500 shrink-0"
-            onClick={handleCopyContent}
-            title={t("copy") || "Kopieer"}
-          >
-            <Copy className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-slate-400 hover:text-red-500 shrink-0"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-          >
-            <X className="w-4 h-4" />
-          </Button>
         </div>
       </div>
     </div>
