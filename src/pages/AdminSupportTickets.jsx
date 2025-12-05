@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,27 @@ const statusLabels = {
   closed: { label: "Gesloten", color: "bg-slate-100 text-slate-700 border-slate-300" }
 };
 
+/**
+ * Component for changing ticket status inline
+ */
+function TicketStatusChanger({ ticket, onStatusChange }) {
+  return (
+    <Select value={ticket.status} onValueChange={onStatusChange}>
+      <SelectTrigger className="w-[160px]">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="open">Open</SelectItem>
+        <SelectItem value="in_progress">In Progress</SelectItem>
+        <SelectItem value="resolved">Resolved</SelectItem>
+        <SelectItem value="closed">Closed</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+}
+
 export default function AdminSupportTickets() {
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -71,6 +92,26 @@ export default function AdminSupportTickets() {
     queryFn: () => base44.entities.SupportTicket.list("-created_date"),
     enabled: currentUser?.role === 'admin',
   });
+
+  // Status change mutation
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }) => base44.entities.SupportTicket.update(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supportTickets'] });
+      toast.success("Ticket status updated");
+    },
+    onError: (error) => {
+      toast.error("Failed to update status: " + error.message);
+    },
+  });
+
+  const handleStatusChange = (ticketId, newStatus) => {
+    statusMutation.mutate({ id: ticketId, status: newStatus });
+    // Update selected ticket if it's the one being changed
+    if (selectedTicket?.id === ticketId) {
+      setSelectedTicket({ ...selectedTicket, status: newStatus });
+    }
+  };
 
   // Filter and sort tickets
   const filteredTickets = tickets
