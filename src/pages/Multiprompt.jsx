@@ -338,7 +338,11 @@ export default function Multiprompt() {
   // Task 7: Autosave Improved Prompt
   useEffect(() => {
     const savedImproved = localStorage.getItem(`promptster:improved:${selectedProjectId || 'all'}`);
-    if (savedImproved) setImprovedPrompt(savedImproved);
+    if (savedImproved) {
+      setImprovedPrompt(savedImproved);
+    } else {
+      setImprovedPrompt(""); // Clear when switching projects if no saved state
+    }
   }, [selectedProjectId]);
 
   useEffect(() => {
@@ -725,7 +729,7 @@ export default function Multiprompt() {
                       <CardTitle>Preview</CardTitle>
                       <div className="flex gap-2">
                         {/* Task 4: Restore Settings Gear */}
-                        <Link to={createPageUrl("AIBackoffice")} target="_blank">
+                        <Link to={createPageUrl("AIBackoffice")}>
                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600">
                              <Cog className="w-4 h-4" />
                            </Button>

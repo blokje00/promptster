@@ -61,6 +61,7 @@ export default function TaskChecklist({
       const hasOpen = updatedChecks.some(c => c.status !== 'success');
       const newStatus = hasOpen ? 'open' : 'success';
 
+      // Ensure we strip any properties not in schema if necessary, though base44 handles it.
       base44.entities.Item.update(itemId, { 
         task_checks: updatedChecks,
         status: newStatus 
@@ -68,7 +69,7 @@ export default function TaskChecklist({
         .then(() => {
           queryClient.invalidateQueries({ queryKey: ['item', itemId] });
           // Invalidate openTasksCount for Header badge
-          queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'openTasksCount' });
+          queryClient.invalidateQueries({ queryKey: ['openTasksCount'] });
         })
         .catch(() => {
           toast.error("Failed to update task status");
