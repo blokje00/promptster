@@ -346,10 +346,8 @@ export default function Multiprompt() {
     }
   }, [improvedPrompt, selectedProjectId]);
 
-  // Task 6: Clear improved prompt on selection change
-  useEffect(() => {
-    setImprovedPrompt(""); 
-  }, [selectedThoughtIds, startTemplateId, endTemplateId]);
+  // Task 2 & 3: Removed auto-clear to enable autosave persistence
+  // The previous useEffect clearing improvedPrompt is removed.
 
   // AI Improve
   const handleImprovePrompt = async () => {
@@ -623,7 +621,14 @@ export default function Multiprompt() {
                         <Droppable droppableId="thoughts-list">
                           {(provided) => (
                             <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2 max-h-[500px] overflow-y-auto p-1">
-                               {filteredThoughts.map((thought, idx) => (
+                               {/* Task 5: Loading State */}
+                               {isLoading && filteredThoughts.length === 0 && (
+                                 <div className="py-8 text-center">
+                                   <Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-600 mb-2" />
+                                   <p className="text-sm text-slate-500">Loading tasks...</p>
+                                 </div>
+                               )}
+                               {!isLoading && filteredThoughts.map((thought, idx) => (
                                  <Draggable key={thought.id} draggableId={thought.id} index={idx}>
                                    {(provided) => (
                                      <div ref={provided.innerRef} {...provided.draggableProps}>
@@ -644,7 +649,7 @@ export default function Multiprompt() {
                                  </Draggable>
                                ))}
                                {provided.placeholder}
-                               {filteredThoughts.length === 0 && (
+                               {!isLoading && filteredThoughts.length === 0 && (
                                  <div className="text-center py-8 text-slate-400 italic">No tasks found. Start typing!</div>
                                )}
                             </div>

@@ -50,11 +50,8 @@ export const useMultipromptData = ({
   useEffect(() => {
     if (thoughts.length > 0 && !hasInitialSelected) {
       if (idsToAutoSelect && idsToAutoSelect.length > 0) {
-        // Retry logic: Select specific IDs
-        const validIds = idsToAutoSelect.filter(id => 
-          thoughts.some(t => t.id === id)
-        );
-        setSelectedThoughtIds(validIds);
+        // Retry logic: Select specific IDs (Task 1 Fix: Don't filter against thoughts yet to avoid race conditions)
+        setSelectedThoughtIds(idsToAutoSelect);
       } else {
         // Default: Select All
         setSelectedThoughtIds(thoughts.map(t => t.id));

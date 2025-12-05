@@ -83,7 +83,15 @@ export default function EditItem() {
   };
   
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({...prev, [field]: value}));
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      // Task 4: Ensure status is synced when editing form manually
+      if (field === 'task_checks') {
+        const hasOpen = value.some(c => c.status !== 'success');
+        newData.status = hasOpen ? 'open' : 'success';
+      }
+      return newData;
+    });
   }
 
   const addTag = () => {

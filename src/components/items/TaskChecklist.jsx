@@ -57,9 +57,18 @@ export default function TaskChecklist({
 
     // Persist to DB immediately
     if (itemId) {
-      base44.entities.Item.update(itemId, { task_checks: updatedChecks })
+      // Task 1 & 4: Update parent Item status based on checklist
+      const hasOpen = updatedChecks.some(c => c.status !== 'success');
+      const newStatus = hasOpen ? 'open' : 'success';
+
+      base44.entities.Item.update(itemId, { 
+        task_checks: updatedChecks,
+        status: newStatus 
+      })
         .then(() => {
           queryClient.invalidateQueries({ queryKey: ['item', itemId] });
+          // Invalidate openItemsCount for Header badge
+          queryClient.invalidateQueries({ queryKey: ['openItemsCount'] });
         })
         .catch(() => {
           toast.error("Failed to update task status");

@@ -208,15 +208,7 @@ export default function AIBackoffice() {
 
           <TabsContent value="settings" className="space-y-6">
             <div className="max-w-3xl">
-              {/* Language Selection Card */}
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle>Language Selection</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <LanguageSelector />
-                </CardContent>
-              </Card>
+              {/* Language Selection Removed (Task 6) */}
 
               {/* Personal Preferences Card */}
               <Card className="mb-6">
