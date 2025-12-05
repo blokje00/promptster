@@ -1302,18 +1302,18 @@ ${generatedPrompt}`,
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => handleEditProject(project)}>
-                          <Edit className="w-4 h-4 mr-2" />
-                          {t("edit")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => deleteProjectMutation.mutate(project.id)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          {t("delete")}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => handleEditProject(project)}>
+                                      <Edit className="w-4 h-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => deleteProjectMutation.mutate(project.id)}
+                                      className="text-red-600"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
                   );
@@ -1332,16 +1332,16 @@ ${generatedPrompt}`,
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>{t("newProject")}</DialogTitle>
-                    </DialogHeader>
+                        <DialogTitle>New Project</DialogTitle>
+                      </DialogHeader>
                     <div className="space-y-4 pt-4">
                       <Input
-                        placeholder={t("projectName")}
+                        placeholder="Project name..."
                         value={newProjectName}
                         onChange={(e) => setNewProjectName(e.target.value)}
                       />
                       <div>
-                        <label className="text-sm font-medium text-slate-700 mb-2 block">{t("color")}</label>
+                        <label className="text-sm font-medium text-slate-700 mb-2 block">Color</label>
                         <div className="flex gap-2 flex-wrap">
                           {Object.keys(projectColors).map(color => (
                             <button
@@ -1356,7 +1356,7 @@ ${generatedPrompt}`,
                         </div>
                       </div>
                       <Textarea
-                        placeholder={t("descriptionOptional")}
+                        placeholder="Description (optional)..."
                         value={newProjectDescription}
                         onChange={(e) => setNewProjectDescription(e.target.value)}
                         className="min-h-[60px]"
@@ -1369,7 +1369,7 @@ ${generatedPrompt}`,
                         className="w-full bg-indigo-600 hover:bg-indigo-700"
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        {t("addProject")}
+                        Add Project
                       </Button>
                     </div>
                   </DialogContent>
@@ -1383,7 +1383,7 @@ ${generatedPrompt}`,
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
             <DialogHeader>
-              <DialogTitle>{t("editProject")}</DialogTitle>
+              <DialogTitle>Edit Project</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <Input
@@ -1495,10 +1495,10 @@ ${generatedPrompt}`,
               </div>
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-                  {t("cancel")}
+                  Cancel
                 </Button>
                 <Button onClick={handleSaveEditProject} className="bg-indigo-600 hover:bg-indigo-700">
-                  {t("save")}
+                  Save
                 </Button>
               </div>
             </div>
@@ -1955,12 +1955,12 @@ ${generatedPrompt}`,
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <CheckCircle className="w-5 h-5 text-green-600" />
-                    {t("promptCopied")}
+                    Prompt Copied - What's next?
                   </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
                   <p className="text-sm text-slate-600">
-                    {t("promptCopiedDesc")}
+                    The prompt is copied. After execution, check if each subtask was processed correctly:
                   </p>
 
                   {/* Task Checklist */}
@@ -1995,7 +1995,7 @@ ${generatedPrompt}`,
 
                   {/* Notes */}
                   <Textarea
-                    placeholder={t("notesOptional")}
+                    placeholder="Notes (optional)..."
                     value={controlNotes}
                     onChange={(e) => setControlNotes(e.target.value)}
                     className="min-h-[60px]"
@@ -2003,7 +2003,7 @@ ${generatedPrompt}`,
 
                   {/* Title for saving */}
                   <Input
-                    placeholder={t("titleForSave")}
+                    placeholder="Title for saving..."
                     value={promptTitle}
                     onChange={(e) => setPromptTitle(e.target.value)}
                   />
@@ -2016,7 +2016,7 @@ ${generatedPrompt}`,
                       className="bg-indigo-600 hover:bg-indigo-700"
                     >
                       <Save className="w-4 h-4 mr-2" />
-                      {promptTitle.trim() ? t("saveAsPrompt") : t("quickSave")}
+                      {promptTitle.trim() ? "Save as Prompt" : "Quick Save"}
                     </Button>
                     <Button
                       onClick={handleSaveAsCheck}
@@ -2029,7 +2029,7 @@ ${generatedPrompt}`,
                       ) : (
                         <CheckCircle className="w-4 h-4 mr-2" />
                       )}
-                      {isSavingAll ? t("saving") : t("saveAsCheck")}
+                      {isSavingAll ? "Saving..." : "Save as Check"}
                     </Button>
                   </div>
 
@@ -2040,14 +2040,14 @@ ${generatedPrompt}`,
                       className="border-red-300 text-red-600 hover:bg-red-50"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
-                      {t("deleteTasks")}
+                      Delete tasks
                     </Button>
                     <Button
                       onClick={handleDiscardPrompt}
                       variant="ghost"
                     >
                       <X className="w-4 h-4 mr-2" />
-                      {t("closeOnly")}
+                      Close only
                     </Button>
                   </div>
                 </div>
