@@ -29,6 +29,13 @@ export default function RecycleBin() {
     queryFn: () => base44.auth.me(),
   });
 
+  // 1b. Fetch Projects (for name lookup)
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects', currentUser?.email],
+    queryFn: async () => currentUser ? await base44.entities.Project.filter({ created_by: currentUser.email }) : [],
+    enabled: !!currentUser
+  });
+
   // 2. Fetch Deleted Thoughts
   const { data: deletedThoughts = [], isLoading } = useQuery({
     queryKey: ['deletedThoughts', currentUser?.email],
@@ -163,7 +170,7 @@ export default function RecycleBin() {
                         </Badge>
                         {thought.project_id && (
                           <Badge variant="outline" className="text-xs text-blue-600 border-blue-200 bg-blue-50">
-                            Project Task
+                            {projects.find(p => p.id === thought.project_id)?.name || "Promptster.app"}
                           </Badge>
                         )}
                       </div>
