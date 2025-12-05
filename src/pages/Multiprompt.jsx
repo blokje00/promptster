@@ -4,7 +4,7 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "@/utils";
 import { useMultipromptData } from "@/components/hooks/useMultipromptState";
-import { useAutosaveField } from "@/components/hooks/useAutosaveField";
+// useAutosaveField removed
 import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 
 // UI Components
@@ -119,15 +119,19 @@ export default function Multiprompt() {
   // --- 3. UI State Management ---
 
   // New Thought Input State
-  const { 
-    value: newThoughtContent, 
-    setValue: setNewThoughtContent, 
-    resetValue: resetNewThoughtContent 
-  } = useAutosaveField({
-    storageKey: `promptster:multiprompt:${selectedProjectId || 'all'}:${currentUser?.id}`,
-    initialValue: "",
-    enabled: !!currentUser
-  });
+  const [newThoughtContent, setNewThoughtContent] = useState("");
+
+  // Draft Autosave (Simple LocalStorage)
+  useEffect(() => {
+    const key = `promptster:draft:${selectedProjectId || 'all'}`;
+    const saved = localStorage.getItem(key);
+    if (saved) setNewThoughtContent(saved);
+  }, [selectedProjectId]);
+
+  useEffect(() => {
+    const key = `promptster:draft:${selectedProjectId || 'all'}`;
+    localStorage.setItem(key, newThoughtContent);
+  }, [newThoughtContent, selectedProjectId]);
   const [newThoughtImages, setNewThoughtImages] = useState([]);
   const [newThoughtFocus, setNewThoughtFocus] = useState("both");
   const [newThoughtContext, setNewThoughtContext] = useState({});
@@ -152,6 +156,42 @@ export default function Multiprompt() {
   // Helper: Get Selected Project Object
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
+  // --- Template Autosave & Persistence ---
+  
+  // 1. Load Templates on Context Change
+  useEffect(() => {
+    if (selectedProject) {
+      // Prioritize project settings
+      if (selectedProject.last_start_template_id) setStartTemplateId(selectedProject.last_start_template_id);
+      if (selectedProject.last_end_template_id) setEndTemplateId(selectedProject.last_end_template_id);
+    } else {
+      // Fallback to localStorage for 'all' or generic
+      const savedStart = localStorage.getItem(`template_start_${selectedProjectId || 'all'}`);
+      const savedEnd = localStorage.getItem(`template_end_${selectedProjectId || 'all'}`);
+      if (savedStart) setStartTemplateId(savedStart);
+      if (savedEnd) setEndTemplateId(savedEnd);
+    }
+  }, [selectedProjectId, selectedProject]);
+
+  // 2. Save Templates on Change
+  useEffect(() => {
+    if (startTemplateId) {
+      localStorage.setItem(`template_start_${selectedProjectId || 'all'}`, startTemplateId);
+      if (selectedProjectId) {
+        base44.entities.Project.update(selectedProjectId, { last_start_template_id: startTemplateId });
+      }
+    }
+  }, [startTemplateId, selectedProjectId]);
+
+  useEffect(() => {
+    if (endTemplateId) {
+      localStorage.setItem(`template_end_${selectedProjectId || 'all'}`, endTemplateId);
+      if (selectedProjectId) {
+        base44.entities.Project.update(selectedProjectId, { last_end_template_id: endTemplateId });
+      }
+    }
+  }, [endTemplateId, selectedProjectId]);
+
   // --- 4. Handlers ---
 
   // Add Thought
@@ -170,7 +210,8 @@ export default function Multiprompt() {
       ai_prediction: newThoughtContext.ai_prediction
     }, {
       onSuccess: () => {
-        resetNewThoughtContent();
+        setNewThoughtContent(""); // Clear input
+        localStorage.removeItem(`promptster:draft:${selectedProjectId || 'all'}`); // Clear draft
         setNewThoughtImages([]);
         setNewThoughtFocus("both");
         setNewThoughtContext({});
