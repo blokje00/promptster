@@ -12,10 +12,10 @@ import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 import { useLanguage } from "../i18n/LanguageContext";
 
 const focusLabels = {
-  both: { label: "Design + Logica", icon: null, color: "text-slate-500" },
-  design: { label: "Alleen Design", icon: Palette, color: "text-pink-600" },
-  logic: { label: "Alleen Logica", icon: Code, color: "text-blue-600" },
-  no_design: { label: "Geen Design", icon: Ban, color: "text-orange-600" }
+  both: { label: "Design + Logic", icon: null, color: "text-slate-500" },
+  design: { label: "Design Only", icon: Palette, color: "text-pink-600" },
+  logic: { label: "Logic Only", icon: Code, color: "text-blue-600" },
+  no_design: { label: "No Design", icon: Ban, color: "text-orange-600" }
 };
 
 /**
@@ -286,21 +286,21 @@ export default function ThoughtCard({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="both">
-                  <span className="text-slate-600">Design + Logica</span>
+                  <span className="text-slate-600">Design + Logic</span>
                 </SelectItem>
                 <SelectItem value="design">
                   <span className="flex items-center gap-1 text-pink-600">
-                    <Palette className="w-3 h-3" /> Alleen Design
+                    <Palette className="w-3 h-3" /> Design Only
                   </span>
                 </SelectItem>
                 <SelectItem value="logic">
                   <span className="flex items-center gap-1 text-blue-600">
-                    <Code className="w-3 h-3" /> Alleen Logica
+                    <Code className="w-3 h-3" /> Logic Only
                   </span>
                 </SelectItem>
                 <SelectItem value="no_design">
                   <span className="flex items-center gap-1 text-orange-600">
-                    <Ban className="w-3 h-3" /> Geen Design
+                    <Ban className="w-3 h-3" /> No Design
                   </span>
                 </SelectItem>
               </SelectContent>
@@ -332,9 +332,9 @@ export default function ThoughtCard({
                 <MoreHorizontal className="w-3 h-3" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Zoek en vervang in /pages/**/*">/pages/**/*</SelectItem>
-                <SelectItem value="Zoek en vervang in /components/**/*">/components/**/*</SelectItem>
-                <SelectItem value="Zoek en vervang in **/*">**/*</SelectItem>
+                <SelectItem value="Search and replace in /pages/**/*">/pages/**/*</SelectItem>
+                <SelectItem value="Search and replace in /components/**/*">/components/**/*</SelectItem>
+                <SelectItem value="Search and replace in **/*">**/*</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -50,7 +50,7 @@ export default function ViewItem() {
     if (!item?.content) return;
     navigator.clipboard.writeText(item.content);
     setCopied(true);
-    toast.success('Inhoud gekopieerd naar klembord!');
+    toast.success('Content copied to clipboard!');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -66,11 +66,11 @@ export default function ViewItem() {
         await updateItemMutation.mutateAsync({
           file_changes_feedback: newFeedback
         });
-        toast.success('Feedback geplakt en opgeslagen!');
+        toast.success('Feedback pasted and saved!');
         setIsSavingFeedback(false);
       }
     } catch (err) {
-      toast.error('Kon niet plakken uit klembord');
+      toast.error('Could not paste from clipboard');
       setIsSavingFeedback(false);
     }
   };
@@ -80,10 +80,10 @@ export default function ViewItem() {
       const text = await navigator.clipboard.readText();
       if (text) {
         setFeedbackText(text);
-        toast.success('Feedback geplakt uit klembord');
+        toast.success('Feedback pasted from clipboard');
       }
     } catch (err) {
-      toast.error('Kon niet plakken uit klembord');
+      toast.error('Could not paste from clipboard');
     }
   };
 
@@ -95,10 +95,10 @@ export default function ViewItem() {
         file_changes_feedback: feedbackText,
         is_pending_check: false
       });
-      toast.success('Feedback opgeslagen en controle afgerond!');
+      toast.success('Feedback saved and check completed!');
       setFeedbackText("");
     } catch (err) {
-      toast.error('Kon feedback niet opslaan');
+      toast.error('Could not save feedback');
     } finally {
       setIsSavingFeedback(false);
     }
@@ -107,9 +107,9 @@ export default function ViewItem() {
   const handleMarkAsChecked = async () => {
     try {
       await updateItemMutation.mutateAsync({ is_pending_check: false });
-      toast.success('Controle afgerond!');
+      toast.success('Check completed!');
     } catch (err) {
-      toast.error('Kon status niet wijzigen');
+      toast.error('Could not change status');
     }
   };
 
@@ -119,7 +119,7 @@ export default function ViewItem() {
     const failedTasks = item.task_checks.filter(check => check.status === 'failed');
     
     if (failedTasks.length === 0) {
-      toast.info("Geen mislukte taken om opnieuw te proberen.");
+      toast.info("No failed tasks to retry.");
       return;
     }
 
@@ -138,14 +138,14 @@ export default function ViewItem() {
 
       await Promise.all(promises);
       
-      toast.success(`${failedTasks.length} taken hersteld!`);
+      toast.success(`${failedTasks.length} tasks restored!`);
       // Redirect to multiprompt
       setTimeout(() => {
         navigate(createPageUrl("Multiprompt"));
       }, 1000);
     } catch (error) {
       console.error("Retry error:", error);
-      toast.error("Kon taken niet herstellen");
+      toast.error("Could not restore tasks");
     } finally {
       setIsRetrying(false);
     }
@@ -174,10 +174,10 @@ export default function ViewItem() {
   if (error || !item) {
     return (
       <div className="text-center p-16">
-        <h2 className="text-2xl font-bold">Item niet gevonden</h2>
-        <p className="text-slate-500 mt-2">Het item dat je zoekt bestaat niet of is verwijderd.</p>
+        <h2 className="text-2xl font-bold">Item not found</h2>
+        <p className="text-slate-500 mt-2">The item you're looking for doesn't exist or has been deleted.</p>
         <Button onClick={() => navigate(createPageUrl('Dashboard'))} className="mt-6">
-          Terug naar Dashboard
+          Back to Dashboard
         </Button>
       </div>
     );
@@ -210,13 +210,13 @@ export default function ViewItem() {
                 ) : (
                   <ClipboardPaste className="w-4 h-4 mr-2" />
                 )}
-                Plak PKF
+                Paste PKF
               </Button>
             )}
             <Link to={createPageUrl(`EditItem?id=${itemId}`)}>
               <Button className="bg-indigo-600 hover:bg-indigo-700">
                 <Edit className="w-4 h-4 mr-2" />
-                Bewerken
+                Edit
               </Button>
             </Link>
           </div>
@@ -234,7 +234,7 @@ export default function ViewItem() {
               {item.is_favorite && (
                 <Badge variant="outline" className="bg-yellow-100 border-yellow-300 text-yellow-700">
                   <Star className="w-4 h-4 mr-2 fill-yellow-500" />
-                  Favoriet
+                  Favorite
                 </Badge>
               )}
             </div>
@@ -249,23 +249,23 @@ export default function ViewItem() {
               <div className="p-4 bg-green-50 border-2 border-green-300 rounded-lg">
                 <h4 className="font-semibold text-green-800 flex items-center gap-2 mb-3">
                   <GitBranch className="w-5 h-5" />
-                  Publish Versie
+                  Publish Version
                 </h4>
                 {item.publish_timestamp && (
                   <div className="flex items-center gap-2 text-sm text-green-700 mb-2">
                     <Calendar className="w-4 h-4" />
-                    <span>{new Date(item.publish_timestamp).toLocaleString('nl-NL')}</span>
+                    <span>{new Date(item.publish_timestamp).toLocaleString('en-US')}</span>
                   </div>
                 )}
                 {item.publish_working_notes && (
                   <div className="mb-3">
-                    <p className="text-xs font-semibold text-green-800 mb-1">Wat werkte goed:</p>
+                    <p className="text-xs font-semibold text-green-800 mb-1">What worked well:</p>
                     <p className="text-sm text-green-700 whitespace-pre-wrap">{item.publish_working_notes}</p>
                   </div>
                 )}
                 {item.publish_reason && (
                   <div>
-                    <p className="text-xs font-semibold text-green-800 mb-1">Reden voor Publish:</p>
+                    <p className="text-xs font-semibold text-green-800 mb-1">Reason for Publish:</p>
                     <p className="text-sm text-green-700 whitespace-pre-wrap">{item.publish_reason}</p>
                   </div>
                 )}
@@ -276,7 +276,7 @@ export default function ViewItem() {
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h4 className="font-semibold text-blue-800 flex items-center gap-2 mb-2">
                   <MessageSquare className="w-4 h-4" />
-                  Notities
+                  Notes
                 </h4>
                 <div className="text-sm text-blue-700 whitespace-pre-wrap max-h-[240px] overflow-auto">
                   {item.notes}
@@ -288,7 +288,7 @@ export default function ViewItem() {
               <div>
                 <h4 className="font-semibold text-slate-800 flex items-center gap-2 mb-3">
                   <ImageIcon className="w-4 h-4" />
-                  Screenshots & Afbeeldingen ({item.images.length})
+                  Screenshots & Images ({item.images.length})
                 </h4>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {item.images.map((imageUrl, index) => (
@@ -316,7 +316,7 @@ export default function ViewItem() {
                             className="w-full h-auto rounded-lg"
                           />
                           <div className="mt-4 text-center text-sm text-slate-500">
-                            Afbeelding {index + 1} van {item.images.length}
+                            Image {index + 1} of {item.images.length}
                           </div>
                         </div>
                       </DialogContent>
@@ -330,7 +330,7 @@ export default function ViewItem() {
               <div>
                 <h4 className="font-semibold text-slate-800 flex items-center gap-2 mb-3">
                   <FileArchive className="w-4 h-4" />
-                  ZIP Bestanden ({item.zip_files.length})
+                  ZIP Files ({item.zip_files.length})
                 </h4>
                 <div className="space-y-2">
                   {item.zip_files.map((zipFile, index) => (
@@ -341,7 +341,7 @@ export default function ViewItem() {
                         </div>
                         <div>
                           <p className="font-medium text-slate-900">{zipFile.name}</p>
-                          <p className="text-xs text-slate-500">ZIP bestand</p>
+                          <p className="text-xs text-slate-500">ZIP file</p>
                         </div>
                       </div>
                       <a 
@@ -368,10 +368,10 @@ export default function ViewItem() {
                   <div>
                     <h4 className="font-semibold text-orange-800 flex items-center gap-2 mb-1">
                       <ClipboardCheck className="w-5 h-5" />
-                      Controle & Feedback
+                      Check & Feedback
                     </h4>
                     <p className="text-sm text-orange-700">
-                      Loop de checklist na en plak de feedback (gewijzigde bestanden).
+                      Go through the checklist and paste the feedback (changed files).
                     </p>
                   </div>
                   
@@ -382,7 +382,7 @@ export default function ViewItem() {
                       className="bg-red-100 text-red-700 hover:bg-red-200 border border-red-200 shadow-sm"
                     >
                       {isRetrying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-2" />}
-                      Re-try Niet-Gelukte Taken
+                      Retry Failed Tasks
                     </Button>
                   )}
                 </div>
@@ -391,7 +391,7 @@ export default function ViewItem() {
                 {item.task_checks && item.task_checks.length > 0 && (
                   <div className="mb-6 bg-white rounded-md border border-orange-200 overflow-hidden">
                     <div className="px-4 py-2 bg-orange-100/50 border-b border-orange-200 font-medium text-sm text-orange-800 flex items-center justify-between">
-                      <span>Checklist ({item.task_checks.filter(c => c.status === 'success').length}/{item.task_checks.length} voltooid)</span>
+                      <span>Checklist ({item.task_checks.filter(c => c.status === 'success').length}/{item.task_checks.length} completed)</span>
                       <ListChecks className="w-4 h-4" />
                     </div>
                     <TooltipProvider>
@@ -413,8 +413,8 @@ export default function ViewItem() {
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="open">Open</SelectItem>
-                                    <SelectItem value="success">Gelukt</SelectItem>
-                                    <SelectItem value="failed">Mislukt</SelectItem>
+                                    <SelectItem value="success">Success</SelectItem>
+                                    <SelectItem value="failed">Failed</SelectItem>
                                   </SelectContent>
                                 </Select>
                                 <div className="flex-1 min-w-0">
@@ -423,7 +423,7 @@ export default function ViewItem() {
                                   </p>
                                   {check.status === 'failed' && (
                                     <span className="inline-flex items-center text-[10px] text-red-600 bg-red-50 px-1.5 py-0.5 rounded mt-1">
-                                      Wordt meegenomen in re-try
+                                      Will be included in retry
                                     </span>
                                   )}
                                 </div>
@@ -448,11 +448,11 @@ export default function ViewItem() {
                       className="border-orange-400 text-orange-700 hover:bg-orange-100"
                     >
                       <ClipboardPaste className="w-4 h-4 mr-2" />
-                      Plak uit klembord
+                      Paste from clipboard
                     </Button>
                   </div>
                   <Textarea
-                    placeholder="Of plak hier direct de feedback tekst..."
+                    placeholder="Or paste the feedback text here directly..."
                     value={feedbackText}
                     onChange={(e) => setFeedbackText(e.target.value)}
                     className="min-h-[120px] bg-white"
@@ -468,14 +468,14 @@ export default function ViewItem() {
                       ) : (
                         <Save className="w-4 h-4 mr-2" />
                       )}
-                      Feedback Opslaan & Afronden
+                      Save Feedback & Complete
                     </Button>
                     <Button
                       variant="outline"
                       onClick={handleMarkAsChecked}
                     >
                       <CheckCircle className="w-4 h-4 mr-2" />
-                      Alleen afronden
+                      Complete only
                     </Button>
                   </div>
                 </div>
@@ -491,7 +491,7 @@ export default function ViewItem() {
             )}
 
             <div>
-              <h4 className="font-semibold text-slate-800 mb-3">Inhoud</h4>
+              <h4 className="font-semibold text-slate-800 mb-3">Content</h4>
               <div className="relative">
                 <div className="bg-slate-900 rounded-xl p-4 max-h-[600px] overflow-auto">
                   <pre className="text-sm text-slate-300 font-mono whitespace-pre-wrap break-all">

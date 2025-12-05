@@ -111,9 +111,9 @@ export default function EditItem() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-              Item Bewerken
+              Edit Item
             </h1>
-            <p className="text-slate-600 mt-1">Pas je prompt of code snippet aan</p>
+            <p className="text-slate-600 mt-1">Modify your prompt or code snippet</p>
           </div>
         </div>
 
@@ -125,7 +125,7 @@ export default function EditItem() {
             <CardContent className="p-6 space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Titel *</Label>
+                  <Label htmlFor="title">Title *</Label>
                   <Input id="title" value={formData.title} onChange={(e) => handleInputChange('title', e.target.value)} required />
                 </div>
                 <div className="space-y-2">
@@ -143,7 +143,7 @@ export default function EditItem() {
               
               {(formData.type === "code" || formData.type === "snippet") && (
                 <div className="space-y-2">
-                  <Label htmlFor="language">Taal</Label>
+                  <Label htmlFor="language">Language</Label>
                   <Select value={formData.language} onValueChange={(value) => handleInputChange('language', value)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -156,14 +156,14 @@ export default function EditItem() {
                       <SelectItem value="markdown">Markdown</SelectItem>
                       <SelectItem value="sql">SQL</SelectItem>
                       <SelectItem value="bash">Bash</SelectItem>
-                      <SelectItem value="other">Anders</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="description">Beschrijving</Label>
+                <Label htmlFor="description">Description</Label>
                 <Input id="description" value={formData.description || ''} onChange={(e) => handleInputChange('description', e.target.value)} />
               </div>
 
@@ -178,16 +178,16 @@ export default function EditItem() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="content">Inhoud *</Label>
+                <Label htmlFor="content">Content *</Label>
                 <Textarea id="content" value={formData.content} onChange={(e) => handleInputChange('content', e.target.value)} required className="min-h-[300px] font-mono text-sm" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="notes">Notities</Label>
+                <Label htmlFor="notes">Notes</Label>
                 <Textarea id="notes" value={formData.notes || ''} onChange={(e) => handleInputChange('notes', e.target.value)} className="min-h-[100px]" />
               </div>
 
               <div className="space-y-2">
-                <Label>Screenshots & Afbeeldingen</Label>
+                <Label>Screenshots & Images</Label>
                 <ImageUploadZone
                   images={formData.images}
                   onImagesChange={(newImages) => handleInputChange('images', newImages)}
@@ -195,7 +195,7 @@ export default function EditItem() {
               </div>
 
               <div className="space-y-2">
-                <Label>ZIP Bestanden (Code)</Label>
+                <Label>ZIP Files (Code)</Label>
                 <ZipUploadZone
                   zipFiles={formData.zip_files}
                   onZipFilesChange={(newZipFiles) => handleInputChange('zip_files', newZipFiles)}
@@ -206,7 +206,7 @@ export default function EditItem() {
                 <Label htmlFor="tags">Tags</Label>
                 <div className="flex gap-2">
                   <Input id="tags" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())} />
-                  <Button type="button" onClick={addTag} variant="outline">Toevoegen</Button>
+                  <Button type="button" onClick={addTag} variant="outline">Add</Button>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-3">
                   {formData.tags.map((tag) => (
@@ -217,7 +217,7 @@ export default function EditItem() {
               <div className="flex items-center gap-2">
                 <Button type="button" variant={formData.is_favorite ? "default" : "outline"} onClick={() => handleInputChange('is_favorite', !formData.is_favorite)} className={formData.is_favorite ? "bg-yellow-500 hover:bg-yellow-600" : ""}>
                   <Star className={`w-4 h-4 mr-2 ${formData.is_favorite ? 'fill-white' : ''}`} />
-                  {formData.is_favorite ? 'Favoriet' : 'Markeer als favoriet'}
+                  {formData.is_favorite ? 'Favorite' : 'Mark as favorite'}
                 </Button>
               </div>
             </CardContent>
@@ -227,7 +227,7 @@ export default function EditItem() {
             <CardHeader className="border-b border-slate-100">
               <CardTitle className="flex items-center gap-2">
                 <GitBranch className="w-5 h-5 text-green-600" />
-                Publish Versie
+                Publish Version
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
@@ -249,14 +249,14 @@ export default function EditItem() {
                   htmlFor="is_publish"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  Dit is een Publish versie / stabiele timestamp
+                  This is a Publish version / stable timestamp
                 </label>
               </div>
 
               {formData.is_publish_version && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="publish_timestamp">Datum/Tijd Publish</Label>
+                    <Label htmlFor="publish_timestamp">Publish Date/Time</Label>
                     <Input
                       id="publish_timestamp"
                       type="datetime-local"
@@ -267,10 +267,10 @@ export default function EditItem() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="publish_working_notes">Wat werkte er allemaal goed?</Label>
+                    <Label htmlFor="publish_working_notes">What worked well?</Label>
                     <Textarea
                       id="publish_working_notes"
-                      placeholder="Beschrijf wat er op dit moment allemaal goed werkte..."
+                      placeholder="Describe what was working well at this point..."
                       value={formData.publish_working_notes || ''}
                       onChange={(e) => handleInputChange('publish_working_notes', e.target.value)}
                       className="min-h-[100px] border-slate-200"
@@ -278,10 +278,10 @@ export default function EditItem() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="publish_reason">Waarom deze Publish versie?</Label>
+                    <Label htmlFor="publish_reason">Why this Publish version?</Label>
                     <Textarea
                       id="publish_reason"
-                      placeholder="Leg uit waarom je deze Publish versie maakt (bijv. voor een grote wijziging)..."
+                      placeholder="Explain why you're creating this Publish version..."
                       value={formData.publish_reason || ''}
                       onChange={(e) => handleInputChange('publish_reason', e.target.value)}
                       className="min-h-[100px] border-slate-200"
@@ -305,10 +305,10 @@ export default function EditItem() {
           )}
 
           <div className="flex justify-end gap-3 mt-6">
-            <Button type="button" variant="outline" onClick={() => navigate(createPageUrl(`ViewItem?id=${itemId}`))}>Annuleren</Button>
+            <Button type="button" variant="outline" onClick={() => navigate(createPageUrl(`ViewItem?id=${itemId}`))}>Cancel</Button>
             <Button type="submit" disabled={updateMutation.isPending} className="bg-indigo-600 hover:bg-indigo-700">
               <Save className="w-4 h-4 mr-2" />
-              {updateMutation.isPending ? 'Opslaan...' : 'Wijzigingen Opslaan'}
+              {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </form>
