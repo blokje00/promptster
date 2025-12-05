@@ -52,14 +52,28 @@ export default function RecycleBin() {
   });
 
   const restoreMutation = useMutation({
-    mutationFn: (id) => base44.entities.Thought.update(id, { 
-      is_deleted: false, 
-      deleted_at: null 
-    }),
-    onSuccess: () => {
+    mutationFn: async (id) => {
+      const updated = await base44.entities.Thought.update(id, { 
+        is_deleted: false, 
+        deleted_at: null 
+      });
+      return updated;
+    },
+    onSuccess: (restoredItem) => {
       queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
-      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-      toast.success(t("itemRestored"));
+      
+      // Invalidate ALL thought queries (project-specific ones too)
+      queryClient.invalidateQueries({ 
+        predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === 'thoughts'
+      });
+
+      // If restored item has a project, notify user
+      if (restoredItem?.project_id) {
+        localStorage.setItem('lastSelectedProjectId', restoredItem.project_id);
+        toast.success(`${t("itemRestored")} to project.`);
+      } else {
+        toast.success(t("itemRestored"));
+      }
     },
   });
 

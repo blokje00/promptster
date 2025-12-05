@@ -93,19 +93,25 @@ export default function TaskChecklist({
     try {
       const targetProjectId = projectId;
 
-      // Create thoughts for each failed task - one by one to ensure all are created
+      // Create thoughts for each failed task
       const createdThoughts = [];
       for (const task of failedTasks) {
-        const newThought = await base44.entities.Thought.create({
+        // Add retry source metadata if possible (schema permitting)
+        const thoughtData = {
           content: task.full_description || task.task_name,
           project_id: targetProjectId,
           is_selected: true,
           is_deleted: false,
           retry_from_item_id: itemId,
           focus_type: "both",
-        });
+        };
+        
+        const newThought = await base44.entities.Thought.create(thoughtData);
         createdThoughts.push(newThought);
       }
+      
+      // Log created IDs for debugging
+      console.table(createdThoughts.map(t => ({ id: t.id, project: t.project_id })));
 
       // Mark failed tasks as "retried" in checklist and persist
       const updatedChecks = taskChecks.map((check) =>
@@ -121,30 +127,27 @@ export default function TaskChecklist({
         queryClient.invalidateQueries({ queryKey: ["item", itemId] });
       }
 
-      // Invalidate thoughts queries so Multiprompt sees the new tasks
+      // Invalidate ALL thought queries to ensure project views update
       queryClient.invalidateQueries({
         predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "thoughts",
       });
-
-      queryClient.invalidateQueries({ queryKey: ["thoughts", targetProjectId] });
 
       // Store project in localStorage so Multiprompt can read it as default
       localStorage.setItem("lastSelectedProjectId", targetProjectId);
 
       toast.success(`${failedTasks.length} tasks sent back to Multiprompt!`);
 
-      // Navigate to Multiprompt with state containing projectId and new thought IDs
+      // Navigate immediately to Multiprompt with state
       const targetUrl = createPageUrl("Multiprompt");
       const retryThoughtIds = createdThoughts.map((t) => t.id).filter(Boolean);
 
-      setTimeout(() => {
-        navigate(targetUrl, {
-          state: {
-            projectId: targetProjectId,
-            retryThoughtIds: retryThoughtIds,
-          },
-        });
-      }, 800);
+      navigate(targetUrl, {
+        state: {
+          projectId: targetProjectId,
+          retryThoughtIds: retryThoughtIds,
+        },
+      });
+      
     } catch (error) {
       console.error("Retry error:", error);
       toast.error("Could not restore tasks");

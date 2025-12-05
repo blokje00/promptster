@@ -13,7 +13,7 @@ import { toast } from "sonner";
  * @param {string} params.selectedProjectId - Actief project ID
  * @returns {Object} Thoughts state en handlers
  */
-export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser }) {
+export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser, onExternalThoughts }) {
   const queryClient = useQueryClient();
   const [localThoughts, setLocalThoughts] = useState([]);
   const [selectedThoughts, setSelectedThoughts] = useState([]);
@@ -50,12 +50,18 @@ export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser })
       // Add new thoughts from DB that aren't in local state
       const localIds = new Set(filteredPrev.map(t => t.id));
       const newItems = activeDbThoughts.filter(t => !localIds.has(t.id));
+      
+      // Notify parent about new items from external sources (DB)
+      if (newItems.length > 0 && onExternalThoughts) {
+        onExternalThoughts(newItems);
+      }
+
       return newItems.length > 0 ? [...newItems, ...filteredPrev] : filteredPrev;
     });
     
     // Also clean up selected thoughts that no longer exist
     setSelectedThoughts(prev => prev.filter(id => dbIdSet.has(id)));
-  }, [dbThoughts]);
+  }, [dbThoughts, onExternalThoughts]);
 
   // Reset manual selection flag when project changes
   useEffect(() => {

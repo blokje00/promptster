@@ -93,6 +93,23 @@ export default function Multiprompt() {
     return incomingProjectId ?? localStorage.getItem('lastSelectedProjectId') ?? "";
   });
 
+  // Force refresh when project selection changes
+  useEffect(() => {
+    // Persist selection
+    if (selectedProjectId) {
+      localStorage.setItem('lastSelectedProjectId', selectedProjectId);
+    } else {
+      localStorage.setItem('lastSelectedProjectId', "");
+    }
+    
+    // Invalidate to ensure we get fresh data for the new view
+    if (currentUser?.email) {
+      queryClient.invalidateQueries({ 
+        queryKey: ['thoughts', currentUser.email, selectedProjectId || 'all'] 
+      });
+    }
+  }, [selectedProjectId, currentUser?.email, queryClient]);
+
   // Autosave for create task field using generic hook
   const { 
     value: newThought, 
@@ -154,17 +171,27 @@ export default function Multiprompt() {
   const [controlNotes, setControlNotes] = useState("");
 
   const { data: dbThoughts = [] } = useQuery({
-    queryKey: ['thoughts', currentUser?.email],
+    queryKey: ['thoughts', currentUser?.email, selectedProjectId || 'all'],
     queryFn: async () => {
       if (!currentUser?.email) return [];
-      // Only fetch non-deleted thoughts (is_deleted === false or not set)
-      const result = await base44.entities.Thought.filter({ 
-        created_by: currentUser.email,
+      
+      // Build filter based on selection
+      const filter = {
         $or: [
           { is_deleted: false },
           { is_deleted: { $exists: false } }
         ]
-      }, "-created_date");
+      };
+
+      // If a project is selected, filter by it (and get ALL team tasks for that project)
+      // If no project selected, show only MY tasks (created_by me)
+      if (selectedProjectId) {
+        filter.project_id = selectedProjectId;
+      } else {
+        filter.created_by = currentUser.email;
+      }
+
+      const result = await base44.entities.Thought.filter(filter, "-created_date");
       return result || [];
     },
     enabled: !!currentUser?.email,
