@@ -1256,7 +1256,7 @@ ${generatedPrompt}`,
             <div className="flex items-center gap-4 flex-wrap">
               <div className="flex items-center gap-2">
                 <FolderOpen className="w-5 h-5 text-slate-500" />
-                <span className="font-medium text-slate-700">{t("project")}:</span>
+                <span className="font-medium text-slate-700">Project:</span>
               </div>
               <div className="flex gap-2 flex-wrap items-center">
                 <Button
@@ -1268,7 +1268,7 @@ ${generatedPrompt}`,
                   }}
                   className={!selectedProjectId ? "bg-slate-700" : ""}
                 >
-                  {t("allProjects")}
+                  All Projects
                 </Button>
                 {projects.map(project => {
                   const projectTaskCount = localThoughts.filter(t => t.project_id === project.id).length;
@@ -1814,7 +1814,7 @@ ${generatedPrompt}`,
                             <SelectValue placeholder="Start..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">{t("noTemplate")}</SelectItem>
+                            <SelectItem value="none">No template</SelectItem>
                             {startTemplates.map(t => (
                               <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                             ))}
@@ -1841,7 +1841,7 @@ ${generatedPrompt}`,
                             <SelectValue placeholder="Eind..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="none">{t("noTemplate")}</SelectItem>
+                            <SelectItem value="none">No template</SelectItem>
                             {endTemplates.map(t => (
                               <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                             ))}
