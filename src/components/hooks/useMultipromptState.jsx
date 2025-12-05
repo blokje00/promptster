@@ -44,22 +44,24 @@ export const useMultipromptData = ({
     refetchOnWindowFocus: true,
   });
 
-  // 2. Auto-select logic (for retries)
+  // 2. Auto-select logic (Task 3: Default Select All)
+  const [hasInitialSelected, setHasInitialSelected] = useState(false);
+
   useEffect(() => {
-    if (idsToAutoSelect && idsToAutoSelect.length > 0) {
-      // Only select if they exist in the current fetched data
-      const validIds = idsToAutoSelect.filter(id => 
-        thoughts.some(t => t.id === id)
-      );
-      
-      if (validIds.length > 0) {
-        setSelectedThoughtIds(prev => {
-          const combined = new Set([...prev, ...validIds]);
-          return Array.from(combined);
-        });
+    if (thoughts.length > 0 && !hasInitialSelected) {
+      if (idsToAutoSelect && idsToAutoSelect.length > 0) {
+        // Retry logic: Select specific IDs
+        const validIds = idsToAutoSelect.filter(id => 
+          thoughts.some(t => t.id === id)
+        );
+        setSelectedThoughtIds(validIds);
+      } else {
+        // Default: Select All
+        setSelectedThoughtIds(thoughts.map(t => t.id));
       }
+      setHasInitialSelected(true);
     }
-  }, [idsToAutoSelect, thoughts]); // Re-run when data arrives
+  }, [thoughts, idsToAutoSelect, hasInitialSelected]);
 
   // 3. Mutations with Global Invalidation
   const invalidateAllThoughts = async () => {

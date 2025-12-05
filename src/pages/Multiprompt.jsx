@@ -125,7 +125,8 @@ export default function Multiprompt() {
   // Determine Max Thoughts based on plan
   const currentPlan = subscriptionPlans.find(p => p.id === currentUser?.plan_id || p.monthly_price_id === currentUser?.plan_id) || {};
   const maxThoughts = currentPlan.max_thoughts || 10; // Default limit
-  const isLimitReached = thoughts.length >= maxThoughts;
+  // Task 2: Admin Unlimited Tasks
+  const isLimitReached = currentUser?.role !== 'admin' && thoughts.length >= maxThoughts;
 
   // --- 3. UI State Management ---
 
@@ -345,13 +346,19 @@ export default function Multiprompt() {
     }
   }, [improvedPrompt, selectedProjectId]);
 
+  // Task 6: Clear improved prompt on selection change
+  useEffect(() => {
+    setImprovedPrompt(""); 
+  }, [selectedThoughtIds, startTemplateId, endTemplateId]);
+
   // AI Improve
   const handleImprovePrompt = async () => {
     if (!generatedPrompt) return;
     setIsImproving(true);
     try {
+      // Task 5: Remove AI Chatter
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Improve this prompt:\n${generatedPrompt}`,
+        prompt: `Improve this prompt:\n${generatedPrompt}\n\nIMPORTANT: Return ONLY the improved prompt content. Do not include any intro, outro, or conversational filler like "Here is the improved prompt". Just the prompt text itself.`,
       });
       setImprovedPrompt(result);
       toast.success("Prompt improved");
@@ -420,6 +427,14 @@ export default function Multiprompt() {
       start_template_id: startTemplateId || null,
       end_template_id: endTemplateId || null,
       status: "open"
+    }, {
+      onSuccess: (newItem) => {
+        // Task 10: Redirect to Review (ViewItem)
+        if (newItem?.id) {
+          navigate(createPageUrl(`ViewItem?id=${newItem.id}`));
+          toast.success("Prompt saved! Opening for review...");
+        }
+      }
     });
   };
 
@@ -561,30 +576,41 @@ export default function Multiprompt() {
                         </div>
                       </div>
 
-                      {/* Add Button */}
-                      <div className="flex gap-2">
-                        <Button 
-                          onClick={handleAddThought} 
-                          disabled={isLimitReached}
-                          className={`flex-1 ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'} ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                          <Plus className="w-4 h-4 mr-2" /> {isLimitReached ? `Limit Reached (${maxThoughts})` : 'Add Task'}
-                        </Button>
-                        <Select value={groupBy} onValueChange={setGroupBy}>
-                          <SelectTrigger className="w-[120px]"><SelectValue placeholder="Group" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="date">By Date</SelectItem>
-                            <SelectItem value="page">By Page</SelectItem>
-                            <SelectItem value="component">By Component</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      {/* Add Button & Bulk Selection (Task 3) */}
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={handleAddThought} 
+                            disabled={isLimitReached}
+                            // Task 1: Ensure button color is full
+                            className={`flex-1 text-white ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800 hover:bg-slate-900'} ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          >
+                            <Plus className="w-4 h-4 mr-2" /> {isLimitReached ? `Limit Reached (${maxThoughts})` : 'Add Task'}
+                          </Button>
+                          <Select value={groupBy} onValueChange={setGroupBy}>
+                            <SelectTrigger className="w-[120px]"><SelectValue placeholder="Group" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="date">By Date</SelectItem>
+                              <SelectItem value="page">By Page</SelectItem>
+                              <SelectItem value="component">By Component</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {filteredThoughts.length > 0 && (
+                          <div className="flex justify-end gap-3 text-xs font-medium text-slate-500 px-1">
+                            <button onClick={() => selectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 transition-colors">Select All</button>
+                            <span className="text-slate-300">|</span>
+                            <button onClick={() => deselectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 transition-colors">Deselect All</button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Tasks List */}
                       <DragDropContext onDragEnd={onDragEnd}>
                         <Droppable droppableId="thoughts-list">
                           {(provided) => (
-                            <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2 max-h-[500px] overflow-y-auto">
+                            <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2 max-h-[500px] overflow-y-auto p-1">
                                {filteredThoughts.map((thought, idx) => (
                                  <Draggable key={thought.id} draggableId={thought.id} index={idx}>
                                    {(provided) => (
@@ -613,14 +639,6 @@ export default function Multiprompt() {
                           )}
                         </Droppable>
                       </DragDropContext>
-
-                      {/* Bulk Selection */}
-                      {filteredThoughts.length > 0 && (
-                        <div className="flex justify-between text-xs text-slate-500">
-                          <button onClick={() => selectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600">Select All</button>
-                          <button onClick={() => deselectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600">Deselect All</button>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 </div>
@@ -688,6 +706,12 @@ export default function Multiprompt() {
                     <CardHeader className="pb-3 flex flex-row items-center justify-between">
                       <CardTitle>Preview</CardTitle>
                       <div className="flex gap-2">
+                        {/* Task 4: Restore Settings Gear */}
+                        <Link to={createPageUrl("AIBackoffice")} target="_blank">
+                           <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600">
+                             <Cog className="w-4 h-4" />
+                           </Button>
+                        </Link>
                         <Button size="sm" variant="outline" onClick={handleImprovePrompt} disabled={!generatedPrompt}>
                           {isImproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />} Improve
                         </Button>

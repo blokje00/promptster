@@ -66,6 +66,7 @@ export default function AdminSubscription() {
     monthly_price_id: "",
     annual_price_amount: 0,
     annual_price_id: "",
+    max_thoughts: 10,
     features: [],
     is_active: true,
     order: 0
@@ -79,6 +80,7 @@ export default function AdminSubscription() {
       monthly_price_id: "",
       annual_price_amount: 0,
       annual_price_id: "",
+      max_thoughts: 10,
       features: [],
       is_active: true,
       order: 0
@@ -95,6 +97,7 @@ export default function AdminSubscription() {
       monthly_price_id: plan.monthly_price_id,
       annual_price_amount: plan.annual_price_amount,
       annual_price_id: plan.annual_price_id,
+      max_thoughts: plan.max_thoughts || 10,
       features: plan.features || [],
       is_active: plan.is_active,
       order: plan.order
@@ -184,6 +187,15 @@ export default function AdminSubscription() {
                 </div>
               </div>
               <div>
+                {/* Task 7: Max Thoughts Field */}
+                <Label>Max Tasks Limit</Label>
+                <Input 
+                  type="number" 
+                  value={formData.max_thoughts} 
+                  onChange={(e) => setFormData({...formData, max_thoughts: parseInt(e.target.value)})} 
+                />
+              </div>
+              <div>
                 <Label>Features (komma gescheiden)</Label>
                 <Textarea 
                   value={formData.features.join('\n')} 
@@ -232,7 +244,7 @@ export default function AdminSubscription() {
                 <div className="flex gap-4 text-sm text-slate-500">
                   <span>Maand: €{plan.monthly_price_amount}</span>
                   <span>Jaar: €{plan.annual_price_amount}</span>
-                  <span>ID: {plan.monthly_price_id?.substring(0, 10)}...</span>
+                  <span className="font-medium text-indigo-600">Max Tasks: {plan.max_thoughts || 10}</span>
                 </div>
               </div>
               <div className="flex gap-2">

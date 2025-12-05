@@ -400,23 +400,6 @@ export default function ViewItem() {
                           <Tooltip key={index}>
                             <TooltipTrigger asChild>
                               <div className="p-3 flex items-start gap-3 hover:bg-slate-50 transition-colors cursor-pointer">
-                                <Select 
-                                  value={check.status || "open"} 
-                                  onValueChange={(newStatus) => handleStatusChange(index, newStatus)}
-                                >
-                                  <SelectTrigger className={`w-[110px] h-8 text-xs ${
-                                    check.status === 'success' ? 'bg-green-50 border-green-300 text-green-700' : 
-                                    check.status === 'failed' ? 'bg-red-50 border-red-300 text-red-700' : 
-                                    'bg-blue-50 border-blue-300 text-blue-700'
-                                  }`}>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="open">Open</SelectItem>
-                                    <SelectItem value="success">Success</SelectItem>
-                                    <SelectItem value="failed">Failed</SelectItem>
-                                  </SelectContent>
-                                </Select>
                                 <div className="flex-1 min-w-0">
                                   <p className={`text-sm ${check.status === 'success' ? 'text-green-700 line-through font-medium' : check.status === 'failed' ? 'text-red-700 font-medium' : 'text-slate-700'}`}>
                                     {check.task_name}
@@ -427,9 +410,75 @@ export default function ViewItem() {
                                     </span>
                                   )}
                                 </div>
+                                
+                                {/* Task 9: Checkboxes instead of Dropdown */}
+                                <div className="flex items-center gap-1 ml-2 shrink-0">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleStatusChange(index, 'success');
+                                        }}
+                                        className={`p-1.5 rounded-md border transition-all ${
+                                          check.status === 'success' 
+                                            ? 'bg-green-500 text-white border-green-600' 
+                                            : 'bg-white text-slate-300 border-slate-200 hover:border-green-400 hover:text-green-500'
+                                        }`}
+                                      >
+                                        <CheckCircle2 className="w-4 h-4" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Mark as Success</TooltipContent>
+                                  </Tooltip>
+
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleStatusChange(index, 'failed');
+                                        }}
+                                        className={`p-1.5 rounded-md border transition-all ${
+                                          check.status === 'failed' 
+                                            ? 'bg-red-500 text-white border-red-600' 
+                                            : 'bg-white text-slate-300 border-slate-200 hover:border-red-400 hover:text-red-500'
+                                        }`}
+                                      >
+                                        <XCircle className="w-4 h-4" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Mark as Failed</TooltipContent>
+                                  </Tooltip>
+
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleStatusChange(index, 'open');
+                                        }}
+                                        className={`p-1.5 rounded-md border transition-all ${
+                                          check.status === 'open' || !check.status
+                                            ? 'bg-blue-50 text-blue-600 border-blue-200' 
+                                            : 'bg-white text-slate-300 border-slate-200 hover:bg-slate-50'
+                                        }`}
+                                      >
+                                        <Circle className="w-4 h-4" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Reset to Open</TooltipContent>
+                                  </Tooltip>
+                                </div>
                               </div>
                             </TooltipTrigger>
-                            <TooltipContent side="left" className="max-w-2xl max-h-96 overflow-auto p-4 bg-slate-900 text-white">
+                            {/* Task 8: Fix Tooltip Visibility (collisionPadding + z-index) */}
+                            <TooltipContent 
+                              side="top" 
+                              align="start"
+                              collisionPadding={20}
+                              className="z-50 max-w-[90vw] md:max-w-2xl max-h-[60vh] overflow-auto p-4 bg-slate-900 text-white shadow-xl"
+                            >
                               <p className="text-sm whitespace-pre-wrap leading-relaxed">{check.full_description || check.task_name}</p>
                             </TooltipContent>
                           </Tooltip>
