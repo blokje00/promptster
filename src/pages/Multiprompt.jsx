@@ -225,7 +225,7 @@ export default function Multiprompt() {
       onSuccess: () => {
         resetNewThought(); // Clear autosave via hook
         setNewThoughtImages([]);
-        toast.success(t("taskAdded") || "Taak toegevoegd");
+        toast.success("Task added");
       }
     });
   };
@@ -236,7 +236,7 @@ export default function Multiprompt() {
       queryClient.invalidateQueries({ queryKey: ['templates'] });
       setNewTemplateName("");
       setNewTemplateContent("");
-      toast.success(t("templateSaved") || "Template opgeslagen");
+      toast.success("Template saved");
     },
   });
 
@@ -244,7 +244,7 @@ export default function Multiprompt() {
     mutationFn: (id) => base44.entities.PromptTemplate.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['templates'] });
-      toast.success(t("templateDeleted") || "Template verwijderd");
+      toast.success("Template deleted");
     },
   });
 
@@ -254,7 +254,7 @@ export default function Multiprompt() {
       queryClient.invalidateQueries({ queryKey: ['templates'] });
       setEditTemplateDialogOpen(false);
       setEditingTemplate(null);
-      toast.success(t("templateUpdated") || "Template bijgewerkt");
+      toast.success("Template updated");
     },
   });
 
@@ -285,7 +285,7 @@ export default function Multiprompt() {
       setNewProjectName("");
       setNewProjectDescription("");
       setNewProjectDialogOpen(false);
-      toast.success(t("projectAdded") || "Project toegevoegd");
+      toast.success("Project added");
     },
   });
 
@@ -294,7 +294,7 @@ export default function Multiprompt() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       if (selectedProjectId === editingProject?.id) setSelectedProjectId("");
-      toast.success(t("projectDeleted") || "Project verwijderd");
+      toast.success("Project deleted");
     },
   });
 
@@ -304,7 +304,7 @@ export default function Multiprompt() {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       setEditDialogOpen(false);
       setEditingProject(null);
-      toast.success(t("projectUpdated") || "Project bijgewerkt");
+      toast.success("Project updated");
     },
   });
 
@@ -312,7 +312,7 @@ export default function Multiprompt() {
     mutationFn: (data) => base44.entities.Item.create(data),
     onSuccess: (newItem) => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
-      toast.success(t("multiStepSaved") || "Multi-Step opgeslagen!");
+      toast.success("Multi-Step saved!");
       // Reset builder state locally just in case
       resetBuilder();
     },
@@ -342,7 +342,7 @@ export default function Multiprompt() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-      toast.success(t("tasksDeleted") || "Taken verwijderd!");
+      toast.success("Tasks deleted!");
       resetBuilder();
     },
     onError: (error, _, context) => {
@@ -351,7 +351,7 @@ export default function Multiprompt() {
         setLocalThoughts(context.previousThoughts);
         setSelectedThoughts(context.previousSelected);
       }
-      toast.error(t("deleteFailed") || "Verwijderen mislukt");
+      toast.error("Delete failed");
     },
   });
 
@@ -986,9 +986,9 @@ Originele prompt:
 ${generatedPrompt}`,
       });
       setImprovedPrompt(result);
-      toast.success(t("promptImproved") || "Prompt verbeterd!");
+      toast.success("Prompt improved!");
     } catch (error) {
-      toast.error(t("promptImproveFailed") || "Kon prompt niet verbeteren");
+      toast.error("Could not improve prompt");
     } finally {
       setIsImproving(false);
     }
@@ -1213,7 +1213,7 @@ ${generatedPrompt}`,
     setPromptTitle("");
     setTaskChecks([]);
     setControlNotes("");
-    toast.info(t("promptClosed") || "Prompt gesloten");
+    toast.info("Prompt closed");
   };
 
   const updateTaskStatus = (index, status) => {
