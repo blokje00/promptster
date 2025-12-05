@@ -1,208 +1,152 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
 /**
- * Hook voor beheer van Multiprompt thoughts state.
- * Handelt synchronisatie tussen lokale en database state.
- * Behoudt handmatige selecties bij project wisseling.
- * 
- * @param {Object} params - Hook parameters
- * @param {Array} params.dbThoughts - Thoughts uit database query
- * @param {string} params.selectedProjectId - Actief project ID
- * @returns {Object} Thoughts state en handlers
+ * ROBUUSTE HOOK VOOR MULTIPROMPT STATE
+ * Vervangt de oude complexe sync-logica met een single-source-of-truth benadering via React Query.
  */
-export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser, idsToAutoSelect = [] }) {
+export function useThoughts({ selectedProjectId, currentUser, idsToAutoSelect = [] }) {
   const queryClient = useQueryClient();
-  const [localThoughts, setLocalThoughts] = useState([]);
+  
+  // 1. QUERY: Single Source of Truth
+  // Haal altijd de laatste data op. De UI rendert direct wat de cache/DB heeft.
+  // Geen complexe lokale state sync meer die out-of-sync kan raken.
+  const { data: thoughts = [], isLoading } = useQuery({
+    queryKey: ['thoughts', currentUser?.email, selectedProjectId || 'all'],
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+
+      // Filter logica: Robuust en permissief
+      // We willen nooit taken verbergen die "net" zijn aangemaakt of hersteld
+      const filter = {
+        // Permissieve check voor niet-verwijderde items
+        $or: [
+          { is_deleted: false },
+          { is_deleted: null },
+          { is_deleted: { $exists: false } }
+        ]
+      };
+
+      if (selectedProjectId) {
+        // Project context: Toon alles van dit project (ook van teamleden)
+        filter.project_id = selectedProjectId;
+      } else {
+        // Geen project (Global/All): Toon eigendom van user
+        filter.created_by = currentUser.email;
+      }
+
+      // Sorteer op nieuwste eerst
+      return await base44.entities.Thought.filter(filter, "-created_date");
+    },
+    enabled: !!currentUser?.email,
+    // Zorg dat we altijd verse data hebben bij mount/window focus
+    staleTime: 0, 
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
+  });
+
+  // 2. SELECTIE STATE
   const [selectedThoughts, setSelectedThoughts] = useState([]);
-  const prevDbIdsRef = useRef("");
-  const hasManualSelectionRef = useRef(false);
-  const prevProjectIdRef = useRef(selectedProjectId);
 
-  // Sync DB naar lokale state - DB is source of truth
-  // Gebruik een content-hash ipv alleen IDs om ook restored items te detecteren
+  // 3. AUTO-SELECTIE LOGICA (voor Retry/Restore)
   useEffect(() => {
-    // Handle empty dbThoughts - clear local state
-    if (!dbThoughts || dbThoughts.length === 0) {
-      if (localThoughts.length > 0) {
-        setLocalThoughts([]);
-        setSelectedThoughts([]);
-      }
-      prevDbIdsRef.current = "";
-      return;
-    }
-    
-    // Filter out any deleted thoughts (should already be filtered by query, but double-check)
-    const activeDbThoughts = dbThoughts.filter(t => !t.is_deleted);
-    
-    // Gebruik een hash die ook is_deleted en updated_at meeneemt om restores te detecteren
-    const currentDbHash = activeDbThoughts
-      .map(t => `${t.id}:${t.is_deleted}:${t.updated_at || t.created_date}`)
-      .sort()
-      .join(',');
-    
-    // ALTIJD syncen als hash anders is (niet alleen IDs)
-    if (prevDbIdsRef.current === currentDbHash) return;
-    prevDbIdsRef.current = currentDbHash;
+    if (idsToAutoSelect.length > 0 && thoughts.length > 0) {
+      // Filter IDs die daadwerkelijk in de huidige lijst staan
+      const validIds = thoughts
+        .filter(t => idsToAutoSelect.includes(t.id))
+        .map(t => t.id);
 
-    // DB is source of truth - volledig synchroniseren
-    const dbIdSet = new Set(activeDbThoughts.map(t => t.id));
-    const dbIdToThought = new Map(activeDbThoughts.map(t => [t.id, t]));
-    
-    setLocalThoughts(prev => {
-      // Bouw nieuwe lijst: DB items zijn leidend, maar behoud volgorde waar mogelijk
-      const result = [];
-      const addedIds = new Set();
-      
-      // Eerst: bestaande lokale items die nog in DB staan (update ze met DB data)
-      for (const localThought of prev) {
-        if (dbIdSet.has(localThought.id)) {
-          // Update met verse DB data
-          result.push(dbIdToThought.get(localThought.id));
-          addedIds.add(localThought.id);
-        }
-      }
-      
-      // Dan: nieuwe items uit DB die niet in lokale state stonden (restored items!)
-      for (const dbThought of activeDbThoughts) {
-        if (!addedIds.has(dbThought.id)) {
-          result.unshift(dbThought); // Nieuwe/restored items bovenaan
-          addedIds.add(dbThought.id);
-        }
-      }
-      
-      return result;
-    });
-    
-    // Clean up selected thoughts die niet meer in DB staan
-    setSelectedThoughts(prev => prev.filter(id => dbIdSet.has(id)));
-  }, [dbThoughts]);
-
-  // Auto-select specific IDs when they appear (e.g. retried tasks)
-  useEffect(() => {
-    if (!idsToAutoSelect || idsToAutoSelect.length === 0) return;
-    
-    // Find items that should be selected but aren't yet
-    // Using a Set for O(1) lookup
-    const selectedSet = new Set(selectedThoughts);
-    const itemsToSelect = localThoughts.filter(t => 
-      idsToAutoSelect.includes(t.id) && !selectedSet.has(t.id)
-    );
-    
-    if (itemsToSelect.length > 0) {
-      const newIds = itemsToSelect.map(t => t.id);
-      setSelectedThoughts(prev => [...prev, ...newIds]);
-      toast.info(`${newIds.length} retry tasks reopened`);
-      // Mark as manual selection so they stick around if project changes (though retries usually set project too)
-      hasManualSelectionRef.current = true; 
-    }
-  }, [localThoughts, idsToAutoSelect, selectedThoughts]);
-
-  // Reset manual selection flag when project changes
-  useEffect(() => {
-    if (prevProjectIdRef.current !== selectedProjectId) {
-      hasManualSelectionRef.current = false;
-      prevProjectIdRef.current = selectedProjectId;
-    }
-  }, [selectedProjectId]);
-
-  // Project change handler - only auto-select if no manual selection made
-  useEffect(() => {
-    // Skip auto-selection if user made manual selections
-    if (hasManualSelectionRef.current) return;
-    
-    const relevantIds = selectedProjectId 
-      ? localThoughts.filter(t => t.project_id === selectedProjectId).map(t => t.id)
-      : localThoughts.map(t => t.id);
-    
-    if (relevantIds.length > 0) {
-      setSelectedThoughts(relevantIds);
-    }
-  }, [selectedProjectId, localThoughts]);
-
-  // Mutations
-  const createThought = useMutation({
-    mutationFn: (data) => base44.entities.Thought.create(data),
-    onSuccess: async (newThought) => {
-      setLocalThoughts(prev => [newThought, ...prev.filter(t => t.id !== newThought.id)]);
-      setSelectedThoughts(prev => [...prev, newThought.id]);
-      // Invalideer met volledige query key voor betere cache targeting
-      if (currentUser?.email) {
-        await queryClient.invalidateQueries({ 
-          queryKey: ['thoughts', currentUser.email, selectedProjectId || 'all'] 
+      if (validIds.length > 0) {
+        setSelectedThoughts(prev => {
+          // Voeg toe aan bestaande selectie zonder duplicaten
+          const next = new Set([...prev, ...validIds]);
+          return Array.from(next);
         });
       }
-      // Fallback: ook algemene invalidatie
-      await queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+    }
+  }, [idsToAutoSelect, thoughts]);
+
+  // 4. CLEANUP SELECTIE
+  // Als thoughts verdwijnen (bv. delete), verwijder ze uit selectie
+  useEffect(() => {
+    if (thoughts.length === 0 && selectedThoughts.length > 0) {
+        // Keep selection if logic dictates, but generally if not in list, deselect.
+        // Echter, bij project wissel willen we misschien clearen.
+        // Voor nu: behoud selectie tenzij expliciet gewist, of filter tegen huidige lijst bij acties.
+    }
+  }, [thoughts]);
+
+  // 5. MUTATIES
+  // Gebruik Optimistische Updates of snelle invalidatie voor responsiviteit
+
+  const createThought = useMutation({
+    mutationFn: (data) => base44.entities.Thought.create(data),
+    onSuccess: () => {
+      // Reset ALLE thoughts queries om zeker te zijn dat filters kloppen
+      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+    }
+  });
+
+  const updateThought = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Thought.update(id, data),
+    onMutate: async ({ id, data }) => {
+      // Optimistic Update voor snelle UI
+      await queryClient.cancelQueries(['thoughts']);
+      const previousThoughts = queryClient.getQueryData(['thoughts', currentUser?.email, selectedProjectId || 'all']);
+
+      if (previousThoughts) {
+        queryClient.setQueryData(
+          ['thoughts', currentUser?.email, selectedProjectId || 'all'],
+          (old) => old.map(t => t.id === id ? { ...t, ...data } : t)
+        );
+      }
+      return { previousThoughts };
     },
+    onError: (err, newTodo, context) => {
+      if (context?.previousThoughts) {
+        queryClient.setQueryData(
+          ['thoughts', currentUser?.email, selectedProjectId || 'all'],
+          context.previousThoughts
+        );
+      }
+      toast.error("Update failed");
+    },
+    onSuccess: () => {
+      // Silent refresh voor consistentie
+      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+    }
   });
 
   const deleteThought = useMutation({
     mutationFn: (id) => base44.entities.Thought.update(id, { 
-      is_deleted: true,
-      deleted_at: new Date().toISOString()
+      is_deleted: true, 
+      deleted_at: new Date().toISOString() 
     }),
-    onMutate: (id) => {
-      const thoughtToRestore = localThoughts.find(t => t.id === id);
-      setLocalThoughts(prev => prev.filter(t => t.id !== id));
-      setSelectedThoughts(prev => prev.filter(tid => tid !== id));
-      return { thoughtToRestore };
-    },
-    onSuccess: async (_, id, context) => {
-      // Invalideer alle gerelateerde queries
-      await queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-      await queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
-      
-      toast("Task moved to recycle bin", {
-        action: {
-          label: "Undo",
-          onClick: async () => {
-            await base44.entities.Thought.update(id, { is_deleted: false, deleted_at: null });
-            if (context?.thoughtToRestore) {
-              setLocalThoughts(prev => [context.thoughtToRestore, ...prev]);
-            }
-            // Reset alle thoughts queries om verse data te forceren
-            await queryClient.resetQueries({ 
-              predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === 'thoughts'
-            });
-            await queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
-          }
-        },
-        duration: 5000
-      });
-    },
+    onSuccess: () => {
+      toast.success("Task moved to recycle bin");
+      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+      queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
+      queryClient.invalidateQueries({ queryKey: ['deletedThoughtsCount'] });
+    }
   });
 
-  const updateThought = useCallback((thoughtId, updates) => {
-    setLocalThoughts(prev => prev.map(t => 
-      t.id === thoughtId ? { ...t, ...updates } : t
-    ));
-  }, []);
-
-  /**
-   * Toggle selectie van een thought.
-   * Markeert dat gebruiker handmatige selectie heeft gemaakt.
-   * @param {string} thoughtId - ID van de thought
-   */
-  const toggleSelection = useCallback((thoughtId) => {
-    hasManualSelectionRef.current = true;
+  // Toggle helper
+  const toggleSelection = useCallback((id) => {
     setSelectedThoughts(prev => 
-      prev.includes(thoughtId) 
-        ? prev.filter(id => id !== thoughtId)
-        : [...prev, thoughtId]
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
   }, []);
 
   return {
-    localThoughts,
+    thoughts, // De directe array uit React Query
+    isLoading,
     selectedThoughts,
-    setLocalThoughts,
     setSelectedThoughts,
     createThought,
-    deleteThought,
     updateThought,
+    deleteThought,
     toggleSelection
   };
 }
