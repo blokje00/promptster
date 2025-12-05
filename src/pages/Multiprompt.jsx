@@ -2061,7 +2061,7 @@ ${generatedPrompt}`,
               <div className="space-y-4">
                 <Card className={selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : ''}>
                   <CardHeader className="pb-3">
-                    <CardTitle className={selectedProject ? `text-${selectedProject.color}-700` : "text-green-700"}>{t("startTexts")}</CardTitle>
+                    <CardTitle className={selectedProject ? `text-${selectedProject.color}-700` : "text-green-700"}>Start texts</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {startTemplates.map(template => {
@@ -2103,14 +2103,14 @@ ${generatedPrompt}`,
                       );
                     })}
                     {startTemplates.length === 0 && (
-                      <p className="text-slate-400 text-center py-4">{t("noStartTexts")}</p>
+                      <p className="text-slate-400 text-center py-4">No start texts</p>
                     )}
                   </CardContent>
                 </Card>
 
                 <Card className={selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : ''}>
                   <CardHeader className="pb-3">
-                    <CardTitle className={selectedProject ? `text-${selectedProject.color}-700` : "text-orange-700"}>{t("endTexts")}</CardTitle>
+                    <CardTitle className={selectedProject ? `text-${selectedProject.color}-700` : "text-orange-700"}>End texts</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {endTemplates.map(template => {
@@ -2152,7 +2152,7 @@ ${generatedPrompt}`,
                       );
                     })}
                     {endTemplates.length === 0 && (
-                      <p className="text-slate-400 text-center py-4">{t("noEndTexts")}</p>
+                      <p className="text-slate-400 text-center py-4">No end texts</p>
                     )}
                   </CardContent>
                 </Card>
@@ -2161,11 +2161,11 @@ ${generatedPrompt}`,
               {/* Add Template Form */}
               <Card>
                 <CardHeader>
-                  <CardTitle>{t("newTemplate")}</CardTitle>
+                  <CardTitle>New Template</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Input
-                    placeholder={t("templateName")}
+                    placeholder="Template name..."
                     value={newTemplateName}
                     onChange={(e) => setNewTemplateName(e.target.value)}
                   />
@@ -2174,12 +2174,12 @@ ${generatedPrompt}`,
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="start">{t("startText")}</SelectItem>
-                      <SelectItem value="eind">{t("endText")}</SelectItem>
+                      <SelectItem value="start">Start text</SelectItem>
+                      <SelectItem value="eind">End text</SelectItem>
                     </SelectContent>
                   </Select>
                   <Textarea
-                    placeholder={t("templateContent")}
+                    placeholder="Template content..."
                     value={newTemplateContent}
                     onChange={(e) => setNewTemplateContent(e.target.value)}
                     className="min-h-[150px]"
@@ -2190,7 +2190,7 @@ ${generatedPrompt}`,
                     className="w-full bg-indigo-600 hover:bg-indigo-700"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    {t("saveTemplate")}
+                    Save Template
                   </Button>
                 </CardContent>
               </Card>
@@ -2200,48 +2200,48 @@ ${generatedPrompt}`,
             <Dialog open={editTemplateDialogOpen} onOpenChange={setEditTemplateDialogOpen}>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>{t("edit")} Template</DialogTitle>
+                  <DialogTitle>Edit Template</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 pt-4">
                   <Input
-                    placeholder={t("templateName")}
+                    placeholder="Template name..."
                     value={editTemplateName}
                     onChange={(e) => setEditTemplateName(e.target.value)}
                   />
                   <Textarea
-                    placeholder={t("templateContent")}
+                    placeholder="Template content..."
                     value={editTemplateContent}
                     onChange={(e) => setEditTemplateContent(e.target.value)}
                     className="min-h-[200px]"
                   />
                   <div className="flex gap-2 justify-end">
                     <Button variant="outline" onClick={() => setEditTemplateDialogOpen(false)}>
-                      {t("cancel")}
+                      Cancel
                     </Button>
                     <Button onClick={handleSaveEditTemplate} className="bg-indigo-600 hover:bg-indigo-700">
-                      {t("save")}
+                      Save
                     </Button>
                   </div>
                 </div>
               </DialogContent>
             </Dialog>
-          </TabsContent>
+            </TabsContent>
 
           <TabsContent value="projects" className="space-y-6">
             <div className="grid lg:grid-cols-2 gap-6">
               {/* Add Project Form */}
               <Card>
                 <CardHeader>
-                  <CardTitle>{t("newProject")}</CardTitle>
+                  <CardTitle>New Project</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Input
-                    placeholder={t("projectName")}
+                    placeholder="Project name..."
                     value={newProjectName}
                     onChange={(e) => setNewProjectName(e.target.value)}
                   />
                   <div>
-                    <label className="text-sm font-medium text-slate-700 mb-2 block">{t("color")}</label>
+                    <label className="text-sm font-medium text-slate-700 mb-2 block">Color</label>
                     <div className="flex gap-2 flex-wrap">
                       {Object.keys(projectColors).map(color => (
                         <button
@@ -2255,7 +2255,7 @@ ${generatedPrompt}`,
                     </div>
                   </div>
                   <Textarea
-                    placeholder={t("descriptionOptional")}
+                    placeholder="Description (optional)..."
                     value={newProjectDescription}
                     onChange={(e) => setNewProjectDescription(e.target.value)}
                     className="min-h-[80px]"
@@ -2266,16 +2266,16 @@ ${generatedPrompt}`,
                     className="w-full bg-indigo-600 hover:bg-indigo-700"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    {t("addProject")}
+                    Add Project
                   </Button>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                  </Card>
 
-              {/* Projects List */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("myProjects")}</CardTitle>
-                </CardHeader>
+                  {/* Projects List */}
+                  <Card>
+                  <CardHeader>
+                  <CardTitle>My Projects</CardTitle>
+                  </CardHeader>
                 <CardContent className="space-y-2">
                   {projects.map(project => (
                     <div 
@@ -2317,7 +2317,7 @@ ${generatedPrompt}`,
                     </div>
                   ))}
                   {projects.length === 0 && (
-                    <p className="text-slate-400 text-center py-8">{t("noProjectsYet")}</p>
+                    <p className="text-slate-400 text-center py-8">No projects yet</p>
                   )}
                 </CardContent>
               </Card>
