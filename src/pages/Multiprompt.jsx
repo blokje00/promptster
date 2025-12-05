@@ -626,7 +626,7 @@ export default function Multiprompt() {
         componentMapping = JSON.parse(editProjectMapping);
         setEditMappingError("");
       } catch (e) {
-        setEditMappingError(t("invalidJsonFormat") || "Ongeldige JSON format");
+        setEditMappingError(Invalid JSON format);
         return;
       }
     }
@@ -1010,8 +1010,8 @@ ${generatedPrompt}`,
     // Direct save logic
     try {
       const defaultTitle = selectedProject 
-        ? `[${selectedProject.name}] ${new Date().toLocaleString('nl-NL')}`
-        : `Multi-Task ${new Date().toLocaleString('nl-NL')}`;
+        ? `[${selectedProject.name}] ${new Date().toLocaleString('en-US')}`
+                      : `Multi-Task ${new Date().toLocaleString('en-US')}`;
         
       // Save template preferences
       if (selectedProjectId && (startTemplateId || endTemplateId)) {
@@ -1078,8 +1078,8 @@ ${generatedPrompt}`,
     try {
       const finalPrompt = improvedPrompt || generatedPrompt;
       const defaultTitle = selectedProject 
-        ? `[${selectedProject.name}] ${new Date().toLocaleString('nl-NL')}`
-        : `Multi-Step ${new Date().toLocaleString('nl-NL')}`;
+        ? `[${selectedProject.name}] ${new Date().toLocaleString('en-US')}`
+                    : `Multi-Step ${new Date().toLocaleString('en-US')}`;
         
       const title = promptTitle.trim() || defaultTitle;
 
@@ -1170,8 +1170,8 @@ ${generatedPrompt}`,
       // 2. Save as Item with is_pending_check flag
       const finalPrompt = improvedPrompt || generatedPrompt;
       const defaultTitle = selectedProject 
-        ? `[${selectedProject.name}] ${t("control") || "Controle"} ${new Date().toLocaleString('nl-NL')}`
-        : `${t("control") || "Controle"} ${new Date().toLocaleString('nl-NL')}`;
+        ? `[${selectedProject.name}] Check ${new Date().toLocaleString('en-US')}`
+                    : `Check ${new Date().toLocaleString('en-US')}`;
         
       const title = promptTitle.trim() || defaultTitle;
       
