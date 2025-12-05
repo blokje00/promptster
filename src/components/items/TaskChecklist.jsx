@@ -80,22 +80,37 @@ export default function TaskChecklist({
     setIsRetrying(true);
     try {
       // Create thoughts for each failed task - one by one to ensure all are created
+      const createdThoughts = [];
       for (const task of failedTasks) {
-        await base44.entities.Thought.create({
+        const newThought = await base44.entities.Thought.create({
           content: task.full_description || task.task_name,
           project_id: projectId || null,
           is_selected: true,
+          is_deleted: false,
           retry_from_item_id: itemId,
           focus_type: 'both',
         });
+        createdThoughts.push(newThought);
+      }
+      
+      // Invalidate thoughts query so Multiprompt sees the new tasks
+      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+      
+      // If project selected, also invalidate project-specific queries
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: ['thoughts', projectId] });
       }
       
       toast.success(`${failedTasks.length} tasks sent back to Multiprompt!`);
       
-      // Wait a bit longer before navigating
+      // Navigate to Multiprompt with the project pre-selected if available
+      const targetUrl = projectId 
+        ? createPageUrl("Multiprompt") 
+        : createPageUrl("Multiprompt");
+      
       setTimeout(() => {
-        navigate(createPageUrl("Multiprompt"));
-      }, 1500);
+        navigate(targetUrl);
+      }, 800);
     } catch (error) {
       console.error("Retry error:", error);
       toast.error("Could not restore tasks");
