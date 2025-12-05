@@ -180,68 +180,76 @@ export default function TaskChecklist({
       </div>
 
       {/* List */}
-      <div className="divide-y divide-slate-100 max-h-[300px] overflow-y-auto">
-        <TooltipProvider>
-          {taskChecks.map((check, index) => (
-            <div key={index} className="group flex items-start gap-3 p-3 hover:bg-slate-50 transition-colors">
-              {/* Status Control */}
-              <div className="pt-0.5">
-                 {readOnly ? (
-                    // Read-only icon
-                    check.status === 'success' ? <CheckCircle2 className="w-5 h-5 text-green-500" /> :
-                    check.status === 'failed' ? <XCircle className="w-5 h-5 text-red-500" /> :
-                    check.status === 'retried' ? <RotateCcw className="w-5 h-5 text-indigo-400" /> :
-                    <Circle className="w-5 h-5 text-slate-300" />
-                 ) : (
-                    // Interactive Select (Stop propagation to avoid accordion issues if parent is accordion)
-                    <div onClick={e => e.stopPropagation()}>
-                        <Select 
-                            value={check.status || "open"} 
-                            onValueChange={(val) => handleStatusChange({ stopPropagation: () => {} }, index, val)}
-                        >
-                            <SelectTrigger className={`w-[100px] h-7 text-xs border-0 shadow-none focus:ring-0 px-2 ${
-                                check.status === 'success' ? 'bg-green-100 text-green-800' :
-                                check.status === 'failed' ? 'bg-red-100 text-red-800' :
-                                check.status === 'retried' ? 'bg-indigo-50 text-indigo-600' :
-                                'bg-slate-100 text-slate-600'
-                            }`}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="open">Open</SelectItem>
-                                <SelectItem value="success">Success</SelectItem>
-                                <SelectItem value="failed">Failed</SelectItem>
-                                <SelectItem value="retried" disabled>Retried</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                 )}
-              </div>
-
-              {/* Description */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex-1 min-w-0 cursor-help">
-                    <p className={`text-sm leading-snug ${
-                      check.status === 'success' ? 'text-slate-400 line-through' :
-                      check.status === 'failed' ? 'text-red-700 font-medium' :
-                      check.status === 'retried' ? 'text-indigo-600' :
-                      'text-slate-700'
-                    }`}>
-                      {check.task_name}
-                    </p>
-                    {check.status === 'failed' && !readOnly && (
-                       <span className="text-[10px] text-red-500 block mt-0.5">Marked for retry</span>
-                    )}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="left" className="max-w-sm bg-slate-900 text-white border-slate-800">
-                   <p className="text-xs whitespace-pre-wrap">{check.full_description || check.task_name}</p>
-                </TooltipContent>
-              </Tooltip>
+      <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
+        {taskChecks.map((check, index) => (
+          <div key={index} className="group flex items-start justify-between gap-4 p-4 hover:bg-slate-50 transition-colors">
+            
+            {/* Description - Full Text, No Tooltip */}
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm whitespace-pre-wrap leading-relaxed ${
+                check.status === 'success' ? 'text-slate-400 line-through' :
+                check.status === 'failed' ? 'text-red-700 font-medium' :
+                check.status === 'retried' ? 'text-indigo-600' :
+                'text-slate-700'
+              }`}>
+                {check.full_description || check.task_name}
+              </p>
+              {check.status === 'failed' && !readOnly && (
+                  <span className="text-[10px] text-red-500 block mt-1">Marked for retry</span>
+              )}
             </div>
-          ))}
-        </TooltipProvider>
+
+            {/* Status Control - Horizontal Buttons at the end */}
+            <div className="flex items-center gap-1 shrink-0 pt-0.5" onClick={e => e.stopPropagation()}>
+                {readOnly ? (
+                  // Read-only icon
+                  check.status === 'success' ? <CheckCircle2 className="w-5 h-5 text-green-500" /> :
+                  check.status === 'failed' ? <XCircle className="w-5 h-5 text-red-500" /> :
+                  check.status === 'retried' ? <RotateCcw className="w-5 h-5 text-indigo-400" /> :
+                  <Circle className="w-5 h-5 text-slate-300" />
+                ) : (
+                  // Interactive Horizontal Buttons
+                  <>
+                    <button
+                      onClick={(e) => handleStatusChange(e, index, 'success')}
+                      className={`p-1.5 rounded-md border transition-all ${
+                        check.status === 'success' 
+                          ? 'bg-green-500 text-white border-green-600' 
+                          : 'bg-white text-slate-300 border-slate-200 hover:border-green-400 hover:text-green-500'
+                      }`}
+                      title="Mark as Success"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      onClick={(e) => handleStatusChange(e, index, 'failed')}
+                      className={`p-1.5 rounded-md border transition-all ${
+                        check.status === 'failed' 
+                          ? 'bg-red-500 text-white border-red-600' 
+                          : 'bg-white text-slate-300 border-slate-200 hover:border-red-400 hover:text-red-500'
+                      }`}
+                      title="Mark as Failed"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      onClick={(e) => handleStatusChange(e, index, 'open')}
+                      className={`p-1.5 rounded-md border transition-all ${
+                        !check.status || check.status === 'open' || check.status === 'retried'
+                          ? 'bg-blue-50 text-blue-600 border-blue-200' 
+                          : 'bg-white text-slate-300 border-slate-200 hover:bg-slate-50'
+                      }`}
+                      title="Reset to Open"
+                    >
+                      <Circle className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+            </div>
+          </div>
+        ))}
         {taskChecks.length === 0 && (
           <div className="p-4 text-center text-sm text-slate-400 italic">
             No checklist tasks available.
