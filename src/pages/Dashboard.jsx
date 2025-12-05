@@ -79,9 +79,9 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            Mijn Vault
+            My Vault
           </h1>
-          <p className="text-slate-600 mt-2">Al je prompts en code op één plek</p>
+          <p className="text-slate-600 mt-2">All your prompts and code in one place</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
@@ -89,7 +89,7 @@ export default function Dashboard() {
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
               <Input
-                placeholder="Zoek in je vault..."
+                placeholder="Search in your vault..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-12 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
@@ -103,7 +103,7 @@ export default function Dashboard() {
                 size="sm"
               >
                 <Star className={`w-3 h-3 sm:w-4 sm:h-4 mr-1 ${showFavoritesOnly ? 'fill-white' : ''}`} />
-                Favorieten
+                Favorites
               </Button>
               <Button
                 variant={showZipOnly ? "default" : "outline"}
@@ -130,7 +130,7 @@ export default function Dashboard() {
                 size="sm"
               >
                 <ClipboardCheck className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                Te Controleren
+                Pending Check
               </Button>
 
               <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export default function Dashboard() {
                     </div>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Alle Projecten</SelectItem>
+                    <SelectItem value="all">All Projects</SelectItem>
                     {projects.map(p => (
                       <SelectItem key={p.id} value={p.id}>
                         <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export default function Dashboard() {
           <Tabs value={filterType} onValueChange={setFilterType}>
             <TabsList className="bg-slate-100 flex-wrap h-auto gap-1 p-1">
               <TabsTrigger value="all" className="data-[state=active]:bg-white text-xs sm:text-sm">
-                Alles <span className="ml-1 text-xs text-slate-500">({itemCounts.all})</span>
+                All <span className="ml-1 text-xs text-slate-500">({itemCounts.all})</span>
               </TabsTrigger>
               <TabsTrigger value="prompt" className="data-[state=active]:bg-white text-xs sm:text-sm">
                 <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
@@ -200,15 +200,15 @@ export default function Dashboard() {
           <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-slate-300">
             <Code2 className="w-16 h-16 mx-auto text-slate-300 mb-4" />
             <h3 className="text-xl font-semibold text-slate-600 mb-2">
-              {searchQuery ? "Geen items gevonden" : "Nog geen items"}
+              {searchQuery ? "No items found" : "No items yet"}
             </h3>
             <p className="text-slate-500 mb-6">
-              {searchQuery ? "Probeer een andere zoekopdracht" : "Begin met het toevoegen van je eerste prompt of code snippet"}
+              {searchQuery ? "Try a different search" : "Start by adding your first prompt or code snippet"}
             </p>
             <Link to={createPageUrl("AddItem")}>
               <Button className="bg-indigo-600 hover:bg-indigo-700">
                 <Plus className="w-5 h-5 mr-2" />
-                Voeg je eerste item toe
+                Add your first item
               </Button>
             </Link>
           </div>

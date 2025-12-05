@@ -179,11 +179,11 @@ export default function Header() {
             <Button 
               variant="ghost" 
               size="icon"
-              className="text-slate-500 hover:text-red-600 hover:bg-red-50 relative"
-              title="Prullenbak"
+              className={`relative ${deletedCount > 0 ? 'text-red-500 hover:text-red-600 hover:bg-red-50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+              title="Recycle Bin"
             >
               {deletedCount > 0 ? (
-                <Trash2 className="w-5 h-5 text-red-500" />
+                <Trash2 className="w-5 h-5" />
               ) : (
                 <Trash className="w-5 h-5" />
               )}
