@@ -17,12 +17,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { 
@@ -35,6 +29,8 @@ import {
 import ThoughtCard from "@/components/multiprompt/ThoughtCard";
 import ContextSelector from "@/components/multiprompt/ContextSelector";
 import RequireSubscription from "@/components/auth/RequireSubscription";
+import TemplatesManager from "@/components/multiprompt/TemplatesManager";
+import ProjectsManager from "@/components/multiprompt/ProjectsManager";
 import { projectColors, projectBorderColors, projectLightColors } from "@/components/lib/constants";
 
 export default function Multiprompt() {
@@ -152,9 +148,7 @@ export default function Multiprompt() {
   // Save/Copy Dialog
   const [showControlDialog, setShowControlDialog] = useState(false);
   const [promptTitle, setPromptTitle] = useState("");
-  const [controlNotes, setControlNotes] = useState("");
-  const [taskChecks, setTaskChecks] = useState([]);
-
+  
   // Helper: Get Selected Project Object
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
@@ -414,213 +408,238 @@ export default function Multiprompt() {
             </CardContent>
           </Card>
 
-          {/* Main Builder Interface */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* LEFT COLUMN: Task Management */}
-            <div className="space-y-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2">
-                    <Lightbulb className="w-5 h-5 text-yellow-500" />
-                    Tasks {selectedProject && <Badge className={projectColors[selectedProject.color]}>{selectedProject.name}</Badge>}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  
-                  {/* Input Area */}
-                  <div className={`border-2 rounded-lg focus-within:border-indigo-400 transition-all bg-white ${selectedProject ? `border-dashed ${projectBorderColors[selectedProject.color]}` : 'border-slate-200'}`}>
-                    <Textarea
-                      placeholder="Type task..."
-                      value={newThoughtContent}
-                      onChange={(e) => setNewThoughtContent(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleAddThought())}
-                      className="min-h-[60px] border-0 focus-visible:ring-0 resize-none"
-                    />
-                    
-                    {/* Image Previews */}
-                    {newThoughtImages.length > 0 && (
-                      <div className="flex gap-2 px-3 pb-2">
-                        {newThoughtImages.map((url, idx) => (
-                          <img key={idx} src={url} className="w-10 h-10 rounded border object-cover" />
-                        ))}
+          <Tabs defaultValue="build" className="space-y-6">
+            <TabsList className="bg-slate-100">
+              <TabsTrigger value="build" className="data-[state=active]:bg-white">
+                <Layers className="w-4 h-4 mr-2" /> Build Prompt
+              </TabsTrigger>
+              <TabsTrigger value="templates" className="data-[state=active]:bg-white">
+                <FileText className="w-4 h-4 mr-2" /> Templates
+              </TabsTrigger>
+              <TabsTrigger value="projects" className="data-[state=active]:bg-white">
+                <FolderOpen className="w-4 h-4 mr-2" /> My Projects
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="build">
+              {/* Main Builder Interface */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                {/* LEFT COLUMN: Task Management */}
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2">
+                        <Lightbulb className="w-5 h-5 text-yellow-500" />
+                        Tasks {selectedProject && <Badge className={projectColors[selectedProject.color]}>{selectedProject.name}</Badge>}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      
+                      {/* Input Area */}
+                      <div className={`border-2 rounded-lg focus-within:border-indigo-400 transition-all bg-white ${selectedProject ? `border-dashed ${projectBorderColors[selectedProject.color]}` : 'border-slate-200'}`}>
+                        <Textarea
+                          placeholder="Type task..."
+                          value={newThoughtContent}
+                          onChange={(e) => setNewThoughtContent(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleAddThought())}
+                          className="min-h-[60px] border-0 focus-visible:ring-0 resize-none"
+                        />
+                        
+                        {/* Image Previews */}
+                        {newThoughtImages.length > 0 && (
+                          <div className="flex gap-2 px-3 pb-2">
+                            {newThoughtImages.map((url, idx) => (
+                              <img key={idx} src={url} className="w-10 h-10 rounded border object-cover" />
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Controls */}
+                        <div className="flex items-center gap-2 px-3 py-2 border-t border-slate-100 bg-slate-50/50 rounded-b-lg">
+                          <div className="relative">
+                            <input type="file" multiple className="hidden" id="new-img" onChange={e => handleImageUpload(e.target.files)} />
+                            <label htmlFor="new-img" className="cursor-pointer p-1 hover:bg-slate-200 rounded">
+                              {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                            </label>
+                          </div>
+                          <Select value={newThoughtFocus} onValueChange={setNewThoughtFocus}>
+                             <SelectTrigger className="h-7 text-xs w-[120px]"><SelectValue /></SelectTrigger>
+                             <SelectContent>
+                               <SelectItem value="both">Design + Logic</SelectItem>
+                               <SelectItem value="design">Design Only</SelectItem>
+                               <SelectItem value="logic">Logic Only</SelectItem>
+                             </SelectContent>
+                          </Select>
+                          <ContextSelector value={newThoughtContext} onChange={setNewThoughtContext} compact />
+                        </div>
                       </div>
-                    )}
 
-                    {/* Controls */}
-                    <div className="flex items-center gap-2 px-3 py-2 border-t border-slate-100 bg-slate-50/50 rounded-b-lg">
-                      <div className="relative">
-                        <input type="file" multiple className="hidden" id="new-img" onChange={e => handleImageUpload(e.target.files)} />
-                        <label htmlFor="new-img" className="cursor-pointer p-1 hover:bg-slate-200 rounded">
-                          {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                        </label>
+                      {/* Add Button */}
+                      <div className="flex gap-2">
+                        <Button onClick={handleAddThought} className={`flex-1 ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'}`}>
+                          <Plus className="w-4 h-4 mr-2" /> Add Task
+                        </Button>
+                        <Select value={groupBy} onValueChange={setGroupBy}>
+                          <SelectTrigger className="w-[120px]"><SelectValue placeholder="Group" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="date">By Date</SelectItem>
+                            <SelectItem value="page">By Page</SelectItem>
+                            <SelectItem value="component">By Component</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                      <Select value={newThoughtFocus} onValueChange={setNewThoughtFocus}>
-                         <SelectTrigger className="h-7 text-xs w-[120px]"><SelectValue /></SelectTrigger>
-                         <SelectContent>
-                           <SelectItem value="both">Design + Logic</SelectItem>
-                           <SelectItem value="design">Design Only</SelectItem>
-                           <SelectItem value="logic">Logic Only</SelectItem>
-                         </SelectContent>
-                      </Select>
-                      <ContextSelector value={newThoughtContext} onChange={setNewThoughtContext} compact />
-                    </div>
-                  </div>
 
-                  {/* Add Button */}
-                  <div className="flex gap-2">
-                    <Button onClick={handleAddThought} className={`flex-1 ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'}`}>
-                      <Plus className="w-4 h-4 mr-2" /> Add Task
-                    </Button>
-                    <Select value={groupBy} onValueChange={setGroupBy}>
-                      <SelectTrigger className="w-[120px]"><SelectValue placeholder="Group" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="date">By Date</SelectItem>
-                        <SelectItem value="page">By Page</SelectItem>
-                        <SelectItem value="component">By Component</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Tasks List */}
-                  <DragDropContext onDragEnd={onDragEnd}>
-                    <Droppable droppableId="thoughts-list">
-                      {(provided) => (
-                        <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2 max-h-[500px] overflow-y-auto">
-                           {filteredThoughts.map((thought, idx) => (
-                             <Draggable key={thought.id} draggableId={thought.id} index={idx}>
-                               {(provided) => (
-                                 <div ref={provided.innerRef} {...provided.draggableProps}>
-                                    <ThoughtCard
-                                      thought={thought}
-                                      project={projects.find(p => p.id === thought.project_id)}
-                                      isSelected={selectedThoughtIds.includes(thought.id)}
-                                      onToggleSelect={() => toggleSelection(thought.id)}
-                                      onDelete={deleteThought.mutate}
-                                      onUpdateContent={handleUpdateContent}
-                                      onUpdateImages={handleUpdateImages}
-                                      onUpdateFocus={handleUpdateFocus}
-                                      onUpdateContext={handleUpdateContext}
-                                      dragHandleProps={provided.dragHandleProps}
-                                    />
-                                 </div>
+                      {/* Tasks List */}
+                      <DragDropContext onDragEnd={onDragEnd}>
+                        <Droppable droppableId="thoughts-list">
+                          {(provided) => (
+                            <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2 max-h-[500px] overflow-y-auto">
+                               {filteredThoughts.map((thought, idx) => (
+                                 <Draggable key={thought.id} draggableId={thought.id} index={idx}>
+                                   {(provided) => (
+                                     <div ref={provided.innerRef} {...provided.draggableProps}>
+                                        <ThoughtCard
+                                          thought={thought}
+                                          project={projects.find(p => p.id === thought.project_id)}
+                                          isSelected={selectedThoughtIds.includes(thought.id)}
+                                          onToggleSelect={() => toggleSelection(thought.id)}
+                                          onDelete={deleteThought.mutate}
+                                          onUpdateContent={handleUpdateContent}
+                                          onUpdateImages={handleUpdateImages}
+                                          onUpdateFocus={handleUpdateFocus}
+                                          onUpdateContext={handleUpdateContext}
+                                          dragHandleProps={provided.dragHandleProps}
+                                        />
+                                     </div>
+                                   )}
+                                 </Draggable>
+                               ))}
+                               {provided.placeholder}
+                               {filteredThoughts.length === 0 && (
+                                 <div className="text-center py-8 text-slate-400 italic">No tasks found. Start typing!</div>
                                )}
-                             </Draggable>
-                           ))}
-                           {provided.placeholder}
-                           {filteredThoughts.length === 0 && (
-                             <div className="text-center py-8 text-slate-400 italic">No tasks found. Start typing!</div>
-                           )}
+                            </div>
+                          )}
+                        </Droppable>
+                      </DragDropContext>
+
+                      {/* Bulk Selection */}
+                      {filteredThoughts.length > 0 && (
+                        <div className="flex justify-between text-xs text-slate-500">
+                          <button onClick={() => selectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600">Select All</button>
+                          <button onClick={() => deselectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600">Deselect All</button>
                         </div>
                       )}
-                    </Droppable>
-                  </DragDropContext>
-
-                  {/* Bulk Selection */}
-                  {filteredThoughts.length > 0 && (
-                    <div className="flex justify-between text-xs text-slate-500">
-                      <button onClick={() => selectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600">Select All</button>
-                      <button onClick={() => deselectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600">Deselect All</button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* RIGHT COLUMN: Templates & Preview */}
-            <div className="space-y-4">
-              
-              {/* Template Selection */}
-              <Card>
-                <CardHeader className="pb-3"><CardTitle>Templates</CardTitle></CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4">
-                   <div>
-                     <label className="text-xs font-medium text-slate-600">Start</label>
-                     <Select value={startTemplateId} onValueChange={setStartTemplateId}>
-                       <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
-                       <SelectContent>
-                         <SelectItem value={null}>None</SelectItem>
-                         {templates.filter(t => t.type === 'start').map(t => (
-                           <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                         ))}
-                       </SelectContent>
-                     </Select>
-                   </div>
-                   <div>
-                     <label className="text-xs font-medium text-slate-600">End</label>
-                     <Select value={endTemplateId} onValueChange={setEndTemplateId}>
-                       <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
-                       <SelectContent>
-                         <SelectItem value={null}>None</SelectItem>
-                         {templates.filter(t => t.type === 'eind').map(t => (
-                           <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                         ))}
-                       </SelectContent>
-                     </Select>
-                   </div>
-                   
-                   {/* Template Previews */}
-                   {(startTemplateId || endTemplateId) && (
-                     <div className="col-span-2 grid grid-cols-2 gap-4 text-xs text-slate-500">
-                        <div className={`p-2 rounded border h-20 overflow-hidden ${selectedProject ? projectLightColors[selectedProject.color] : 'bg-slate-50'}`}>
-                          {templates.find(t => t.id === startTemplateId)?.content || "-"}
-                        </div>
-                        <div className={`p-2 rounded border h-20 overflow-hidden ${selectedProject ? projectLightColors[selectedProject.color] : 'bg-slate-50'}`}>
-                           {templates.find(t => t.id === endTemplateId)?.content || "-"}
-                        </div>
-                     </div>
-                   )}
-                </CardContent>
-              </Card>
-
-              {/* Config Toggles */}
-              <div className="flex gap-4 text-sm text-slate-600 px-1">
-                <div className="flex items-center gap-2">
-                  <Checkbox checked={includePersonalPrefs} onCheckedChange={setIncludePersonalPrefs} />
-                  <span>Personal Prefs</span>
+                    </CardContent>
+                  </Card>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox checked={includeProjectConfig} onCheckedChange={setIncludeProjectConfig} />
-                  <span>Project Config</span>
+
+                {/* RIGHT COLUMN: Templates & Preview */}
+                <div className="space-y-4">
+                  
+                  {/* Template Selection */}
+                  <Card>
+                    <CardHeader className="pb-3"><CardTitle>Templates</CardTitle></CardHeader>
+                    <CardContent className="grid grid-cols-2 gap-4">
+                       <div>
+                         <label className="text-xs font-medium text-slate-600">Start</label>
+                         <Select value={startTemplateId} onValueChange={setStartTemplateId}>
+                           <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value={null}>None</SelectItem>
+                             {templates.filter(t => t.type === 'start').map(t => (
+                               <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                             ))}
+                           </SelectContent>
+                         </Select>
+                       </div>
+                       <div>
+                         <label className="text-xs font-medium text-slate-600">End</label>
+                         <Select value={endTemplateId} onValueChange={setEndTemplateId}>
+                           <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value={null}>None</SelectItem>
+                             {templates.filter(t => t.type === 'eind').map(t => (
+                               <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                             ))}
+                           </SelectContent>
+                         </Select>
+                       </div>
+                       
+                       {/* Template Previews */}
+                       {(startTemplateId || endTemplateId) && (
+                         <div className="col-span-2 grid grid-cols-2 gap-4 text-xs text-slate-500">
+                            <div className={`p-2 rounded border h-20 overflow-hidden ${selectedProject ? projectLightColors[selectedProject.color] : 'bg-slate-50'}`}>
+                              {templates.find(t => t.id === startTemplateId)?.content || "-"}
+                            </div>
+                            <div className={`p-2 rounded border h-20 overflow-hidden ${selectedProject ? projectLightColors[selectedProject.color] : 'bg-slate-50'}`}>
+                               {templates.find(t => t.id === endTemplateId)?.content || "-"}
+                            </div>
+                         </div>
+                       )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Config Toggles */}
+                  <div className="flex gap-4 text-sm text-slate-600 px-1">
+                    <div className="flex items-center gap-2">
+                      <Checkbox checked={includePersonalPrefs} onCheckedChange={setIncludePersonalPrefs} />
+                      <span>Personal Prefs</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox checked={includeProjectConfig} onCheckedChange={setIncludeProjectConfig} />
+                      <span>Project Config</span>
+                    </div>
+                  </div>
+
+                  {/* Preview Area */}
+                  <Card className="flex-1 flex flex-col">
+                    <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                      <CardTitle>Preview</CardTitle>
+                      <div className="flex gap-2">
+                         <Button size="sm" variant="outline" onClick={handleImprovePrompt} disabled={!generatedPrompt}>
+                           {isImproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />} Improve
+                         </Button>
+                         <Dialog open={showControlDialog} onOpenChange={setShowControlDialog}>
+                           <DialogTrigger asChild>
+                             <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" disabled={!generatedPrompt && !improvedPrompt}>
+                               <Copy className="w-4 h-4 mr-1" /> Copy & Save
+                             </Button>
+                           </DialogTrigger>
+                           <DialogContent>
+                             <DialogHeader><DialogTitle>Save Prompt</DialogTitle></DialogHeader>
+                             <div className="space-y-4 py-4">
+                               <Input placeholder="Prompt Title (optional)" value={promptTitle} onChange={e => setPromptTitle(e.target.value)} />
+                               <div className="flex justify-end gap-2">
+                                 <Button variant="ghost" onClick={() => setShowControlDialog(false)}>Cancel</Button>
+                                 <Button onClick={handleCopyAndSave}>Confirm Copy & Save</Button>
+                               </div>
+                             </div>
+                           </DialogContent>
+                         </Dialog>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex-1">
+                      <div className="bg-slate-900 rounded-lg p-4 min-h-[300px] max-h-[500px] overflow-auto text-slate-300 font-mono text-sm whitespace-pre-wrap">
+                        {improvedPrompt || generatedPrompt || "// Select tasks to generate prompt..."}
+                      </div>
+                    </CardContent>
+                  </Card>
+
                 </div>
               </div>
+            </TabsContent>
 
-              {/* Preview Area */}
-              <Card className="flex-1 flex flex-col">
-                <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                  <CardTitle>Preview</CardTitle>
-                  <div className="flex gap-2">
-                     <Button size="sm" variant="outline" onClick={handleImprovePrompt} disabled={!generatedPrompt}>
-                       {isImproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />} Improve
-                     </Button>
-                     <Dialog open={showControlDialog} onOpenChange={setShowControlDialog}>
-                       <DialogTrigger asChild>
-                         <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" disabled={!generatedPrompt && !improvedPrompt}>
-                           <Copy className="w-4 h-4 mr-1" /> Copy & Save
-                         </Button>
-                       </DialogTrigger>
-                       <DialogContent>
-                         <DialogHeader><DialogTitle>Save Prompt</DialogTitle></DialogHeader>
-                         <div className="space-y-4 py-4">
-                           <Input placeholder="Prompt Title (optional)" value={promptTitle} onChange={e => setPromptTitle(e.target.value)} />
-                           <div className="flex justify-end gap-2">
-                             <Button variant="ghost" onClick={() => setShowControlDialog(false)}>Cancel</Button>
-                             <Button onClick={handleCopyAndSave}>Confirm Copy & Save</Button>
-                           </div>
-                         </div>
-                       </DialogContent>
-                     </Dialog>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1">
-                  <div className="bg-slate-900 rounded-lg p-4 min-h-[300px] max-h-[500px] overflow-auto text-slate-300 font-mono text-sm whitespace-pre-wrap">
-                    {improvedPrompt || generatedPrompt || "// Select tasks to generate prompt..."}
-                  </div>
-                </CardContent>
-              </Card>
+            <TabsContent value="templates">
+              <TemplatesManager templates={templates} projects={projects} selectedProjectId={selectedProjectId} />
+            </TabsContent>
 
-            </div>
-          </div>
+            <TabsContent value="projects">
+              <ProjectsManager projects={projects} />
+            </TabsContent>
+
+          </Tabs>
 
         </div>
       </div>
