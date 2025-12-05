@@ -169,9 +169,9 @@ export default function AddItem() {
             </Button>
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Nieuw Item Toevoegen
+                Add New Item
               </h1>
-              <p className="text-slate-600 mt-1">Voeg een nieuwe prompt of code snippet toe</p>
+              <p className="text-slate-600 mt-1">Add a new prompt or code snippet</p>
             </div>
           </div>
           <Button
@@ -180,7 +180,7 @@ export default function AddItem() {
             className="bg-indigo-600 hover:bg-indigo-700"
           >
             <Save className="w-4 h-4 mr-2" />
-            {createMutation.isPending ? 'Opslaan...' : 'Opslaan'}
+            {createMutation.isPending ? 'Saving...' : 'Save'}
           </Button>
         </div>
 
@@ -192,7 +192,7 @@ export default function AddItem() {
               onClick={() => handleProjectChange("")}
               className={!selectedProjectId ? "bg-slate-700" : ""}
             >
-              Geen Project
+              No Project
             </Button>
             {projects.map(project => (
               <Button
@@ -217,10 +217,10 @@ export default function AddItem() {
             <CardContent className="p-6 space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Titel *</Label>
+                  <Label htmlFor="title">Title *</Label>
                   <Input
                     id="title"
-                    placeholder="Bijv: React useEffect Hook"
+                    placeholder="E.g.: React useEffect Hook"
                     value={formData.title}
                     onChange={(e) => setFormData({...formData, title: e.target.value})}
                     required
@@ -241,7 +241,7 @@ export default function AddItem() {
                       <SelectItem value="prompt">Prompt</SelectItem>
                       <SelectItem value="code">Code</SelectItem>
                       <SelectItem value="snippet">Snippet</SelectItem>
-                      <SelectItem value="idee">Idee</SelectItem>
+                      <SelectItem value="idee">Idea</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -249,7 +249,7 @@ export default function AddItem() {
 
               {(formData.type === "code" || formData.type === "snippet") && (
                 <div className="space-y-2">
-                  <Label htmlFor="language">Taal</Label>
+                  <Label htmlFor="language">Language</Label>
                   <Select
                     value={formData.language}
                     onValueChange={(value) => setFormData({...formData, language: value})}
@@ -267,17 +267,17 @@ export default function AddItem() {
                       <SelectItem value="markdown">Markdown</SelectItem>
                       <SelectItem value="sql">SQL</SelectItem>
                       <SelectItem value="bash">Bash</SelectItem>
-                      <SelectItem value="other">Anders</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="description">Beschrijving</Label>
+                <Label htmlFor="description">Description</Label>
                 <Input
                   id="description"
-                  placeholder="Korte beschrijving van dit item"
+                  placeholder="Short description of this item"
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                   className="border-slate-200"
@@ -306,7 +306,7 @@ export default function AddItem() {
                     className={formData.status === "success" ? "bg-green-500 hover:bg-green-600" : ""}
                   >
                     <CheckCircle2 className="w-4 h-4 mr-2" />
-                    Goed
+                    Success
                   </Button>
                   <Button
                     type="button"
@@ -316,16 +316,16 @@ export default function AddItem() {
                     className={formData.status === "failed" ? "bg-red-500 hover:bg-red-600" : ""}
                   >
                     <XCircle className="w-4 h-4 mr-2" />
-                    Fout
+                    Failed
                   </Button>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="content">Inhoud *</Label>
+                <Label htmlFor="content">Content *</Label>
                 <Textarea
                   id="content"
-                  placeholder="Plak hier je code of prompt..."
+                  placeholder="Paste your code or prompt here..."
                   value={formData.content}
                   onChange={(e) => setFormData({...formData, content: e.target.value})}
                   required
@@ -334,10 +334,10 @@ export default function AddItem() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Notities</Label>
+                <Label htmlFor="notes">Notes</Label>
                 <Textarea
                   id="notes"
-                  placeholder="Voeg persoonlijke notities toe..."
+                  placeholder="Add personal notes..."
                   value={formData.notes}
                   onChange={(e) => setFormData({...formData, notes: e.target.value})}
                   className="min-h-[100px] border-slate-200"
@@ -345,7 +345,7 @@ export default function AddItem() {
               </div>
 
               <div className="space-y-2">
-                <Label>Screenshots & Afbeeldingen</Label>
+                <Label>Screenshots & Images</Label>
                 <ImageUploadZone
                   images={formData.images}
                   onImagesChange={(newImages) => setFormData({...formData, images: newImages})}
@@ -353,7 +353,7 @@ export default function AddItem() {
               </div>
 
               <div className="space-y-2">
-                <Label>ZIP Bestanden (Code)</Label>
+                <Label>ZIP Files (Code)</Label>
                 <ZipUploadZone
                   zipFiles={formData.zip_files}
                   onZipFilesChange={(newZipFiles) => setFormData({...formData, zip_files: newZipFiles})}
@@ -365,14 +365,14 @@ export default function AddItem() {
                 <div className="flex gap-2">
                   <Input
                     id="tags"
-                    placeholder="Voeg een tag toe..."
+                    placeholder="Add a tag..."
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
                     className="border-slate-200"
                   />
                   <Button type="button" onClick={addTag} variant="outline">
-                    Toevoegen
+                    Add
                   </Button>
                 </div>
                 {formData.tags.length > 0 && (
@@ -401,7 +401,7 @@ export default function AddItem() {
                   className={formData.is_favorite ? "bg-yellow-500 hover:bg-yellow-600" : ""}
                 >
                   <Star className={`w-4 h-4 mr-2 ${formData.is_favorite ? 'fill-white' : ''}`} />
-                  {formData.is_favorite ? 'Favoriet' : 'Markeer als favoriet'}
+                  {formData.is_favorite ? 'Favorite' : 'Mark as favorite'}
                 </Button>
               </div>
             </CardContent>
@@ -411,7 +411,7 @@ export default function AddItem() {
             <CardHeader className="border-b border-slate-100">
               <CardTitle className="flex items-center gap-2">
                 <GitBranch className="w-5 h-5 text-green-600" />
-                Publish Versie
+                Publish Version
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
@@ -433,14 +433,14 @@ export default function AddItem() {
                   htmlFor="is_publish"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  Dit is een Publish versie / stabiele timestamp
+                  This is a Publish version / stable timestamp
                 </label>
               </div>
 
               {formData.is_publish_version && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="publish_timestamp">Datum/Tijd Publish</Label>
+                    <Label htmlFor="publish_timestamp">Publish Date/Time</Label>
                     <Input
                       id="publish_timestamp"
                       type="datetime-local"
@@ -451,10 +451,10 @@ export default function AddItem() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="publish_working_notes">Wat werkte er allemaal goed?</Label>
+                    <Label htmlFor="publish_working_notes">What worked well?</Label>
                     <Textarea
                       id="publish_working_notes"
-                      placeholder="Beschrijf wat er op dit moment allemaal goed werkte..."
+                      placeholder="Describe what was working well at this point..."
                       value={formData.publish_working_notes}
                       onChange={(e) => setFormData({...formData, publish_working_notes: e.target.value})}
                       className="min-h-[100px] border-slate-200"
@@ -462,10 +462,10 @@ export default function AddItem() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="publish_reason">Waarom deze Publish versie?</Label>
+                    <Label htmlFor="publish_reason">Why this Publish version?</Label>
                     <Textarea
                       id="publish_reason"
-                      placeholder="Leg uit waarom je deze Publish versie maakt (bijv. voor een grote wijziging)..."
+                      placeholder="Explain why you're creating this Publish version..."
                       value={formData.publish_reason}
                       onChange={(e) => setFormData({...formData, publish_reason: e.target.value})}
                       className="min-h-[100px] border-slate-200"
@@ -482,7 +482,7 @@ export default function AddItem() {
               variant="outline"
               onClick={() => navigate(createPageUrl("Dashboard"))}
             >
-              Annuleren
+              Cancel
             </Button>
             <Button
               type="submit"
@@ -490,7 +490,7 @@ export default function AddItem() {
               className="bg-indigo-600 hover:bg-indigo-700"
             >
               <Save className="w-4 h-4 mr-2" />
-              {createMutation.isPending ? 'Opslaan...' : 'Opslaan'}
+              {createMutation.isPending ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </form>

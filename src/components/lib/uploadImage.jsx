@@ -18,7 +18,7 @@ export const uploadImageToSupabase = async (file) => {
     const { file_url } = await base44.integrations.Core.UploadFile({ file: renamedFile });
     
     if (!file_url) {
-      throw new Error("Geen URL ontvangen na upload");
+      throw new Error("No URL received after upload");
     }
     
     return file_url;
