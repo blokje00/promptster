@@ -83,6 +83,7 @@ export default function Multiprompt() {
 
   const {
     thoughts,
+    isLoading,
     selectedThoughtIds,
     setSelectedThoughtIds,
     createThought,
