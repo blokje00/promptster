@@ -76,10 +76,13 @@ export default function TaskChecklist({
     e.preventDefault();
     e.stopPropagation();
 
-    // Guard: require a project to be assigned
-    if (!projectId) {
-      toast.error("Assign this item to a project before retrying failed tasks.");
-      return;
+    // Force-Assign Project Correctly: Prop -> LocalStorage -> Null (fallback)
+    let targetProjectId = projectId;
+    if (!targetProjectId) {
+      const stored = localStorage.getItem("lastSelectedProjectId");
+      if (stored && stored !== "null") {
+        targetProjectId = stored;
+      }
     }
 
     const failedTasks = taskChecks.filter((check) => check.status === "failed");
@@ -91,15 +94,13 @@ export default function TaskChecklist({
 
     setIsRetrying(true);
     try {
-      const targetProjectId = projectId;
-
       // Create thoughts for each failed task
       const createdThoughts = [];
       for (const task of failedTasks) {
-        // Add retry source metadata if possible (schema permitting)
         const thoughtData = {
           content: task.full_description || task.task_name,
-          project_id: targetProjectId,
+          // Never allow null project_id if we have a valid target, otherwise let it be null (Global)
+          project_id: targetProjectId || null, 
           is_selected: true,
           is_deleted: false,
           retry_from_item_id: itemId,
@@ -110,9 +111,6 @@ export default function TaskChecklist({
         createdThoughts.push(newThought);
       }
       
-      // Log created IDs for debugging
-      console.table(createdThoughts.map(t => ({ id: t.id, project: t.project_id })));
-
       // Mark failed tasks as "retried" in checklist and persist
       const updatedChecks = taskChecks.map((check) =>
         check.status === "failed"
@@ -127,13 +125,15 @@ export default function TaskChecklist({
         queryClient.invalidateQueries({ queryKey: ["item", itemId] });
       }
 
-      // Invalidate ALL thought queries to ensure project views update
+      // Invalidate ALL thought queries to ensure Multiprompt sees them
       queryClient.invalidateQueries({
         predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "thoughts",
       });
 
-      // Store project in localStorage so Multiprompt can read it as default
-      localStorage.setItem("lastSelectedProjectId", targetProjectId);
+      // Store project in localStorage so Multiprompt reads it as default
+      if (targetProjectId) {
+        localStorage.setItem("lastSelectedProjectId", targetProjectId);
+      }
 
       toast.success(`${failedTasks.length} tasks sent back to Multiprompt!`);
 
@@ -294,6 +294,15 @@ export default function TaskChecklist({
                       >
                         <XCircle className="w-4 h-4" />
                       </button>
+                      {/* Retried status indicator (read-only visual) */}
+                      {check.status === "retried" && (
+                        <div
+                          className="p-1.5 rounded-full bg-indigo-100 text-indigo-600"
+                          title="Retried"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

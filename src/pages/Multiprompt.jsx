@@ -175,20 +175,28 @@ export default function Multiprompt() {
     queryFn: async () => {
       if (!currentUser?.email) return [];
       
-      // Build filter based on selection
+      // Guarantee Visibility: Override client-side filters for deletion
       const filter = {
         $or: [
           { is_deleted: false },
+          { is_deleted: null }, 
           { is_deleted: { $exists: false } }
         ]
       };
 
-      // If a project is selected, filter by it (and get ALL team tasks for that project)
-      // If no project selected, show only MY tasks (created_by me)
+      // Force-Assign Project Logic in Query
+      // If a project is selected, we MUST fetch tasks for that project.
       if (selectedProjectId) {
         filter.project_id = selectedProjectId;
+        // Note: We deliberately DO NOT filter by created_by when in a project, 
+        // to see team tasks and ensure retries (which might have different owner metadata) are seen.
       } else {
+        // No project selected -> Show "My Personal/Global" tasks
         filter.created_by = currentUser.email;
+        // Optional: We might want to explicitly exclude project tasks here to avoid clutter, 
+        // but usually "All Projects" view might show everything. 
+        // Current logic: Show my tasks that are NOT in a project (or just my tasks).
+        // To be safe and follow "Guarantee Visibility", we keep it simple.
       }
 
       const result = await base44.entities.Thought.filter(filter, "-created_date");
