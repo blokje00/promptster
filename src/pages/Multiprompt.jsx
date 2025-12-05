@@ -36,7 +36,7 @@ import {
   Layers
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useLanguage } from "../components/i18n/LanguageContext";
+// Language translations removed - all text in English
 
 import {
   DropdownMenu,
@@ -72,7 +72,7 @@ import { useAutosaveField } from "@/components/hooks/useAutosaveField";
 export default function Multiprompt() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { t } = useLanguage();
+  // Removed useLanguage - all text is now hardcoded in English
   
   // Get current user first (needed for autosave keys)
   const { data: currentUser } = useQuery({

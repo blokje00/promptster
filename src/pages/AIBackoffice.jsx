@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Save, Sparkles, User, FileText, Lightbulb, FolderTree, Settings } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { createPageUrl } from "@/utils";
-import { useLanguage } from "../components/i18n/LanguageContext";
+// Language translations removed - all text in English
 import LanguageSelector from "../components/settings/LanguageSelector";
 import RequireSubscription from "../components/auth/RequireSubscription";
 import { useAutosaveField } from "@/components/hooks/useAutosaveField";
@@ -44,7 +44,7 @@ const DEFAULT_PERSONAL_PREFERENCES = `# My Personal Development Preferences
 
 export default function AIBackoffice() {
   const queryClient = useQueryClient();
-  const { t } = useLanguage();
+  // Removed useLanguage - all text is now hardcoded in English
   const [modelPreference, setModelPreference] = useState("default");
   const [enableContextSuggestions, setEnableContextSuggestions] = useState(true);
   const [settingsId, setSettingsId] = useState(null);
