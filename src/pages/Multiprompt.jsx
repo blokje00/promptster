@@ -626,7 +626,7 @@ export default function Multiprompt() {
         componentMapping = JSON.parse(editProjectMapping);
         setEditMappingError("");
       } catch (e) {
-        setEditMappingError(Invalid JSON format);
+        setEditMappingError("Invalid JSON format");
         return;
       }
     }
