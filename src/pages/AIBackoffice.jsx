@@ -110,7 +110,7 @@ export default function AIBackoffice() {
   // Autosave for AI instruction field
   const { value: instruction, setValue: setInstruction, resetValue: resetInstruction } = useAutosaveField({
     storageKey: `promptster:aibackoffice:instruction:${currentUser?.id ?? 'anon'}`,
-    initialValue: settings[0]?.improve_prompt_instruction || getDefaultInstruction(t),
+    initialValue: settings[0]?.improve_prompt_instruction || getDefaultInstruction(),
     enabled: !!currentUser?.id,
   });
 
