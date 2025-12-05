@@ -22,6 +22,7 @@ export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser, i
   const prevProjectIdRef = useRef(selectedProjectId);
 
   // Sync DB naar lokale state - DB is source of truth
+  // Gebruik een content-hash ipv alleen IDs om ook restored items te detecteren
   useEffect(() => {
     // Handle empty dbThoughts - clear local state
     if (!dbThoughts || dbThoughts.length === 0) {
@@ -36,24 +37,46 @@ export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser, i
     // Filter out any deleted thoughts (should already be filtered by query, but double-check)
     const activeDbThoughts = dbThoughts.filter(t => !t.is_deleted);
     
-    const currentDbIds = activeDbThoughts.map(t => t.id).sort().join(',');
-    if (prevDbIdsRef.current === currentDbIds) return;
-    prevDbIdsRef.current = currentDbIds;
+    // Gebruik een hash die ook is_deleted en updated_at meeneemt om restores te detecteren
+    const currentDbHash = activeDbThoughts
+      .map(t => `${t.id}:${t.is_deleted}:${t.updated_at || t.created_date}`)
+      .sort()
+      .join(',');
+    
+    // ALTIJD syncen als hash anders is (niet alleen IDs)
+    if (prevDbIdsRef.current === currentDbHash) return;
+    prevDbIdsRef.current = currentDbHash;
 
-    // When DB changes, sync local state to match DB (DB is source of truth)
-    // Remove any local thoughts that no longer exist in DB
+    // DB is source of truth - volledig synchroniseren
     const dbIdSet = new Set(activeDbThoughts.map(t => t.id));
+    const dbIdToThought = new Map(activeDbThoughts.map(t => [t.id, t]));
     
     setLocalThoughts(prev => {
-      // Filter out thoughts that are no longer in DB
-      const filteredPrev = prev.filter(t => dbIdSet.has(t.id));
-      // Add new thoughts from DB that aren't in local state
-      const localIds = new Set(filteredPrev.map(t => t.id));
-      const newItems = activeDbThoughts.filter(t => !localIds.has(t.id));
-      return newItems.length > 0 ? [...newItems, ...filteredPrev] : filteredPrev;
+      // Bouw nieuwe lijst: DB items zijn leidend, maar behoud volgorde waar mogelijk
+      const result = [];
+      const addedIds = new Set();
+      
+      // Eerst: bestaande lokale items die nog in DB staan (update ze met DB data)
+      for (const localThought of prev) {
+        if (dbIdSet.has(localThought.id)) {
+          // Update met verse DB data
+          result.push(dbIdToThought.get(localThought.id));
+          addedIds.add(localThought.id);
+        }
+      }
+      
+      // Dan: nieuwe items uit DB die niet in lokale state stonden (restored items!)
+      for (const dbThought of activeDbThoughts) {
+        if (!addedIds.has(dbThought.id)) {
+          result.unshift(dbThought); // Nieuwe/restored items bovenaan
+          addedIds.add(dbThought.id);
+        }
+      }
+      
+      return result;
     });
     
-    // Also clean up selected thoughts that no longer exist
+    // Clean up selected thoughts die niet meer in DB staan
     setSelectedThoughts(prev => prev.filter(id => dbIdSet.has(id)));
   }, [dbThoughts]);
 
@@ -102,10 +125,17 @@ export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser, i
   // Mutations
   const createThought = useMutation({
     mutationFn: (data) => base44.entities.Thought.create(data),
-    onSuccess: (newThought) => {
+    onSuccess: async (newThought) => {
       setLocalThoughts(prev => [newThought, ...prev.filter(t => t.id !== newThought.id)]);
       setSelectedThoughts(prev => [...prev, newThought.id]);
-      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+      // Invalideer met volledige query key voor betere cache targeting
+      if (currentUser?.email) {
+        await queryClient.invalidateQueries({ 
+          queryKey: ['thoughts', currentUser.email, selectedProjectId || 'all'] 
+        });
+      }
+      // Fallback: ook algemene invalidatie
+      await queryClient.invalidateQueries({ queryKey: ['thoughts'] });
     },
   });
 
@@ -120,8 +150,11 @@ export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser, i
       setSelectedThoughts(prev => prev.filter(tid => tid !== id));
       return { thoughtToRestore };
     },
-    onSuccess: (_, id, context) => {
-      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+    onSuccess: async (_, id, context) => {
+      // Invalideer alle gerelateerde queries
+      await queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+      await queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
+      
       toast("Task moved to recycle bin", {
         action: {
           label: "Undo",
@@ -130,7 +163,11 @@ export function useThoughts({ dbThoughts = [], selectedProjectId, currentUser, i
             if (context?.thoughtToRestore) {
               setLocalThoughts(prev => [context.thoughtToRestore, ...prev]);
             }
-            queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+            // Reset alle thoughts queries om verse data te forceren
+            await queryClient.resetQueries({ 
+              predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === 'thoughts'
+            });
+            await queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
           }
         },
         duration: 5000

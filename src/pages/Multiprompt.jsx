@@ -110,6 +110,24 @@ export default function Multiprompt() {
     }
   }, [selectedProjectId, currentUser?.email, queryClient]);
 
+  // Luister naar storage events voor cross-page synchronisatie (bijv. na restore in RecycleBin)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'lastSelectedProjectId' && e.newValue) {
+        setSelectedProjectId(e.newValue);
+        // Force refetch
+        if (currentUser?.email) {
+          queryClient.resetQueries({ 
+            queryKey: ['thoughts', currentUser.email, e.newValue] 
+          });
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [currentUser?.email, queryClient]);
+
   // Autosave for create task field using generic hook
   const { 
     value: newThought, 
@@ -218,10 +236,25 @@ export default function Multiprompt() {
   } = useThoughts({ 
     dbThoughts, 
     selectedProjectId,
+    currentUser,
     idsToAutoSelect: retryThoughtIds
   });
 
 
+
+  // Force refetch bij mount om eventuele restores van RecycleBin op te pikken
+  useEffect(() => {
+    if (currentUser?.email) {
+      // Kleine delay om race conditions te voorkomen
+      const timer = setTimeout(() => {
+        queryClient.refetchQueries({ 
+          queryKey: ['thoughts', currentUser.email, selectedProjectId || 'all'],
+          exact: true 
+        });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [currentUser?.email, selectedProjectId, queryClient]);
 
   const { data: templates = [] } = useQuery({
     queryKey: ['templates', currentUser?.email],

@@ -61,30 +61,31 @@ export default function RecycleBin() {
       });
       return updated;
     },
-    onSuccess: (restoredItem) => {
-      queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
+    onSuccess: async (restoredItem) => {
+      // 1. Invalideer deleted thoughts cache
+      await queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
       
-      // Aggressively invalidate ALL thoughts queries
-      queryClient.invalidateQueries({ 
+      // 2. Reset ALLE thoughts caches volledig (niet alleen invalideren, maar ook data clearen)
+      await queryClient.resetQueries({ 
+        predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === 'thoughts'
+      });
+      
+      // 3. Forceer refetch van alle thoughts queries
+      await queryClient.refetchQueries({
         predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === 'thoughts'
       });
 
-      // Force assignment handling
+      // 4. Force assignment handling met expliciete project context
       if (restoredItem?.project_id) {
         localStorage.setItem('lastSelectedProjectId', restoredItem.project_id);
+        // Dispatch storage event zodat andere tabs/components het oppikken
+        window.dispatchEvent(new StorageEvent('storage', {
+          key: 'lastSelectedProjectId',
+          newValue: restoredItem.project_id
+        }));
         toast.success(`${t("itemRestored")} to project.`);
       } else {
-        // If restored item has no project, try to assign current one from storage or warn
-        const currentProj = localStorage.getItem('lastSelectedProjectId');
-        if (currentProj && currentProj !== "null") {
-           // Optionally auto-assign to current context if it was global?
-           // For now, just restore as is, but user asked for "Force-Assign... Restoring...".
-           // But Update only updates fields passed. If we want to force assign, we'd need another update.
-           // Let's keep it simple: Just restore.
-           toast.success(t("itemRestored"));
-        } else {
-           toast.success(t("itemRestored"));
-        }
+        toast.success(t("itemRestored"));
       }
     },
   });
