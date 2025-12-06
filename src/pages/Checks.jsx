@@ -161,7 +161,20 @@ export default function Checks() {
             focus_type: 'both'
         });
 
-        // 2. Update task status to retried
+        // 2. Update task status to retried (Optimistic)
+        // Manually update cache for immediate feedback
+        queryClient.setQueryData(['items', currentUser?.email], (oldItems) => {
+           if (!oldItems) return oldItems;
+           return oldItems.map(item => {
+             if (item.id === task.itemId) {
+               const newChecks = [...item.task_checks];
+               newChecks[task.index] = { ...newChecks[task.index], status: 'retried' };
+               return { ...item, task_checks: newChecks };
+             }
+             return item;
+           });
+        });
+
         await updateTaskStatus(task, 'retried');
 
         // 3. Navigate
@@ -328,7 +341,7 @@ export default function Checks() {
                                 <TooltipTrigger asChild>
                                   <p className={`font-medium leading-relaxed line-clamp-3 ${
                                     task.status === 'success' ? 'text-slate-400 line-through' : 
-                                    task.status === 'retried' ? 'text-slate-400 line-through' : 
+                                    task.status === 'retried' ? 'text-slate-500 line-through decoration-red-500/50' : 
                                     'text-slate-900'
                                   }`}>
                                     {task.task_name}
@@ -359,6 +372,17 @@ export default function Checks() {
                                         </TooltipTrigger>
                                         <TooltipContent>Click to reopen</TooltipContent>
                                     </Tooltip>
+                                </TooltipProvider>
+                            ) : task.status === 'retried' ? (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="cursor-not-allowed opacity-80">
+                                        <XCircle className="w-8 h-8 text-red-500" strokeWidth={2.5} />
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Task has been retried</TooltipContent>
+                                  </Tooltip>
                                 </TooltipProvider>
                             ) : (
                                 <>

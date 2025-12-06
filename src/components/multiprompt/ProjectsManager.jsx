@@ -189,7 +189,47 @@ Format as clear Markdown headers and lists.`;
               </div>
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="space-y-2 pt-4 border-t border-slate-100">
+               <label className="text-sm font-medium">LLM Response Parser</label>
+               <div className="flex gap-2">
+                 <Textarea 
+                   placeholder="Paste LLM response JSON here to auto-configure project..." 
+                   className="min-h-[100px] text-xs font-mono"
+                   id="llm-response-input"
+                 />
+                 <Button 
+                   variant="secondary" 
+                   className="h-auto w-24 flex-col gap-1 text-xs"
+                   onClick={() => {
+                      const input = document.getElementById('llm-response-input').value;
+                      if (!input) return;
+                      try {
+                        // Attempt to find JSON block
+                        const jsonMatch = input.match(/```json\n([\s\S]*?)\n```/) || input.match(/\{[\s\S]*\}/);
+                        const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : input;
+                        const data = JSON.parse(jsonStr);
+                        
+                        if (data.technical_config_markdown) setEditConfig(data.technical_config_markdown);
+                        if (data.description) setEditDesc(data.description);
+                        if (data.component_mapping) {
+                           // This would need a place to be stored, currently Project entity has component_mapping field
+                           // We are only editing text fields here mostly.
+                           // Let's assume we append mapping to description or config if no direct field in UI, 
+                           // OR better: Just update the technical config markdown if provided.
+                        }
+                        toast.success("Project updated from LLM response");
+                      } catch (e) {
+                        toast.error("Failed to parse JSON");
+                      }
+                   }}
+                 >
+                   <Sparkles className="w-4 h-4" />
+                   Auto Fill
+                 </Button>
+               </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-4">
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
               <Button onClick={handleEditSave}>Save Changes</Button>
             </div>

@@ -171,7 +171,7 @@ export default function Header() {
               }`}
             >
               <Archive className="w-4 h-4" />
-              <span className="hidden sm:inline">Vault</span>
+              <span className="hidden sm:inline sm:block">Vault</span>
             </div>
           </Link>
         </div>

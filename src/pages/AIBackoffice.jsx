@@ -210,8 +210,9 @@ export default function AIBackoffice() {
     const [isRunning, setIsRunning] = useState(false);
     
     const runCleanup = async () => {
+      if (!currentUser) return;
       if (!confirm("Are you sure? This will PERMANENTLY delete old tasks from the recycle bin.")) return;
-      
+
       setIsRunning(true);
       try {
         const res = await base44.functions.invoke('hardDeleteOldTasks');
