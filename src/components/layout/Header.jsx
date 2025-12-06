@@ -275,40 +275,6 @@ export default function Header() {
                     <DropdownMenuSeparator />
                   </>
                 )}
-                {user.role === 'admin' && (
-                  <>
-                    <DropdownMenuItem asChild>
-                      <Link to={createPageUrl("AdminStats")} className="cursor-pointer text-red-600 focus:text-red-600 bg-red-50/50">
-                        <BarChart className="mr-2 h-4 w-4" />
-                        <span>Admin Stats</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to={createPageUrl("AdminSupportTickets")} className="cursor-pointer text-red-600 focus:text-red-600 bg-red-50/50">
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        <span>Tickets</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
-                {user.role === 'admin' && (
-                  <>
-                    <DropdownMenuItem asChild>
-                      <Link to={createPageUrl("AdminStats")} className="cursor-pointer text-red-600 focus:text-red-600 bg-red-50/50">
-                        <BarChart className="mr-2 h-4 w-4" />
-                        <span>Admin Stats</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to={createPageUrl("AdminSupportTickets")} className="cursor-pointer text-red-600 focus:text-red-600 bg-red-50/50">
-                        <MessageCircle className="mr-2 h-4 w-4" />
-                        <span>Tickets</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
                 <DropdownMenuItem asChild>
                   <Link to={createPageUrl("Support")} className="cursor-pointer">
                     <MessageCircle className="mr-2 h-4 w-4" />
