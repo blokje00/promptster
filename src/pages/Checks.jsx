@@ -197,7 +197,14 @@ export default function Checks() {
 
           {/* Export Section */}
           <div className="mb-6">
-             <ExportPanel items={items} mode="vault" className="shadow-sm border-orange-200" />
+             <ExportPanel 
+               items={items} 
+               mode="vault" 
+               showTypeFilter={false} 
+               showCheckFilter={true}
+               customTitle="Export This Prompt"
+               className="shadow-sm border-orange-200" 
+             />
           </div>
 
           {/* Filters */}
