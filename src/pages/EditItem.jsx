@@ -187,17 +187,7 @@ export default function EditItem() {
                 <Input id="description" value={formData.description || ''} onChange={(e) => handleInputChange('description', e.target.value)} />
               </div>
 
-              {/* Task Checklist - alleen voor multiprompts */}
-              {formData.type === 'multiprompt' && formData.task_checks && formData.task_checks.length > 0 && (
-                <div id="task-checklist-section">
-                  <TaskChecklist
-                    taskChecks={formData.task_checks}
-                    onTaskChecksChange={(newChecks) => handleInputChange('task_checks', newChecks)}
-                    itemId={itemId}
-                    projectId={formData.project_id}
-                  />
-                </div>
-              )}
+              {/* Task Checklist removed - moved to Checks page */}
 
               <div className="space-y-2" id="content-section">
                 <Label htmlFor="content">Content *</Label>

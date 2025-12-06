@@ -4,7 +4,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
-import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart } from "lucide-react";
+import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../i18n/LanguageContext";
 import {
@@ -76,13 +76,15 @@ export default function Header() {
   const isVault = currentPath.includes("Dashboard") || currentPath === "/" || currentPath === "";
   const isAddItem = currentPath.includes("AddItem");
   const isMultiprompt = currentPath.includes("Multiprompt");
+  const isChecks = currentPath.includes("Checks");
   
   // Save last visited main page
   useEffect(() => {
     if (isVault) localStorage.setItem('lastMainPage', 'Dashboard');
     else if (isAddItem) localStorage.setItem('lastMainPage', 'AddItem');
     else if (isMultiprompt) localStorage.setItem('lastMainPage', 'Multiprompt');
-  }, [isVault, isAddItem, isMultiprompt]);
+    else if (isChecks) localStorage.setItem('lastMainPage', 'Checks');
+  }, [isVault, isAddItem, isMultiprompt, isChecks]);
 
   // Redirect to last page on initial load - default to Multiprompt for existing users
   useEffect(() => {
@@ -125,6 +127,24 @@ export default function Header() {
               <span className="hidden sm:inline">Multi-Task</span>
             </div>
           </Link>
+
+          <Link to={createPageUrl("Checks")}>
+            <div 
+              className={`relative flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                isChecks 
+                  ? 'bg-orange-600 text-white shadow-md' 
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
+              }`}
+            >
+              <ListChecks className="w-4 h-4" />
+              <span className="hidden sm:inline">Checks</span>
+              {openTasksCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
+                  {openTasksCount}
+                </span>
+              )}
+            </div>
+          </Link>
           
           <Link to={createPageUrl("AddItem")}>
             <div 
@@ -149,12 +169,6 @@ export default function Header() {
             >
               <Archive className="w-4 h-4" />
               <span className="hidden sm:inline">Vault</span>
-              {/* Task 3: Open Tasks Badge */}
-              {openTasksCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
-                  {openTasksCount}
-                </span>
-              )}
             </div>
           </Link>
         </div>

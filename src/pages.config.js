@@ -11,6 +11,7 @@ import RecycleBin from './pages/RecycleBin';
 import Support from './pages/Support';
 import AdminStats from './pages/AdminStats';
 import AdminSupportTickets from './pages/AdminSupportTickets';
+import Checks from './pages/Checks';
 import __Layout from './Layout.jsx';
 
 
@@ -28,6 +29,7 @@ export const PAGES = {
     "Support": Support,
     "AdminStats": AdminStats,
     "AdminSupportTickets": AdminSupportTickets,
+    "Checks": Checks,
 }
 
 export const pagesConfig = {
