@@ -13,7 +13,6 @@ import { format } from "date-fns";
 import RequireSubscription from "@/components/auth/RequireSubscription";
 import { toast } from "sonner";
 import ExportPanel from "@/components/export/ExportPanel";
-import ExportPanel from "@/components/export/ExportPanel";
 
 export default function Checks() {
   const navigate = useNavigate();
