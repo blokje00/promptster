@@ -616,7 +616,7 @@ export default function Multiprompt() {
                                <SelectItem value="logic">Logic Only</SelectItem>
                              </SelectContent>
                           </Select>
-                          <ContextSelector value={newThoughtContext} onChange={setNewThoughtContext} compact enabled={enableContextSuggestions} />
+                          <ContextSelector value={newThoughtContext} onChange={setNewThoughtContext} compact enableAISuggestions={enableContextSuggestions} />
                         </div>
                       </div>
 
