@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -15,32 +15,30 @@ export const useMultipromptData = ({
   const queryClient = useQueryClient();
   const [selectedThoughtIds, setSelectedThoughtIds] = useState([]);
 
-  // 1. Fetch Thoughts - Single Source of Truth
-  const { data: thoughts = [], isLoading } = useQuery({
+  // 1. Fetch ALL Thoughts - Single Source of Truth
+  const { data: allThoughts = [], isLoading } = useQuery({
     queryKey: ['thoughts', { 
-      userEmail: currentUser?.email, 
-      projectId: selectedProjectId || 'all' 
+      userEmail: currentUser?.email
     }],
     queryFn: async () => {
       if (!currentUser?.email) return [];
 
-      // Simpele filter - Base44 API ondersteunt geen $or/$exists queries
-      const filter = { is_deleted: false };
-
-      if (selectedProjectId) {
-        filter.project_id = selectedProjectId;
-      } else {
-        filter.created_by = currentUser.email;
-      }
-
-      const result = await base44.entities.Thought.filter(filter, "-created_date");
-      
-      return result || [];
+      // Fetch ALL non-deleted thoughts for user (Client-side filtering for projects)
+      return await base44.entities.Thought.filter({ 
+        created_by: currentUser.email,
+        is_deleted: false 
+      }, "-created_date");
     },
     enabled: !!currentUser?.email,
     staleTime: 0, // Always fetch fresh on mount/invalidate
     refetchOnWindowFocus: true,
   });
+
+  // Client-side filtering for view
+  const thoughts = useMemo(() => {
+    if (!selectedProjectId) return allThoughts;
+    return allThoughts.filter(t => t.project_id === selectedProjectId);
+  }, [allThoughts, selectedProjectId]);
 
   // 2. Auto-select logic (Task 3: Default Select All)
   const [hasInitialSelected, setHasInitialSelected] = useState(false);
@@ -75,8 +73,7 @@ export const useMultipromptData = ({
       // Optimistic update: direct toevoegen aan cache
       if (newThought) {
         const queryKey = ['thoughts', { 
-          userEmail: currentUser?.email, 
-          projectId: selectedProjectId || 'all' 
+          userEmail: currentUser?.email
         }];
         queryClient.setQueryData(queryKey, (old) => [newThought, ...(old || [])]);
       }
@@ -153,6 +150,7 @@ export const useMultipromptData = ({
 
   return {
     thoughts,
+    allThoughts,
     isLoading,
     selectedThoughtIds,
     setSelectedThoughtIds,

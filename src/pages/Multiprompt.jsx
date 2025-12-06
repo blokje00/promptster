@@ -83,6 +83,7 @@ export default function Multiprompt() {
 
   const {
     thoughts,
+    allThoughts,
     isLoading,
     selectedThoughtIds,
     setSelectedThoughtIds,
@@ -170,7 +171,7 @@ export default function Multiprompt() {
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   // Task 1: Count thoughts per project
-  const getProjectCount = (pid) => thoughts.filter(t => t.project_id === pid).length;
+  const getProjectCount = (pid) => allThoughts?.filter(t => t.project_id === pid).length || 0;
 
   // --- Template Autosave & Persistence ---
   
@@ -500,9 +501,9 @@ export default function Multiprompt() {
                   >
                     All Projects
                     {/* Task 4: Total tasks badge */}
-                    {thoughts.length > 0 && (
+                    {allThoughts?.length > 0 && (
                       <Badge variant="secondary" className="ml-2 bg-red-500 text-white hover:bg-red-600 border-0 px-1.5 py-0 h-4 text-[10px]">
-                        {thoughts.length}
+                        {allThoughts.length}
                       </Badge>
                     )}
                   </Button>
