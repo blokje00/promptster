@@ -185,7 +185,8 @@ export default function Header() {
               Features
             </Button>
           </Link>
-          {user?.role === 'admin' && (
+          {/* Admin items moved to dropdown */}
+          {false && user?.role === 'admin' && (
             <>
               <Link to={createPageUrl("AdminStats")}>
                 <Button 

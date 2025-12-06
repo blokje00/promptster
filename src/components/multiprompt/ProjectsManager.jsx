@@ -165,6 +165,28 @@ export default function ProjectsManager({ projects = [] }) {
             <div className="space-y-2">
               <label className="text-sm font-medium">Technical Config (Markdown)</label>
               <Textarea value={editConfig} onChange={e => setEditConfig(e.target.value)} className="font-mono text-sm min-h-[150px]" />
+              <div className="flex justify-between items-center pt-1">
+                 <span className="text-xs text-slate-500">Need structure? Copy this prompt for your LLM:</span>
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   className="h-7 text-xs gap-1"
+                   onClick={() => {
+                      const prompt = `Analyze the codebase and provide a technical configuration summary in Markdown. Include:
+1. Tech Stack (Frameworks, Libraries)
+2. File Structure (Key directories)
+3. Key Components & Entities
+4. Styling & Theming Approach
+5. Conventions (Naming, Async, Error Handling)
+
+Format as clear Markdown headers and lists.`;
+                      navigator.clipboard.writeText(prompt);
+                      toast.success("Structure prompt copied!");
+                   }}
+                 >
+                   <Copy className="w-3 h-3" /> Copy Prompt
+                 </Button>
+              </div>
             </div>
 
             <div className="flex justify-end gap-2">
