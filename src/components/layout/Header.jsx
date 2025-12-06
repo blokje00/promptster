@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
@@ -15,12 +15,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import ExportDialogWrapper from "@/components/export/ExportDialogWrapper";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const [showExport, setShowExport] = useState(false);
   
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
@@ -281,6 +284,12 @@ export default function Header() {
                     <span>Support</span>
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowExport(true)} className="cursor-pointer text-indigo-600 font-medium">
+                  <Archive className="mr-2 h-4 w-4" />
+                  <span>Export Vault</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Logout</span>
@@ -288,6 +297,20 @@ export default function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+
+          {/* Export Dialog */}
+          <Dialog open={showExport} onOpenChange={setShowExport}>
+            <DialogContent className="max-w-md p-0 overflow-hidden">
+               {/* Fetch items for export panel - we need to fetch them here or inside panel? 
+                   ExportPanel expects 'items' prop. We can fetch them inside ExportPanel if modified, 
+                   or fetch here. Since Header is always present, fetching all items might be heavy.
+                   Let's assume ExportPanel can handle fetching if items is empty? 
+                   No, ExportPanel uses items for stats. 
+                   We should fetch items here only when dialog is open.
+               */}
+               <ExportDialogWrapper onClose={() => setShowExport(false)} />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </header>

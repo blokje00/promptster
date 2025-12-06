@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import ExportPanel from "@/components/export/ExportPanel";
+
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -85,16 +85,7 @@ export default function Dashboard() {
           <p className="text-slate-600 mt-2">All your prompts and code in one place</p>
         </div>
 
-        {/* Export Section */}
-        <div className="mb-6">
-          <ExportPanel 
-            items={items} 
-            mode="vault" 
-            showTypeFilter={true} 
-            showCheckFilter={false} 
-            className="shadow-sm" 
-          />
-        </div>
+
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
           <div className="flex flex-col gap-4 mb-6">

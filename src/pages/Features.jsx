@@ -11,56 +11,56 @@ export default function Features() {
     {
       title: "Prompt Management",
       icon: <Database className="w-6 h-6 text-indigo-500" />,
-      description: "Centraal beheer van al je prompts met geavanceerde tagging en zoekfuncties.",
+      description: "Central management of all your prompts with advanced tagging and search.",
       specs: [
-        "Onbeperkt aantal prompts",
-        "Max. 50.000 karakters per prompt",
-        "Versiebeheer met historie",
-        "Tagging systeem"
+        "Unlimited prompts",
+        "Max. 50,000 characters per prompt",
+        "Version control with history",
+        "Tagging system"
       ]
     },
     {
       title: "Multi-Task Builder",
       icon: <Zap className="w-6 h-6 text-yellow-500" />,
-      description: "Bouw complexe multi-step prompts door taken te combineren met context.",
+      description: "Build complex multi-step prompts by combining tasks with context.",
       specs: [
-        "Max. 50 deeltaken per prompt",
-        "Sleep-en-plaats interface",
-        "AI-aangedreven optimalisatie",
-        "Project-specifieke templates"
+        "Max. 50 subtasks per prompt",
+        "Drag-and-drop interface",
+        "AI-powered optimization",
+        "Project-specific templates"
       ]
     },
     {
       title: "Code Snippets",
       icon: <Code className="w-6 h-6 text-blue-500" />,
-      description: "Bewaar en deel herbruikbare code snippets met syntax highlighting.",
+      description: "Save and share reusable code snippets with syntax highlighting.",
       specs: [
-        "Ondersteuning voor 20+ talen",
-        "Direct kopiëren naar klembord",
+        "Support for 20+ languages",
+        "Direct copy to clipboard",
         "Syntax highlighting",
-        "Gekoppeld aan projecten"
+        "Linked to projects"
       ]
     },
     {
-      title: "Bestandsbeheer",
+      title: "File Management",
       icon: <Shield className="w-6 h-6 text-green-500" />,
-      description: "Veilige opslag van screenshots en zip-bestanden bij je taken.",
+      description: "Secure storage of screenshots and zip files with your tasks.",
       specs: [
-        "Max. 10MB per afbeelding",
-        "Max. 50MB per zip-bestand",
-        "Automatische virusscan",
-        "Veilige URL generatie"
+        "Max. 10MB per image",
+        "Max. 50MB per zip file",
+        "Automatic virus scan",
+        "Secure URL generation"
       ]
     },
     {
-      title: "AI Integratie",
+      title: "AI Integration",
       icon: <Cpu className="w-6 h-6 text-purple-500" />,
-      description: "Slimme hulp bij het schrijven en verbeteren van je prompts.",
+      description: "Smart assistance for writing and improving your prompts.",
       specs: [
-        "Context-aware suggesties",
-        "Automatische taalverbetering",
-        "Structuur analyse",
-        "Token count schatting"
+        "Context-aware suggestions",
+        "Automatic language improvement",
+        "Structure analysis",
+        "Token count estimation"
       ]
     }
   ];
@@ -73,15 +73,15 @@ export default function Features() {
             Promptster Features
           </h1>
           <p className="text-xl text-slate-600">
-            Alles wat je nodig hebt om je development workflow te versnellen
+            Everything you need to accelerate your development workflow
           </p>
         </div>
 
         <Link to={createPageUrl("Subscription")} className="block mb-16 group">
           <div className="bg-indigo-900 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 transition-colors cursor-pointer">
-            <h2 className="text-2xl font-bold mb-4">Klaar om te starten?</h2>
+            <h2 className="text-2xl font-bold mb-4">Ready to start?</h2>
             <p className="mb-6 text-indigo-200">
-              Probeer alle features gratis 14 dagen uit.
+              Try all features for free for 14 days.
             </p>
             <div className="flex justify-center gap-4">
               <Badge variant="outline" className="text-white border-white px-4 py-1">
@@ -124,9 +124,9 @@ export default function Features() {
 
         <Link to={createPageUrl("Subscription")} className="block mt-16 group">
           <div className="bg-indigo-900 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 transition-colors cursor-pointer">
-            <h2 className="text-2xl font-bold mb-4">Klaar om te starten?</h2>
+            <h2 className="text-2xl font-bold mb-4">Ready to start?</h2>
             <p className="mb-6 text-indigo-200">
-              Probeer alle features gratis 14 dagen uit.
+              Try all features for free for 14 days.
             </p>
             <div className="flex justify-center gap-4">
               <Badge variant="outline" className="text-white border-white px-4 py-1">

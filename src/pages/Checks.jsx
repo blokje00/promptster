@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { format } from "date-fns";
 import RequireSubscription from "@/components/auth/RequireSubscription";
 import { toast } from "sonner";
-import ExportPanel from "@/components/export/ExportPanel";
+
 
 export default function Checks() {
   const navigate = useNavigate();
@@ -195,17 +195,7 @@ export default function Checks() {
             <p className="text-slate-600 mt-1">Review and manage all your pending tasks</p>
           </div>
 
-          {/* Export Section */}
-          <div className="mb-6">
-             <ExportPanel 
-               items={items} 
-               mode="vault" 
-               showTypeFilter={false} 
-               showCheckFilter={true}
-               customTitle="Export This Prompt"
-               className="shadow-sm border-orange-200" 
-             />
-          </div>
+
 
           {/* Filters */}
           <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
