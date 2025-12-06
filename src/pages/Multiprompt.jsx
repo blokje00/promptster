@@ -452,10 +452,10 @@ export default function Multiprompt() {
       status: "open"
     }, {
       onSuccess: (newItem) => {
-        // Task 10: Redirect to Review (ViewItem)
+        // Task 7: Redirect to Checks instead of ViewItem
         if (newItem?.id) {
-          navigate(createPageUrl(`ViewItem?id=${newItem.id}`));
-          toast.success("Prompt saved! Opening for review...");
+          navigate(createPageUrl("Checks"));
+          toast.success("Prompt saved! Sent to Vault Checks.");
         }
       }
     });
@@ -593,9 +593,18 @@ export default function Multiprompt() {
                         
                         {/* Image Previews */}
                         {newThoughtImages.length > 0 && (
-                          <div className="flex gap-2 px-3 pb-2">
+                          <div className="flex gap-2 px-3 pb-2 flex-wrap">
                             {newThoughtImages.map((url, idx) => (
-                              <img key={idx} src={url} className="w-10 h-10 rounded border object-cover" />
+                              <div key={idx} className="relative group">
+                                <img src={url} className="w-10 h-10 rounded border object-cover" />
+                                <button
+                                  onClick={() => setNewThoughtImages(prev => prev.filter((_, i) => i !== idx))}
+                                  className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm z-10"
+                                  title="Remove image"
+                                >
+                                  <X className="w-2 h-2" />
+                                </button>
+                              </div>
                             ))}
                           </div>
                         )}
