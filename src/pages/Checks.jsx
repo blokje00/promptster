@@ -152,7 +152,7 @@ export default function Checks() {
     try {
         // 1. Create Thought
         await base44.entities.Thought.create({
-            content: task.full_description || task.task_name,
+            content: `[Retry] ${task.full_description || task.task_name}`,
             project_id: task.projectId,
             is_selected: true,
             is_deleted: false,
@@ -234,7 +234,7 @@ export default function Checks() {
                        try {
                          // 1. Create Thought
                          await base44.entities.Thought.create({
-                             content: task.full_description || task.task_name,
+                             content: `[Retry] ${task.full_description || task.task_name}`,
                              project_id: task.projectId,
                              is_selected: true,
                              is_deleted: false,
@@ -299,13 +299,13 @@ export default function Checks() {
                         <ArrowUpDown className="w-3 h-3" />
                       </div>
                     </th>
-                    <th className="px-6 py-3 w-[200px] cursor-pointer hover:bg-slate-100" onClick={() => handleSort('updated_date')}>
+                    <th className="px-6 py-3 w-[140px] cursor-pointer hover:bg-slate-100" onClick={() => handleSort('updated_date')}>
                       <div className="flex items-center gap-2">
-                        Last Updated
+                        Updated
                         <ArrowUpDown className="w-3 h-3" />
                       </div>
                     </th>
-                    <th className="px-6 py-3 w-[180px] text-right">Actions</th>
+                    <th className="px-6 py-3 w-[120px] text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
