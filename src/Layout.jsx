@@ -1,10 +1,32 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Header from "./components/layout/Header";
 import { LanguageProvider } from "./components/i18n/LanguageContext";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function Layout({ children }) {
+  useEffect(() => {
+    const iconUrl = "https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/59f339046_Promptguardlogopurplebeta.png";
+    
+    // Favicon
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.getElementsByTagName('head')[0].appendChild(link);
+    }
+    link.href = iconUrl;
+
+    // Apple Touch Icon
+    let appleLink = document.querySelector("link[rel='apple-touch-icon']");
+    if (!appleLink) {
+      appleLink = document.createElement('link');
+      appleLink.rel = 'apple-touch-icon';
+      document.getElementsByTagName('head')[0].appendChild(appleLink);
+    }
+    appleLink.href = iconUrl;
+  }, []);
+
   return (
     <LanguageProvider>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
