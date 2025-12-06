@@ -17,7 +17,7 @@ export default function Checks() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("open");
   const [sortConfig, setSortConfig] = useState({ key: "updated_date", direction: "desc" });
   const [isRetrying, setIsRetrying] = useState(false);
 
@@ -73,6 +73,7 @@ export default function Checks() {
 
     if (statusFilter !== "all") {
       result = result.filter(task => {
+        // Handle 'open' default status if status is undefined/null
         const status = task.status || "open";
         return status === statusFilter;
       });
@@ -218,8 +219,71 @@ export default function Checks() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="text-sm text-slate-500">
-              {filteredTasks.length} tasks found
+            <div className="flex items-center gap-3">
+               {/* Task 3: Global Retry Button */}
+               {filteredTasks.some(t => t.status === 'failed') && (
+                 <Button 
+                   variant="outline" 
+                   className="border-red-200 text-red-700 hover:bg-red-50"
+                   onClick={async () => {
+                     setIsRetrying(true);
+                     const failedTasks = filteredTasks.filter(t => t.status === 'failed');
+                     let successCount = 0;
+                     
+                     for (const task of failedTasks) {
+                       try {
+                         // 1. Create Thought
+                         await base44.entities.Thought.create({
+                             content: task.full_description || task.task_name,
+                             project_id: task.projectId,
+                             is_selected: true,
+                             is_deleted: false,
+                             retry_from_item_id: task.itemId,
+                             focus_type: 'both'
+                         });
+
+                         // 2. Update task status
+                         // Note: We duplicate update logic here to avoid refetch spam, or just refetch at end
+                         // We'll assume updateTaskStatus is reused but modified to not invalidate every time if we batch?
+                         // For simplicity, we'll just do it one by one but suppress toasts/invalidation for bulk?
+                         // Actually, let's just do the DB update manually here
+                         const item = items.find(i => i.id === task.itemId);
+                         if (item) {
+                             const newChecks = [...item.task_checks];
+                             newChecks[task.index] = {
+                               ...newChecks[task.index],
+                               status: 'retried',
+                               is_checked: false,
+                               updated_date: new Date().toISOString()
+                             };
+                             await base44.entities.Item.update(item.id, { task_checks: newChecks });
+                             successCount++;
+                         }
+                       } catch (e) {
+                         console.error(e);
+                       }
+                     }
+                     
+                     setIsRetrying(false);
+                     queryClient.invalidateQueries({ queryKey: ['items'] });
+                     toast.success(`Retried ${successCount} tasks`);
+                     
+                     // Navigate to Multi-Task
+                     if (successCount > 0) {
+                        // Check if all tasks belong to same project? Use first one or last selected?
+                        // Let's try to preserve the last used project context
+                        navigate(createPageUrl("Multiprompt"));
+                     }
+                   }}
+                   disabled={isRetrying}
+                 >
+                   {isRetrying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-2" />}
+                   Retry {filteredTasks.filter(t => t.status === 'failed').length} Failed
+                 </Button>
+               )}
+               <div className="text-sm text-slate-500">
+                 {filteredTasks.length} tasks found
+               </div>
             </div>
           </div>
 
@@ -232,12 +296,6 @@ export default function Checks() {
                     <th className="px-6 py-3 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('task_name')}>
                       <div className="flex items-center gap-2">
                         Task
-                        <ArrowUpDown className="w-3 h-3" />
-                      </div>
-                    </th>
-                    <th className="px-6 py-3 w-[150px] cursor-pointer hover:bg-slate-100" onClick={() => handleSort('status')}>
-                      <div className="flex items-center gap-2">
-                        Status
                         <ArrowUpDown className="w-3 h-3" />
                       </div>
                     </th>
@@ -265,7 +323,11 @@ export default function Checks() {
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <p className={`font-medium leading-relaxed line-clamp-3 ${task.status === 'success' ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
+                                  <p className={`font-medium leading-relaxed line-clamp-3 ${
+                                    task.status === 'success' ? 'text-slate-400 line-through' : 
+                                    task.status === 'retried' ? 'text-slate-400 line-through' : 
+                                    'text-slate-900'
+                                  }`}>
                                     {task.task_name}
                                   </p>
                                 </TooltipTrigger>
@@ -274,64 +336,55 @@ export default function Checks() {
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
-                            <p className="text-xs text-slate-400">From: {task.itemTitle}</p>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 align-top">
-                          <Badge 
-                            variant="outline" 
-                            className={`
-                              ${task.status === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 
-                                task.status === 'failed' ? 'bg-red-50 text-red-700 border-red-200' :
-                                task.status === 'retried' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
-                                'bg-blue-50 text-blue-700 border-blue-200'}
-                            `}
-                          >
-                            {task.status || 'Open'}
-                          </Badge>
                         </td>
                         <td className="px-6 py-4 align-top text-slate-500">
                           {task.updated_date ? format(new Date(task.updated_date), 'dd-MM-yyyy HH:mm') : '-'}
                         </td>
                         <td className="px-6 py-4 align-top text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            {task.status === 'failed' ? (
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-8 px-2 text-red-600 border-red-200 hover:bg-red-50"
-                                    onClick={() => handleRetry(task)}
-                                    disabled={isRetrying}
-                                >
-                                    {isRetrying ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3 mr-1" />}
-                                    Retry
-                                </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            {task.status === 'success' ? (
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div 
+                                              onClick={() => updateTaskStatus(task, 'open')} 
+                                              className="cursor-pointer hover:scale-110 transition-transform"
+                                            >
+                                                <CheckCircle2 className="w-8 h-8 text-green-600 drop-shadow-sm" strokeWidth={2.5} />
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Click to reopen</TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
                             ) : (
                                 <>
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => updateTaskStatus(task, 'success')}>
-                                                    <CheckCircle2 className="w-4 h-4" />
+                                                <Button 
+                                                    size="icon" 
+                                                    variant="ghost" 
+                                                    className={`h-8 w-8 ${task.status === 'success' ? 'text-green-600' : 'text-slate-300 hover:text-green-600 hover:bg-green-50'}`}
+                                                    onClick={() => updateTaskStatus(task, 'success')}
+                                                >
+                                                    <CheckCircle2 className="w-6 h-6" />
                                                 </Button>
                                             </TooltipTrigger>
                                             <TooltipContent>Mark as Success</TooltipContent>
                                         </Tooltip>
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => updateTaskStatus(task, 'failed')}>
-                                                    <XCircle className="w-4 h-4" />
+                                                <Button 
+                                                    size="icon" 
+                                                    variant="ghost" 
+                                                    className={`h-8 w-8 ${task.status === 'failed' ? 'text-red-600 bg-red-50' : 'text-slate-300 hover:text-red-600 hover:bg-red-50'}`}
+                                                    onClick={() => updateTaskStatus(task, 'failed')}
+                                                >
+                                                    <XCircle className="w-6 h-6" />
                                                 </Button>
                                             </TooltipTrigger>
                                             <TooltipContent>Mark as Failed</TooltipContent>
-                                        </Tooltip>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => updateTaskStatus(task, 'open')}>
-                                                    <Circle className="w-4 h-4" />
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>Reset to Open</TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
                                 </>

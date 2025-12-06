@@ -68,16 +68,26 @@ export default function Multiprompt() {
     }
   }, [selectedProjectId, location.state, navigate]);
 
-  // Storage Listener for Cross-Component Sync (e.g., RecycleBin Restore)
+  // Task 9 & 10: Fix Project Persistence
+  // Ensure that we only use location state if it explicitly exists, otherwise fallback to localStorage in initialization
+  // This is handled in useState initialization.
+  // However, if we navigate away and back, React re-mounts.
+  // If 'lastSelectedProjectId' is in localStorage, it should pick it up.
+  // But if we explicitly set project to "" (All), localStorage has "".
+  
+  // Also, we should sync any external changes (like from Checks page)
   useEffect(() => {
     const handleStorage = (e) => {
       if (e.key === 'lastSelectedProjectId') {
-        setSelectedProjectId(e.newValue || "");
+        // Only update if different to avoid loops
+        if (e.newValue !== selectedProjectId) {
+             setSelectedProjectId(e.newValue || "");
+        }
       }
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
-  }, []);
+  }, [selectedProjectId]);
 
   // --- 2. Data Fetching (via Hook) ---
 
@@ -172,6 +182,9 @@ export default function Multiprompt() {
 
   // Task 1: Count thoughts per project
   const getProjectCount = (pid) => allThoughts?.filter(t => t.project_id === pid).length || 0;
+
+  // Task 1: Enable/Disable Context Suggestions
+  const enableContextSuggestions = aiSettings[0]?.enable_context_suggestions !== false;
 
   // --- Template Autosave & Persistence ---
   
@@ -551,7 +564,7 @@ export default function Multiprompt() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      
+
                       {/* Input Area */}
                       <div className={`border-2 rounded-lg focus-within:border-indigo-400 transition-all bg-white ${selectedProject ? `border-dashed ${projectBorderColors[selectedProject.color]}` : 'border-slate-200'}`}>
                         <Textarea
@@ -559,6 +572,21 @@ export default function Multiprompt() {
                           value={newThoughtContent}
                           onChange={(e) => setNewThoughtContent(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), !isLimitReached && handleAddThought())}
+                          // Task 6: Handle paste (images)
+                          onPaste={async (e) => {
+                            const items = e.clipboardData.items;
+                            const files = [];
+                            for (let i = 0; i < items.length; i++) {
+                              if (items[i].type.indexOf("image") !== -1) {
+                                const file = items[i].getAsFile();
+                                if (file) files.push(file);
+                              }
+                            }
+                            if (files.length > 0) {
+                              e.preventDefault();
+                              handleImageUpload(files);
+                            }
+                          }}
                           disabled={isLimitReached}
                           className="min-h-[60px] border-0 focus-visible:ring-0 resize-none"
                         />
@@ -588,7 +616,7 @@ export default function Multiprompt() {
                                <SelectItem value="logic">Logic Only</SelectItem>
                              </SelectContent>
                           </Select>
-                          <ContextSelector value={newThoughtContext} onChange={setNewThoughtContext} compact />
+                          <ContextSelector value={newThoughtContext} onChange={setNewThoughtContext} compact enabled={enableContextSuggestions} />
                         </div>
                       </div>
 

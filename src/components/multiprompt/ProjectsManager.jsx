@@ -149,7 +149,7 @@ export default function ProjectsManager({ projects = [] }) {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>Edit Project</DialogTitle></DialogHeader>
-          <div className="space-y-4 pt-4">
+          <div className="space-y-4 pt-4 max-h-[70vh] overflow-y-auto px-1">
             <Input value={editName} onChange={e => setEditName(e.target.value)} />
             <div className="flex gap-2">
               {Object.keys(projectColors).map(color => (
