@@ -208,67 +208,6 @@ export default function Checks() {
               </Select>
             </div>
             <div className="flex items-center gap-3">
-               {/* Task 3: Global Retry Button */}
-               {filteredTasks.some(t => t.status === 'failed') && (
-                 <Button 
-                   variant="outline" 
-                   className="border-red-200 text-red-700 hover:bg-red-50"
-                   onClick={async () => {
-                     setIsRetrying(true);
-                     const failedTasks = filteredTasks.filter(t => t.status === 'failed');
-                     let successCount = 0;
-                     
-                     for (const task of failedTasks) {
-                       try {
-                         // 1. Create Thought
-                         await base44.entities.Thought.create({
-                             content: `[Retry] ${task.full_description || task.task_name}`,
-                             project_id: task.projectId,
-                             is_selected: true,
-                             is_deleted: false,
-                             retry_from_item_id: task.itemId,
-                             focus_type: 'both'
-                         });
-
-                         // 2. Update task status
-                         // Note: We duplicate update logic here to avoid refetch spam, or just refetch at end
-                         // We'll assume updateTaskStatus is reused but modified to not invalidate every time if we batch?
-                         // For simplicity, we'll just do it one by one but suppress toasts/invalidation for bulk?
-                         // Actually, let's just do the DB update manually here
-                         const item = items.find(i => i.id === task.itemId);
-                         if (item) {
-                             const newChecks = [...item.task_checks];
-                             newChecks[task.index] = {
-                               ...newChecks[task.index],
-                               status: 'retried',
-                               is_checked: false,
-                               updated_date: new Date().toISOString()
-                             };
-                             await base44.entities.Item.update(item.id, { task_checks: newChecks });
-                             successCount++;
-                         }
-                       } catch (e) {
-                         console.error(e);
-                       }
-                     }
-                     
-                     setIsRetrying(false);
-                     queryClient.invalidateQueries({ queryKey: ['items'] });
-                     toast.success(`Retried ${successCount} tasks`);
-                     
-                     // Navigate to Multi-Task
-                     if (successCount > 0) {
-                        // Check if all tasks belong to same project? Use first one or last selected?
-                        // Let's try to preserve the last used project context
-                        navigate(createPageUrl("Multiprompt"));
-                     }
-                   }}
-                   disabled={isRetrying}
-                 >
-                   {isRetrying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RotateCcw className="w-4 h-4 mr-2" />}
-                   Retry {filteredTasks.filter(t => t.status === 'failed').length} Failed
-                 </Button>
-               )}
                <div className="text-sm text-slate-500">
                  {filteredTasks.length} tasks found
                </div>
