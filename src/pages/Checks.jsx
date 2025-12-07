@@ -129,9 +129,6 @@ export default function Checks() {
     }
 
     // Calculate parent item status
-    const hasOpen = newChecks.some(c => !c.status || c.status === 'open' || c.status === 'retried'); // Treat retried as potentially needing attention or just distinct
-    // Actually logic for parent status usually: if any failed -> failed, if all success -> success, else open
-    // But keeping simple 'open' vs 'success' as per previous logic is fine
     const parentStatus = newChecks.some(c => c.status !== 'success') ? 'open' : 'success';
 
     try {
@@ -139,10 +136,32 @@ export default function Checks() {
         task_checks: newChecks,
         status: parentStatus
       });
+
+      // TASK-2 & TASK-7: If failed, immediately create a Thought to retry
+      if (newStatus === 'failed') {
+        const additionalText = "\n\nThis task was previously executed but not approved by the user. There are missing elements, the function doesn't work, or is invisible. Analyze again and apply improvements.";
+        
+        await base44.entities.Thought.create({
+          content: `[Retry] ${task.full_description || task.task_name}${additionalText}`,
+          project_id: task.projectId,
+          is_selected: true,
+          is_deleted: false,
+          retry_from_item_id: task.itemId,
+          focus_type: 'both'
+        });
+
+        // Update task status to retried
+        newChecks[task.index] = { ...newChecks[task.index], status: 'retried' };
+        await base44.entities.Item.update(item.id, { task_checks: newChecks });
+        
+        toast.success("Task marked as failed and sent to Multi-Task for retry");
+      } else {
+        toast.success(`Task updated to ${newStatus}`);
+      }
+
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['openTasksCount'] });
-      toast.success(`Task updated to ${newStatus}`);
     } catch (error) {
       toast.error("Failed to update task");
     }
