@@ -594,20 +594,6 @@ export default function Multiprompt() {
                       {/* Input Area */}
                       <div 
                         className={`border-2 rounded-lg focus-within:border-indigo-400 transition-all bg-white ${selectedProject ? `border-dashed ${projectBorderColors[selectedProject.color]}` : 'border-slate-200'}`}
-                        onDragOver={(e) => e.preventDefault()}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                            // Trigger screenshot uploader
-                            const fileInput = document.getElementById('new-screenshot-input');
-                            if (fileInput) {
-                              const dt = new DataTransfer();
-                              Array.from(e.dataTransfer.files).forEach(file => dt.items.add(file));
-                              fileInput.files = dt.files;
-                              fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-                            }
-                          }
-                        }}
                       >
                         <Textarea
                           placeholder={isLimitReached ? `Plan limit of ${maxThoughts} tasks reached.` : "Type task..."}
