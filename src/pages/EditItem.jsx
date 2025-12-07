@@ -15,8 +15,8 @@ import FileChangesFeedback from "../components/items/FileChangesFeedback";
 import TaskChecklist from "../components/items/TaskChecklist";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
-import ImageUploadZone from "../components/dashboard/ImageUploadZone";
 import ZipUploadZone from "../components/dashboard/ZipUploadZone";
+import ScreenshotUploader from "../components/media/ScreenshotUploader";
 import RequireSubscription from "../components/auth/RequireSubscription";
 
 export default function EditItem() {
@@ -40,7 +40,7 @@ export default function EditItem() {
       setFormData({
         ...item,
         tags: item.tags || [],
-        images: item.images || [],
+        screenshot_ids: item.screenshot_ids || [],
         zip_files: item.zip_files || [],
         is_publish_version: item.is_publish_version || false,
         publish_timestamp: item.publish_timestamp || "",
@@ -200,9 +200,10 @@ export default function EditItem() {
 
               <div className="space-y-2">
                 <Label>Screenshots & Images</Label>
-                <ImageUploadZone
-                  images={formData.images}
-                  onImagesChange={(newImages) => handleInputChange('images', newImages)}
+                <ScreenshotUploader
+                  screenshotIds={formData.screenshot_ids}
+                  onChange={(ids) => handleInputChange('screenshot_ids', ids)}
+                  projectId={formData.project_id}
                 />
               </div>
 
