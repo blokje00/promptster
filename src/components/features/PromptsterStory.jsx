@@ -61,50 +61,13 @@ export default function PromptsterStory() {
 
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="order-2 md:order-1 relative group">
-            <div className="absolute -inset-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl opacity-10 group-hover:opacity-20 transition-opacity"></div>
-            <div className="relative bg-slate-900 rounded-xl shadow-2xl overflow-hidden border border-slate-800">
-              {/* Mockup UI of Multi-Step Builder */}
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-800 bg-slate-900/50">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-500/20"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-500/20"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-500/20"></div>
-                </div>
-                <div className="ml-4 text-xs text-slate-500 font-mono">Promptster Multi-Step Builder</div>
-              </div>
-              <div className="p-6 space-y-4">
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-mono text-xs">01</div>
-                  <div className="flex-1 space-y-2">
-                    <div className="h-2 w-24 bg-slate-800 rounded"></div>
-                    <div className="h-16 bg-slate-800/50 rounded border border-slate-800 p-3">
-                      <div className="flex gap-2 mb-2">
-                        <span className="h-1.5 w-12 bg-blue-500/30 rounded-full"></span>
-                        <span className="h-1.5 w-16 bg-purple-500/30 rounded-full"></span>
-                      </div>
-                      <div className="h-1.5 w-full bg-slate-700/30 rounded mb-1"></div>
-                      <div className="h-1.5 w-2/3 bg-slate-700/30 rounded"></div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-mono text-xs">02</div>
-                  <div className="flex-1 space-y-2">
-                    <div className="h-2 w-32 bg-slate-800 rounded"></div>
-                    <div className="h-16 bg-slate-800/50 rounded border border-slate-800 p-3">
-                      <div className="flex gap-2 mb-2">
-                        <span className="h-1.5 w-20 bg-orange-500/30 rounded-full"></span>
-                      </div>
-                      <div className="h-1.5 w-full bg-slate-700/30 rounded mb-1"></div>
-                      <div className="h-1.5 w-3/4 bg-slate-700/30 rounded"></div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 pt-4 border-t border-slate-800 flex justify-between items-center">
-                  <div className="h-2 w-20 bg-slate-800 rounded"></div>
-                  <div className="px-3 py-1 bg-indigo-600 rounded text-[10px] text-white font-medium">Generate Multi-Prompt</div>
-                </div>
-              </div>
+            <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl opacity-20 blur-lg"></div>
+            <div className="relative bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden min-h-[300px]">
+              <img 
+                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68f4bcd57ca6479c7acf2f47/a66e5dcb4_Screenshot2025-12-07at194740.png"
+                alt="Promptster Multi-Step Builder"
+                className="w-full h-full object-cover"
+              />
             </div>
           </div>
           <div className="order-1 md:order-2 space-y-6">
