@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Pencil, Trash2, Plus, Copy, FileText } from "lucide-react";
+import { Pencil, Trash2, Plus, Copy, FileText, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { projectColors, projectBorderColors } from "@/components/lib/constants";
 
