@@ -31,6 +31,7 @@ import ContextSelector from "@/components/multiprompt/ContextSelector";
 import RequireSubscription from "@/components/auth/RequireSubscription";
 import TemplatesManager from "@/components/multiprompt/TemplatesManager";
 import ProjectsManager from "@/components/multiprompt/ProjectsManager";
+import ScreenshotUploader from "@/components/media/ScreenshotUploader";
 import { projectColors, projectBorderColors, projectLightColors } from "@/components/lib/constants";
 
 export default function Multiprompt() {
@@ -156,10 +157,9 @@ export default function Multiprompt() {
     const key = `promptster:draft:${selectedProjectId || 'all'}`;
     localStorage.setItem(key, newThoughtContent);
   }, [newThoughtContent, selectedProjectId]);
-  const [newThoughtImages, setNewThoughtImages] = useState([]);
+  const [newThoughtScreenshots, setNewThoughtScreenshots] = useState([]);
   const [newThoughtFocus, setNewThoughtFocus] = useState("both");
   const [newThoughtContext, setNewThoughtContext] = useState({});
-  const [isUploading, setIsUploading] = useState(false);
 
   // Filtering/Grouping
   const [groupBy, setGroupBy] = useState("component");
@@ -226,7 +226,7 @@ export default function Multiprompt() {
 
   // Add Thought
   const handleAddThought = () => {
-    if (!newThoughtContent.trim() && newThoughtImages.length === 0) return;
+    if (!newThoughtContent.trim() && newThoughtScreenshots.length === 0) return;
     if (!currentUser?.email) {
       toast.error("Je moet ingelogd zijn om een task toe te voegen");
       return;
@@ -240,20 +240,20 @@ export default function Multiprompt() {
     createThought.mutate({
       content: newThoughtContent.trim(),
       project_id: selectedProjectId || null,
-      is_deleted: false, // Expliciet false voor filter
-      image_urls: newThoughtImages,
-      is_selected: true, // Auto-select new thoughts
+      is_deleted: false,
+      screenshot_ids: newThoughtScreenshots,
+      is_selected: true,
       focus_type: newThoughtFocus,
       target_page: newThoughtContext.target_page,
       target_component: newThoughtContext.target_component,
       target_domain: newThoughtContext.target_domain,
       ai_prediction: newThoughtContext.ai_prediction,
-      created_by: currentUser.email // KRITIEK: nodig voor filter in query
+      created_by: currentUser.email
     }, {
       onSuccess: () => {
-        setNewThoughtContent(""); // Clear input
-        localStorage.removeItem(`promptster:draft:${selectedProjectId || 'all'}`); // Clear draft
-        setNewThoughtImages([]);
+        setNewThoughtContent("");
+        localStorage.removeItem(`promptster:draft:${selectedProjectId || 'all'}`);
+        setNewThoughtScreenshots([]);
         setNewThoughtFocus("both");
         setNewThoughtContext({});
         toast.success("Task added");
@@ -261,23 +261,9 @@ export default function Multiprompt() {
     });
   };
 
-  const handleImageUpload = async (files) => {
-    if (!files.length) return;
-    setIsUploading(true);
-    try {
-      const promises = Array.from(files).map(file => uploadImageToSupabase(file));
-      const urls = await Promise.all(promises);
-      setNewThoughtImages(prev => [...prev, ...urls]);
-    } catch (err) {
-      toast.error("Upload failed");
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
   // Thought Updates (Delegates to Hook)
   const handleUpdateContent = (id, content) => updateThought.mutate({ id, data: { content } });
-  const handleUpdateImages = (id, urls) => updateThought.mutate({ id, data: { image_urls: urls } });
+  const handleUpdateScreenshots = (id, screenshotIds) => updateThought.mutate({ id, data: { screenshot_ids: screenshotIds } });
   const handleUpdateFocus = (id, focus) => updateThought.mutate({ id, data: { focus_type: focus } });
   const handleUpdateContext = (id, ctx) => updateThought.mutate({ 
     id, 
@@ -581,51 +567,31 @@ export default function Multiprompt() {
                           value={newThoughtContent}
                           onChange={(e) => setNewThoughtContent(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), !isLimitReached && handleAddThought())}
-                          // Task 6: Handle paste (images)
-                          onPaste={async (e) => {
-                            const items = e.clipboardData.items;
-                            const files = [];
-                            for (let i = 0; i < items.length; i++) {
-                              if (items[i].type.indexOf("image") !== -1) {
-                                const file = items[i].getAsFile();
-                                if (file) files.push(file);
-                              }
-                            }
-                            if (files.length > 0) {
-                              e.preventDefault();
-                              handleImageUpload(files);
-                            }
-                          }}
                           disabled={isLimitReached}
                           className="min-h-[60px] border-0 focus-visible:ring-0 resize-none"
                         />
-                        
-                        {/* Image Previews */}
-                        {newThoughtImages.length > 0 && (
-                          <div className="flex gap-2 px-3 pb-2 flex-wrap">
-                            {newThoughtImages.map((url, idx) => (
-                              <div key={idx} className="relative group">
-                                <img src={url} className="w-10 h-10 rounded border object-cover" />
-                                <button
-                                  onClick={() => setNewThoughtImages(prev => prev.filter((_, i) => i !== idx))}
-                                  className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm z-10"
-                                  title="Remove image"
-                                >
-                                  <X className="w-2 h-2" />
-                                </button>
-                              </div>
-                            ))}
+
+                        {/* Screenshot Previews */}
+                        {newThoughtScreenshots.length > 0 && (
+                          <div className="px-3 pb-2">
+                            <ScreenshotUploader
+                              screenshotIds={newThoughtScreenshots}
+                              onChange={setNewThoughtScreenshots}
+                              projectId={selectedProjectId}
+                              compact
+                            />
                           </div>
                         )}
 
                         {/* Controls */}
                         <div className="flex items-center gap-2 px-3 py-2 border-t border-slate-100 bg-slate-50/50 rounded-b-lg">
-                          <div className="relative">
-                            <input type="file" multiple className="hidden" id="new-img" onChange={e => handleImageUpload(e.target.files)} />
-                            <label htmlFor="new-img" className="cursor-pointer p-1 hover:bg-slate-200 rounded">
-                              {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
-                            </label>
-                          </div>
+                          <ScreenshotUploader
+                            screenshotIds={newThoughtScreenshots}
+                            onChange={setNewThoughtScreenshots}
+                            projectId={selectedProjectId}
+                            maxCount={5}
+                            compact
+                          />
                           <Select value={newThoughtFocus} onValueChange={setNewThoughtFocus}>
                              <SelectTrigger className="h-7 text-xs w-[120px]"><SelectValue /></SelectTrigger>
                              <SelectContent>
@@ -691,7 +657,7 @@ export default function Multiprompt() {
                                           onToggleSelect={() => toggleSelection(thought.id)}
                                           onDelete={deleteThought.mutate}
                                           onUpdateContent={handleUpdateContent}
-                                          onUpdateImages={handleUpdateImages}
+                                          onUpdateScreenshots={handleUpdateScreenshots}
                                           onUpdateFocus={handleUpdateFocus}
                                           onUpdateContext={handleUpdateContext}
                                           dragHandleProps={provided.dragHandleProps}
