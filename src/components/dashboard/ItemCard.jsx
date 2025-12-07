@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import ScreenshotThumb from "../media/ScreenshotThumb";
 
 
 const typeIcons = {
@@ -194,20 +195,14 @@ export default function ItemCard({ item, project }) {
         </CardHeader>
         
         <CardContent className="p-5 space-y-4 flex-grow flex flex-col">
-          {item.images && item.images.length > 0 && (
+          {item.screenshot_ids && item.screenshot_ids.length > 0 && (
             <div className="flex gap-2 overflow-x-auto pb-2">
-              {item.images.slice(0, 3).map((imageUrl, index) => (
-                <div key={index} className="relative flex-shrink-0">
-                  <img
-                    src={imageUrl}
-                    alt={`Preview ${index + 1}`}
-                    className="w-20 h-20 object-cover rounded-lg border-2 border-slate-200"
-                  />
-                </div>
+              {item.screenshot_ids.slice(0, 3).map(id => (
+                <ScreenshotThumb key={id} screenshotId={id} showCopyEmbed={false} />
               ))}
-              {item.images.length > 3 && (
+              {item.screenshot_ids.length > 3 && (
                 <div className="w-20 h-20 flex items-center justify-center bg-slate-100 rounded-lg border-2 border-slate-200 text-sm text-slate-600 font-medium">
-                  +{item.images.length - 3}
+                  +{item.screenshot_ids.length - 3}
                 </div>
               )}
             </div>
@@ -302,10 +297,10 @@ export default function ItemCard({ item, project }) {
                 </HoverCard>
               )}
 
-              {item.images && item.images.length > 0 && (
+              {item.screenshot_ids && item.screenshot_ids.length > 0 && (
                 <Badge variant="outline" className="text-xs">
                   <ImageIcon className="w-3 h-3 mr-1" />
-                  {item.images.length}
+                  {item.screenshot_ids.length}
                 </Badge>
               )}
 
