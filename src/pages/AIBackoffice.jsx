@@ -208,10 +208,10 @@ export default function AIBackoffice() {
 
   const HardDeleteButton = () => {
     const [isRunning, setIsRunning] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
     
     const runCleanup = async () => {
       if (!currentUser) return;
-      if (!confirm("Are you sure? This will PERMANENTLY delete old tasks from the recycle bin.")) return;
 
       setIsRunning(true);
       try {
@@ -220,6 +220,8 @@ export default function AIBackoffice() {
         
         if (data.success) {
           toast.success(data.message);
+          setShowConfirm(false);
+          queryClient.invalidateQueries({ queryKey: ['items'] });
         } else {
           toast.error("Cleanup failed: " + (data.error || "Unknown error"));
         }
@@ -232,15 +234,37 @@ export default function AIBackoffice() {
 
     return (
       <div className="flex items-center gap-3">
-        <Button 
-          onClick={runCleanup} 
-          disabled={isRunning}
-          variant="destructive"
-          size="sm"
-        >
-          {isRunning ? "Cleaning..." : "Run Hard Delete Cleanup (>30 days)"}
-        </Button>
-        <span className="text-xs text-slate-500">Admin only</span>
+        {!showConfirm ? (
+          <Button 
+            onClick={() => setShowConfirm(true)} 
+            disabled={isRunning}
+            variant="outline"
+            size="sm"
+            className="border-red-300 text-red-700 hover:bg-red-50"
+          >
+            Hard Delete Cleanup (>30 days)
+          </Button>
+        ) : (
+          <>
+            <Button 
+              onClick={runCleanup} 
+              disabled={isRunning}
+              variant="destructive"
+              size="sm"
+            >
+              {isRunning ? "Cleaning..." : "Yes, Delete My Old Tasks"}
+            </Button>
+            <Button 
+              onClick={() => setShowConfirm(false)} 
+              disabled={isRunning}
+              variant="outline"
+              size="sm"
+            >
+              Cancel
+            </Button>
+          </>
+        )}
+        <span className="text-xs text-slate-500">Your tasks only</span>
       </div>
     );
   };
