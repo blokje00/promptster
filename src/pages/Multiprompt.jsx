@@ -4,8 +4,6 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "@/utils";
 import { useMultipromptData } from "@/components/hooks/useMultipromptState";
-// useAutosaveField removed
-import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -318,7 +316,7 @@ export default function Multiprompt() {
         description: t.content,
         files: [t.target_page ? `pages/${t.target_page}.jsx` : "TBD"],
         priority: "Medium",
-        images: t.image_urls
+        screenshots: t.screenshot_ids || []
       }));
 
       const jsonBlock = {
@@ -354,14 +352,51 @@ export default function Multiprompt() {
   // Task 2 & 3: Removed auto-clear to enable autosave persistence
   // The previous useEffect clearing improvedPrompt is removed.
 
-  // AI Improve
+  // AI Improve with Screenshot Analysis
   const handleImprovePrompt = async () => {
     if (!generatedPrompt) return;
     setIsImproving(true);
     try {
+      // Collect all screenshots from selected thoughts
+      const selectedItems = thoughts.filter(t => selectedThoughtIds.includes(t.id));
+      const allScreenshotIds = selectedItems.flatMap(t => t.screenshot_ids || []);
+      
+      let screenshotContext = "";
+      
+      // Analyze each screenshot if present
+      if (allScreenshotIds.length > 0) {
+        const analyses = await Promise.all(
+          allScreenshotIds.map(async (screenshotId) => {
+            try {
+              const response = await fetch('/api/screenshots/analyze', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${localStorage.getItem('base44_token')}`
+                },
+                body: JSON.stringify({ 
+                  screenshotId,
+                  prompt: "Analyze this screenshot for UI/UX context. Describe key elements, layout, and functionality visible."
+                })
+              });
+              
+              if (!response.ok) throw new Error('Analysis failed');
+              
+              const data = await response.json();
+              return `\n\n--- Screenshot Analysis ---\n${data.analysis}`;
+            } catch (err) {
+              console.error('Screenshot analysis error:', err);
+              return "";
+            }
+          })
+        );
+        
+        screenshotContext = analyses.filter(a => a).join("\n");
+      }
+
       // Task 5: Remove AI Chatter
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Improve this prompt:\n${generatedPrompt}\n\nIMPORTANT: Return ONLY the improved prompt content. Do not include any intro, outro, or conversational filler like "Here is the improved prompt". Just the prompt text itself.`,
+        prompt: `${screenshotContext}\n\nImprove this prompt:\n${generatedPrompt}\n\nIMPORTANT: Return ONLY the improved prompt content. Do not include any intro, outro, or conversational filler like "Here is the improved prompt". Just the prompt text itself.`,
       });
       setImprovedPrompt(result);
       toast.success("Prompt improved");
@@ -426,6 +461,10 @@ export default function Multiprompt() {
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2000);
 
+    // Collect all screenshot IDs from selected thoughts
+    const selectedItems = thoughts.filter(t => selectedThoughtIds.includes(t.id));
+    const allScreenshotIds = [...new Set(selectedItems.flatMap(t => t.screenshot_ids || []))];
+
     createItemMutation.mutate({
       title: autoTitle,
       type: "multiprompt",
@@ -435,6 +474,7 @@ export default function Multiprompt() {
       task_checks: generateChecklist(),
       start_template_id: startTemplateId || null,
       end_template_id: endTemplateId || null,
+      screenshot_ids: allScreenshotIds,
       status: "open"
     }, {
       onSuccess: (newItem) => {
@@ -558,7 +598,14 @@ export default function Multiprompt() {
                         onDrop={(e) => {
                           e.preventDefault();
                           if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                            handleImageUpload(e.dataTransfer.files);
+                            // Trigger screenshot uploader
+                            const fileInput = document.getElementById('new-screenshot-input');
+                            if (fileInput) {
+                              const dt = new DataTransfer();
+                              Array.from(e.dataTransfer.files).forEach(file => dt.items.add(file));
+                              fileInput.files = dt.files;
+                              fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
                           }
                         }}
                       >
@@ -570,7 +617,7 @@ export default function Multiprompt() {
                           disabled={isLimitReached}
                           className="min-h-[60px] border-0 focus-visible:ring-0 resize-none"
                         />
-
+                        
                         {/* Screenshot Previews */}
                         {newThoughtScreenshots.length > 0 && (
                           <div className="px-3 pb-2">

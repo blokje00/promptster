@@ -26,8 +26,18 @@ export default function ScreenshotUploader({
         if (projectId) formData.append('projectId', projectId);
         if (taskId) formData.append('taskId', taskId);
 
-        const response = await base44.functions.invoke('uploadScreenshot', formData);
-        return response.data.screenshotId;
+        const response = await fetch('/api/screenshots/upload', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('base44_token')}`
+          }
+        });
+        
+        if (!response.ok) throw new Error('Upload failed');
+        
+        const data = await response.json();
+        return data.screenshotId;
       });
 
       const newIds = await Promise.all(uploadPromises);

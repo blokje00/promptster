@@ -18,51 +18,31 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Generate unique filename
+    // Upload via Base44 Core integration
+    const uploadResult = await base44.integrations.Core.UploadFile({ file });
+    
+    if (!uploadResult?.file_url) {
+      return Response.json({ error: 'Upload failed' }, { status: 500 });
+    }
+
+    const publicUrl = uploadResult.file_url;
+
+    // Extract filename and create path reference
+    const filename = file.name || 'screenshot.png';
     const timestamp = Date.now();
-    const randomStr = Math.random().toString(36).substring(7);
-    const ext = file.name.split('.').pop() || 'png';
-    const filename = `${user.id}_${timestamp}_${randomStr}.${ext}`;
-    const path = `${user.id}/${filename}`;
-
-    // Upload to Supabase Storage
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    if (!supabaseUrl || !supabaseKey) {
-      return Response.json({ error: 'Supabase not configured' }, { status: 500 });
-    }
-
-    const arrayBuffer = await file.arrayBuffer();
-    const uploadUrl = `${supabaseUrl}/storage/v1/object/screenshots/${path}`;
-    
-    const uploadResponse = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': file.type,
-      },
-      body: arrayBuffer,
-    });
-
-    if (!uploadResponse.ok) {
-      const error = await uploadResponse.text();
-      return Response.json({ error: 'Upload failed: ' + error }, { status: 500 });
-    }
-
-    const publicUrl = `${supabaseUrl}/storage/v1/object/public/screenshots/${path}`;
+    const path = `screenshots/${user.id}/${timestamp}_${filename}`;
 
     // Create ScreenshotAsset record
     const asset = await base44.asServiceRole.entities.ScreenshotAsset.create({
       user_id: user.id,
       project_id: projectId,
       task_id: taskId,
-      bucket: 'screenshots',
+      bucket: 'base44-files',
       path: path,
       public_url: publicUrl,
-      filename: file.name,
-      content_type: file.type,
-      size_bytes: file.size,
+      filename: filename,
+      content_type: file.type || 'image/png',
+      size_bytes: file.size || 0,
       created_by: user.email
     });
 

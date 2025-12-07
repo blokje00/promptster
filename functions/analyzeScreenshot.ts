@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
 
     const asset = assets[0];
 
-    // Fetch image from Supabase
+    // Fetch image from Base44 public URL
     const imageResponse = await fetch(asset.public_url);
     if (!imageResponse.ok) {
       return Response.json({ error: 'Failed to fetch image' }, { status: 500 });
@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
 
     const imageBuffer = await imageResponse.arrayBuffer();
     const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
-    const dataUrl = `data:${asset.content_type};base64,${base64Image}`;
+    const dataUrl = `data:${asset.content_type || 'image/png'};base64,${base64Image}`;
 
     // Analyze with LLM Vision
     const analysisPrompt = prompt || "Describe this screenshot in detail. What UI elements, text, and functionality can you see?";
