@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, Edit, Copy, CheckCircle, Star, MessageSquare, Image as ImageIcon, ZoomIn, FileArchive, Download, GitBranch, Calendar, ClipboardCheck, ClipboardPaste, Save, Loader2, ListChecks, AlertCircle, RotateCcw, CheckCircle2, XCircle, Circle } from "lucide-react";
 import FileChangesFeedback from "../components/items/FileChangesFeedback";
+import ScreenshotThumb from "../components/media/ScreenshotThumb";
 import {
   Dialog,
   DialogContent,
@@ -284,43 +285,19 @@ export default function ViewItem() {
               </div>
             )}
 
-            {item.images && item.images.length > 0 && (
+            {item.screenshot_ids && item.screenshot_ids.length > 0 && (
               <div>
                 <h4 className="font-semibold text-slate-800 flex items-center gap-2 mb-3">
                   <ImageIcon className="w-4 h-4" />
-                  Screenshots & Images ({item.images.length})
+                  Screenshots ({item.screenshot_ids.length})
                 </h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {item.images.map((imageUrl, index) => (
-                    <Dialog key={index}>
-                      <DialogTrigger asChild>
-                        <div className="cursor-pointer group relative overflow-hidden rounded-lg border-2 border-slate-200 hover:border-indigo-500 transition-all">
-                          <img
-                            src={imageUrl}
-                            alt={`Screenshot ${index + 1}`}
-                            className="w-full h-32 object-cover group-hover:scale-105 transition-transform"
-                          />
-                          <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-30 transition-opacity flex items-center justify-center">
-                            <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </div>
-                          <div className="absolute bottom-2 left-2 bg-slate-900 text-white text-xs font-medium px-2 py-1 rounded">
-                            #{index + 1}
-                          </div>
-                        </div>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
-                        <div className="relative">
-                          <img
-                            src={imageUrl}
-                            alt={`Screenshot ${index + 1}`}
-                            className="w-full h-auto rounded-lg"
-                          />
-                          <div className="mt-4 text-center text-sm text-slate-500">
-                            Image {index + 1} of {item.images.length}
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                <div className="flex flex-wrap gap-3">
+                  {item.screenshot_ids.map(id => (
+                    <ScreenshotThumb
+                      key={id}
+                      screenshotId={id}
+                      showCopyEmbed={true}
+                    />
                   ))}
                 </div>
               </div>
