@@ -11,9 +11,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { uploadImageToSupabase } from "@/components/lib/uploadImage";
-import ImageUploadZone from "../dashboard/ImageUploadZone";
 import ContextSelector from "./ContextSelector";
+import ScreenshotUploader from "../media/ScreenshotUploader";
 
 /**
  * ThoughtCard - UI Component
@@ -27,7 +26,7 @@ export default function ThoughtCard({
   onToggleSelect,
   onDelete,
   onUpdateContent,
-  onUpdateImages,
+  onUpdateScreenshots,
   onUpdateFocus,
   onUpdateContext,
   dragHandleProps,
@@ -51,27 +50,7 @@ export default function ThoughtCard({
     }
   };
 
-  // Image handlers
-  const handleImageUpload = async (files) => {
-    if (!files || files.length === 0) return;
-    
-    try {
-      // Upload all files
-      const uploadPromises = Array.from(files).map(file => uploadImageToSupabase(file));
-      const urls = await Promise.all(uploadPromises);
-      
-      const currentImages = thought.image_urls || [];
-      onUpdateImages(thought.id, [...currentImages, ...urls]);
-    } catch (error) {
-      console.error("Upload failed:", error);
-    }
-  };
 
-  const handleRemoveImage = (indexToRemove) => {
-    const currentImages = thought.image_urls || [];
-    const newImages = currentImages.filter((_, index) => index !== indexToRemove);
-    onUpdateImages(thought.id, newImages);
-  };
 
   // Focus type display mapping
   const focusConfig = {
@@ -167,25 +146,15 @@ export default function ThoughtCard({
           )}
         </div>
 
-        {/* Images */}
-        {thought.image_urls && thought.image_urls.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {thought.image_urls.map((url, idx) => (
-              <div key={idx} className="relative group/image">
-                <img 
-                  src={url} 
-                  alt={`Attachment ${idx}`} 
-                  className="w-16 h-16 object-cover rounded-md border border-slate-200"
-                />
-                <button
-                  onClick={() => handleRemoveImage(idx)}
-                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover/image:opacity-100 transition-opacity"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
-          </div>
+        {/* Screenshots */}
+        {thought.screenshot_ids && thought.screenshot_ids.length > 0 && (
+          <ScreenshotUploader
+            screenshotIds={thought.screenshot_ids}
+            onChange={(ids) => onUpdateScreenshots(thought.id, ids)}
+            taskId={thought.id}
+            projectId={thought.project_id}
+            compact
+          />
         )}
 
         {/* Controls Footer */}
@@ -226,24 +195,15 @@ export default function ThoughtCard({
 
           <div className="h-3 w-px bg-slate-200" />
 
-          {/* Add Image Button */}
-          <div className="relative">
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              className="hidden"
-              id={`img-upload-${thought.id}`}
-              onChange={(e) => handleImageUpload(e.target.files)}
-            />
-            <label 
-              htmlFor={`img-upload-${thought.id}`}
-              className="cursor-pointer flex items-center gap-1 text-[10px] text-slate-500 hover:text-indigo-600 px-1.5 py-1 rounded hover:bg-slate-100"
-            >
-              <ImageIcon className="w-3 h-3" />
-              Add Image
-            </label>
-          </div>
+          {/* Add Screenshot */}
+          <ScreenshotUploader
+            screenshotIds={thought.screenshot_ids || []}
+            onChange={(ids) => onUpdateScreenshots(thought.id, ids)}
+            taskId={thought.id}
+            projectId={thought.project_id}
+            maxCount={5}
+            compact
+          />
         </div>
       </div>
     </div>
