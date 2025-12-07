@@ -51,17 +51,7 @@ export default function Features() {
         "Secure URL generation"
       ]
     },
-    {
-      title: "AI Integration",
-      icon: <Cpu className="w-6 h-6 text-purple-500" />,
-      description: "Smart assistance for writing and improving your prompts.",
-      specs: [
-        "Context-aware suggestions",
-        "Automatic language improvement",
-        "Structure analysis",
-        "Token count estimation"
-      ]
-    }
+
   ];
 
   return (
