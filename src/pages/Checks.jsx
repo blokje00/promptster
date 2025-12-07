@@ -167,54 +167,7 @@ export default function Checks() {
     }
   };
 
-  const handleRetry = async (task) => {
-    setIsRetrying(true);
-    try {
-        // 1. Create Thought
-        await base44.entities.Thought.create({
-            content: `[Retry] ${task.full_description || task.task_name}`,
-            project_id: task.projectId,
-            is_selected: true,
-            is_deleted: false,
-            retry_from_item_id: task.itemId,
-            focus_type: 'both'
-        });
 
-        // 2. Update task status to retried (Optimistic)
-        // Manually update cache for immediate feedback
-        queryClient.setQueryData(['items', currentUser?.email], (oldItems) => {
-           if (!oldItems) return oldItems;
-           return oldItems.map(item => {
-             if (item.id === task.itemId) {
-               const newChecks = [...item.task_checks];
-               newChecks[task.index] = { ...newChecks[task.index], status: 'retried' };
-               return { ...item, task_checks: newChecks };
-             }
-             return item;
-           });
-        });
-
-        await updateTaskStatus(task, 'retried');
-
-        // 3. Navigate
-        // Need to set global project context if we want seamless flow
-        if (task.projectId) {
-            localStorage.setItem('lastSelectedProjectId', task.projectId);
-            window.dispatchEvent(new StorageEvent('storage', {
-                key: 'lastSelectedProjectId',
-                newValue: task.projectId
-            }));
-        }
-
-        toast.success("Task sent to Multi-Task for retry");
-        navigate(createPageUrl("Multiprompt"));
-
-    } catch (error) {
-        toast.error("Failed to retry task");
-    } finally {
-        setIsRetrying(false);
-    }
-  };
 
   return (
     <RequireSubscription>
