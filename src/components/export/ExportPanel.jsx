@@ -121,15 +121,11 @@ export default function ExportPanel({
         filters
       });
 
-      // The result is the raw response data
-      const response = result;
-
-      if (!response.ok) {
-          const errText = await response.text();
-          throw new Error(errText || "Export failed");
-      }
-
-      const blob = await response.blob();
+      // Result.data contains the blob/arraybuffer from backend
+      const blob = new Blob([result.data], { 
+        type: formatType === 'csv' ? 'application/zip' : 'application/json' 
+      });
+      
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
