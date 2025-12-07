@@ -18,9 +18,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { 
-  Plus, Save, Trash2, Copy, CheckCircle, FileText, X, 
+  Plus, Sparkles, Save, Trash2, Copy, CheckCircle, FileText, X, 
   Loader2, FolderOpen, Edit, MoreHorizontal, Settings, Pencil, 
-  CheckSquare, Square, Lightbulb, Layers, Cog, Sparkles
+  CheckSquare, Square, Lightbulb, Layers, Cog
 } from "lucide-react";
 
 // Sub-components
