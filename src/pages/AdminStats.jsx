@@ -182,6 +182,8 @@ export default function AdminStats() {
                       <th className="pb-2 font-semibold text-slate-700">Trial/Status</th>
                       <th className="pb-2 font-semibold text-slate-700">Items</th>
                       <th className="pb-2 font-semibold text-slate-700">Projecten</th>
+                      <th className="pb-2 font-semibold text-slate-700">Groei %</th>
+                      <th className="pb-2 font-semibold text-slate-700">Actions %</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -198,7 +200,51 @@ export default function AdminStats() {
                       const daysPaying = isPaying && user.subscription_start_date 
                         ? differenceInDays(new Date(), new Date(user.subscription_start_date))
                         : 0;
+
+                      // CALCULATE GROWTH AND ACTIONS
+                      const now = new Date();
+                      const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30));
+                      const sixtyDaysAgo = new Date(now.setDate(now.getDate() - 30)); // 60 days ago
                       
+                      const itemsLast30 = userItems.filter(i => new Date(i.created_date) > thirtyDaysAgo);
+                      const itemsPrev30 = userItems.filter(i => {
+                          const d = new Date(i.created_date);
+                          return d > sixtyDaysAgo && d <= thirtyDaysAgo;
+                      });
+
+                      const calcGrowth = (current, prev) => {
+                          if (prev === 0) return current > 0 ? 100 : 0;
+                          return Math.round(((current - prev) / prev) * 100);
+                      };
+
+                      const promptGrowth = calcGrowth(
+                          itemsLast30.filter(i => i.type === 'prompt').length,
+                          itemsPrev30.filter(i => i.type === 'prompt').length
+                      );
+                      const multiGrowth = calcGrowth(
+                          itemsLast30.filter(i => i.type === 'multiprompt').length,
+                          itemsPrev30.filter(i => i.type === 'multiprompt').length
+                      );
+
+                      // Actions Stats (from task_checks)
+                      let totalChecks = 0;
+                      let successChecks = 0;
+                      let failedChecks = 0;
+                      let retryChecks = 0;
+
+                      userItems.forEach(item => {
+                          if (item.task_checks) {
+                              item.task_checks.forEach(check => {
+                                  totalChecks++;
+                                  if (check.status === 'success') successChecks++;
+                                  if (check.status === 'failed') failedChecks++;
+                                  if (check.status === 'retried') retryChecks++;
+                              });
+                          }
+                      });
+
+                      const safeDiv = (num, den) => den === 0 ? 0 : Math.round((num / den) * 100);
+
                       return (
                         <tr key={user.id} className="hover:bg-slate-50">
                           <td className="py-3">{user.full_name || "—"}</td>
@@ -238,6 +284,23 @@ export default function AdminStats() {
                           </td>
                           <td className="py-3">{userItems.length}</td>
                           <td className="py-3">{userProjects.length}</td>
+                          <td className="py-3 text-xs">
+                             <div className="flex flex-col gap-1">
+                               <span className={promptGrowth > 0 ? "text-green-600" : "text-slate-500"}>Prompts: {promptGrowth > 0 ? '+' : ''}{promptGrowth}%</span>
+                               <span className={multiGrowth > 0 ? "text-green-600" : "text-slate-500"}>Multi: {multiGrowth > 0 ? '+' : ''}{multiGrowth}%</span>
+                             </div>
+                          </td>
+                          <td className="py-3 text-xs">
+                             {totalChecks > 0 ? (
+                               <div className="flex flex-col gap-1">
+                                 <span className="text-green-600">Good: {safeDiv(successChecks, totalChecks)}%</span>
+                                 <span className="text-red-500">Bad: {safeDiv(failedChecks, totalChecks)}%</span>
+                                 <span className="text-orange-500">Retry: {safeDiv(retryChecks, totalChecks)}%</span>
+                               </div>
+                             ) : (
+                               <span className="text-slate-400">-</span>
+                             )}
+                          </td>
                         </tr>
                       );
                     })}

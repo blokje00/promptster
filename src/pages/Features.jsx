@@ -24,7 +24,7 @@ export default function Features() {
       icon: <Zap className="w-6 h-6 text-yellow-500" />,
       description: "Build complex multi-step prompts by combining tasks with context.",
       specs: [
-        "Max. 50 subtasks per prompt",
+        "Max. 5 (Starter) / Unlimited (Pro)",
         "Drag-and-drop interface",
         "AI-powered optimization",
         "Project-specific templates"
@@ -35,7 +35,6 @@ export default function Features() {
       icon: <Code className="w-6 h-6 text-blue-500" />,
       description: "Save and share reusable code snippets with syntax highlighting.",
       specs: [
-        "Support for 20+ languages",
         "Direct copy to clipboard",
         "Syntax highlighting",
         "Linked to projects"
@@ -85,7 +84,7 @@ export default function Features() {
             </p>
             <div className="flex justify-center gap-4">
               <Badge variant="outline" className="text-white border-white px-4 py-1">
-                v1.2.0
+                v0.4
               </Badge>
               <Badge variant="outline" className="text-white border-white px-4 py-1">
                 Uptime 99.9%
@@ -130,7 +129,7 @@ export default function Features() {
             </p>
             <div className="flex justify-center gap-4">
               <Badge variant="outline" className="text-white border-white px-4 py-1">
-                v1.2.0
+                v0.4
               </Badge>
               <Badge variant="outline" className="text-white border-white px-4 py-1">
                 Uptime 99.9%

@@ -528,7 +528,7 @@ export default function Multiprompt() {
                       onClick={() => setSelectedProjectId(p.id)}
                       className={selectedProjectId === p.id ? `${projectColors[p.color]} border-0` : ""}
                     >
-                      <div className={`w-2 h-2 rounded-full mr-2 bg-${p.color}-400`} />
+                      <div className={`w-2 h-2 rounded-full mr-2 ${projectColors[p.color] ? projectColors[p.color].replace('bg-', 'bg-').replace('600', '400') : 'bg-slate-400'}`} />
                       {p.name} ({getProjectCount(p.id)})
                     </Button>
                   ))}
@@ -566,7 +566,16 @@ export default function Multiprompt() {
                     <CardContent className="space-y-4">
 
                       {/* Input Area */}
-                      <div className={`border-2 rounded-lg focus-within:border-indigo-400 transition-all bg-white ${selectedProject ? `border-dashed ${projectBorderColors[selectedProject.color]}` : 'border-slate-200'}`}>
+                      <div 
+                        className={`border-2 rounded-lg focus-within:border-indigo-400 transition-all bg-white ${selectedProject ? `border-dashed ${projectBorderColors[selectedProject.color]}` : 'border-slate-200'}`}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                            handleImageUpload(e.dataTransfer.files);
+                          }
+                        }}
+                      >
                         <Textarea
                           placeholder={isLimitReached ? `Plan limit of ${maxThoughts} tasks reached.` : "Type task..."}
                           value={newThoughtContent}

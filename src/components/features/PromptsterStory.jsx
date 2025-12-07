@@ -29,18 +29,18 @@ export default function PromptsterStory() {
               time-consuming, frustrating, and burning through credits.
             </p>
             <div className="p-4 bg-orange-50 border-l-4 border-orange-400 rounded-r-lg italic text-orange-800">
-              “It’s like trying to steer without a navigation system, without a steering wheel, and then having to parallel-park… using only your voice?”
+              “It’s like trying to steer without a steering wheel, and then having to parallel-park… using your voice only?”
             </div>
           </div>
         </div>
         <div className="relative">
           <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl opacity-20 blur-lg"></div>
           <div className="relative bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden min-h-[300px]">
-            <img 
-              src="https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/1ce69fe2e_Screenshot2025-12-02at125732.png"
-              alt="Het probleem"
-              className="w-full h-full object-cover"
-            />
+          <img 
+            src="https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/d21581cf8_1765133423210_0hfsyj_Screenshot_2025_12_07_at_194740.png"
+            alt="The Problem"
+            className="w-full h-full object-cover"
+          />
           </div>
         </div>
       </div>
@@ -164,7 +164,6 @@ export default function PromptsterStory() {
             No-code platforms like Base44.com, Make.com, or Zapier AI use completely different business models than AI providers.
           </p>
           <p className="text-slate-600">
-            Promptster does not operate at the provider level and does not calculate token prices—because tokens are not the issue. 
             <span className="font-semibold text-slate-900 block mt-2">
               The real cost comes from the hundreds of micro-prompts, flows, and actions you need after the first version of your app is built.
             </span>
@@ -206,9 +205,8 @@ export default function PromptsterStory() {
           <div className="space-y-6">
             <h3 className="text-2xl md:text-3xl font-bold">Self-Learning Checklist Workflow</h3>
             <p className="text-indigo-100 leading-relaxed">
-              When your multi-prompt is ready, you can automatically convert it into a checklist workflow. 
-              Micro-prompts that do not yield the desired result are automatically fed back, 
-              refined by AI, and re-processed.
+              When your multi-prompt is ready, it automatically converts into a checklist workflow. 
+              Micro-prompts that do not yield the desired result are automatically fed back after reviewing, and re-processed.
             </p>
             <div className="inline-flex items-center gap-2 text-green-400 font-medium bg-green-400/10 px-4 py-2 rounded-full">
               <ArrowRight className="w-4 h-4" />
@@ -217,7 +215,7 @@ export default function PromptsterStory() {
           </div>
           <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700 backdrop-blur-sm">
             <p className="text-lg font-medium text-indigo-200 italic mb-4">
-              “Promptster changes how you use AI within no-code platforms—from chaotic loose commands to one tight, predictable, self-learning, and scalable process.”
+              “Promptster changes how you use AI within no-code platforms—from chaotic loose commands to one tight, predictable and scalable process.”
             </p>
           </div>
         </div>
