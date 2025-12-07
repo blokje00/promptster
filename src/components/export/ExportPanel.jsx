@@ -113,21 +113,16 @@ export default function ExportPanel({
         customEnd: customDate?.to?.toISOString()
       };
 
-      // Getting function URL using a relative path assuming standard proxying
-      const response = await fetch('/api/functions/exportUserData', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Using base44 SDK implicitly usually sets headers, but raw fetch needs help or assumes cookie auth
-          // If we are in a browser session, cookies usually handle auth for same-origin requests.
-        },
-        body: JSON.stringify({
-            format: formatType,
-            scope: mode === 'vault' ? 'vault' : 'single_item',
-            itemId: singleItemId,
-            filters
-        })
+      // Use base44.functions.invoke for proper auth handling
+      const result = await base44.functions.invoke('exportUserData', {
+        format: formatType,
+        scope: mode === 'vault' ? 'vault' : 'single_item',
+        itemId: singleItemId,
+        filters
       });
+
+      // The result is the raw response data
+      const response = result;
 
       if (!response.ok) {
           const errText = await response.text();
