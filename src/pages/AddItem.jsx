@@ -12,8 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Save, X, Star, GitBranch, Circle, CheckCircle2, XCircle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import ImageUploadZone from "../components/dashboard/ImageUploadZone";
 import ZipUploadZone from "../components/dashboard/ZipUploadZone";
+import ScreenshotUploader from "../components/media/ScreenshotUploader";
 import RequireSubscription from "../components/auth/RequireSubscription";
 
 const projectColors = {
@@ -66,7 +66,7 @@ export default function AddItem() {
     tags: [],
     is_favorite: false,
     notes: "",
-    images: [],
+    screenshot_ids: [],
     zip_files: [],
     is_publish_version: false,
     publish_timestamp: "",
@@ -346,9 +346,10 @@ export default function AddItem() {
 
               <div className="space-y-2">
                 <Label>Screenshots & Images</Label>
-                <ImageUploadZone
-                  images={formData.images}
-                  onImagesChange={(newImages) => setFormData({...formData, images: newImages})}
+                <ScreenshotUploader
+                  screenshotIds={formData.screenshot_ids}
+                  onChange={(ids) => setFormData({...formData, screenshot_ids: ids})}
+                  projectId={formData.project_id}
                 />
               </div>
 
