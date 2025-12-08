@@ -30,6 +30,7 @@ import RequireSubscription from "@/components/auth/RequireSubscription";
 import TemplatesManager from "@/components/multiprompt/TemplatesManager";
 import ProjectsManager from "@/components/multiprompt/ProjectsManager";
 import ScreenshotUploader from "@/components/media/ScreenshotUploader";
+import ScreenshotThumb from "@/components/media/ScreenshotThumb";
 import { projectColors, projectBorderColors, projectLightColors } from "@/components/lib/constants";
 import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 
@@ -685,15 +686,17 @@ export default function Multiprompt() {
                           className="min-h-[60px] border-0 focus-visible:ring-0 resize-none"
                         />
 
-                        {/* Screenshot Previews via ScreenshotUploader */}
+                        {/* Screenshot Previews */}
                         {newThoughtScreenshots.length > 0 && (
-                          <div className="px-3 pb-2">
-                            <ScreenshotUploader
-                              screenshotIds={newThoughtScreenshots}
-                              onChange={setNewThoughtScreenshots}
-                              projectId={selectedProjectId}
-                              maxCount={5}
-                            />
+                          <div className="px-3 pb-2 flex gap-2 flex-wrap">
+                            {newThoughtScreenshots.map((url, idx) => (
+                              <ScreenshotThumb
+                                key={`${url}-${idx}`}
+                                screenshotId={url}
+                                onRemove={(id) => setNewThoughtScreenshots(newThoughtScreenshots.filter(u => u !== id))}
+                                showCopyEmbed={false}
+                              />
+                            ))}
                           </div>
                         )}
 
