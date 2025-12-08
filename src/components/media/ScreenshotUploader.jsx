@@ -189,37 +189,14 @@ export default function ScreenshotUploader({
       {screenshotIds.length < maxCount && (
         <label 
           htmlFor={`screenshot-upload-${taskId || 'new'}`}
-          className={`relative transition-all cursor-pointer ${
-            isDragActive 
-              ? 'scale-105' 
-              : ''
-          }`}
+          className="cursor-pointer inline-flex items-center"
         >
-          <div
-            className={`flex items-center justify-center ${
-              compact 
-                ? 'p-1 hover:bg-slate-200 rounded' 
-                : `w-20 h-20 border-2 border-dashed rounded transition-all ${
-                    isDragActive 
-                      ? 'border-indigo-500 bg-indigo-100' 
-                      : 'border-slate-300 hover:border-indigo-400 hover:bg-indigo-50'
-                  }`
-            }`}
-          >
-            {isUploading ? (
-              <Loader2 className={`${compact ? 'w-4 h-4' : 'w-6 h-6'} animate-spin text-indigo-500`} />
-            ) : (
-              <Plus className={`${compact ? 'w-4 h-4' : 'w-6 h-6'} text-slate-400 hover:text-indigo-500`} />
-            )}
-          </div>
+          {isUploading ? (
+            <Loader2 className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} animate-spin text-indigo-500`} />
+          ) : (
+            <Plus className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} text-slate-400 hover:text-indigo-500 transition-colors`} />
+          )}
         </label>
-      )}
-      
-      {/* Click anywhere instruction */}
-      {!compact && screenshotIds.length === 0 && !isDragActive && (
-        <p className="text-xs text-slate-400 text-center mt-2">
-          Click anywhere or drag images to upload
-        </p>
       )}
     </div>
   );
