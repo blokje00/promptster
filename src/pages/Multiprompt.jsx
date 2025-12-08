@@ -685,26 +685,15 @@ export default function Multiprompt() {
                           className="min-h-[60px] border-0 focus-visible:ring-0 resize-none"
                         />
 
-                        {/* Screenshot Previews */}
+                        {/* Screenshot Previews via ScreenshotUploader */}
                         {newThoughtScreenshots.length > 0 && (
                           <div className="px-3 pb-2">
-                            <div className="flex gap-2 flex-wrap">
-                              {newThoughtScreenshots.map((url, idx) => (
-                                <div key={idx} className="relative group">
-                                  <img 
-                                    src={url} 
-                                    alt={`Screenshot ${idx + 1}`}
-                                    className="w-16 h-16 object-cover rounded border border-slate-200"
-                                  />
-                                  <button
-                                    onClick={() => setNewThoughtScreenshots(newThoughtScreenshots.filter((_, i) => i !== idx))}
-                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
+                            <ScreenshotUploader
+                              screenshotIds={newThoughtScreenshots}
+                              onChange={setNewThoughtScreenshots}
+                              projectId={selectedProjectId}
+                              maxCount={5}
+                            />
                           </div>
                         )}
 

@@ -136,23 +136,23 @@ export default function ScreenshotUploader({
 
   return (
     <div
-      className={`relative ${compact ? 'flex items-center gap-2' : 'space-y-2'} ${
-        isDragActive 
-          ? 'ring-2 ring-indigo-400 ring-offset-2 rounded-lg bg-indigo-50' 
-          : ''
-      } p-4 border-2 border-dashed rounded-xl transition-all cursor-pointer ${
-        isDragActive 
-          ? 'border-indigo-500' 
-          : 'border-slate-200 hover:border-indigo-300'
+      className={`relative ${
+        compact 
+          ? 'inline-flex items-center' 
+          : `space-y-2 p-4 border-2 border-dashed rounded-xl transition-all cursor-pointer ${
+              isDragActive 
+                ? 'ring-2 ring-indigo-400 ring-offset-2 bg-indigo-50 border-indigo-500' 
+                : 'border-slate-200 hover:border-indigo-300'
+            }`
       }`}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-      onPaste={handlePaste}
+      onDragEnter={!compact ? handleDragEnter : undefined}
+      onDragLeave={!compact ? handleDragLeave : undefined}
+      onDragOver={!compact ? handleDragOver : undefined}
+      onDrop={!compact ? handleDrop : undefined}
+      onPaste={!compact ? handlePaste : undefined}
     >
-      {/* Full-area drop overlay */}
-      {isDragActive && (
+      {/* Full-area drop overlay - only in non-compact mode */}
+      {!compact && isDragActive && (
         <div className="absolute inset-0 flex items-center justify-center bg-indigo-100/80 rounded-xl z-10 pointer-events-none">
           <div className="text-center">
             <Upload className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
@@ -161,15 +161,17 @@ export default function ScreenshotUploader({
         </div>
       )}
       
-      <div className={`flex ${compact ? 'gap-2' : 'gap-2 flex-wrap'}`}>
-        {screenshotIds.map(id => (
-          <ScreenshotThumb
-            key={id}
-            screenshotId={id}
-            onRemove={handleRemove}
-          />
-        ))}
-      </div>
+      {!compact && (
+        <div className="flex gap-2 flex-wrap">
+          {screenshotIds.map(id => (
+            <ScreenshotThumb
+              key={id}
+              screenshotId={id}
+              onRemove={handleRemove}
+            />
+          ))}
+        </div>
+      )}
       
       {/* Hidden file input */}
       <input 
