@@ -146,17 +146,6 @@ export default function ThoughtCard({
           )}
         </div>
 
-        {/* Screenshots */}
-        {thought.screenshot_ids && thought.screenshot_ids.length > 0 && (
-          <ScreenshotUploader
-            screenshotIds={thought.screenshot_ids}
-            onChange={(ids) => onUpdateScreenshots(thought.id, ids)}
-            taskId={thought.id}
-            projectId={thought.project_id}
-            compact
-          />
-        )}
-
         {/* Controls Footer */}
         <div className="flex flex-wrap items-center gap-2 pt-1">
           {/* Focus Selector */}
@@ -195,7 +184,7 @@ export default function ThoughtCard({
 
           <div className="h-3 w-px bg-slate-200" />
 
-          {/* Add Screenshot */}
+          {/* Screenshots with Upload */}
           <ScreenshotUploader
             screenshotIds={thought.screenshot_ids || []}
             onChange={(ids) => onUpdateScreenshots(thought.id, ids)}
