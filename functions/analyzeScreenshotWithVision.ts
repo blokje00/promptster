@@ -24,63 +24,84 @@ Deno.serve(async (req) => {
       return Response.json({ result });
     }
 
-    // Fetch each screenshot and convert to Base64 data URL
-    const base64Images = [];
-    for (const url of screenshot_urls) {
-      try {
-        console.log(`Fetching screenshot: ${url}`);
-        
-        // Fetch the image from Base44 URL
-        const imageResponse = await fetch(url);
-        if (!imageResponse.ok) {
-          console.warn(`Failed to fetch screenshot: ${url}, status: ${imageResponse.status}`);
-          continue;
+    console.log(`Analyzing ${screenshot_urls.length} screenshots with prompt: ${prompt.substring(0, 100)}...`);
+
+    // Try direct URLs first (Base44 should handle them)
+    try {
+      const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+        prompt: prompt,
+        file_urls: screenshot_urls,
+        add_context_from_internet: false
+      });
+      
+      console.log(`Vision analysis successful`);
+      return Response.json({ result });
+    } catch (directError) {
+      console.log(`Direct URL approach failed: ${directError.message}`);
+      
+      // Fallback: Fetch and convert to Base64
+      console.log('Attempting Base64 conversion fallback...');
+      
+      const base64Images = [];
+      for (const url of screenshot_urls) {
+        try {
+          console.log(`Fetching screenshot: ${url}`);
+          
+          const imageResponse = await fetch(url);
+          if (!imageResponse.ok) {
+            console.warn(`Failed to fetch screenshot: ${url}, status: ${imageResponse.status}`);
+            continue;
+          }
+
+          const arrayBuffer = await imageResponse.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+          
+          console.log(`Fetched ${uint8Array.length} bytes`);
+          
+          // Convert to base64
+          const base64 = btoa(String.fromCharCode(...uint8Array));
+          
+          // Determine content type
+          const contentType = url.toLowerCase().endsWith('.jpg') || url.toLowerCase().endsWith('.jpeg') 
+            ? 'image/jpeg' 
+            : 'image/png';
+          
+          const dataUrl = `data:${contentType};base64,${base64}`;
+          base64Images.push(dataUrl);
+          
+          console.log(`Converted to base64 data URL`);
+        } catch (error) {
+          console.error(`Error processing screenshot ${url}:`, error);
         }
-
-        console.log(`Successfully fetched ${url}, content-type: ${imageResponse.headers.get('content-type')}`);
-
-        // Get the image as array buffer
-        const arrayBuffer = await imageResponse.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
-        
-        console.log(`Image size: ${uint8Array.length} bytes`);
-        
-        // Convert to base64
-        const base64 = btoa(String.fromCharCode(...uint8Array));
-        
-        // Determine content type from URL or default to png
-        const contentType = url.toLowerCase().endsWith('.jpg') || url.toLowerCase().endsWith('.jpeg') 
-          ? 'image/jpeg' 
-          : 'image/png';
-        
-        // Create data URL
-        const dataUrl = `data:${contentType};base64,${base64}`;
-        base64Images.push(dataUrl);
-        
-        console.log(`Successfully converted image to base64 data URL (${base64.length} chars)`);
-      } catch (error) {
-        console.error(`Error processing screenshot ${url}:`, error);
       }
+
+      if (base64Images.length === 0) {
+        throw new Error('No screenshots could be processed');
+      }
+
+      console.log(`Calling InvokeLLM with ${base64Images.length} base64 images...`);
+      
+      // Try with Base64
+      const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+        prompt: prompt,
+        file_urls: base64Images
+      });
+
+      return Response.json({ result });
     }
-
-    console.log(`Total images processed: ${base64Images.length}`);
-
-    // Call InvokeLLM with base64 data URLs
-    // IMPORTANT: When using file_urls, InvokeLLM expects a text response, not JSON
-    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: prompt,
-      file_urls: base64Images.length > 0 ? base64Images : undefined
-    });
-
-    console.log(`InvokeLLM result type: ${typeof result}`);
-
-    return Response.json({ result });
   } catch (error) {
     console.error('Vision analysis error:', error);
-    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      status: error.status,
+      data: error.data
+    });
+    
     return Response.json({ 
       error: error.message || 'Vision analysis failed',
-      details: error.stack
+      type: error.name,
+      details: error.data
     }, { status: 500 });
   }
 });
