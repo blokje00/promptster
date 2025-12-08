@@ -1,4 +1,3 @@
-import { supabase, SCREENSHOTS_BUCKET } from "./supabaseClient";
 import { base44 } from "@/api/base44Client";
 
 /**
@@ -21,9 +20,17 @@ export const uploadImageToSupabase = async (file) => {
     const ext = file.name.split('.').pop() || 'png';
     const path = `${user.id}/${timestamp}_${random}.${ext}`;
 
+    // Dynamic import of Supabase client
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.39.0');
+    
+    const supabaseUrl = 'https://gfqphegxvcbsqbdqfmoc.supabase.co';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmcXBoZWd4dmNic3FiZHFmbW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMwNjA5NTcsImV4cCI6MjA0ODYzNjk1N30.VH_2IXLqaXWGd9-Lm5TZ8tYKqxVQJKgXHOXzGqZBm8k';
+    
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
-      .from(SCREENSHOTS_BUCKET)
+      .from('promptster_screenshots')
       .upload(path, file, {
         contentType: file.type,
         upsert: false,
@@ -36,7 +43,7 @@ export const uploadImageToSupabase = async (file) => {
 
     // Get public URL
     const { data } = supabase.storage
-      .from(SCREENSHOTS_BUCKET)
+      .from('promptster_screenshots')
       .getPublicUrl(path);
 
     if (!data?.publicUrl) {
