@@ -187,39 +187,35 @@ export default function Multiprompt() {
   // Task 1: Enable/Disable Context Suggestions
   const enableContextSuggestions = aiSettings[0]?.enable_context_suggestions !== false;
 
-  // --- Template Autosave & Persistence ---
+  // --- Template Autosave & Persistence (Per Project) ---
   
   // 1. Load Templates on Context Change
   useEffect(() => {
     if (selectedProject) {
-      // Prioritize project settings
-      if (selectedProject.last_start_template_id) setStartTemplateId(selectedProject.last_start_template_id);
-      if (selectedProject.last_end_template_id) setEndTemplateId(selectedProject.last_end_template_id);
+      // Load from project settings
+      setStartTemplateId(selectedProject.last_start_template_id || "");
+      setEndTemplateId(selectedProject.last_end_template_id || "");
     } else {
-      // Fallback to localStorage for 'all' or generic
-      const savedStart = localStorage.getItem(`template_start_${selectedProjectId || 'all'}`);
-      const savedEnd = localStorage.getItem(`template_end_${selectedProjectId || 'all'}`);
-      if (savedStart) setStartTemplateId(savedStart);
-      if (savedEnd) setEndTemplateId(savedEnd);
+      // For "All Projects" view, clear selection
+      setStartTemplateId("");
+      setEndTemplateId("");
     }
   }, [selectedProjectId, selectedProject]);
 
-  // 2. Save Templates on Change
+  // 2. Save Templates on Change (Only for specific projects)
   useEffect(() => {
-    if (startTemplateId) {
-      localStorage.setItem(`template_start_${selectedProjectId || 'all'}`, startTemplateId);
-      if (selectedProjectId) {
-        base44.entities.Project.update(selectedProjectId, { last_start_template_id: startTemplateId });
-      }
+    if (selectedProjectId && startTemplateId) {
+      base44.entities.Project.update(selectedProjectId, { 
+        last_start_template_id: startTemplateId 
+      });
     }
   }, [startTemplateId, selectedProjectId]);
 
   useEffect(() => {
-    if (endTemplateId) {
-      localStorage.setItem(`template_end_${selectedProjectId || 'all'}`, endTemplateId);
-      if (selectedProjectId) {
-        base44.entities.Project.update(selectedProjectId, { last_end_template_id: endTemplateId });
-      }
+    if (selectedProjectId && endTemplateId) {
+      base44.entities.Project.update(selectedProjectId, { 
+        last_end_template_id: endTemplateId 
+      });
     }
   }, [endTemplateId, selectedProjectId]);
 
