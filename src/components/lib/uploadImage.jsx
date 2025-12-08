@@ -1,39 +1,49 @@
+import { supabase, SCREENSHOTS_BUCKET } from "./supabaseClient";
 import { base44 } from "@/api/base44Client";
 
 /**
- * Uploads a file to Supabase via Base44 integration.
- * @param {File} file - The file to upload
- * @param {number} timeout - Timeout in milliseconds (default 30000)
- * @returns {Promise<string>} - The file URL
+ * Uploads an image directly to Supabase Storage.
+ * Returns a public URL that works for both UI display and AI/LLM analysis.
+ * @param {File} file - The image file to upload
+ * @returns {Promise<string>} - The public Supabase URL
  */
-export const uploadImageToSupabase = async (file, timeout = 30000) => {
-  // Create a unique filename
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 8);
-  const cleanName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
-  const uniqueFileName = `${timestamp}_${random}_${cleanName}`;
-  
-  const renamedFile = new File([file], uniqueFileName, { type: file.type });
-  
-  // Create a timeout promise
-  const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error("Upload timeout - please try again")), timeout);
-  });
-  
+export const uploadImageToSupabase = async (file) => {
   try {
-    // Race between upload and timeout
-    const result = await Promise.race([
-      base44.integrations.Core.UploadFile({ file: renamedFile }),
-      timeoutPromise
-    ]);
-    
-    const { file_url } = result;
-    
-    if (!file_url) {
-      throw new Error("No URL received after upload");
+    // Get current user for folder organization
+    const user = await base44.auth.me();
+    if (!user?.id) {
+      throw new Error("User not authenticated");
     }
-    
-    return file_url;
+
+    // Create unique filename with user folder
+    const timestamp = Date.now();
+    const random = crypto.randomUUID().substring(0, 8);
+    const ext = file.name.split('.').pop() || 'png';
+    const path = `${user.id}/${timestamp}_${random}.${ext}`;
+
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from(SCREENSHOTS_BUCKET)
+      .upload(path, file, {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("Supabase upload error:", uploadError);
+      throw new Error(`Upload failed: ${uploadError.message}`);
+    }
+
+    // Get public URL
+    const { data } = supabase.storage
+      .from(SCREENSHOTS_BUCKET)
+      .getPublicUrl(path);
+
+    if (!data?.publicUrl) {
+      throw new Error("Failed to get public URL");
+    }
+
+    return data.publicUrl;
   } catch (error) {
     console.error("Upload failed:", error);
     throw error;
