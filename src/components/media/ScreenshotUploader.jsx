@@ -161,8 +161,8 @@ export default function ScreenshotUploader({
         </div>
       )}
       
-      {!compact && (
-        <div className="flex gap-2 flex-wrap">
+      {screenshotIds.length > 0 && (
+        <div className={`flex gap-2 ${compact ? '' : 'flex-wrap'}`}>
           {screenshotIds.map(id => (
             <ScreenshotThumb
               key={id}
