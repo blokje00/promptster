@@ -1,47 +1,62 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Copy, X, Loader2 } from "lucide-react";
+import { Copy, X, ZoomIn } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function ScreenshotThumb({ screenshotId, onRemove, showCopyEmbed = true }) {
-  const { data: asset, isLoading } = useQuery({
-    queryKey: ['screenshot', screenshotId],
-    queryFn: async () => {
-      const assets = await base44.entities.ScreenshotAsset.filter({ id: screenshotId });
-      return assets?.[0] || null;
-    },
-    enabled: !!screenshotId,
-  });
+  // screenshotId is now actually a direct URL string
+  const imageUrl = screenshotId;
 
-  const handleCopyEmbed = () => {
-    if (asset?.public_url) {
-      const markdown = `![Screenshot](${asset.public_url})`;
+  // Check if it's a valid URL
+  const isValidUrl = imageUrl && (
+    imageUrl.startsWith('http://') || 
+    imageUrl.startsWith('https://') ||
+    imageUrl.startsWith('blob:')
+  );
+
+  const handleCopyEmbed = (e) => {
+    e.stopPropagation();
+    if (imageUrl) {
+      const markdown = `![Screenshot](${imageUrl})`;
       navigator.clipboard.writeText(markdown);
       toast.success("Markdown embed copied");
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="w-20 h-20 bg-slate-100 rounded border flex items-center justify-center">
-        <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
-      </div>
-    );
-  }
+  const handleRemove = (e) => {
+    e.stopPropagation();
+    if (onRemove) {
+      onRemove(screenshotId);
+    }
+  };
 
-  if (!asset) {
+  if (!isValidUrl) {
     return null;
   }
 
   return (
-    <div className="relative group">
-      <img 
-        src={asset.public_url} 
-        alt={asset.filename}
-        className="w-20 h-20 rounded border object-cover"
-      />
+    <div className="relative group flex-shrink-0">
+      <Dialog>
+        <DialogTrigger asChild>
+          <img 
+            src={imageUrl} 
+            alt="Screenshot"
+            className="w-20 h-20 rounded border object-cover cursor-pointer hover:opacity-90 transition-opacity"
+          />
+        </DialogTrigger>
+        <DialogContent className="max-w-4xl p-2">
+          <img
+            src={imageUrl}
+            alt="Screenshot full size"
+            className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+          />
+        </DialogContent>
+      </Dialog>
       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center gap-1">
         {showCopyEmbed && (
           <Button
@@ -58,7 +73,7 @@ export default function ScreenshotThumb({ screenshotId, onRemove, showCopyEmbed 
             size="icon"
             variant="ghost"
             className="h-6 w-6 text-white hover:text-white hover:bg-red-500/80"
-            onClick={() => onRemove(screenshotId)}
+            onClick={handleRemove}
           >
             <X className="w-3 h-3" />
           </Button>

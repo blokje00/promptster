@@ -153,7 +153,7 @@ export default function ImageUploadZone({ images, onImagesChange }) {
                             <img
                               src={imageUrl}
                               alt={`Screenshot ${index + 1}`}
-                              className="w-full h-32 object-cover"
+                              className="w-32 h-32 object-cover"
                             />
                             <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-40 transition-opacity" />
                             

@@ -196,9 +196,9 @@ export default function ItemCard({ item, project }) {
         
         <CardContent className="p-5 space-y-4 flex-grow flex flex-col">
           {item.screenshot_ids && item.screenshot_ids.length > 0 && (
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {item.screenshot_ids.slice(0, 3).map(id => (
-                <ScreenshotThumb key={id} screenshotId={id} showCopyEmbed={false} />
+            <div className="flex gap-2 overflow-x-auto pb-2 flex-shrink-0">
+              {item.screenshot_ids.slice(0, 3).map((id, index) => (
+                <ScreenshotThumb key={`${id}-${index}`} screenshotId={id} showCopyEmbed={false} />
               ))}
               {item.screenshot_ids.length > 3 && (
                 <div className="w-20 h-20 flex items-center justify-center bg-slate-100 rounded-lg border-2 border-slate-200 text-sm text-slate-600 font-medium">

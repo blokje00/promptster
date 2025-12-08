@@ -138,68 +138,88 @@ export default function ScreenshotUploader({
     <div
       className={`relative ${
         compact 
-          ? 'inline-flex items-center' 
-          : `space-y-2 p-4 border-2 border-dashed rounded-xl transition-all cursor-pointer ${
+          ? 'inline-flex items-center gap-2' 
+          : `min-h-[120px] p-4 border-2 border-dashed rounded-xl transition-all ${
               isDragActive 
                 ? 'ring-2 ring-indigo-400 ring-offset-2 bg-indigo-50 border-indigo-500' 
                 : 'border-slate-200 hover:border-indigo-300'
             }`
       }`}
-      onDragEnter={!compact ? handleDragEnter : undefined}
-      onDragLeave={!compact ? handleDragLeave : undefined}
-      onDragOver={!compact ? handleDragOver : undefined}
-      onDrop={!compact ? handleDrop : undefined}
-      onPaste={!compact ? handlePaste : undefined}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onPaste={handlePaste}
     >
-      {/* Full-area drop overlay - only in non-compact mode */}
-      {!compact && isDragActive && (
-        <div className="absolute inset-0 flex items-center justify-center bg-indigo-100/80 rounded-xl z-10 pointer-events-none">
+      {/* Full-area drop overlay */}
+      {isDragActive && (
+        <div className="absolute inset-0 flex items-center justify-center bg-indigo-100/90 rounded-xl z-10 pointer-events-none">
           <div className="text-center">
-            <Upload className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
-            <p className="text-indigo-600 font-medium">Drop images here</p>
+            <Upload className="w-10 h-10 text-indigo-600 mx-auto mb-2" />
+            <p className="text-indigo-700 font-semibold">Drop images here</p>
+            <p className="text-indigo-500 text-sm">Release to upload</p>
           </div>
         </div>
       )}
       
-      {screenshotIds.length > 0 && (
-        <div className={`flex gap-2 ${compact ? '' : 'flex-wrap'}`}>
-          {screenshotIds.map(id => (
-            <ScreenshotThumb
-              key={id}
-              screenshotId={id}
-              onRemove={handleRemove}
+      {/* Content container */}
+      <div className={`${compact ? 'flex items-center gap-2' : 'space-y-3'}`}>
+        {/* Existing images */}
+        {screenshotIds.length > 0 && (
+          <div className={`flex gap-2 ${compact ? '' : 'flex-wrap'}`}>
+            {screenshotIds.map((id, index) => (
+              <ScreenshotThumb
+                key={`${id}-${index}`}
+                screenshotId={id}
+                onRemove={handleRemove}
+                showCopyEmbed={!compact}
+              />
+            ))}
+          </div>
+        )}
+        
+        {/* Upload button and helper text */}
+        {screenshotIds.length < maxCount && (
+          <div className={compact ? '' : 'flex items-center gap-3'}>
+            {/* Hidden file input */}
+            <input 
+              type="file" 
+              multiple 
+              accept="image/*"
+              className="hidden" 
+              id={`screenshot-upload-${taskId || 'new'}`}
+              onChange={e => {
+                if (e.target.files && e.target.files.length > 0) {
+                  handleUpload(e.target.files);
+                }
+                e.target.value = '';
+              }} 
             />
-          ))}
-        </div>
-      )}
-      
-      {/* Hidden file input */}
-      <input 
-        type="file" 
-        multiple 
-        accept="image/*"
-        className="hidden" 
-        id={`screenshot-upload-${taskId || 'new'}`}
-        onChange={e => {
-          if (e.target.files && e.target.files.length > 0) {
-            handleUpload(e.target.files);
-          }
-          e.target.value = ''; // Reset input voor volgende upload
-        }} 
-      />
-      
-      {screenshotIds.length < maxCount && (
-        <label 
-          htmlFor={`screenshot-upload-${taskId || 'new'}`}
-          className="cursor-pointer inline-flex items-center"
-        >
-          {isUploading ? (
-            <Loader2 className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} animate-spin text-indigo-500`} />
-          ) : (
-            <Plus className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} text-slate-400 hover:text-indigo-500 transition-colors`} />
-          )}
-        </label>
-      )}
+            
+            <label 
+              htmlFor={`screenshot-upload-${taskId || 'new'}`}
+              className={`cursor-pointer inline-flex items-center justify-center ${
+                compact 
+                  ? '' 
+                  : 'w-20 h-20 border-2 border-dashed border-slate-300 rounded-lg hover:border-indigo-400 hover:bg-indigo-50 transition-all'
+              }`}
+            >
+              {isUploading ? (
+                <Loader2 className={`${compact ? 'w-4 h-4' : 'w-6 h-6'} animate-spin text-indigo-500`} />
+              ) : (
+                <Plus className={`${compact ? 'w-4 h-4' : 'w-6 h-6'} text-slate-400 hover:text-indigo-500 transition-colors`} />
+              )}
+            </label>
+            
+            {!compact && screenshotIds.length === 0 && (
+              <div className="text-sm text-slate-500">
+                <p className="font-medium text-slate-600">Drop images or click +</p>
+                <p className="text-xs">PNG, JPG, GIF up to 10MB each</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
