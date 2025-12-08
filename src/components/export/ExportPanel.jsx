@@ -102,6 +102,10 @@ export default function ExportPanel({
     };
   }, [items, dateRange, customDate, typeFilter, checkStatusFilter, mode, singleItemId]);
 
+  /**
+   * Handles data export in CSV (as ZIP) or JSON format
+   * @param {string} formatType - 'csv' or 'json'
+   */
   const handleExport = async (formatType) => {
     setIsExporting(true);
     try {
@@ -113,7 +117,7 @@ export default function ExportPanel({
         customEnd: customDate?.to?.toISOString()
       };
 
-      // Use base44.functions.invoke for proper auth handling
+      // Call the export function
       const result = await base44.functions.invoke('exportUserData', {
         format: formatType,
         scope: mode === 'vault' ? 'vault' : 'single_item',
@@ -121,24 +125,68 @@ export default function ExportPanel({
         filters
       });
 
-      // Result.data contains the blob/arraybuffer from backend
-      const blob = new Blob([result.data], { 
-        type: formatType === 'csv' ? 'application/zip' : 'application/json' 
-      });
+      // Handle different response formats from Base44
+      let blobData;
+      let mimeType = formatType === 'csv' ? 'application/zip' : 'application/json';
+      let fileExtension = formatType === 'csv' ? 'zip' : 'json';
       
+      if (result?.data) {
+        // If result.data is a base64 string, decode it
+        if (typeof result.data === 'string') {
+          try {
+            // Check if it's base64 encoded
+            const binaryString = atob(result.data);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+              bytes[i] = binaryString.charCodeAt(i);
+            }
+            blobData = bytes;
+          } catch (e) {
+            // Not base64, treat as plain text/JSON
+            blobData = result.data;
+            mimeType = 'application/json';
+            fileExtension = 'json';
+          }
+        } else if (result.data instanceof ArrayBuffer) {
+          blobData = result.data;
+        } else if (typeof result.data === 'object') {
+          // JSON object, stringify it
+          blobData = JSON.stringify(result.data, null, 2);
+          mimeType = 'application/json';
+          fileExtension = 'json';
+        } else {
+          blobData = result.data;
+        }
+      } else if (result && typeof result === 'object') {
+        // Fallback: entire result is the data
+        blobData = JSON.stringify(result, null, 2);
+        mimeType = 'application/json';
+        fileExtension = 'json';
+      } else {
+        throw new Error("No data received from export");
+      }
+
+      const blob = new Blob([blobData], { type: mimeType });
+      
+      // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
+      a.style.display = 'none';
       a.href = url;
-      a.download = `export_${mode}_${new Date().toISOString().split('T')[0]}.${formatType === 'csv' ? 'zip' : 'json'}`;
+      a.download = `export_${mode}_${new Date().toISOString().split('T')[0]}.${fileExtension}`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
       
-      toast.success("Export started");
+      // Cleanup
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        a.remove();
+      }, 100);
+      
+      toast.success("Export completed successfully");
     } catch (error) {
-      console.error(error);
-      toast.error("Export failed: " + error.message);
+      console.error('Export error:', error);
+      toast.error("Export failed: " + (error.message || "Unknown error"));
     } finally {
       setIsExporting(false);
     }
