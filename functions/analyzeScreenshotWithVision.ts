@@ -65,8 +65,10 @@ Deno.serve(async (req) => {
     return Response.json({ result });
   } catch (error) {
     console.error('Vision analysis error:', error);
+    console.error('Error stack:', error.stack);
     return Response.json({ 
-      error: error.message || 'Vision analysis failed' 
+      error: error.message || 'Vision analysis failed',
+      details: error.stack
     }, { status: 500 });
   }
 });
