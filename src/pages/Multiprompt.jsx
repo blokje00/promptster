@@ -688,17 +688,6 @@ export default function Multiprompt() {
 
                         {/* Controls */}
                         <div className="flex items-center gap-2 px-3 py-2 border-t border-slate-100 bg-slate-50/50 rounded-b-lg">
-                          {/* Screenshot Thumbnails */}
-                          {newThoughtScreenshots.map((url, idx) => (
-                            <ScreenshotThumb
-                              key={`${url}-${idx}`}
-                              screenshotId={url}
-                              onRemove={(id) => setNewThoughtScreenshots(newThoughtScreenshots.filter(u => u !== id))}
-                              showCopyEmbed={false}
-                            />
-                          ))}
-                          
-                          {/* Upload Button */}
                           <ScreenshotUploader
                             screenshotIds={newThoughtScreenshots}
                             onChange={setNewThoughtScreenshots}

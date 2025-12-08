@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckSquare, Square, Trash2, MoreHorizontal, GripVertical, Calendar, Image as ImageIcon, X } from "lucide-react";
+import { CheckSquare, Square, Trash2, MoreHorizontal, GripVertical, Upload } from "lucide-react";
+import { uploadImageToSupabase } from "@/components/lib/uploadImage";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +36,8 @@ export default function ThoughtCard({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(thought.content || "");
+  const [isDropActive, setIsDropActive] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Update handlers
   const handleContentSave = () => {
@@ -50,7 +54,62 @@ export default function ThoughtCard({
     }
   };
 
+  // Drag & Drop handlers voor screenshots
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDropActive(true);
+  };
 
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDropActive(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDropActive(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) {
+      toast.error("Alleen afbeeldingen toegestaan");
+      return;
+    }
+
+    const currentScreenshots = thought.screenshot_ids || [];
+    if (currentScreenshots.length + imageFiles.length > 5) {
+      toast.error("Maximum 5 afbeeldingen per task");
+      return;
+    }
+
+    setIsUploading(true);
+    const successUrls = [];
+    for (const file of imageFiles) {
+      try {
+        const url = await uploadImageToSupabase(file);
+        if (url) successUrls.push(url);
+      } catch (error) {
+        console.error('Upload error:', error);
+      }
+    }
+
+    if (successUrls.length > 0) {
+      onUpdateScreenshots(thought.id, [...currentScreenshots, ...successUrls]);
+      toast.success(`${successUrls.length} afbeelding(en) toegevoegd`);
+    }
+    setIsUploading(false);
+  };
 
   // Focus type display mapping
   const focusConfig = {
@@ -64,11 +123,17 @@ export default function ThoughtCard({
   const currentFocus = focusConfig[thought.focus_type] || focusConfig.both;
 
   return (
-    <div className={`group relative flex gap-3 p-3 rounded-lg border transition-all ${
-      isSelected 
-        ? 'bg-indigo-50/50 border-indigo-200' 
-        : `bg-white ${project ? `border-${project.color}-200 hover:border-${project.color}-300` : 'border-slate-200 hover:border-indigo-300'}`
-    }`}>
+    <div 
+      className={`group relative flex gap-3 p-3 rounded-lg border transition-all ${
+        isSelected 
+          ? 'bg-indigo-50/50 border-indigo-200' 
+          : `bg-white ${project ? `border-${project.color}-200 hover:border-${project.color}-300` : 'border-slate-200 hover:border-indigo-300'}`
+      } ${isDropActive ? 'ring-2 ring-indigo-400 ring-offset-2 bg-indigo-50' : ''}`}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       {/* Drag Handle */}
       {showDragHandle && (
         <div 
@@ -91,6 +156,16 @@ export default function ThoughtCard({
           {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
         </button>
       </div>
+
+      {/* Drop Overlay */}
+      {isDropActive && (
+        <div className="absolute inset-0 flex items-center justify-center bg-indigo-100/90 rounded-lg z-10 pointer-events-none">
+          <div className="text-center">
+            <Upload className="w-8 h-8 text-indigo-600 mx-auto mb-2 animate-bounce" />
+            <p className="text-indigo-700 font-semibold">Drop screenshots hier</p>
+          </div>
+        </div>
+      )}
 
       {/* Content Area */}
       <div className="flex-1 min-w-0 space-y-3">
