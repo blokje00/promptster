@@ -5,15 +5,12 @@ import { Parser } from 'npm:@json2csv/plainjs@6.1.3';
 /**
  * PROMPTSTER EXPORT FUNCTION
  * 
- * Purpose: Export Vault items and Checks in CSV (zip) or JSON format
+ * Export user data (Vault + Checks) for current workspace.
+ * - format: "csv" -> ZIP with items.csv + checks.csv
+ * - format: "json" -> JSON with { items, checks }
+ * This function is the single source of truth for exports.
  * 
- * Data Structure:
- * - items.csv: One row per Vault item with project info, status, and check count
- * - checks.csv: One row per individual check with full context (replaces task_checks.csv)
- * 
- * Integrity: aantal_checks in items.csv must match actual check count in checks.csv
- * 
- * Filters: Date range, item type, check status - all workspace-scoped
+ * CRITICAL: Always returns `new Response(...)` - never wrapped JSON objects.
  */
 
 export const exportUserData = async (req) => {
@@ -32,7 +29,10 @@ export const exportUserData = async (req) => {
     const user = await base44.auth.me();
 
     if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }), 
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
     const { format = 'csv', scope = 'vault', itemId, filters = {} } = await req.json();
@@ -182,62 +182,69 @@ export const exportUserData = async (req) => {
       }
     });
 
-    // 7. Generate Output
+    // 7. Generate Output - ALWAYS return new Response()
+    const timestamp = new Date().toISOString().split('T')[0];
+    
     if (format === 'json') {
-      // JSON Export: Clean structured format
-      const jsonOutput = {
-        metadata: {
-          generated_at: new Date().toISOString(),
-          user: user.email,
-          workspace: 'default', // TODO: Add workspace info
-          scope,
-          filters: {
-            dateRange,
-            typeFilter,
-            checkStatusFilter
-          },
-          counts: {
-            items: exportItems.length,
-            checks: exportChecks.length
-          }
-        },
+      // JSON Export: Simple structure
+      const payload = {
         items: exportItems,
-        checks: exportChecks // Renamed from task_checks
+        checks: exportChecks
       };
       
-      return new Response(JSON.stringify(jsonOutput, null, 2), {
+      const body = JSON.stringify(payload, null, 2);
+
+      return new Response(body, {
+        status: 200,
         headers: {
           'Content-Type': 'application/json',
-          'Content-Disposition': `attachment; filename="promptster_export_${new Date().toISOString().split('T')[0]}.json"`
+          'Content-Disposition': `attachment; filename="promptster_export_${scope}_${timestamp}.json"`
         }
       });
-    } else {
+    } 
+    
+    if (format === 'csv') {
       // CSV Export: ZIP with items.csv + checks.csv
       const zip = new JSZip();
-      
       const parser = new Parser();
       
       // UTF-8 BOM for Excel compatibility
       const BOM = '\uFEFF';
       
-      const csvItems = exportItems.length ? BOM + parser.parse(exportItems) : BOM + 'No items';
-      const csvChecks = exportChecks.length ? BOM + parser.parse(exportChecks) : BOM + 'No checks';
+      const csvItems = exportItems.length > 0 
+        ? BOM + parser.parse(exportItems) 
+        : BOM + 'item_id,workspace_id,workspace_name,project_id,project_name,type,title,status,aantal_checks,created_at,updated_at\n';
+      
+      const csvChecks = exportChecks.length > 0
+        ? BOM + parser.parse(exportChecks) 
+        : BOM + 'check_id,item_id,item_title,item_type,project_id,project_name,check_index,check_key,check_label,check_status,created_at,updated_at\n';
 
       zip.file("items.csv", csvItems);
-      zip.file("checks.csv", csvChecks); // RENAMED from task_checks.csv
+      zip.file("checks.csv", csvChecks);
 
-      const content = await zip.generateAsync({ type: "uint8array" });
+      const zipBuffer = await zip.generateAsync({ type: "uint8array" });
 
-      return new Response(content, {
+      return new Response(zipBuffer, {
+        status: 200,
         headers: {
           'Content-Type': 'application/zip',
-          'Content-Disposition': `attachment; filename="promptster_export_${new Date().toISOString().split('T')[0]}.zip"`
+          'Content-Disposition': `attachment; filename="promptster_export_${scope}_${timestamp}.zip"`
         }
       });
     }
 
+    // Unsupported format
+    return new Response(
+      JSON.stringify({ error: 'Unsupported format. Use "csv" or "json".' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('Export error:', error);
+    return new Response(
+      JSON.stringify({ error: error.message || 'Export failed' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 };
 

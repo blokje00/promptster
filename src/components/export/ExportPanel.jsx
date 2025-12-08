@@ -103,8 +103,9 @@ export default function ExportPanel({
   }, [items, dateRange, customDate, typeFilter, checkStatusFilter, mode, singleItemId]);
 
   /**
-   * Handles data export in CSV (as ZIP) or JSON format
-   * @param {string} formatType - 'csv' or 'json'
+   * Handles data export in CSV (ZIP) or JSON format
+   * NEW CONTRACT: Backend always returns proper Response (blob), no JSON wrapping
+   * @param {"csv" | "json"} formatType
    */
   const handleExport = async (formatType) => {
     setIsExporting(true);
@@ -117,7 +118,6 @@ export default function ExportPanel({
         customEnd: customDate?.to?.toISOString()
       };
 
-      // Call the export function
       const result = await base44.functions.invoke('exportUserData', {
         format: formatType,
         scope: mode === 'vault' ? 'vault' : 'single_item',
@@ -125,59 +125,33 @@ export default function ExportPanel({
         filters
       });
 
-      // Handle different response formats from Base44
-      let blobData;
-      let mimeType = formatType === 'csv' ? 'application/zip' : 'application/json';
-      let fileExtension = formatType === 'csv' ? 'zip' : 'json';
+      // Base44 SDK: result.response is a fetch Response object
+      let blob;
       
-      if (result?.data) {
-        // If result.data is a base64 string, decode it
-        if (typeof result.data === 'string') {
-          try {
-            // Check if it's base64 encoded
-            const binaryString = atob(result.data);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-              bytes[i] = binaryString.charCodeAt(i);
-            }
-            blobData = bytes;
-          } catch (e) {
-            // Not base64, treat as plain text/JSON
-            blobData = result.data;
-            mimeType = 'application/json';
-            fileExtension = 'json';
-          }
-        } else if (result.data instanceof ArrayBuffer) {
-          blobData = result.data;
-        } else if (typeof result.data === 'object') {
-          // JSON object, stringify it
-          blobData = JSON.stringify(result.data, null, 2);
-          mimeType = 'application/json';
-          fileExtension = 'json';
-        } else {
-          blobData = result.data;
-        }
-      } else if (result && typeof result === 'object') {
-        // Fallback: entire result is the data
-        blobData = JSON.stringify(result, null, 2);
-        mimeType = 'application/json';
-        fileExtension = 'json';
+      if (result?.response && typeof result.response.blob === 'function') {
+        // Modern Base44 SDK: use response.blob()
+        blob = await result.response.blob();
+      } else if (result?.data instanceof ArrayBuffer || result?.data instanceof Uint8Array) {
+        // Older SDK: data is ArrayBuffer/Uint8Array
+        blob = new Blob([result.data], {
+          type: formatType === 'csv' ? 'application/zip' : 'application/json'
+        });
       } else {
-        throw new Error("No data received from export");
+        throw new Error("Unexpected response format from exportUserData");
       }
 
-      const blob = new Blob([blobData], { type: mimeType });
+      // Download
+      const fileExtension = formatType === 'csv' ? 'zip' : 'json';
+      const fileName = `promptster_export_${mode}_${new Date().toISOString().split('T')[0]}.${fileExtension}`;
       
-      // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = `export_${mode}_${new Date().toISOString().split('T')[0]}.${fileExtension}`;
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
       
-      // Cleanup
       setTimeout(() => {
         window.URL.revokeObjectURL(url);
         a.remove();
