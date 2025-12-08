@@ -411,55 +411,25 @@ export default function Multiprompt() {
   // Task 2 & 3: Removed auto-clear to enable autosave persistence
   // The previous useEffect clearing improvedPrompt is removed.
 
-  // AI Improve with Screenshot Analysis
+  // AI Improve with Screenshot Analysis using direct Supabase URLs
   const handleImprovePrompt = async () => {
     if (!generatedPrompt) return;
     setIsImproving(true);
     try {
-      // Collect all screenshots from selected thoughts
+      // Collect all screenshots (direct Supabase URLs) from selected thoughts
       const selectedItems = thoughts.filter(t => selectedThoughtIds.includes(t.id));
-      const allScreenshotIds = selectedItems.flatMap(t => t.screenshot_ids || []);
+      const allScreenshotUrls = selectedItems.flatMap(t => t.screenshot_ids || []);
       
-      let screenshotContext = "";
-      
-      // Analyze each screenshot if present
-      if (allScreenshotIds.length > 0) {
-        const analyses = await Promise.all(
-          allScreenshotIds.map(async (screenshotId) => {
-            try {
-              const response = await fetch('/api/screenshots/analyze', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${localStorage.getItem('base44_token')}`
-                },
-                body: JSON.stringify({ 
-                  screenshotId,
-                  prompt: "Analyze this screenshot for UI/UX context. Describe key elements, layout, and functionality visible."
-                })
-              });
-              
-              if (!response.ok) throw new Error('Analysis failed');
-              
-              const data = await response.json();
-              return `\n\n--- Screenshot Analysis ---\n${data.analysis}`;
-            } catch (err) {
-              console.error('Screenshot analysis error:', err);
-              return "";
-            }
-          })
-        );
-        
-        screenshotContext = analyses.filter(a => a).join("\n");
-      }
-
-      // Task 5: Remove AI Chatter
+      // Use InvokeLLM with file_urls parameter for vision analysis
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `${screenshotContext}\n\nImprove this prompt:\n${generatedPrompt}\n\nIMPORTANT: Return ONLY the improved prompt content. Do not include any intro, outro, or conversational filler like "Here is the improved prompt". Just the prompt text itself.`,
+        prompt: `Improve this prompt:\n${generatedPrompt}\n\nIMPORTANT: Return ONLY the improved prompt content. Do not include any intro, outro, or conversational filler like "Here is the improved prompt". Just the prompt text itself.`,
+        file_urls: allScreenshotUrls.length > 0 ? allScreenshotUrls : undefined,
       });
+      
       setImprovedPrompt(result);
       toast.success("Prompt improved");
-    } catch {
+    } catch (error) {
+      console.error("AI Improvement error:", error);
       toast.error("AI Improvement failed");
     } finally {
       setIsImproving(false);
