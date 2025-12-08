@@ -28,16 +28,22 @@ Deno.serve(async (req) => {
     const base64Images = [];
     for (const url of screenshot_urls) {
       try {
+        console.log(`Fetching screenshot: ${url}`);
+        
         // Fetch the image from Base44 URL
         const imageResponse = await fetch(url);
         if (!imageResponse.ok) {
-          console.warn(`Failed to fetch screenshot: ${url}`);
+          console.warn(`Failed to fetch screenshot: ${url}, status: ${imageResponse.status}`);
           continue;
         }
+
+        console.log(`Successfully fetched ${url}, content-type: ${imageResponse.headers.get('content-type')}`);
 
         // Get the image as array buffer
         const arrayBuffer = await imageResponse.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
+        
+        console.log(`Image size: ${uint8Array.length} bytes`);
         
         // Convert to base64
         const base64 = btoa(String.fromCharCode(...uint8Array));
@@ -50,17 +56,23 @@ Deno.serve(async (req) => {
         // Create data URL
         const dataUrl = `data:${contentType};base64,${base64}`;
         base64Images.push(dataUrl);
+        
+        console.log(`Successfully converted image to base64 data URL (${base64.length} chars)`);
       } catch (error) {
         console.error(`Error processing screenshot ${url}:`, error);
       }
     }
 
-    // Call InvokeLLM with base64 data URLs (no JSON schema for text response)
+    console.log(`Total images processed: ${base64Images.length}`);
+
+    // Call InvokeLLM with base64 data URLs
+    // IMPORTANT: When using file_urls, InvokeLLM expects a text response, not JSON
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: prompt,
       file_urls: base64Images.length > 0 ? base64Images : undefined
-      // No response_json_schema - we want plain text response
     });
+
+    console.log(`InvokeLLM result type: ${typeof result}`);
 
     return Response.json({ result });
   } catch (error) {
