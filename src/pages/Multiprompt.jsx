@@ -20,7 +20,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { 
   Plus, Sparkles, Save, Trash2, Copy, CheckCircle, FileText, X, 
   Loader2, FolderOpen, Edit, MoreHorizontal, Settings, Pencil, 
-  CheckSquare, Square, Lightbulb, Layers, Cog
+  CheckSquare, Square, Lightbulb, Layers, Cog, Upload
 } from "lucide-react";
 
 // Sub-components
@@ -31,6 +31,7 @@ import TemplatesManager from "@/components/multiprompt/TemplatesManager";
 import ProjectsManager from "@/components/multiprompt/ProjectsManager";
 import ScreenshotUploader from "@/components/media/ScreenshotUploader";
 import { projectColors, projectBorderColors, projectLightColors } from "@/components/lib/constants";
+import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 
 export default function Multiprompt() {
   const navigate = useNavigate();
@@ -158,6 +159,7 @@ export default function Multiprompt() {
   const [newThoughtScreenshots, setNewThoughtScreenshots] = useState([]);
   const [newThoughtFocus, setNewThoughtFocus] = useState("both");
   const [newThoughtContext, setNewThoughtContext] = useState({});
+  const [isDropActive, setIsDropActive] = useState(false);
 
   // Filtering/Grouping
   const [groupBy, setGroupBy] = useState("component");
@@ -257,6 +259,62 @@ export default function Multiprompt() {
         toast.success("Task added");
       }
     });
+  };
+
+  // Drag & Drop handlers voor hele input area
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDropActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDropActive(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDropActive(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+
+    if (imageFiles.length === 0) {
+      toast.error("Alleen afbeeldingen toegestaan");
+      return;
+    }
+
+    if (newThoughtScreenshots.length + imageFiles.length > 5) {
+      toast.error("Maximum 5 afbeeldingen per task");
+      return;
+    }
+
+    toast.loading(`${imageFiles.length} afbeelding(en) uploaden...`);
+
+    const successUrls = [];
+    for (const file of imageFiles) {
+      try {
+        const url = await uploadImageToSupabase(file);
+        if (url) successUrls.push(url);
+      } catch (error) {
+        console.error('Upload error:', error);
+      }
+    }
+
+    if (successUrls.length > 0) {
+      setNewThoughtScreenshots([...newThoughtScreenshots, ...successUrls]);
+      toast.success(`${successUrls.length} afbeelding(en) toegevoegd`);
+    }
   };
 
   // Thought Updates (Delegates to Hook)
@@ -591,28 +649,62 @@ export default function Multiprompt() {
                     </CardHeader>
                     <CardContent className="space-y-4">
 
-                      {/* Input Area */}
+                      {/* Input Area with Drag & Drop */}
                       <div 
-                        className={`border-2 rounded-lg focus-within:border-indigo-400 transition-all bg-white ${selectedProject ? `border-dashed ${projectBorderColors[selectedProject.color]}` : 'border-slate-200'}`}
+                        className={`relative border-2 rounded-lg transition-all bg-white ${
+                          selectedProject 
+                            ? `border-dashed ${projectBorderColors[selectedProject.color]}` 
+                            : 'border-slate-200'
+                        } ${
+                          isDropActive 
+                            ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-400 ring-offset-2' 
+                            : 'focus-within:border-indigo-400'
+                        }`}
+                        onDragEnter={handleDragEnter}
+                        onDragLeave={handleDragLeave}
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
                       >
+                        {/* Drop Overlay */}
+                        {isDropActive && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-indigo-100/90 rounded-lg z-20 pointer-events-none">
+                            <div className="text-center">
+                              <Upload className="w-10 h-10 text-indigo-600 mx-auto mb-2 animate-bounce" />
+                              <p className="text-indigo-700 font-semibold text-lg">Drop screenshots hier</p>
+                              <p className="text-indigo-600 text-sm">Afbeeldingen worden direct geüpload</p>
+                            </div>
+                          </div>
+                        )}
+
                         <Textarea
-                          placeholder={isLimitReached ? `Plan limit of ${maxThoughts} tasks reached.` : "Type task..."}
+                          placeholder={isLimitReached ? `Plan limit of ${maxThoughts} tasks reached.` : "Type task... (of sleep screenshots hier)"}
                           value={newThoughtContent}
                           onChange={(e) => setNewThoughtContent(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), !isLimitReached && handleAddThought())}
                           disabled={isLimitReached}
                           className="min-h-[60px] border-0 focus-visible:ring-0 resize-none"
                         />
-                        
+
                         {/* Screenshot Previews */}
                         {newThoughtScreenshots.length > 0 && (
                           <div className="px-3 pb-2">
-                            <ScreenshotUploader
-                              screenshotIds={newThoughtScreenshots}
-                              onChange={setNewThoughtScreenshots}
-                              projectId={selectedProjectId}
-                              compact
-                            />
+                            <div className="flex gap-2 flex-wrap">
+                              {newThoughtScreenshots.map((url, idx) => (
+                                <div key={idx} className="relative group">
+                                  <img 
+                                    src={url} 
+                                    alt={`Screenshot ${idx + 1}`}
+                                    className="w-16 h-16 object-cover rounded border border-slate-200"
+                                  />
+                                  <button
+                                    onClick={() => setNewThoughtScreenshots(newThoughtScreenshots.filter((_, i) => i !== idx))}
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )}
 
