@@ -12,6 +12,7 @@ import Support from './pages/Support';
 import AdminStats from './pages/AdminStats';
 import AdminSupportTickets from './pages/AdminSupportTickets';
 import Checks from './pages/Checks';
+import Legal from './pages/Legal';
 import __Layout from './Layout.jsx';
 
 
@@ -30,6 +31,7 @@ export const PAGES = {
     "AdminStats": AdminStats,
     "AdminSupportTickets": AdminSupportTickets,
     "Checks": Checks,
+    "Legal": Legal,
 }
 
 export const pagesConfig = {
