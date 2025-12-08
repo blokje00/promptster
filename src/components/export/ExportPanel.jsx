@@ -300,7 +300,7 @@ export default function ExportPanel({
               disabled={isExporting}
             >
               {isExporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 mr-2 text-green-600" />}
-              CSV Export
+              CSV Export (.zip)
             </Button>
             <Button 
               size="sm" 
