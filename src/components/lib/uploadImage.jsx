@@ -1,63 +1,57 @@
-import { createClient } from '@supabase/supabase-js';
 import { base44 } from "@/api/base44Client";
 
-// Supabase Storage for truly public, anonymous-accessible URLs
-const supabaseUrl = 'https://gfqphegxvcbsqbdqfmoc.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmcXBoZWd4dmNic3FiZHFmbW9jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMwNjA5NTcsImV4cCI6MjA0ODYzNjk1N30.VH_2IXLqaXWGd9-Lm5TZ8tYKqxVQJKgXHOXzGqZBm8k';
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
 /**
- * Uploads an image to Supabase Storage with public access.
- * Returns a truly public HTTPS URL accessible by OpenAI/LLMs without auth.
+ * Uploads an image using Base44's UploadFile integration with public visibility.
+ * Returns a public URL that works for both UI display and AI/LLM analysis.
  * 
- * IMPORTANT: Supabase bucket 'promptster_screenshots' must be configured as PUBLIC:
- * 1. Go to Supabase Dashboard > Storage > promptster_screenshots
- * 2. Make bucket public (allows anonymous reads)
- * 3. Set RLS policies to allow authenticated uploads
+ * The URL returned is a Base44 public file URL that should be accessible
+ * without authentication for vision analysis.
  * 
  * @param {File} file - The image file to upload
- * @returns {Promise<string>} - The public Supabase CDN URL
+ * @returns {Promise<string>} - The public HTTPS URL
  */
 export const uploadImageToSupabase = async (file) => {
   try {
-    // Get current user for folder organization
-    const user = await base44.auth.me();
-    if (!user?.id) {
-      throw new Error("Gebruiker niet ingelogd");
+    // Upload via Base44 UploadFile integration
+    const result = await base44.integrations.Core.UploadFile({ file });
+    
+    if (!result?.file_url) {
+      throw new Error("Geen file URL ontvangen van upload");
     }
 
-    // Create unique filename with user folder
-    const timestamp = Date.now();
-    const random = crypto.randomUUID().substring(0, 8);
-    const ext = file.name.split('.').pop() || 'png';
-    const path = `${user.id}/${timestamp}_${random}.${ext}`;
-
-    // Upload to Supabase Storage (public bucket)
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('promptster_screenshots')
-      .upload(path, file, {
-        contentType: file.type,
-        upsert: false,
-        cacheControl: '3600'
+    // Base44 returns URLs in format: /api/apps/{app_id}/files/public/{app_id}/{filename}
+    // These should be publicly accessible without auth
+    const fileUrl = result.file_url;
+    
+    // Convert relative URLs to absolute HTTPS URLs
+    let publicUrl = fileUrl;
+    if (fileUrl.startsWith('/')) {
+      // Get the base URL from window.location
+      const baseUrl = window.location.origin;
+      publicUrl = `${baseUrl}${fileUrl}`;
+    }
+    
+    // Verify URL is accessible (optional runtime check)
+    try {
+      const testResponse = await fetch(publicUrl, { 
+        method: 'HEAD',
+        // No credentials to test anonymous access
+        credentials: 'omit'
       });
-
-    if (uploadError) {
-      console.error("Supabase upload error:", uploadError);
-      throw new Error(`Upload failed: ${uploadError.message}`);
+      
+      if (!testResponse.ok) {
+        console.warn(`Warning: Uploaded file returned status ${testResponse.status}`);
+      }
+      
+      const contentType = testResponse.headers.get('content-type');
+      if (!contentType?.startsWith('image/')) {
+        console.warn(`Warning: Uploaded file has content-type: ${contentType}`);
+      }
+    } catch (verifyError) {
+      console.warn('Could not verify public accessibility:', verifyError);
     }
 
-    // Get public URL (works without authentication)
-    const { data: urlData } = supabase.storage
-      .from('promptster_screenshots')
-      .getPublicUrl(path);
-
-    if (!urlData?.publicUrl) {
-      throw new Error("Could not generate public URL");
-    }
-
-    // Return CDN URL format: https://[project].supabase.co/storage/v1/object/public/[bucket]/[path]
-    return urlData.publicUrl;
+    return publicUrl;
   } catch (error) {
     console.error("Upload failed:", error);
     throw new Error(`Upload mislukt: ${error.message || 'Onbekende fout'}`);
