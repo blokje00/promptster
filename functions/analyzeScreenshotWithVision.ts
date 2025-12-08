@@ -55,10 +55,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Call InvokeLLM with base64 data URLs
+    // Call InvokeLLM with base64 data URLs (no JSON schema for text response)
     const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt: prompt,
       file_urls: base64Images.length > 0 ? base64Images : undefined
+      // No response_json_schema - we want plain text response
     });
 
     return Response.json({ result });
