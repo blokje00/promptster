@@ -40,22 +40,34 @@ export default function ScreenshotUploader({
     }
     
     setIsUploading(true);
-    try {
-      const uploadPromises = imageFiles.map(async (file) => {
-        // Use the centralized upload utility that works with Base44
+    
+    const successfulUrls = [];
+    const failedUploads = [];
+    
+    for (const file of imageFiles) {
+      try {
         const fileUrl = await uploadImageToSupabase(file);
-        return fileUrl;
-      });
-
-      const newUrls = await Promise.all(uploadPromises);
-      onChange([...screenshotIds, ...newUrls]);
-      toast.success(`${newUrls.length} screenshot(s) uploaded`);
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error("Upload failed: " + (error.message || "Unknown error"));
-    } finally {
-      setIsUploading(false);
+        if (fileUrl) {
+          successfulUrls.push(fileUrl);
+        } else {
+          failedUploads.push(file.name);
+        }
+      } catch (error) {
+        console.error(`Upload error for ${file.name}:`, error);
+        failedUploads.push(file.name);
+      }
     }
+    
+    if (successfulUrls.length > 0) {
+      onChange([...screenshotIds, ...successfulUrls]);
+      toast.success(`${successfulUrls.length} screenshot(s) uploaded`);
+    }
+    
+    if (failedUploads.length > 0) {
+      toast.error(`Failed to upload: ${failedUploads.join(', ')}`);
+    }
+    
+    setIsUploading(false);
   };
 
   const handleRemove = (idToRemove) => {
@@ -77,7 +89,11 @@ export default function ScreenshotUploader({
   const handleDragLeave = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragActive(false);
+    // Only set inactive if we're leaving the component entirely
+    // Check if the related target is outside the component
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setIsDragActive(false);
+    }
   };
 
   /**
@@ -120,8 +136,14 @@ export default function ScreenshotUploader({
 
   return (
     <div
-      className={`${compact ? 'flex items-center gap-2' : 'space-y-2'} ${
-        isDragActive ? 'ring-2 ring-indigo-400 ring-offset-2 rounded-lg' : ''
+      className={`relative ${compact ? 'flex items-center gap-2' : 'space-y-2'} ${
+        isDragActive 
+          ? 'ring-2 ring-indigo-400 ring-offset-2 rounded-lg bg-indigo-50' 
+          : ''
+      } p-4 border-2 border-dashed rounded-xl transition-all cursor-pointer ${
+        isDragActive 
+          ? 'border-indigo-500' 
+          : 'border-slate-200 hover:border-indigo-300'
       }`}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -129,6 +151,16 @@ export default function ScreenshotUploader({
       onDrop={handleDrop}
       onPaste={handlePaste}
     >
+      {/* Full-area drop overlay */}
+      {isDragActive && (
+        <div className="absolute inset-0 flex items-center justify-center bg-indigo-100/80 rounded-xl z-10 pointer-events-none">
+          <div className="text-center">
+            <Upload className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
+            <p className="text-indigo-600 font-medium">Drop images here</p>
+          </div>
+        </div>
+      )}
+      
       <div className={`flex ${compact ? 'gap-2' : 'gap-2 flex-wrap'}`}>
         {screenshotIds.map(id => (
           <ScreenshotThumb
@@ -139,28 +171,32 @@ export default function ScreenshotUploader({
         ))}
       </div>
       
+      {/* Hidden file input */}
+      <input 
+        type="file" 
+        multiple 
+        accept="image/*"
+        className="hidden" 
+        id={`screenshot-upload-${taskId || 'new'}`}
+        onChange={e => {
+          if (e.target.files && e.target.files.length > 0) {
+            handleUpload(e.target.files);
+          }
+          e.target.value = ''; // Reset input voor volgende upload
+        }} 
+      />
+      
       {screenshotIds.length < maxCount && (
-        <div 
-          className={`relative transition-all ${
+        <label 
+          htmlFor={`screenshot-upload-${taskId || 'new'}`}
+          className={`relative transition-all cursor-pointer ${
             isDragActive 
-              ? 'scale-110 bg-indigo-50 rounded-lg' 
+              ? 'scale-105' 
               : ''
           }`}
         >
-          <input 
-            type="file" 
-            multiple 
-            accept="image/*"
-            className="hidden" 
-            id={`screenshot-upload-${taskId || 'new'}`}
-            onChange={e => {
-              handleUpload(e.target.files);
-              e.target.value = ''; // Reset input voor volgende upload
-            }} 
-          />
-          <label 
-            htmlFor={`screenshot-upload-${taskId || 'new'}`}
-            className={`cursor-pointer flex items-center justify-center ${
+          <div
+            className={`flex items-center justify-center ${
               compact 
                 ? 'p-1 hover:bg-slate-200 rounded' 
                 : `w-20 h-20 border-2 border-dashed rounded transition-all ${
@@ -172,13 +208,18 @@ export default function ScreenshotUploader({
           >
             {isUploading ? (
               <Loader2 className={`${compact ? 'w-4 h-4' : 'w-6 h-6'} animate-spin text-indigo-500`} />
-            ) : isDragActive ? (
-              <Upload className={`${compact ? 'w-4 h-4' : 'w-6 h-6'} text-indigo-500`} />
             ) : (
-              <Plus className={`${compact ? 'w-4 h-4' : 'w-6 h-6'} text-slate-400`} />
+              <Plus className={`${compact ? 'w-4 h-4' : 'w-6 h-6'} text-slate-400 hover:text-indigo-500`} />
             )}
-          </label>
-        </div>
+          </div>
+        </label>
+      )}
+      
+      {/* Click anywhere instruction */}
+      {!compact && screenshotIds.length === 0 && !isDragActive && (
+        <p className="text-xs text-slate-400 text-center mt-2">
+          Click anywhere or drag images to upload
+        </p>
       )}
     </div>
   );

@@ -16,7 +16,10 @@ export default function ZipUploadZone({ zipFiles, onZipFilesChange }) {
     if (e.type === "dragenter" || e.type === "dragover") {
       setDragActive(true);
     } else if (e.type === "dragleave") {
-      setDragActive(false);
+      // Only deactivate if leaving the component entirely
+      if (!e.currentTarget.contains(e.relatedTarget)) {
+        setDragActive(false);
+      }
     }
   };
 
@@ -78,40 +81,46 @@ export default function ZipUploadZone({ zipFiles, onZipFilesChange }) {
 
   return (
     <div className="space-y-4">
-      <div
+      <label 
+        htmlFor="zip-upload"
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-xl p-8 transition-all ${
+        className={`border-2 border-dashed rounded-xl p-8 transition-all cursor-pointer block ${
           dragActive 
-            ? "border-purple-500 bg-purple-50" 
-            : "border-slate-300 hover:border-slate-400"
+            ? "border-purple-500 bg-purple-50 scale-[1.02]" 
+            : "border-slate-300 hover:border-purple-400 hover:bg-purple-50/50"
         }`}
       >
         <input
           type="file"
           multiple
           accept=".zip"
-          onChange={handleFileInput}
+          onChange={(e) => {
+            handleFileInput(e);
+            e.target.value = ''; // Reset for next upload
+          }}
           className="hidden"
           id="zip-upload"
           disabled={uploading}
         />
-        <label htmlFor="zip-upload" className="cursor-pointer block text-center">
+        <div className="text-center">
           <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
             {uploading ? (
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
+            ) : dragActive ? (
+              <Upload className="w-8 h-8 text-purple-500" />
             ) : (
               <FileArchive className="w-8 h-8 text-slate-400" />
             )}
           </div>
           <p className="text-slate-700 font-medium mb-1">
-            {uploading ? "Uploading..." : "Drop ZIP files here"}
+            {uploading ? "Uploading..." : dragActive ? "Drop to upload" : "Drop ZIP files here"}
           </p>
-          <p className="text-sm text-slate-500">or click to select files</p>
-        </label>
-      </div>
+          <p className="text-sm text-slate-500">or click anywhere to select files</p>
+        </div>
+      </label>
 
       {zipFiles && zipFiles.length > 0 && (
         <div className="space-y-2">
