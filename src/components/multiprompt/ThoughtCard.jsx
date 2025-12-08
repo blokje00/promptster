@@ -94,21 +94,29 @@ export default function ThoughtCard({
     }
 
     setIsUploading(true);
-    const successUrls = [];
-    for (const file of imageFiles) {
-      try {
-        const url = await uploadImageToSupabase(file);
-        if (url) successUrls.push(url);
-      } catch (error) {
-        console.error('Upload error:', error);
+    const loadingToast = toast.loading("Screenshots uploaden...");
+    
+    try {
+      const successUrls = [];
+      for (const file of imageFiles) {
+        try {
+          const url = await uploadImageToSupabase(file);
+          if (url) successUrls.push(url);
+        } catch (error) {
+          console.error('Upload error:', error);
+        }
       }
-    }
 
-    if (successUrls.length > 0) {
-      onUpdateScreenshots(thought.id, [...currentScreenshots, ...successUrls]);
-      toast.success(`${successUrls.length} afbeelding(en) toegevoegd`);
+      if (successUrls.length > 0) {
+        onUpdateScreenshots(thought.id, [...currentScreenshots, ...successUrls]);
+        toast.success(`${successUrls.length} afbeelding(en) toegevoegd`);
+      } else if (imageFiles.length > 0) {
+        toast.error("Uploads mislukt. Probeer opnieuw.");
+      }
+    } finally {
+      toast.dismiss(loadingToast);
+      setIsUploading(false);
     }
-    setIsUploading(false);
   };
 
   // Focus type display mapping

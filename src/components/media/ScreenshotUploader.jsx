@@ -43,7 +43,7 @@ export default function ScreenshotUploader({
     
     const successfulUrls = [];
     const failedUploads = [];
-    
+
     for (const file of imageFiles) {
       try {
         const fileUrl = await uploadImageToSupabase(file);
@@ -54,17 +54,17 @@ export default function ScreenshotUploader({
         }
       } catch (error) {
         console.error(`Upload error for ${file.name}:`, error);
-        failedUploads.push(file.name);
+        failedUploads.push(`${file.name}: ${error.message}`);
       }
     }
-    
+
     if (successfulUrls.length > 0) {
       onChange([...screenshotIds, ...successfulUrls]);
       toast.success(`${successfulUrls.length} screenshot(s) uploaded`);
     }
-    
+
     if (failedUploads.length > 0) {
-      toast.error(`Failed to upload: ${failedUploads.join(', ')}`);
+      toast.error(`Upload mislukt: ${failedUploads.join(', ')}`);
     }
     
     setIsUploading(false);

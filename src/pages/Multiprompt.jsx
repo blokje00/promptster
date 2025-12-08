@@ -300,7 +300,7 @@ export default function Multiprompt() {
       return;
     }
 
-    toast.loading(`${imageFiles.length} afbeelding(en) uploaden...`);
+    const loadingToast = toast.loading(`${imageFiles.length} afbeelding(en) uploaden...`);
 
     const successUrls = [];
     for (const file of imageFiles) {
@@ -312,9 +312,13 @@ export default function Multiprompt() {
       }
     }
 
+    toast.dismiss(loadingToast);
+
     if (successUrls.length > 0) {
       setNewThoughtScreenshots([...newThoughtScreenshots, ...successUrls]);
       toast.success(`${successUrls.length} afbeelding(en) toegevoegd`);
+    } else {
+      toast.error("Uploads mislukt. Controleer je internetverbinding.");
     }
   };
 
