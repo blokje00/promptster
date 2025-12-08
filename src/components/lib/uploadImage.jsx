@@ -13,54 +13,57 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
  * @returns {Promise<string>} - The public Supabase URL
  */
 export const uploadImageToSupabase = async (file) => {
-  const uploadTimeout = 30000;
+  console.log('[UPLOAD] Starting upload for:', file.name);
   
-  const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error("Upload timeout na 30 seconden")), uploadTimeout);
-  });
-
   try {
-    const uploadPromise = (async () => {
-      // Get current user for folder organization
-      const user = await base44.auth.me();
-      if (!user?.id) {
-        throw new Error("Gebruiker niet ingelogd");
-      }
+    // Get current user for folder organization
+    console.log('[UPLOAD] Fetching user...');
+    const user = await base44.auth.me();
+    console.log('[UPLOAD] User:', user?.id);
+    
+    if (!user?.id) {
+      throw new Error("Gebruiker niet ingelogd");
+    }
 
-      // Create unique filename with user folder
-      const timestamp = Date.now();
-      const random = crypto.randomUUID().substring(0, 8);
-      const ext = file.name.split('.').pop() || 'png';
-      const path = `${user.id}/${timestamp}_${random}.${ext}`;
+    // Create unique filename with user folder
+    const timestamp = Date.now();
+    const random = crypto.randomUUID().substring(0, 8);
+    const ext = file.name.split('.').pop() || 'png';
+    const path = `${user.id}/${timestamp}_${random}.${ext}`;
+    
+    console.log('[UPLOAD] Uploading to path:', path);
+    console.log('[UPLOAD] Supabase client:', supabase);
 
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('promptster_screenshots')
-        .upload(path, file, {
-          contentType: file.type,
-          upsert: false,
-        });
+    // Upload to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('promptster_screenshots')
+      .upload(path, file, {
+        contentType: file.type,
+        upsert: false,
+      });
 
-      if (uploadError) {
-        console.error("Supabase upload error:", uploadError);
-        throw new Error(`Upload mislukt: ${uploadError.message}`);
-      }
+    console.log('[UPLOAD] Upload result:', { uploadData, uploadError });
 
-      // Get public URL
-      const { data } = supabase.storage
-        .from('promptster_screenshots')
-        .getPublicUrl(path);
+    if (uploadError) {
+      console.error("[UPLOAD] Supabase upload error:", uploadError);
+      throw new Error(`Upload mislukt: ${uploadError.message}`);
+    }
 
-      if (!data?.publicUrl) {
-        throw new Error("Kon geen publieke URL genereren");
-      }
+    // Get public URL
+    const { data } = supabase.storage
+      .from('promptster_screenshots')
+      .getPublicUrl(path);
 
-      return data.publicUrl;
-    })();
+    console.log('[UPLOAD] Public URL data:', data);
 
-    return await Promise.race([uploadPromise, timeoutPromise]);
+    if (!data?.publicUrl) {
+      throw new Error("Kon geen publieke URL genereren");
+    }
+
+    console.log('[UPLOAD] Success! URL:', data.publicUrl);
+    return data.publicUrl;
   } catch (error) {
-    console.error("Upload failed:", error);
+    console.error("[UPLOAD] Upload failed:", error);
     throw error;
   }
 };
