@@ -4,7 +4,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
-import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks } from "lucide-react";
+import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../i18n/LanguageContext";
 import {
@@ -282,6 +282,12 @@ export default function Header() {
                   <Link to={createPageUrl("Support")} className="cursor-pointer">
                     <MessageCircle className="mr-2 h-4 w-4" />
                     <span>Support</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to={createPageUrl("Legal")} className="cursor-pointer">
+                    <FileText className="mr-2 h-4 w-4" />
+                    <span>Legal & Privacy</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
