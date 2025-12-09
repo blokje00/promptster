@@ -4,7 +4,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
-import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText, Home } from "lucide-react";
+import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText } from "lucide-react";
+import ThemeToggleButton from "@/components/theme/ThemeToggleButton";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../i18n/LanguageContext";
 import {
@@ -117,13 +118,13 @@ export default function Header() {
         </button>
 
         {/* Center: Main Navigation */}
-        <div className="flex items-center gap-0.5 bg-slate-100 rounded-xl p-1">
+        <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
           <Link to={createPageUrl("Multiprompt")}>
             <div 
               className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm transition-all ${
                 isMultiprompt 
                   ? 'bg-purple-600 text-white shadow-md font-bold' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60 font-medium'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-slate-700 font-medium'
               }`}
             >
               <Sparkles className="w-4 h-4" />
@@ -136,7 +137,7 @@ export default function Header() {
               className={`relative flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm transition-all ${
                 isChecks 
                   ? 'bg-orange-600 text-white shadow-md font-bold' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60 font-medium'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-slate-700 font-medium'
               }`}
             >
               <ListChecks className="w-4 h-4" />
@@ -154,7 +155,7 @@ export default function Header() {
               className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm transition-all ${
                 isAddItem 
                   ? 'bg-indigo-600 text-white shadow-md font-bold' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60 font-medium'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-slate-700 font-medium'
               }`}
             >
               <Plus className="w-4 h-4" />
@@ -166,8 +167,8 @@ export default function Header() {
             <div 
               className={`relative flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm transition-all ${
                 isVault 
-                  ? 'bg-slate-800 text-white shadow-md font-bold' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60 font-medium'
+                  ? 'bg-slate-800 dark:bg-slate-600 text-white shadow-md font-bold' 
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-slate-700 font-medium'
               }`}
             >
               <Archive className="w-4 h-4" />
@@ -178,21 +179,12 @@ export default function Header() {
 
         {/* Right side: Settings */}
         <div className="flex items-center gap-1">
-          <Link to={createPageUrl("Home")}>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-              title="Home & Theme Settings"
-            >
-              <Home className="w-5 h-5" />
-            </Button>
-          </Link>
+          <ThemeToggleButton />
           <Link to={createPageUrl("Features")}>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-indigo-600 font-medium hover:text-indigo-700 hover:bg-indigo-50"
+              className="text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950"
               title={t("Bekijk de features")}
             >
               Features
@@ -229,7 +221,7 @@ export default function Header() {
             <Button 
               variant="ghost" 
               size="icon"
-              className="text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+              className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
               title={t("Instellingen en AI-configuratie")}
             >
               <Settings className="w-5 h-5" />
@@ -240,7 +232,7 @@ export default function Header() {
             <Button 
               variant="ghost" 
               size="icon"
-              className={`relative ${deletedCount > 0 ? 'text-red-500 hover:text-red-600 hover:bg-red-50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'}`}
+              className={`relative ${deletedCount > 0 ? 'text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
               title="Recycle Bin"
             >
               {deletedCount > 0 ? (
@@ -254,59 +246,61 @@ export default function Header() {
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 rounded-full ml-2">
+                <Button variant="ghost" className="h-8 w-8 rounded-full ml-2 hover:bg-slate-100 dark:hover:bg-slate-800">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.avatar_url} alt={user.full_name} />
-                    <AvatarFallback>{user.full_name?.charAt(0) || "U"}</AvatarFallback>
+                    <AvatarFallback className="bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300">
+                      {user.full_name?.charAt(0) || "U"}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.full_name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
+                    <p className="text-sm font-medium leading-none text-slate-900 dark:text-slate-100">{user.full_name}</p>
+                    <p className="text-xs leading-none text-slate-500 dark:text-slate-400">
                       {user.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
                 {user.role === 'admin' && (
                   <>
                     <DropdownMenuItem asChild>
-                      <Link to={createPageUrl("AdminStats")} className="cursor-pointer text-red-600 focus:text-red-600 bg-red-50/50">
+                      <Link to={createPageUrl("AdminStats")} className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 bg-red-50/50 dark:bg-red-950/30">
                         <BarChart className="mr-2 h-4 w-4" />
                         <span>Admin Stats</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to={createPageUrl("AdminSupportTickets")} className="cursor-pointer text-red-600 focus:text-red-600 bg-red-50/50">
+                      <Link to={createPageUrl("AdminSupportTickets")} className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 bg-red-50/50 dark:bg-red-950/30">
                         <MessageCircle className="mr-2 h-4 w-4" />
                         <span>Tickets</span>
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
+                    <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
                   </>
                 )}
-                <DropdownMenuItem asChild>
-                  <Link to={createPageUrl("Support")} className="cursor-pointer">
+                <DropdownMenuItem asChild className="hover:bg-slate-100 dark:hover:bg-slate-800">
+                  <Link to={createPageUrl("Support")} className="cursor-pointer text-slate-700 dark:text-slate-300">
                     <MessageCircle className="mr-2 h-4 w-4" />
                     <span>Support</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to={createPageUrl("Legal")} className="cursor-pointer">
+                <DropdownMenuItem asChild className="hover:bg-slate-100 dark:hover:bg-slate-800">
+                  <Link to={createPageUrl("Legal")} className="cursor-pointer text-slate-700 dark:text-slate-300">
                     <FileText className="mr-2 h-4 w-4" />
                     <span>Legal & Privacy</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setShowExport(true)} className="cursor-pointer text-indigo-600 font-medium">
+                <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
+                <DropdownMenuItem onClick={() => setShowExport(true)} className="cursor-pointer text-indigo-600 dark:text-indigo-400 font-medium hover:bg-indigo-50 dark:hover:bg-indigo-950">
                   <Archive className="mr-2 h-4 w-4" />
                   <span>Export Vault</span>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
+                <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 hover:bg-red-50 dark:hover:bg-red-950">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Logout</span>
                 </DropdownMenuItem>
