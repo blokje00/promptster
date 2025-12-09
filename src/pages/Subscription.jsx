@@ -27,7 +27,7 @@ export default function SubscriptionPage() {
     setIsProcessing(true);
     try {
       if (!plan.monthly_price_id) {
-        toast.info("Neem contact op voor dit plan.");
+        toast.info("Contact us for this plan.");
         return;
       }
 
@@ -42,11 +42,11 @@ export default function SubscriptionPage() {
       if (result.data?.url) {
         window.location.href = result.data.url;
       } else {
-        toast.error("Kon geen checkout URL genereren.");
+        toast.error("Could not generate checkout URL.");
       }
     } catch (error) {
       console.error("Subscription error:", error);
-      toast.error("Er ging iets mis bij het starten van de betaling.");
+      toast.error("Something went wrong starting the payment.");
     } finally {
       setIsProcessing(false);
     }
@@ -62,11 +62,11 @@ export default function SubscriptionPage() {
       if (result.data?.url) {
         window.open(result.data.url, '_blank');
       } else {
-        toast.error("Kon klantportaal niet openen.");
+        toast.error("Could not open customer portal.");
       }
     } catch (error) {
       console.error("Portal error:", error);
-      toast.error("Er ging iets mis bij het openen van het beheerportaal.");
+      toast.error("Something went wrong opening the management portal.");
     } finally {
       setIsProcessing(false);
     }
@@ -83,27 +83,27 @@ export default function SubscriptionPage() {
         try {
           const result = await base44.functions.invoke("verifyStripeSession", { sessionId });
           if (result.data?.success) {
-             toast.success("Betaling geverifieerd! Je abonnement is actief.");
+             toast.success("Payment verified! Your subscription is active.");
              // Refresh user data
              queryClient.invalidateQueries({ queryKey: ['currentUser'] });
              // Clean URL
              window.history.replaceState({}, document.title, window.location.pathname);
           } else {
-             toast.error("Kon betaling niet verifiëren. Neem contact op met support.");
+             toast.error("Could not verify payment. Please contact support.");
           }
         } catch (error) {
           console.error("Verification error:", error);
-          toast.error("Fout bij verifiëren van betaling.");
+          toast.error("Error verifying payment.");
         } finally {
           setIsProcessing(false);
         }
       } else if (params.get("success")) {
-        // Fallback voor oude flow of als session_id mist
-        toast.success("Abonnement succesvol geactiveerd! Bedankt.");
+        // Fallback for old flow or if session_id is missing
+        toast.success("Subscription successfully activated! Thank you.");
       }
       
       if (params.get("canceled")) {
-        toast.info("Betaling geannuleerd.");
+        toast.info("Payment canceled.");
       }
     };
 
@@ -113,29 +113,29 @@ export default function SubscriptionPage() {
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Abonnementen</h1>
+        <h1 className="text-3xl font-bold text-slate-900">Subscriptions</h1>
       </div>
 
       {user?.subscription_status === 'active' && (
         <div className="mb-8 p-4 bg-indigo-50 border border-indigo-100 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <h3 className="font-semibold text-indigo-900">Je abonnement is actief!</h3>
-            <p className="text-sm text-indigo-700">Je kunt je facturen en betaalmethode beheren in het klantportaal.</p>
+            <h3 className="font-semibold text-indigo-900">Your subscription is active!</h3>
+            <p className="text-sm text-indigo-700">You can manage your invoices and payment method in the customer portal.</p>
           </div>
           <div className="flex gap-2">
             <Button onClick={async () => {
               setIsProcessing(true);
               try {
                 await base44.functions.invoke("syncSubscriptionStatus");
-                toast.success("Status gesynchroniseerd");
+                toast.success("Status synchronized");
                 queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-              } catch(e) { toast.error("Sync mislukt"); }
+              } catch(e) { toast.error("Sync failed"); }
               setIsProcessing(false);
             }} disabled={isProcessing} variant="outline" className="border-slate-200 hover:bg-slate-100 text-slate-700">
               Sync Status
             </Button>
             <Button onClick={handleManageSubscription} disabled={isProcessing} variant="outline" className="border-indigo-200 hover:bg-indigo-100 text-indigo-700">
-              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Beheer Abonnement"}
+              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Manage Subscription"}
             </Button>
           </div>
         </div>
@@ -148,12 +148,12 @@ export default function SubscriptionPage() {
               <div>
                 <div className="flex items-center gap-3 mb-1">
                   <h3 className="text-xl font-semibold">{plan.name}</h3>
-                  {!plan.is_active && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Inactief</span>}
+                  {!plan.is_active && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Inactive</span>}
                 </div>
                 <p className="text-slate-600 mb-2">{plan.description}</p>
                 <div className="flex gap-4 text-sm text-slate-500">
-                  <span>Maand: €{plan.monthly_price_amount}</span>
-                  {plan.annual_price_amount && <span>Jaar: €{plan.annual_price_amount}</span>}
+                  <span>Month: €{plan.monthly_price_amount}</span>
+                  {plan.annual_price_amount && <span>Year: €{plan.annual_price_amount}</span>}
                   <span className="font-medium text-indigo-600">Max Tasks: {plan.max_thoughts || 10}</span>
                 </div>
                 {plan.features && plan.features.length > 0 && (
@@ -167,7 +167,7 @@ export default function SubscriptionPage() {
               <div className="flex gap-2">
                 {user?.plan_id === plan.id ? (
                   <Button disabled className="bg-slate-400">
-                    Huidige Plan
+                    Current Plan
                   </Button>
                 ) : plan.monthly_price_id ? (
                   <Button 
@@ -175,7 +175,7 @@ export default function SubscriptionPage() {
                     disabled={isProcessing}
                     className="bg-indigo-600 hover:bg-indigo-700"
                   >
-                    {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Activeer"}
+                    {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Activate"}
                   </Button>
                 ) : (
                   <Button disabled variant="outline">
@@ -187,7 +187,7 @@ export default function SubscriptionPage() {
           </Card>
         ))}
         {plans.length === 0 && !isLoading && (
-          <p className="text-center text-slate-500 py-12">Nog geen abonnementen geconfigureerd.</p>
+          <p className="text-center text-slate-500 py-12">No subscription plans configured yet.</p>
         )}
       </div>
     </div>

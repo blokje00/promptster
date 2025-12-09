@@ -35,7 +35,7 @@ export default function AdminSubscription() {
     mutationFn: (data) => base44.entities.SubscriptionPlan.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscriptionPlans'] });
-      toast.success("Plan aangemaakt");
+      toast.success("Plan created");
       setDialogOpen(false);
       resetForm();
     },
@@ -45,7 +45,7 @@ export default function AdminSubscription() {
     mutationFn: ({ id, data }) => base44.entities.SubscriptionPlan.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscriptionPlans'] });
-      toast.success("Plan bijgewerkt");
+      toast.success("Plan updated");
       setDialogOpen(false);
       resetForm();
     },
@@ -55,7 +55,7 @@ export default function AdminSubscription() {
     mutationFn: (id) => base44.entities.SubscriptionPlan.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscriptionPlans'] });
-      toast.success("Plan verwijderd");
+      toast.success("Plan deleted");
     },
   });
 
@@ -118,7 +118,7 @@ export default function AdminSubscription() {
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Abonnementen Beheer</h1>
+        <h1 className="text-3xl font-bold text-slate-900">Subscription Management</h1>
         <Dialog open={dialogOpen} onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) resetForm();
@@ -126,23 +126,23 @@ export default function AdminSubscription() {
           <DialogTrigger asChild>
             <Button className="bg-indigo-600 hover:bg-indigo-700">
               <Plus className="w-4 h-4 mr-2" />
-              Nieuw Plan
+              New Plan
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-auto">
             <DialogHeader>
-              <DialogTitle>{isEditing ? "Plan Bewerken" : "Nieuw Plan"}</DialogTitle>
+              <DialogTitle>{isEditing ? "Edit Plan" : "New Plan"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div>
-                <Label>Naam</Label>
+                <Label>Name</Label>
                 <Input 
                   value={formData.name} 
                   onChange={(e) => setFormData({...formData, name: e.target.value})} 
                 />
               </div>
               <div>
-                <Label>Beschrijving</Label>
+                <Label>Description</Label>
                 <Textarea 
                   value={formData.description} 
                   onChange={(e) => setFormData({...formData, description: e.target.value})} 
@@ -150,7 +150,7 @@ export default function AdminSubscription() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Maand Prijs (€)</Label>
+                  <Label>Monthly Price (€)</Label>
                   <Input 
                     type="number" 
                     step="0.01"
@@ -159,7 +159,7 @@ export default function AdminSubscription() {
                   />
                 </div>
                 <div>
-                  <Label>Maand Price ID</Label>
+                  <Label>Monthly Price ID</Label>
                   <Input 
                     value={formData.monthly_price_id} 
                     onChange={(e) => setFormData({...formData, monthly_price_id: e.target.value})} 
@@ -169,7 +169,7 @@ export default function AdminSubscription() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Jaar Prijs (€)</Label>
+                  <Label>Annual Price (€)</Label>
                   <Input 
                     type="number" 
                     step="0.01"
@@ -178,7 +178,7 @@ export default function AdminSubscription() {
                   />
                 </div>
                 <div>
-                  <Label>Jaar Price ID</Label>
+                  <Label>Annual Price ID</Label>
                   <Input 
                     value={formData.annual_price_id} 
                     onChange={(e) => setFormData({...formData, annual_price_id: e.target.value})} 
@@ -187,7 +187,6 @@ export default function AdminSubscription() {
                 </div>
               </div>
               <div>
-                {/* Task 7: Max Thoughts Field */}
                 <Label>Max Tasks Limit</Label>
                 <Input 
                   type="number" 
@@ -196,7 +195,7 @@ export default function AdminSubscription() {
                 />
               </div>
               <div>
-                <Label>Features (komma gescheiden)</Label>
+                <Label>Features (one per line)</Label>
                 <Textarea 
                   value={formData.features.join('\n')} 
                   onChange={(e) => setFormData({...formData, features: e.target.value.split('\n').filter(f => f.trim())})} 
@@ -210,10 +209,10 @@ export default function AdminSubscription() {
                     checked={formData.is_active} 
                     onCheckedChange={(checked) => setFormData({...formData, is_active: checked})} 
                   />
-                  <Label>Actief</Label>
+                  <Label>Active</Label>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Label>Volgorde</Label>
+                  <Label>Order</Label>
                   <Input 
                     type="number" 
                     className="w-20"
@@ -224,7 +223,7 @@ export default function AdminSubscription() {
               </div>
               <Button onClick={handleSubmit} className="w-full bg-indigo-600">
                 <Save className="w-4 h-4 mr-2" />
-                Opslaan
+                Save
               </Button>
             </div>
           </DialogContent>
@@ -238,12 +237,12 @@ export default function AdminSubscription() {
               <div>
                 <div className="flex items-center gap-3 mb-1">
                   <h3 className="text-xl font-semibold">{plan.name}</h3>
-                  {!plan.is_active && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Inactief</span>}
+                  {!plan.is_active && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Inactive</span>}
                 </div>
                 <p className="text-slate-600 mb-2">{plan.description}</p>
                 <div className="flex gap-4 text-sm text-slate-500">
-                  <span>Maand: €{plan.monthly_price_amount}</span>
-                  <span>Jaar: €{plan.annual_price_amount}</span>
+                  <span>Month: €{plan.monthly_price_amount}</span>
+                  <span>Year: €{plan.annual_price_amount}</span>
                   <span className="font-medium text-indigo-600">Max Tasks: {plan.max_thoughts || 10}</span>
                 </div>
               </div>
@@ -259,7 +258,7 @@ export default function AdminSubscription() {
           </Card>
         ))}
         {plans.length === 0 && (
-          <p className="text-center text-slate-500 py-12">Nog geen abonnementen geconfigureerd.</p>
+          <p className="text-center text-slate-500 py-12">No subscription plans configured yet.</p>
         )}
       </div>
     </div>
