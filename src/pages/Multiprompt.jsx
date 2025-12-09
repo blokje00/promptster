@@ -356,7 +356,13 @@ export default function Multiprompt() {
                         onCheckedChange={templateSelection.setIncludePersonalPrefs}
                         className="sr-only"
                       />
-                      <span className="font-semibold text-slate-700">Personal Prefs</span>
+                      <a 
+                        href={createPageUrl("AIBackoffice") + "#personal-preferences"}
+                        className="font-semibold text-slate-700 hover:text-indigo-600 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Personal Prefs
+                      </a>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer group">
                       <div className={`relative w-5 h-5 rounded border-2 transition-all ${
@@ -373,7 +379,13 @@ export default function Multiprompt() {
                         onCheckedChange={templateSelection.setIncludeProjectConfig}
                         className="sr-only"
                       />
-                      <span className="font-semibold text-slate-700">Project Config</span>
+                      <a 
+                        href={createPageUrl("AIBackoffice") + "#project-config"}
+                        className="font-semibold text-slate-700 hover:text-indigo-600 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Project Config
+                      </a>
                     </label>
                   </div>
                   <PromptPreview

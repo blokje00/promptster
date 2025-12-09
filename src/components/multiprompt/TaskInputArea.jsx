@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload } from "lucide-react";
 import { projectBorderColors } from "@/components/lib/constants";
 import ScreenshotUploader from "@/components/media/ScreenshotUploader";
 import ContextSelector from "./ContextSelector";
+import { uploadImageToSupabase } from "@/components/lib/uploadImage";
+import { toast } from "sonner";
 
 export default function TaskInputArea({
   selectedProject,
@@ -24,6 +26,38 @@ export default function TaskInputArea({
   selectedProjectId,
   enableContextSuggestions
 }) {
+  const textareaRef = useRef(null);
+
+  const handleTextareaPaste = async (e) => {
+    const items = e.clipboardData.items;
+    const imageFiles = [];
+    
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1) {
+        const file = items[i].getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+    
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      
+      try {
+        const uploadedUrls = [];
+        for (const file of imageFiles) {
+          const url = await uploadImageToSupabase(file);
+          if (url) uploadedUrls.push(url);
+        }
+        
+        if (uploadedUrls.length > 0) {
+          onScreenshotsChange([...newThoughtScreenshots, ...uploadedUrls]);
+          toast.success(`${uploadedUrls.length} image(s) pasted`);
+        }
+      } catch (error) {
+        toast.error("Failed to paste image: " + error.message);
+      }
+    }
+  };
   return (
     <div 
       className={`relative border-2 rounded-lg transition-all bg-white ${
@@ -47,10 +81,12 @@ export default function TaskInputArea({
       )}
 
       <Textarea
-        placeholder={isLimitReached ? `Plan limit of ${maxThoughts} tasks reached.` : "Type task..."}
+        ref={textareaRef}
+        placeholder={isLimitReached ? `Plan limit of ${maxThoughts} tasks reached.` : "Type task... (Cmd+V to paste images)"}
         value={newThoughtContent}
         onChange={(e) => onContentChange(e.target.value)}
         onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), !isLimitReached && onAddThought())}
+        onPaste={handleTextareaPaste}
         disabled={isLimitReached}
         className="min-h-[60px] border-0 focus-visible:ring-0 resize-none"
       />
