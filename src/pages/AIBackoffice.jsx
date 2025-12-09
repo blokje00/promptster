@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { FolderTree, Settings } from "lucide-react";
 import RequireSubscription from "../components/auth/RequireSubscription";
 import { useAutosaveField } from "@/components/hooks/useAutosaveField";
@@ -37,12 +40,15 @@ const DEFAULT_PERSONAL_PREFERENCES = `# My Personal Development Preferences
 - Task format: What/Where/Why structure
 `;
 
+const DEFAULT_RETRY_MESSAGE = `This task was previously executed but not approved by the user. There are missing elements, the function doesn't work, or is invisible. Analyze again and apply improvements.`;
+
 export default function AIBackoffice() {
   const queryClient = useQueryClient();
   const [modelPreference, setModelPreference] = useState("default");
   const [enableContextSuggestions, setEnableContextSuggestions] = useState(true);
   const [settingsId, setSettingsId] = useState(null);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
+  const [isSavingRetryMessage, setIsSavingRetryMessage] = useState(false);
 
   const { data: settings = [] } = useQuery({
     queryKey: ['aiSettings'],
@@ -102,6 +108,12 @@ export default function AIBackoffice() {
     enabled: !!currentUser?.id,
   });
 
+  const { value: retryMessage, setValue: setRetryMessage, resetValue: resetRetryMessage } = useAutosaveField({
+    storageKey: `promptster:aibackoffice:retryMessage:${currentUser?.id ?? 'anon'}`,
+    initialValue: currentUser?.retry_task_message || DEFAULT_RETRY_MESSAGE,
+    enabled: !!currentUser?.id,
+  });
+
   useEffect(() => {
     if (settings.length > 0 && !settingsId) {
       const dbInstruction = settings[0].improve_prompt_instruction;
@@ -113,12 +125,21 @@ export default function AIBackoffice() {
   }, [settings, settingsId]);
 
   const [prefsLoaded, setPrefsLoaded] = useState(false);
+  const [retryMsgLoaded, setRetryMsgLoaded] = useState(false);
+  
   useEffect(() => {
     if (currentUser?.personal_preferences_markdown && !prefsLoaded) {
       setPersonalPreferences(currentUser.personal_preferences_markdown);
       setPrefsLoaded(true);
     }
   }, [currentUser, prefsLoaded]);
+
+  useEffect(() => {
+    if (currentUser?.retry_task_message && !retryMsgLoaded) {
+      setRetryMessage(currentUser.retry_task_message);
+      setRetryMsgLoaded(true);
+    }
+  }, [currentUser, retryMsgLoaded]);
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
@@ -157,6 +178,20 @@ export default function AIBackoffice() {
     }
   };
 
+  const handleSaveRetryMessage = async () => {
+    setIsSavingRetryMessage(true);
+    try {
+      await base44.auth.updateMe({ retry_task_message: retryMessage });
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      toast.success("Retry task message saved");
+      resetRetryMessage();
+    } catch (error) {
+      toast.error("Could not save retry message");
+    } finally {
+      setIsSavingRetryMessage(false);
+    }
+  };
+
   return (
     <RequireSubscription>
       <div className="p-4 md:p-8">
@@ -190,6 +225,30 @@ export default function AIBackoffice() {
                   isSaving={isSavingPreferences}
                   defaultExample={DEFAULT_PERSONAL_PREFERENCES}
                 />
+                <Card id="retry-message">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Retry Task Message</CardTitle>
+                    <p className="text-sm text-slate-600 mt-1">
+                      This message is automatically added when a task is marked as failed and sent back to Multi-Task for retry.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Textarea
+                      value={retryMessage}
+                      onChange={(e) => setRetryMessage(e.target.value)}
+                      className="min-h-[120px] font-mono text-sm"
+                      placeholder={DEFAULT_RETRY_MESSAGE}
+                    />
+                    <div className="flex gap-2">
+                      <Button onClick={handleSaveRetryMessage} disabled={isSavingRetryMessage} className="bg-indigo-600">
+                        {isSavingRetryMessage ? "Saving..." : "Save Retry Message"}
+                      </Button>
+                      <Button onClick={() => setRetryMessage(DEFAULT_RETRY_MESSAGE)} variant="outline">
+                        Reset to Default
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
                 <AIContextToggle
                   enableContextSuggestions={enableContextSuggestions}
                   setEnableContextSuggestions={setEnableContextSuggestions}

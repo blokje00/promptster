@@ -146,7 +146,8 @@ export default function Checks() {
 
       // TASK-3: If failed, immediately create a Thought to retry
       if (newStatus === 'failed') {
-        const additionalText = "\n\nThis task was previously executed but not approved by the user. There are missing elements, the function doesn't work, or is invisible. Analyze again and apply improvements.";
+        const retryMsg = currentUser?.retry_task_message || "This task was previously executed but not approved by the user. There are missing elements, the function doesn't work, or is invisible. Analyze again and apply improvements.";
+        const additionalText = `\n\n${retryMsg}`;
         
         await base44.entities.Thought.create({
           content: `[Retry] ${task.full_description || task.task_name}${additionalText}`,
