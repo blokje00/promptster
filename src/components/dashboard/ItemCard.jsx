@@ -121,10 +121,10 @@ export default function ItemCard({ item, project }) {
       className="cursor-pointer h-full"
       onClick={handleCardClick}
     >
-      <Card className={`h-full overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col ${
-        item.is_publish_version ? 'border-2 border-green-400' : 'border-slate-200'
+      <Card className={`h-full overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col bg-white dark:bg-slate-800 ${
+        item.is_publish_version ? 'border-2 border-green-400 dark:border-green-500' : 'border-slate-200 dark:border-slate-700'
       }`}>
-        <CardHeader className="p-5 border-b border-slate-100">
+        <CardHeader className="p-5 border-b border-slate-100 dark:border-slate-700">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 flex-1 min-w-0">
               <div className={`p-2 rounded-xl ${typeColors[item.type]} border`}>
@@ -149,7 +149,7 @@ export default function ItemCard({ item, project }) {
                    return null;
                 })()}
                 <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-slate-900 truncate hover:text-indigo-600 transition-colors">{item.title}</h3>
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{item.title}</h3>
                   {item.is_publish_version && (
                     <HoverCard>
                       <HoverCardTrigger asChild>
@@ -176,7 +176,7 @@ export default function ItemCard({ item, project }) {
                   )}
                 </div>
                 {item.description && (
-                  <p className="text-sm text-slate-500 mt-1 line-clamp-2">{item.description}</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{item.description}</p>
                 )}
               </div>
             </div>
@@ -268,8 +268,8 @@ export default function ItemCard({ item, project }) {
             </div>
           )}
 
-          <div className="bg-slate-900 rounded-xl p-4 max-h-48 overflow-auto flex-grow">
-            <pre className="text-xs text-slate-300 font-mono whitespace-pre-wrap break-all">
+          <div className="bg-slate-900 dark:bg-slate-950 rounded-xl p-4 max-h-48 overflow-auto flex-grow">
+            <pre className="text-xs text-slate-300 dark:text-slate-400 font-mono whitespace-pre-wrap break-all">
               {item.content.substring(0, 300)}
               {item.content.length > 300 && '...'}
             </pre>
@@ -328,7 +328,7 @@ export default function ItemCard({ item, project }) {
         </CardContent>
 
         <div className="p-5 pt-0">
-          <div className="flex gap-2 pt-2 border-t border-slate-100" onClick={handleActionClick}>
+          <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-700" onClick={handleActionClick}>
             <Button
               onClick={handleCopy}
               className="flex-1 bg-indigo-500 hover:bg-indigo-600"
