@@ -170,11 +170,11 @@ export default function AIBackoffice() {
 
           <Tabs defaultValue="settings" className="space-y-6">
             <TabsList className="bg-slate-100">
-              <TabsTrigger value="settings" className="data-[state=active]:bg-white">
+              <TabsTrigger value="settings" className="data-[state=active]:bg-white data-[state=active]:font-bold">
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
               </TabsTrigger>
-              <TabsTrigger value="upse" className="data-[state=active]:bg-white">
+              <TabsTrigger value="upse" className="data-[state=active]:bg-white data-[state=active]:font-bold">
                 <FolderTree className="w-4 h-4 mr-2" />
                 Project Structure (UPSE)
               </TabsTrigger>
