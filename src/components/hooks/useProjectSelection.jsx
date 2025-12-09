@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-export const useProjectSelection = (projects, allThoughts) => {
+export const useProjectSelection = (projects) => {
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -28,15 +28,10 @@ export const useProjectSelection = (projects, allThoughts) => {
   }, [selectedProjectId]);
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
-  
-  const getProjectCount = useCallback((pid) => {
-    return allThoughts?.filter(t => t.project_id === pid).length || 0;
-  }, [allThoughts]);
 
   return {
     selectedProjectId,
     setSelectedProjectId,
-    selectedProject,
-    getProjectCount
+    selectedProject
   };
 };

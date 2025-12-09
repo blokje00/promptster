@@ -69,7 +69,7 @@ export default function Multiprompt() {
   });
 
   // --- Custom Hooks ---
-  const { selectedProjectId, setSelectedProjectId, selectedProject, getProjectCount } = useProjectSelection(projects, []);
+  const { selectedProjectId, setSelectedProjectId, selectedProject } = useProjectSelection(projects);
 
   const {
     thoughts, allThoughts, isLoading, selectedThoughtIds, setSelectedThoughtIds,
@@ -79,6 +79,11 @@ export default function Multiprompt() {
     selectedProjectId,
     idsToAutoSelect: location.state?.retryThoughtIds
   });
+
+  // Update getProjectCount with allThoughts from useMultipromptData
+  const getProjectCount = useCallback((pid) => {
+    return allThoughts?.filter(t => t.project_id === pid).length || 0;
+  }, [allThoughts]);
 
   const templateSelection = useTemplateSelection(selectedProjectId, selectedProject);
 
