@@ -2,7 +2,7 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import PromptsterStory from "@/components/features/PromptsterStory.jsx";
-import FeatureCMSEditor from "@/components/admin/FeatureCMSEditor";
+import FeatureInlineEditor from "@/components/admin/FeatureInlineEditor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Zap, Shield, Database, Code, Cpu } from "lucide-react";
@@ -26,6 +26,8 @@ export default function Features() {
     queryKey: ['featureBlocks'],
     queryFn: () => base44.entities.FeatureBlock.list("order"),
   });
+
+  const isAdmin = currentUser?.role === 'admin';
 
   const getBlockContent = (key, fallback = "") => {
     const block = blocks.find(b => b.block_key === key);
@@ -95,33 +97,75 @@ export default function Features() {
   return (
     <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-6xl mx-auto">
-        {currentUser?.role === 'admin' && (
-          <div className="mb-8">
-            <FeatureCMSEditor />
-          </div>
-        )}
-
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            {getBlockContent('hero_title', 'Promptster Features')}
+            {isAdmin ? (
+              <FeatureInlineEditor 
+                blockKey="hero_title" 
+                currentContent={getBlockContent('hero_title', 'Promptster Features')}
+              />
+            ) : (
+              getBlockContent('hero_title', 'Promptster Features')
+            )}
           </h1>
           <p className="text-xl text-slate-600">
-            {getBlockContent('hero_subtitle', 'Everything you need to accelerate your development workflow')}
+            {isAdmin ? (
+              <FeatureInlineEditor 
+                blockKey="hero_subtitle" 
+                currentContent={getBlockContent('hero_subtitle', 'Everything you need to accelerate your development workflow')}
+              />
+            ) : (
+              getBlockContent('hero_subtitle', 'Everything you need to accelerate your development workflow')
+            )}
           </p>
         </div>
 
         <Link to={createPageUrl("Subscription")} className="block mb-16 group">
           <div className="bg-indigo-900 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 transition-colors cursor-pointer">
-            <h2 className="text-2xl font-bold mb-4">{getBlockContent('cta_title', 'Ready to start?')}</h2>
+            <h2 className="text-2xl font-bold mb-4">
+              {isAdmin ? (
+                <FeatureInlineEditor 
+                  blockKey="cta_title" 
+                  currentContent={getBlockContent('cta_title', 'Ready to start?')}
+                  className="text-white"
+                />
+              ) : (
+                getBlockContent('cta_title', 'Ready to start?')
+              )}
+            </h2>
             <p className="mb-6 text-indigo-200">
-              {getBlockContent('cta_subtitle', 'Try all features for free for 14 days.')}
+              {isAdmin ? (
+                <FeatureInlineEditor 
+                  blockKey="cta_subtitle" 
+                  currentContent={getBlockContent('cta_subtitle', 'Try all features for free for 14 days.')}
+                  className="text-indigo-200"
+                />
+              ) : (
+                getBlockContent('cta_subtitle', 'Try all features for free for 14 days.')
+              )}
             </p>
             <div className="flex justify-center gap-4">
               <Badge variant="outline" className="text-white border-white px-4 py-1">
-                {getBlockContent('badge_version', 'v0.4')}
+                {isAdmin ? (
+                  <FeatureInlineEditor 
+                    blockKey="badge_version" 
+                    currentContent={getBlockContent('badge_version', 'v0.4')}
+                    className="text-white"
+                  />
+                ) : (
+                  getBlockContent('badge_version', 'v0.4')
+                )}
               </Badge>
               <Badge variant="outline" className="text-white border-white px-4 py-1">
-                {getBlockContent('badge_uptime', 'Uptime 99.9%')}
+                {isAdmin ? (
+                  <FeatureInlineEditor 
+                    blockKey="badge_uptime" 
+                    currentContent={getBlockContent('badge_uptime', 'Uptime 99.9%')}
+                    className="text-white"
+                  />
+                ) : (
+                  getBlockContent('badge_uptime', 'Uptime 99.9%')
+                )}
               </Badge>
             </div>
           </div>
@@ -157,16 +201,50 @@ export default function Features() {
 
         <Link to={createPageUrl("Subscription")} className="block mt-16 group">
           <div className="bg-indigo-900 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 transition-colors cursor-pointer">
-            <h2 className="text-2xl font-bold mb-4">{getBlockContent('cta_title', 'Ready to start?')}</h2>
+            <h2 className="text-2xl font-bold mb-4">
+              {isAdmin ? (
+                <FeatureInlineEditor 
+                  blockKey="cta_title" 
+                  currentContent={getBlockContent('cta_title', 'Ready to start?')}
+                  className="text-white"
+                />
+              ) : (
+                getBlockContent('cta_title', 'Ready to start?')
+              )}
+            </h2>
             <p className="mb-6 text-indigo-200">
-              {getBlockContent('cta_subtitle', 'Try all features for free for 14 days.')}
+              {isAdmin ? (
+                <FeatureInlineEditor 
+                  blockKey="cta_subtitle" 
+                  currentContent={getBlockContent('cta_subtitle', 'Try all features for free for 14 days.')}
+                  className="text-indigo-200"
+                />
+              ) : (
+                getBlockContent('cta_subtitle', 'Try all features for free for 14 days.')
+              )}
             </p>
             <div className="flex justify-center gap-4">
               <Badge variant="outline" className="text-white border-white px-4 py-1">
-                {getBlockContent('badge_version', 'v0.4')}
+                {isAdmin ? (
+                  <FeatureInlineEditor 
+                    blockKey="badge_version" 
+                    currentContent={getBlockContent('badge_version', 'v0.4')}
+                    className="text-white"
+                  />
+                ) : (
+                  getBlockContent('badge_version', 'v0.4')
+                )}
               </Badge>
               <Badge variant="outline" className="text-white border-white px-4 py-1">
-                {getBlockContent('badge_uptime', 'Uptime 99.9%')}
+                {isAdmin ? (
+                  <FeatureInlineEditor 
+                    blockKey="badge_uptime" 
+                    currentContent={getBlockContent('badge_uptime', 'Uptime 99.9%')}
+                    className="text-white"
+                  />
+                ) : (
+                  getBlockContent('badge_uptime', 'Uptime 99.9%')
+                )}
               </Badge>
             </div>
           </div>
