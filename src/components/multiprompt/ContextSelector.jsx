@@ -1,135 +1,15 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { base44 } from "@/api/base44Client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles, X, FileCode, Layers, Zap, CheckCircle, Plus } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Sparkles, X, CheckCircle, Plus } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
-
-// Default Page to Component mapping (fallback)
-const DEFAULT_PAGE_COMPONENT_MAP = {
-  "**/*": ["*"],
-  Dashboard: ["ItemCard"],
-  AddItem: ["ImageUploadZone", "ZipUploadZone"],
-  ViewItem: ["FileChangesFeedback"],
-  EditItem: ["ImageUploadZone", "ZipUploadZone", "FileChangesFeedback"],
-  Multiprompt: ["ThoughtCard"],
-  AIBackoffice: ["LanguageSelector"]
-};
-
-const DEFAULT_PAGES = Object.keys(DEFAULT_PAGE_COMPONENT_MAP);
-
-const DEFAULT_DOMAINS = [
-  "UI",
-  "Data", 
-  "UploadFlow",
-  "i18n",
-  "DragDrop",
-  "PromptEngine",
-  "Routing",
-  "Styling",
-  "Performance"
-];
-
-// Keywords for AI prediction
-const PAGE_KEYWORDS = {
-  Dashboard: ["vault", "overzicht", "items", "lijst", "zoeken", "filter", "card", "favoriet"],
-  AddItem: ["nieuw", "toevoegen", "create", "aanmaken", "upload", "formulier"],
-  ViewItem: ["bekijken", "view", "detail", "tonen", "weergave", "lezen"],
-  EditItem: ["bewerken", "edit", "wijzigen", "aanpassen", "update"],
-  Multiprompt: ["thought", "taak", "gedachte", "prompt", "builder", "multi", "project", "template"],
-  AIBackoffice: ["settings", "instellingen", "ai", "taal", "language", "voorkeuren"]
-};
-
-const COMPONENT_KEYWORDS = {
-  ItemCard: ["card", "item", "kaart", "preview", "favoriet", "kopieer"],
-  ImageUploadZone: ["afbeelding", "image", "screenshot", "upload", "foto", "plaatje"],
-  ZipUploadZone: ["zip", "bestand", "file", "download", "code"],
-  FileChangesFeedback: ["feedback", "wijzigingen", "changes", "pkf", "kennis"],
-  ThoughtCard: ["thought", "gedachte", "taak", "checkbox", "focus", "drag"],
-  LanguageSelector: ["taal", "language", "nl", "en", "vertaling", "i18n"]
-};
-
-const DOMAIN_KEYWORDS = {
-  UI: ["button", "layout", "design", "visueel", "stijl", "kleur", "icon"],
-  Data: ["data", "opslaan", "laden", "entity", "database", "query"],
-  UploadFlow: ["upload", "bestand", "file", "afbeelding", "zip"],
-  i18n: ["vertaling", "taal", "language", "translate", "nl", "en"],
-  DragDrop: ["drag", "drop", "sleep", "volgorde", "reorder"],
-  PromptEngine: ["prompt", "template", "genereren", "builder", "ai"],
-  Routing: ["navigatie", "route", "pagina", "link", "url"],
-  Styling: ["css", "tailwind", "stijl", "kleur", "font", "spacing"],
-  Performance: ["snel", "performance", "laden", "optimalisatie", "cache"]
-};
-
-function calculateScore(text, keywords) {
-  const lowerText = text.toLowerCase();
-  let matches = 0;
-  for (const keyword of keywords) {
-    if (lowerText.includes(keyword)) {
-      matches++;
-    }
-  }
-  return keywords.length > 0 ? Math.min(matches / keywords.length * 1.5, 1) : 0;
-}
-
-/**
- * Voorspelt context (pagina, component, domein) op basis van keywords.
- * @param {string} text - Input tekst om te analyseren
- * @returns {Object|null} Predictie object of null
- */
-function predictContext(text) {
-  // Early returns voor performance
-  if (!text || text.length < 5) return null;
-  
-  const lowerText = text.toLowerCase();
-  
-  // Quick check: bevat de tekst überhaupt relevante keywords?
-  const hasAnyKeyword = Object.values(PAGE_KEYWORDS)
-    .flat()
-    .some(kw => lowerText.includes(kw));
-  
-  if (!hasAnyKeyword) return null;
-
-  // Calculate scores alleen als er potentieel matches zijn
-  const pageScores = Object.entries(PAGE_KEYWORDS)
-    .map(([page, keywords]) => ({
-      name: page,
-      score: calculateScore(lowerText, keywords)
-    }))
-    .filter(p => p.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
-
-  if (pageScores.length === 0) return null;
-
-  const componentScores = Object.entries(COMPONENT_KEYWORDS)
-    .map(([comp, keywords]) => ({
-      name: comp,
-      score: calculateScore(lowerText, keywords)
-    }))
-    .filter(c => c.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
-
-  const domainScores = Object.entries(DOMAIN_KEYWORDS)
-    .map(([domain, keywords]) => ({
-      name: domain,
-      score: calculateScore(lowerText, keywords)
-    }))
-    .filter(d => d.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 2);
-
-  return {
-    predictedPages: pageScores,
-    predictedComponents: componentScores,
-    predictedDomains: domainScores,
-    explanation: `Keywords in: ${text.substring(0, 50)}...`
-  };
-}
+import { 
+  DEFAULT_PAGE_COMPONENT_MAP, 
+  DEFAULT_PAGES, 
+  DEFAULT_DOMAINS,
+  predictContext 
+} from "./contextPrediction";
+import AddCustomItemDialog from "./AddCustomItemDialog";
 
 export default function ContextSelector({ 
   value = {}, 
@@ -171,18 +51,14 @@ export default function ContextSelector({
     return [...new Set([...comps, ...customComponents])];
   }, [target_page, selectedProject, customComponents]);
 
-  const handleAddItem = () => {
-    if (!newItemName.trim()) return;
-    
+  const handleAddItem = (name) => {
     if (isAddingItem === 'page') {
-      setCustomPages(prev => [...prev, newItemName.trim()]);
-      handlePageChange(newItemName.trim());
+      setCustomPages(prev => [...prev, name]);
+      handlePageChange(name);
     } else if (isAddingItem === 'component') {
-      setCustomComponents(prev => [...prev, newItemName.trim()]);
-      handleComponentChange(newItemName.trim());
+      setCustomComponents(prev => [...prev, name]);
+      handleComponentChange(name);
     }
-    
-    setNewItemName("");
     setIsAddingItem(null);
   };
 
@@ -195,22 +71,12 @@ export default function ContextSelector({
   }, [selectedProject]);
 
   // AI Prediction on text change - only if enabled
-  /**
-   * Debounced AI prediction effect.
-   * Clears prediction wanneer AI suggestions uitgeschakeld zijn.
-   */
+  // Debounced AI prediction effect
   useEffect(() => {
-    if (!enableAISuggestions) {
+    if (!enableAISuggestions || !thoughtText || thoughtText.length < 5) {
       setPrediction(null);
       setShowPrediction(false);
-      return undefined; // Explicit return voor cleanup
-    }
-    
-    // Early return voor korte teksten
-    if (!thoughtText || thoughtText.length < 5) {
-      setPrediction(null);
-      setShowPrediction(false);
-      return undefined;
+      return;
     }
 
     const timer = setTimeout(() => {
@@ -409,26 +275,12 @@ export default function ContextSelector({
       )}
 
       {/* Add Item Dialog */}
-      <Dialog open={!!isAddingItem} onOpenChange={(open) => !open && setIsAddingItem(null)}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{isAddingItem === 'page' ? (t("addNewPage") || "Nieuwe Pagina toevoegen") : (t("addNewComponent") || "Nieuwe Component toevoegen")}</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Input
-              value={newItemName}
-              onChange={(e) => setNewItemName(e.target.value)}
-              placeholder={isAddingItem === 'page' ? (t("pageName") || "Naam van pagina...") : (t("componentName") || "Naam van component...")}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddItem()}
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="secondary" onClick={() => setIsAddingItem(null)}>{t("cancel") || "Annuleren"}</Button>
-            <Button type="submit" onClick={handleAddItem}>{t("add") || "Toevoegen"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AddCustomItemDialog
+        isOpen={!!isAddingItem}
+        onClose={() => setIsAddingItem(null)}
+        type={isAddingItem}
+        onAdd={handleAddItem}
+      />
     </div>
   );
 }
