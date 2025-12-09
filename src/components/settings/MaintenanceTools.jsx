@@ -81,7 +81,7 @@ export default function MaintenanceTools({ currentUser }) {
                 size="sm"
                 className="border-red-300 text-red-700 hover:bg-red-50"
               >
-                Hard Delete Cleanup (>30 days)
+                Hard Delete Cleanup (&gt;30 days)
               </Button>
             ) : (
               <>

@@ -180,7 +180,7 @@ export function useExportLogic({ items, mode, singleItemId, dateRange, customDat
       };
 
       const timestamp = new Date().toISOString().split('T')[0];
-      const { downloadFile, generateCSV, generateJSON } = await import("@/components/lib/exportGenerators");
+      const { generateCSV, generateJSON } = await import("@/components/lib/exportGenerators");
 
       if (formatType === 'json' || formatType === 'both') {
         generateJSON(exportData, `promptster_vault_${timestamp}.json`);
