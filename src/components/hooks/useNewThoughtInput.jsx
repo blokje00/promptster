@@ -6,25 +6,52 @@ export const useNewThoughtInput = (selectedProjectId) => {
   const [newThoughtFocus, setNewThoughtFocus] = useState("both");
   const [newThoughtContext, setNewThoughtContext] = useState({});
 
-  // Load draft from localStorage
+  // TASK-2: Load draft AND screenshots per project from localStorage
   useEffect(() => {
-    const key = `promptster:draft:${selectedProjectId || 'all'}`;
-    const saved = localStorage.getItem(key);
+    const draftKey = `promptster:draft:${selectedProjectId || 'all'}`;
+    const screenshotsKey = `promptster:screenshots:${selectedProjectId || 'all'}`;
+    
+    const saved = localStorage.getItem(draftKey);
     if (saved) setNewThoughtContent(saved);
+    else setNewThoughtContent("");
+    
+    const savedScreenshots = localStorage.getItem(screenshotsKey);
+    if (savedScreenshots) {
+      try {
+        setNewThoughtScreenshots(JSON.parse(savedScreenshots));
+      } catch {
+        setNewThoughtScreenshots([]);
+      }
+    } else {
+      setNewThoughtScreenshots([]);
+    }
   }, [selectedProjectId]);
 
-  // Save draft to localStorage
+  // TASK-2: Save draft AND screenshots per project to localStorage
   useEffect(() => {
-    const key = `promptster:draft:${selectedProjectId || 'all'}`;
-    localStorage.setItem(key, newThoughtContent);
-  }, [newThoughtContent, selectedProjectId]);
+    const draftKey = `promptster:draft:${selectedProjectId || 'all'}`;
+    const screenshotsKey = `promptster:screenshots:${selectedProjectId || 'all'}`;
+    
+    if (newThoughtContent) {
+      localStorage.setItem(draftKey, newThoughtContent);
+    } else {
+      localStorage.removeItem(draftKey);
+    }
+    
+    if (newThoughtScreenshots.length > 0) {
+      localStorage.setItem(screenshotsKey, JSON.stringify(newThoughtScreenshots));
+    } else {
+      localStorage.removeItem(screenshotsKey);
+    }
+  }, [newThoughtContent, newThoughtScreenshots, selectedProjectId]);
 
   const resetInput = () => {
     setNewThoughtContent("");
-    localStorage.removeItem(`promptster:draft:${selectedProjectId || 'all'}`);
     setNewThoughtScreenshots([]);
     setNewThoughtFocus("both");
     setNewThoughtContext({});
+    localStorage.removeItem(`promptster:draft:${selectedProjectId || 'all'}`);
+    localStorage.removeItem(`promptster:screenshots:${selectedProjectId || 'all'}`);
   };
 
   return {
