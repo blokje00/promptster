@@ -120,10 +120,10 @@ export default function Header() {
         <div className="flex items-center gap-0.5 bg-slate-100 rounded-xl p-1">
           <Link to={createPageUrl("Multiprompt")}>
             <div 
-              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm transition-all ${
                 isMultiprompt 
-                  ? 'bg-purple-600 text-white shadow-md' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
+                  ? 'bg-purple-600 text-white shadow-md font-bold' 
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60 font-medium'
               }`}
             >
               <Sparkles className="w-4 h-4" />
@@ -133,10 +133,10 @@ export default function Header() {
 
           <Link to={createPageUrl("Checks")}>
             <div 
-              className={`relative flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+              className={`relative flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm transition-all ${
                 isChecks 
-                  ? 'bg-orange-600 text-white shadow-md' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
+                  ? 'bg-orange-600 text-white shadow-md font-bold' 
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60 font-medium'
               }`}
             >
               <ListChecks className="w-4 h-4" />
@@ -151,10 +151,10 @@ export default function Header() {
           
           <Link to={createPageUrl("AddItem")}>
             <div 
-              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm transition-all ${
                 isAddItem 
-                  ? 'bg-indigo-600 text-white shadow-md' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
+                  ? 'bg-indigo-600 text-white shadow-md font-bold' 
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60 font-medium'
               }`}
             >
               <Plus className="w-4 h-4" />
@@ -164,10 +164,10 @@ export default function Header() {
           
           <Link to={createPageUrl("Dashboard")}>
             <div 
-              className={`relative flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+              className={`relative flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm transition-all ${
                 isVault 
-                  ? 'bg-slate-800 text-white shadow-md' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
+                  ? 'bg-slate-800 text-white shadow-md font-bold' 
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-white/60 font-medium'
               }`}
             >
               <Archive className="w-4 h-4" />
