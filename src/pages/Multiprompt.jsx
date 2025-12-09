@@ -20,7 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Lightbulb, Layers, FileText, FolderOpen } from "lucide-react";
+import { Plus, Lightbulb, Layers, FileText, FolderOpen, CheckCircle2 } from "lucide-react";
 
 // Sub-components
 import RequireSubscription from "@/components/auth/RequireSubscription";
@@ -32,7 +32,7 @@ import TasksList from "@/components/multiprompt/TasksList";
 import TemplateSelector from "@/components/multiprompt/TemplateSelector";
 import PromptPreview from "@/components/multiprompt/PromptPreview";
 import SuccessBanner from "@/components/multiprompt/SuccessBanner";
-import { projectColors } from "@/components/lib/constants";
+import { projectColors, projectBorderColors } from "@/components/lib/constants";
 
 export default function Multiprompt() {
   const navigate = useNavigate();
@@ -335,15 +335,41 @@ export default function Multiprompt() {
                     onEndTemplateChange={templateSelection.setEndTemplateId}
                     selectedProject={selectedProject}
                   />
-                  <div className="flex gap-4 text-sm text-slate-600 px-1">
-                    <div className="flex items-center gap-2">
-                      <Checkbox checked={templateSelection.includePersonalPrefs} onCheckedChange={templateSelection.setIncludePersonalPrefs} />
-                      <span>Personal Prefs</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox checked={templateSelection.includeProjectConfig} onCheckedChange={templateSelection.setIncludeProjectConfig} />
-                      <span>Project Config</span>
-                    </div>
+                  <div className="flex gap-4 text-sm px-1">
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <div className={`relative w-5 h-5 rounded border-2 transition-all ${
+                        templateSelection.includePersonalPrefs 
+                          ? `${selectedProject ? projectBorderColors[selectedProject.color] : 'border-indigo-600'} ${selectedProject ? projectColors[selectedProject.color] : 'bg-indigo-600'}` 
+                          : 'border-slate-300 bg-white group-hover:border-slate-400'
+                      }`}>
+                        {templateSelection.includePersonalPrefs && (
+                          <CheckCircle2 className="absolute inset-0 w-full h-full text-white p-0.5" strokeWidth={3} />
+                        )}
+                      </div>
+                      <Checkbox 
+                        checked={templateSelection.includePersonalPrefs} 
+                        onCheckedChange={templateSelection.setIncludePersonalPrefs}
+                        className="sr-only"
+                      />
+                      <span className="font-semibold text-slate-700">Personal Prefs</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <div className={`relative w-5 h-5 rounded border-2 transition-all ${
+                        templateSelection.includeProjectConfig 
+                          ? `${selectedProject ? projectBorderColors[selectedProject.color] : 'border-indigo-600'} ${selectedProject ? projectColors[selectedProject.color] : 'bg-indigo-600'}` 
+                          : 'border-slate-300 bg-white group-hover:border-slate-400'
+                      }`}>
+                        {templateSelection.includeProjectConfig && (
+                          <CheckCircle2 className="absolute inset-0 w-full h-full text-white p-0.5" strokeWidth={3} />
+                        )}
+                      </div>
+                      <Checkbox 
+                        checked={templateSelection.includeProjectConfig} 
+                        onCheckedChange={templateSelection.setIncludeProjectConfig}
+                        className="sr-only"
+                      />
+                      <span className="font-semibold text-slate-700">Project Config</span>
+                    </label>
                   </div>
                   <PromptPreview
                     {...promptGeneration}
