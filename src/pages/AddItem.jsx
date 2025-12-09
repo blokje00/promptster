@@ -328,6 +328,31 @@ export default function AddItem() {
                   placeholder="Paste your code or prompt here..."
                   value={formData.content}
                   onChange={(e) => setFormData({...formData, content: e.target.value})}
+                  onPaste={async (e) => {
+                    const items = e.clipboardData?.items;
+                    if (!items) return;
+                    
+                    for (let i = 0; i < items.length; i++) {
+                      if (items[i].type.indexOf('image') !== -1) {
+                        e.preventDefault();
+                        const file = items[i].getAsFile();
+                        if (file) {
+                          try {
+                            const { uploadImageToSupabase } = await import("@/components/lib/uploadImage");
+                            const url = await uploadImageToSupabase(file);
+                            if (url) {
+                              setFormData(prev => ({
+                                ...prev,
+                                screenshot_ids: [...prev.screenshot_ids, url]
+                              }));
+                            }
+                          } catch (error) {
+                            console.error('Image paste failed:', error);
+                          }
+                        }
+                      }
+                    }
+                  }}
                   required
                   className="min-h-[300px] font-mono text-sm border-slate-200"
                 />

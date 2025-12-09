@@ -137,7 +137,7 @@ export default function Checks() {
         status: parentStatus
       });
 
-      // TASK-2 & TASK-7: If failed, immediately create a Thought to retry
+      // TASK-3: If failed, immediately create a Thought to retry
       if (newStatus === 'failed') {
         const additionalText = "\n\nThis task was previously executed but not approved by the user. There are missing elements, the function doesn't work, or is invisible. Analyze again and apply improvements.";
         
@@ -159,9 +159,10 @@ export default function Checks() {
         toast.success(`Task updated to ${newStatus}`);
       }
 
-      // Invalidate queries
+      // Invalidate queries - including thoughts to refresh Multiprompt
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['openTasksCount'] });
+      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
     } catch (error) {
       toast.error("Failed to update task");
     }
