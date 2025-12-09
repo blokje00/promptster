@@ -100,6 +100,51 @@ export const useMultipromptData = ({
     }
   });
 
+  // Trigger vision analysis for screenshots (Pro users only)
+  const triggerVisionAnalysis = useCallback(async (thoughtId, screenshotUrls) => {
+    if (!screenshotUrls || screenshotUrls.length === 0) return;
+
+    // Check if user has Pro plan
+    const plans = await base44.entities.SubscriptionPlan.list();
+    const userPlan = plans.find(p => p.id === currentUser?.plan_id);
+    if (!userPlan || userPlan.name !== 'Pro') {
+      return; // Silently skip for non-Pro users
+    }
+
+    // Update status to analyzing
+    await base44.entities.Thought.update(thoughtId, {
+      vision_analysis: { status: 'analyzing', results: [] }
+    });
+
+    try {
+      const results = [];
+      
+      // Analyze each screenshot
+      for (const url of screenshotUrls) {
+        try {
+          const response = await base44.functions.invoke('analyzeScreenshotVision', { url });
+          results.push(response.data);
+        } catch (error) {
+          console.error('Vision analysis failed for', url, error);
+          results.push({ error: error.message, sourceUrl: url });
+        }
+      }
+
+      // Save results
+      await base44.entities.Thought.update(thoughtId, {
+        vision_analysis: { status: 'completed', results }
+      });
+
+      invalidateAllThoughts();
+    } catch (error) {
+      console.error('Vision analysis error:', error);
+      await base44.entities.Thought.update(thoughtId, {
+        vision_analysis: { status: 'failed', results: [] }
+      });
+      invalidateAllThoughts();
+    }
+  }, [currentUser, invalidateAllThoughts]);
+
   const deleteThought = useMutation({
     mutationFn: async (id) => {
       await base44.entities.Thought.update(id, { 
@@ -160,6 +205,7 @@ export const useMultipromptData = ({
     toggleSelection,
     selectAll,
     deselectAll,
-    clearSelection
+    clearSelection,
+    triggerVisionAnalysis
   };
 };

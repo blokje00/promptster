@@ -103,7 +103,8 @@ export default function Multiprompt() {
     deleteThought,
     toggleSelection,
     selectAll,
-    deselectAll
+    deselectAll,
+    triggerVisionAnalysis
   } = useMultipromptData({
     currentUser,
     selectedProjectId,
@@ -245,9 +246,15 @@ export default function Multiprompt() {
       target_component: newThoughtContext.target_component,
       target_domain: newThoughtContext.target_domain,
       ai_prediction: newThoughtContext.ai_prediction,
-      created_by: currentUser.email
+      created_by: currentUser.email,
+      vision_analysis: newThoughtScreenshots.length > 0 ? { status: 'pending', results: [] } : undefined
     }, {
-      onSuccess: () => {
+      onSuccess: (newThought) => {
+        // Trigger vision analysis in background if screenshots present
+        if (newThought?.id && newThoughtScreenshots.length > 0) {
+          triggerVisionAnalysis(newThought.id, newThoughtScreenshots);
+        }
+        
         setNewThoughtContent("");
         localStorage.removeItem(`promptster:draft:${selectedProjectId || 'all'}`);
         setNewThoughtScreenshots([]);
@@ -320,7 +327,14 @@ export default function Multiprompt() {
 
   // Thought Updates (Delegates to Hook)
   const handleUpdateContent = (id, content) => updateThought.mutate({ id, data: { content } });
-  const handleUpdateScreenshots = (id, screenshotIds) => updateThought.mutate({ id, data: { screenshot_ids: screenshotIds } });
+  const handleUpdateScreenshots = (id, screenshotIds) => {
+    updateThought.mutate({ id, data: { screenshot_ids: screenshotIds } });
+    
+    // Trigger vision analysis when screenshots are added/changed
+    if (screenshotIds && screenshotIds.length > 0) {
+      triggerVisionAnalysis(id, screenshotIds);
+    }
+  };
   const handleUpdateFocus = (id, focus) => updateThought.mutate({ id, data: { focus_type: focus } });
   const handleUpdateContext = (id, ctx) => updateThought.mutate({ 
     id, 
