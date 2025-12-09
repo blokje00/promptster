@@ -103,67 +103,281 @@ export default function ExportPanel({
   }, [items, dateRange, customDate, typeFilter, checkStatusFilter, mode, singleItemId]);
 
   /**
-   * Handles data export in CSV (ZIP) or JSON format
-   * NEW CONTRACT: Backend always returns proper Response (blob), no JSON wrapping
-   * @param {"csv" | "json"} formatType
+   * Client-side export - haalt alle data op en genereert CSV + JSON bestanden
+   * @param {"csv" | "json" | "both"} formatType
    */
   const handleExport = async (formatType) => {
     setIsExporting(true);
     try {
-      const filters = {
-        dateRange,
-        typeFilter: showTypeFilter ? typeFilter : 'all',
-        checkStatusFilter: showCheckFilter ? checkStatusFilter : 'all',
-        customStart: customDate?.from?.toISOString(),
-        customEnd: customDate?.to?.toISOString()
-      };
+      // 1. FETCH ALL DATA from Base44 entities
+      const userEmail = (await base44.auth.me())?.email;
+      if (!userEmail) throw new Error("User not authenticated");
 
-      const result = await base44.functions.invoke('exportUserData', {
-        format: formatType,
-        scope: mode === 'vault' ? 'vault' : 'single_item',
-        itemId: singleItemId,
-        filters
-      });
+      const [allItems, allThoughts, allTemplates, allAISettings, allProjects] = await Promise.all([
+        base44.entities.Item.filter({ created_by: userEmail }),
+        base44.entities.Thought.filter({ created_by: userEmail }),
+        base44.entities.PromptTemplate.filter({ created_by: userEmail }),
+        base44.entities.AISettings.filter({ created_by: userEmail }),
+        base44.entities.Project.filter({ created_by: userEmail })
+      ]);
 
-      // Base44 SDK: result.response is a fetch Response object
-      let blob;
-      
-      if (result?.response && typeof result.response.blob === 'function') {
-        // Modern Base44 SDK: use response.blob()
-        blob = await result.response.blob();
-      } else if (result?.data instanceof ArrayBuffer || result?.data instanceof Uint8Array) {
-        // Older SDK: data is ArrayBuffer/Uint8Array
-        blob = new Blob([result.data], {
-          type: formatType === 'csv' ? 'application/zip' : 'application/json'
-        });
-      } else {
-        throw new Error("Unexpected response format from exportUserData");
+      // 2. APPLY FILTERS (date, type, check status)
+      let filteredItems = mode === 'single' && singleItemId 
+        ? allItems.filter(i => i.id === singleItemId)
+        : [...allItems];
+
+      // Date filter
+      if (dateRange !== 'all') {
+        const now = new Date();
+        let start, end;
+
+        switch (dateRange) {
+          case 'today':
+            start = startOfDay(now);
+            end = endOfDay(now);
+            break;
+          case '7days':
+            start = subDays(now, 7);
+            end = now;
+            break;
+          case '30days':
+            start = subDays(now, 30);
+            end = now;
+            break;
+          case 'thisMonth':
+            start = startOfMonth(now);
+            end = endOfMonth(now);
+            break;
+          case 'prevMonth':
+            start = startOfMonth(subMonths(now, 1));
+            end = endOfMonth(subMonths(now, 1));
+            break;
+          case 'custom':
+            if (customDate?.from) start = customDate.from;
+            if (customDate?.to) end = customDate.to;
+            break;
+        }
+
+        if (start) {
+          filteredItems = filteredItems.filter(i => {
+            const d = new Date(i.created_date);
+            return d >= start && (!end || d <= end);
+          });
+        }
       }
 
-      // Download
-      const fileExtension = formatType === 'csv' ? 'zip' : 'json';
-      const fileName = `promptster_export_${mode}_${new Date().toISOString().split('T')[0]}.${fileExtension}`;
-      
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-        a.remove();
-      }, 100);
-      
-      toast.success("Export completed successfully");
+      // Type filter
+      if (typeFilter !== 'all') {
+        if (typeFilter === 'multiprompt') {
+          filteredItems = filteredItems.filter(i => i.type === 'multiprompt');
+        } else if (typeFilter === 'single') {
+          filteredItems = filteredItems.filter(i => i.type !== 'multiprompt');
+        }
+      }
+
+      // 3. EXTRACT ALL CHECKS from filtered items
+      let allChecks = [];
+      filteredItems.forEach(item => {
+        if (item.task_checks && Array.isArray(item.task_checks)) {
+          item.task_checks.forEach((check, idx) => {
+            // Apply check status filter
+            const checkStatus = check.status || 'open';
+            if (checkStatusFilter === 'all' || checkStatus === checkStatusFilter) {
+              allChecks.push({
+                item_id: item.id,
+                item_title: item.title,
+                check_index: idx,
+                task_name: check.task_name || '',
+                full_description: check.full_description || '',
+                status: checkStatus,
+                is_checked: check.is_checked || false,
+                created_date: check.created_date || item.created_date,
+                updated_date: check.updated_date || item.updated_date
+              });
+            }
+          });
+        }
+      });
+
+      // 4. BUILD EXPORT DATA OBJECT
+      const exportData = {
+        metadata: {
+          exported_at: new Date().toISOString(),
+          exported_by: userEmail,
+          filters_applied: {
+            dateRange,
+            typeFilter,
+            checkStatusFilter
+          },
+          counts: {
+            items: filteredItems.length,
+            checks: allChecks.length,
+            templates: allTemplates.length,
+            ai_settings: allAISettings.length,
+            projects: allProjects.length,
+            thoughts: allThoughts.length
+          }
+        },
+        items: filteredItems.map(item => ({
+          id: item.id,
+          title: item.title,
+          type: item.type,
+          content: item.content,
+          description: item.description,
+          tags: item.tags || [],
+          language: item.language,
+          project_id: item.project_id,
+          is_favorite: item.is_favorite,
+          status: item.status,
+          created_date: item.created_date,
+          updated_date: item.updated_date,
+          is_publish_version: item.is_publish_version,
+          publish_timestamp: item.publish_timestamp,
+          publish_working_notes: item.publish_working_notes,
+          publish_reason: item.publish_reason,
+          notes: item.notes,
+          start_template_id: item.start_template_id,
+          end_template_id: item.end_template_id,
+          used_thoughts: item.used_thoughts || []
+        })),
+        checks: allChecks,
+        templates: allTemplates.map(t => ({
+          id: t.id,
+          name: t.name,
+          type: t.type,
+          content: t.content,
+          project_id: t.project_id,
+          created_date: t.created_date
+        })),
+        ai_settings: allAISettings.map(s => ({
+          id: s.id,
+          improve_prompt_instruction: s.improve_prompt_instruction,
+          model_preference: s.model_preference,
+          enable_context_suggestions: s.enable_context_suggestions,
+          created_date: s.created_date
+        })),
+        projects: allProjects.map(p => ({
+          id: p.id,
+          name: p.name,
+          color: p.color,
+          description: p.description,
+          created_date: p.created_date
+        })),
+        thoughts: allThoughts.map(t => ({
+          id: t.id,
+          content: t.content,
+          project_id: t.project_id,
+          focus_type: t.focus_type,
+          target_page: t.target_page,
+          target_component: t.target_component,
+          target_domain: t.target_domain,
+          is_deleted: t.is_deleted,
+          created_date: t.created_date
+        }))
+      };
+
+      // 5. GENERATE FILES
+      const timestamp = new Date().toISOString().split('T')[0];
+
+      if (formatType === 'json' || formatType === 'both') {
+        // JSON Export
+        const jsonBlob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        downloadBlob(jsonBlob, `promptster_vault_${timestamp}.json`);
+      }
+
+      if (formatType === 'csv' || formatType === 'both') {
+        // CSV Export - create separate CSV for each entity type
+        const csvFiles = [];
+
+        // Items CSV
+        csvFiles.push({
+          name: `items_${timestamp}.csv`,
+          content: convertToCSV(exportData.items, ['id', 'title', 'type', 'content', 'description', 'tags', 'language', 'project_id', 'is_favorite', 'status', 'created_date', 'updated_date'])
+        });
+
+        // Checks CSV
+        csvFiles.push({
+          name: `checks_${timestamp}.csv`,
+          content: convertToCSV(exportData.checks, ['item_id', 'item_title', 'check_index', 'task_name', 'full_description', 'status', 'is_checked', 'created_date', 'updated_date'])
+        });
+
+        // Templates CSV
+        csvFiles.push({
+          name: `templates_${timestamp}.csv`,
+          content: convertToCSV(exportData.templates, ['id', 'name', 'type', 'content', 'project_id', 'created_date'])
+        });
+
+        // AI Settings CSV
+        csvFiles.push({
+          name: `ai_settings_${timestamp}.csv`,
+          content: convertToCSV(exportData.ai_settings, ['id', 'improve_prompt_instruction', 'model_preference', 'enable_context_suggestions', 'created_date'])
+        });
+
+        // Projects CSV
+        csvFiles.push({
+          name: `projects_${timestamp}.csv`,
+          content: convertToCSV(exportData.projects, ['id', 'name', 'color', 'description', 'created_date'])
+        });
+
+        // Thoughts CSV
+        csvFiles.push({
+          name: `thoughts_${timestamp}.csv`,
+          content: convertToCSV(exportData.thoughts, ['id', 'content', 'project_id', 'focus_type', 'target_page', 'target_component', 'is_deleted', 'created_date'])
+        });
+
+        // Download each CSV
+        csvFiles.forEach(file => {
+          const csvBlob = new Blob([file.content], { type: 'text/csv;charset=utf-8;' });
+          downloadBlob(csvBlob, file.name);
+        });
+      }
+
+      toast.success(`Export completed: ${formatType.toUpperCase()} file(s) downloaded`);
     } catch (error) {
       console.error('Export error:', error);
       toast.error("Export failed: " + (error.message || "Unknown error"));
     } finally {
       setIsExporting(false);
     }
+  };
+
+  // Helper function to download a blob
+  const downloadBlob = (blob, filename) => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    }, 100);
+  };
+
+  // Helper function to convert array of objects to CSV
+  const convertToCSV = (data, columns) => {
+    if (!data || data.length === 0) {
+      return columns.join(',') + '\n';
+    }
+
+    const escapeCSV = (value) => {
+      if (value === null || value === undefined) return '';
+      const str = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      // Escape quotes and wrap in quotes if contains comma, quote, or newline
+      if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    };
+
+    const header = columns.join(',');
+    const rows = data.map(row => 
+      columns.map(col => escapeCSV(row[col])).join(',')
+    );
+
+    return header + '\n' + rows.join('\n');
   };
 
   const title = customTitle || (mode === 'vault' ? 'Export Vault' : 'Export This Prompt');
@@ -274,7 +488,7 @@ export default function ExportPanel({
               disabled={isExporting}
             >
               {isExporting ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 mr-2 text-green-600" />}
-              CSV Export (.zip)
+              CSV Export
             </Button>
             <Button 
               size="sm" 
