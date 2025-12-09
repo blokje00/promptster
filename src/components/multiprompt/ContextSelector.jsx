@@ -70,22 +70,12 @@ export default function ContextSelector({
     return DEFAULT_DOMAINS;
   }, [selectedProject]);
 
-  // AI Prediction on text change - only if enabled
+  // AI Prediction on text change - disabled for all users (admin feature)
   // Debounced AI prediction effect
   useEffect(() => {
-    if (!enableAISuggestions || !thoughtText || thoughtText.length < 5) {
-      setPrediction(null);
-      setShowPrediction(false);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      const pred = predictContext(thoughtText);
-      setPrediction(pred);
-      setShowPrediction(!!pred);
-    }, 500);
-
-    return () => clearTimeout(timer);
+    // Always disabled - admin feature only
+    setPrediction(null);
+    setShowPrediction(false);
   }, [thoughtText, enableAISuggestions]);
 
   const handlePageChange = (newPage) => {
