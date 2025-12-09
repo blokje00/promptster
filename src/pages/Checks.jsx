@@ -254,8 +254,7 @@ export default function Checks() {
                   ) : (
                     filteredTasks.map((task) => {
                       const project = projects.find(p => p.id === task.projectId);
-                      return (
-                      <tr key={task.id} className="hover:bg-slate-50/50 transition-colors group">
+                      return (<tr key={task.id} className="hover:bg-slate-50/50 transition-colors group">
                         <td className="px-6 py-4 align-top">
                           <div className="space-y-1">
                             <TooltipProvider>
@@ -349,8 +348,8 @@ export default function Checks() {
                             )}
                           </div>
                         </td>
-                      </tr>
-                    )})}
+                      </tr>);
+                    })
                   )}
                 </tbody>
               </table>
