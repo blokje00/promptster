@@ -289,7 +289,7 @@ export default function ThoughtCard({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <div className="h-3 w-px bg-slate-200" />
+          <div className="h-3 w-px bg-slate-200 dark:bg-slate-700" />
 
           {/* Context Selector */}
           <ContextSelector 
@@ -303,7 +303,7 @@ export default function ThoughtCard({
             thoughtText={thought.content}
           />
 
-          <div className="h-3 w-px bg-slate-200" />
+          <div className="h-3 w-px bg-slate-200 dark:bg-slate-700" />
 
           {/* Screenshots with Upload */}
           <ScreenshotUploader
