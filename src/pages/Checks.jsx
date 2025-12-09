@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { format } from "date-fns";
 import RequireSubscription from "@/components/auth/RequireSubscription";
 import { toast } from "sonner";
+import { projectColors } from "@/components/lib/constants";
 
 
 export default function Checks() {
@@ -34,6 +35,12 @@ export default function Checks() {
       return await base44.entities.Item.filter({ created_by: currentUser.email }, "-updated_date");
     },
     enabled: !!currentUser?.email,
+  });
+
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects', currentUser?.email],
+    queryFn: async () => currentUser ? await base44.entities.Project.filter({ created_by: currentUser.email }) : [],
+    enabled: !!currentUser
   });
 
   // Flatten tasks
@@ -220,31 +227,34 @@ export default function Checks() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
-                  <tr>
-                    <th className="px-6 py-3 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('task_name')}>
-                      <div className="flex items-center gap-2">
-                        Task
-                        <ArrowUpDown className="w-3 h-3" />
-                      </div>
-                    </th>
-                    <th className="px-6 py-3 w-[140px] cursor-pointer hover:bg-slate-100" onClick={() => handleSort('updated_date')}>
-                      <div className="flex items-center gap-2">
-                        Updated
-                        <ArrowUpDown className="w-3 h-3" />
-                      </div>
-                    </th>
-                    <th className="px-6 py-3 w-[120px] text-right">Actions</th>
-                  </tr>
+                 <tr>
+                   <th className="px-6 py-3 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('task_name')}>
+                     <div className="flex items-center gap-2">
+                       Task
+                       <ArrowUpDown className="w-3 h-3" />
+                     </div>
+                   </th>
+                   <th className="px-6 py-3 w-[160px]">Project</th>
+                   <th className="px-6 py-3 w-[140px] cursor-pointer hover:bg-slate-100" onClick={() => handleSort('updated_date')}>
+                     <div className="flex items-center gap-2">
+                       Updated
+                       <ArrowUpDown className="w-3 h-3" />
+                     </div>
+                   </th>
+                   <th className="px-6 py-3 w-[120px] text-right">Actions</th>
+                 </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredTasks.length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="px-6 py-12 text-center text-slate-500">
+                      <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
                         No tasks found
                       </td>
                     </tr>
                   ) : (
-                    filteredTasks.map((task) => (
+                    filteredTasks.map((task) => {
+                      const project = projects.find(p => p.id === task.projectId);
+                      return (
                       <tr key={task.id} className="hover:bg-slate-50/50 transition-colors group">
                         <td className="px-6 py-4 align-top">
                           <div className="space-y-1">
@@ -265,6 +275,15 @@ export default function Checks() {
                               </Tooltip>
                             </TooltipProvider>
                           </div>
+                        </td>
+                        <td className="px-6 py-4 align-top">
+                          {project ? (
+                            <Badge className={`${projectColors[project.color]} text-white text-xs`}>
+                              {project.name}
+                            </Badge>
+                          ) : (
+                            <span className="text-slate-400 text-xs">No project</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 align-top text-slate-500">
                           {task.updated_date ? format(new Date(task.updated_date), 'dd-MM-yyyy HH:mm') : '-'}
@@ -331,7 +350,7 @@ export default function Checks() {
                           </div>
                         </td>
                       </tr>
-                    ))
+                    )})}
                   )}
                 </tbody>
               </table>
