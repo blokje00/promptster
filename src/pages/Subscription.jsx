@@ -169,6 +169,10 @@ export default function SubscriptionPage() {
                   <Button disabled className="bg-slate-400">
                     Current Plan
                   </Button>
+                ) : !plan.is_active ? (
+                  <Button disabled variant="outline" className="text-slate-400">
+                    Not Available
+                  </Button>
                 ) : plan.monthly_price_id ? (
                   <Button 
                     onClick={() => handleSubscribe(plan)} 
