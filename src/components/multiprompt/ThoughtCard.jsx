@@ -39,6 +39,42 @@ export default function ThoughtCard({
   const [isDropActive, setIsDropActive] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  // TASK-1: Handle paste in textarea during editing
+  const handleTextareaPaste = async (e) => {
+    const items = e.clipboardData.items;
+    const imageFiles = [];
+    
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1) {
+        const file = items[i].getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+    
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      const currentScreenshots = thought.screenshot_ids || [];
+      
+      setIsUploading(true);
+      try {
+        const uploadedUrls = [];
+        for (const file of imageFiles) {
+          const url = await uploadImageToSupabase(file);
+          if (url) uploadedUrls.push(url);
+        }
+        
+        if (uploadedUrls.length > 0) {
+          onUpdateScreenshots(thought.id, [...currentScreenshots, ...uploadedUrls]);
+          toast.success(`${uploadedUrls.length} image(s) pasted`);
+        }
+      } catch (error) {
+        toast.error("Failed to paste image");
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  };
+
   // Update handlers
   const handleContentSave = () => {
     if (editedContent !== thought.content) {
@@ -220,6 +256,8 @@ export default function ThoughtCard({
               onChange={(e) => setEditedContent(e.target.value)}
               onBlur={handleContentSave}
               onKeyDown={handleKeyDown}
+              onPaste={handleTextareaPaste}
+              placeholder="Type task... (Cmd+V to paste images)"
               className="min-h-[60px] text-sm resize-none bg-white"
             />
           ) : (
