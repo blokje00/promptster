@@ -170,9 +170,9 @@ export default function ThoughtCard({
     <div 
       className={`group relative flex gap-3 p-3 rounded-lg border transition-all ${
         isSelected 
-          ? 'bg-indigo-50/50 border-indigo-200' 
-          : `bg-white ${project ? `border-${project.color}-200 hover:border-${project.color}-300` : 'border-slate-200 hover:border-indigo-300'}`
-      } ${isDropActive ? 'ring-2 ring-indigo-400 ring-offset-2 bg-indigo-50' : ''}`}
+          ? 'bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-700' 
+          : `bg-white dark:bg-slate-800 ${project ? `border-${project.color}-200 hover:border-${project.color}-300` : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600'}`
+      } ${isDropActive ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900 bg-indigo-50 dark:bg-indigo-950/50' : ''}`}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -182,7 +182,7 @@ export default function ThoughtCard({
       {showDragHandle && (
         <div 
           {...dragHandleProps}
-          className="mt-2 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing"
+          className="mt-2 text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 cursor-grab active:cursor-grabbing"
         >
           <GripVertical className="w-5 h-5" />
         </div>
@@ -195,7 +195,7 @@ export default function ThoughtCard({
             e.stopPropagation();
             onToggleSelect();
           }}
-          className={`transition-colors ${isSelected ? 'text-indigo-600' : 'text-slate-300 hover:text-slate-500'}`}
+          className={`transition-colors ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400'}`}
         >
           {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
         </button>
@@ -203,10 +203,10 @@ export default function ThoughtCard({
 
       {/* Drop Overlay */}
       {isDropActive && (
-        <div className="absolute inset-0 flex items-center justify-center bg-indigo-100/90 rounded-lg z-10 pointer-events-none">
+        <div className="absolute inset-0 flex items-center justify-center bg-indigo-100/90 dark:bg-indigo-900/80 rounded-lg z-10 pointer-events-none">
           <div className="text-center">
-            <Upload className="w-8 h-8 text-indigo-600 mx-auto mb-2 animate-bounce" />
-            <p className="text-indigo-700 font-semibold">Drop screenshots hier</p>
+            <Upload className="w-8 h-8 text-indigo-600 dark:text-indigo-400 mx-auto mb-2 animate-bounce" />
+            <p className="text-indigo-700 dark:text-indigo-300 font-semibold">Drop screenshots hier</p>
           </div>
         </div>
       )}
@@ -217,7 +217,7 @@ export default function ThoughtCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {project && (
-              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-slate-100 text-slate-600 border-slate-200">
+              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600">
                 <div className={`w-1.5 h-1.5 rounded-full mr-1.5 bg-${project.color}-500`} />
                 {project.name}
               </Badge>
@@ -231,7 +231,7 @@ export default function ThoughtCard({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600">
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
                 <MoreHorizontal className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -258,10 +258,10 @@ export default function ThoughtCard({
               onKeyDown={handleKeyDown}
               onPaste={handleTextareaPaste}
               placeholder="Type task... (Cmd+V to paste images)"
-              className="min-h-[60px] text-sm resize-none bg-white"
+              className="min-h-[60px] text-sm resize-none bg-white dark:bg-slate-900 dark:text-slate-100 dark:border-slate-600"
             />
           ) : (
-            <p className="text-sm text-slate-700 whitespace-pre-wrap break-words leading-relaxed cursor-text">
+            <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words leading-relaxed cursor-text">
               {thought.content}
             </p>
           )}
