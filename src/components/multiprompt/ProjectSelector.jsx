@@ -14,12 +14,12 @@ export default function ProjectSelector({
   getProjectCount
 }) {
   return (
-    <Card className={`mb-6 ${selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : ''}`}>
+    <Card className={`mb-6 bg-white dark:bg-slate-800 ${selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : 'border-slate-200 dark:border-slate-700'}`}>
       <CardContent className="py-4">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <FolderOpen className="w-5 h-5 text-slate-500" />
-            <span className="font-medium text-slate-700">Project:</span>
+            <FolderOpen className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+            <span className="font-medium text-slate-700 dark:text-slate-300">Project:</span>
           </div>
           <div className="flex gap-2 flex-wrap">
             <Button

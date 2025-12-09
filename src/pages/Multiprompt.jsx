@@ -238,7 +238,7 @@ export default function Multiprompt() {
             <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
               Multi-Task Builder
             </h1>
-            <p className="text-slate-600 mt-2">Collect thoughts and build comprehensive multi-task prompts</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-2">Collect thoughts and build comprehensive multi-task prompts</p>
           </div>
 
           <ProjectSelector
@@ -251,17 +251,17 @@ export default function Multiprompt() {
           />
 
           <Tabs defaultValue="build" className="space-y-6">
-            <TabsList className="bg-slate-100">
-              <TabsTrigger value="build"><Layers className="w-4 h-4 mr-2" /> Build Prompt</TabsTrigger>
-              <TabsTrigger value="templates"><FileText className="w-4 h-4 mr-2" /> Templates</TabsTrigger>
-              <TabsTrigger value="projects"><FolderOpen className="w-4 h-4 mr-2" /> My Projects</TabsTrigger>
+            <TabsList className="bg-slate-100 dark:bg-slate-800">
+              <TabsTrigger value="build" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-slate-700 dark:text-slate-300"><Layers className="w-4 h-4 mr-2" /> Build Prompt</TabsTrigger>
+              <TabsTrigger value="templates" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-slate-700 dark:text-slate-300"><FileText className="w-4 h-4 mr-2" /> Templates</TabsTrigger>
+              <TabsTrigger value="projects" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-slate-700 dark:text-slate-300"><FolderOpen className="w-4 h-4 mr-2" /> My Projects</TabsTrigger>
             </TabsList>
 
             <TabsContent value="build">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* LEFT COLUMN */}
                 <div className="space-y-4">
-                  <Card>
+                  <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                     <CardHeader className="pb-3">
                       <CardTitle className="flex items-center gap-2">
                         <Lightbulb className="w-5 h-5 text-yellow-500" />
@@ -298,10 +298,10 @@ export default function Multiprompt() {
                         </Select>
                       </div>
                       {filteredThoughts.length > 0 && (
-                        <div className="flex justify-end gap-3 text-xs font-medium text-slate-500 px-1">
-                          <button onClick={() => selectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600">Select All</button>
-                          <span className="text-slate-300">|</span>
-                          <button onClick={() => deselectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600">Deselect All</button>
+                        <div className="flex justify-end gap-3 text-xs font-medium text-slate-500 dark:text-slate-400 px-1">
+                          <button onClick={() => selectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 dark:hover:text-indigo-400">Select All</button>
+                          <span className="text-slate-300 dark:text-slate-600">|</span>
+                          <button onClick={() => deselectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 dark:hover:text-indigo-400">Deselect All</button>
                         </div>
                       )}
                       <TasksList
@@ -358,7 +358,7 @@ export default function Multiprompt() {
                       />
                       <a 
                         href={createPageUrl("AIBackoffice") + "#personal-preferences"}
-                        className="font-semibold text-slate-700 hover:text-indigo-600 transition-colors"
+                        className="font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                         onClick={(e) => e.stopPropagation()}
                       >
                         Personal Prefs
@@ -381,7 +381,7 @@ export default function Multiprompt() {
                       />
                       <a 
                         href={createPageUrl("AIBackoffice") + "#project-config"}
-                        className="font-semibold text-slate-700 hover:text-indigo-600 transition-colors"
+                        className="font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                         onClick={(e) => e.stopPropagation()}
                       >
                         Project Config
