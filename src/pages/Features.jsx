@@ -1,13 +1,51 @@
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import PromptsterStory from "@/components/features/PromptsterStory.jsx";
+import FeatureCMSEditor from "@/components/admin/FeatureCMSEditor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Zap, Shield, Database, Code, Cpu } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
+const iconMap = {
+  Database: <Database className="w-6 h-6 text-indigo-500" />,
+  Zap: <Zap className="w-6 h-6 text-yellow-500" />,
+  Code: <Code className="w-6 h-6 text-blue-500" />,
+  Shield: <Shield className="w-6 h-6 text-green-500" />,
+};
+
 export default function Features() {
-  const features = [
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+  });
+
+  const { data: blocks = [] } = useQuery({
+    queryKey: ['featureBlocks'],
+    queryFn: () => base44.entities.FeatureBlock.list("order"),
+  });
+
+  const getBlockContent = (key, fallback = "") => {
+    const block = blocks.find(b => b.block_key === key);
+    return block?.content || fallback;
+  };
+
+  const getBlockMetadata = (key, fallback = {}) => {
+    const block = blocks.find(b => b.block_key === key);
+    return block?.metadata || fallback;
+  };
+
+  // Fallback features if no CMS data
+  const features = blocks.filter(b => b.block_key.startsWith('feature_')).length > 0
+    ? blocks.filter(b => b.block_key.startsWith('feature_')).map(block => ({
+        title: block.content.split('\n')[0] || block.block_key,
+        icon: iconMap[block.metadata?.icon] || <Database className="w-6 h-6 text-indigo-500" />,
+        description: block.content.split('\n')[1] || "",
+        specs: block.metadata?.specs || []
+      }))
+    : [
     {
       title: "Prompt Management",
       icon: <Database className="w-6 h-6 text-indigo-500" />,
@@ -57,27 +95,33 @@ export default function Features() {
   return (
     <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-6xl mx-auto">
+        {currentUser?.role === 'admin' && (
+          <div className="mb-8">
+            <FeatureCMSEditor />
+          </div>
+        )}
+
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            Promptster Features
+            {getBlockContent('hero_title', 'Promptster Features')}
           </h1>
           <p className="text-xl text-slate-600">
-            Everything you need to accelerate your development workflow
+            {getBlockContent('hero_subtitle', 'Everything you need to accelerate your development workflow')}
           </p>
         </div>
 
         <Link to={createPageUrl("Subscription")} className="block mb-16 group">
           <div className="bg-indigo-900 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 transition-colors cursor-pointer">
-            <h2 className="text-2xl font-bold mb-4">Ready to start?</h2>
+            <h2 className="text-2xl font-bold mb-4">{getBlockContent('cta_title', 'Ready to start?')}</h2>
             <p className="mb-6 text-indigo-200">
-              Try all features for free for 14 days.
+              {getBlockContent('cta_subtitle', 'Try all features for free for 14 days.')}
             </p>
             <div className="flex justify-center gap-4">
               <Badge variant="outline" className="text-white border-white px-4 py-1">
-                v0.4
+                {getBlockContent('badge_version', 'v0.4')}
               </Badge>
               <Badge variant="outline" className="text-white border-white px-4 py-1">
-                Uptime 99.9%
+                {getBlockContent('badge_uptime', 'Uptime 99.9%')}
               </Badge>
             </div>
           </div>
@@ -113,16 +157,16 @@ export default function Features() {
 
         <Link to={createPageUrl("Subscription")} className="block mt-16 group">
           <div className="bg-indigo-900 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 transition-colors cursor-pointer">
-            <h2 className="text-2xl font-bold mb-4">Ready to start?</h2>
+            <h2 className="text-2xl font-bold mb-4">{getBlockContent('cta_title', 'Ready to start?')}</h2>
             <p className="mb-6 text-indigo-200">
-              Try all features for free for 14 days.
+              {getBlockContent('cta_subtitle', 'Try all features for free for 14 days.')}
             </p>
             <div className="flex justify-center gap-4">
               <Badge variant="outline" className="text-white border-white px-4 py-1">
-                v0.4
+                {getBlockContent('badge_version', 'v0.4')}
               </Badge>
               <Badge variant="outline" className="text-white border-white px-4 py-1">
-                Uptime 99.9%
+                {getBlockContent('badge_uptime', 'Uptime 99.9%')}
               </Badge>
             </div>
           </div>
