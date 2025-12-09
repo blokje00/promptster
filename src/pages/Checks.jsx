@@ -180,22 +180,22 @@ export default function Checks() {
 
   return (
     <RequireSubscription>
-      <div className="p-4 md:p-8 min-h-screen bg-slate-50/50">
+      <div className="p-4 md:p-8 min-h-screen bg-slate-50/50 dark:bg-slate-900/50">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
               Checks
             </h1>
-            <p className="text-slate-600 mt-1">Review and manage all your pending tasks</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">Review and manage all your pending tasks</p>
           </div>
 
 
 
           {/* Filters */}
-          <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="flex gap-4 w-full md:w-auto flex-1">
               <div className="relative flex-1 md:max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                 <Input 
                   placeholder="Search tasks..." 
                   value={searchQuery}
@@ -217,26 +217,26 @@ export default function Checks() {
               </Select>
             </div>
             <div className="flex items-center gap-3">
-               <div className="text-sm text-slate-500">
+               <div className="text-sm text-slate-500 dark:text-slate-400">
                  {filteredTasks.length} tasks found
                </div>
             </div>
           </div>
 
           {/* Table */}
-          <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
+                <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-medium">
                  <tr>
-                   <th className="px-6 py-3 cursor-pointer hover:bg-slate-100" onClick={() => handleSort('task_name')}>
+                   <th className="px-6 py-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('task_name')}>
                      <div className="flex items-center gap-2">
                        Task
                        <ArrowUpDown className="w-3 h-3" />
                      </div>
                    </th>
                    <th className="px-6 py-3 w-[160px]">Project</th>
-                   <th className="px-6 py-3 w-[140px] cursor-pointer hover:bg-slate-100" onClick={() => handleSort('updated_date')}>
+                   <th className="px-6 py-3 w-[140px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('updated_date')}>
                      <div className="flex items-center gap-2">
                        Updated
                        <ArrowUpDown className="w-3 h-3" />
@@ -245,26 +245,26 @@ export default function Checks() {
                    <th className="px-6 py-3 w-[120px] text-right">Actions</th>
                  </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {filteredTasks.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="px-6 py-12 text-center text-slate-500">
+                      <td colSpan="5" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                         No tasks found
                       </td>
                     </tr>
                   ) : (
                     filteredTasks.map((task) => {
                       const project = projects.find(p => p.id === task.projectId);
-                      return (<tr key={task.id} className="hover:bg-slate-50/50 transition-colors group">
+                      return (<tr key={task.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors group">
                         <td className="px-6 py-4 align-top">
                           <div className="space-y-1">
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <p className={`font-medium leading-relaxed line-clamp-3 ${
-                                    task.status === 'success' ? 'text-slate-400 line-through' : 
-                                    task.status === 'retried' ? 'text-slate-500 line-through decoration-red-500/50' : 
-                                    'text-slate-900'
+                                    task.status === 'success' ? 'text-slate-400 dark:text-slate-500 line-through' : 
+                                    task.status === 'retried' ? 'text-slate-500 dark:text-slate-400 line-through decoration-red-500/50' : 
+                                    'text-slate-900 dark:text-slate-100'
                                   }`}>
                                     {task.task_name}
                                   </p>
@@ -282,10 +282,10 @@ export default function Checks() {
                               {project.name}
                             </Badge>
                           ) : (
-                            <span className="text-slate-400 text-xs">No project</span>
+                            <span className="text-slate-400 dark:text-slate-500 text-xs">No project</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 align-top text-slate-500">
+                        <td className="px-6 py-4 align-top text-slate-500 dark:text-slate-400">
                           {task.updated_date ? format(new Date(task.updated_date), 'dd-MM-yyyy HH:mm') : '-'}
                         </td>
                         <td className="px-6 py-4 align-top text-right">
