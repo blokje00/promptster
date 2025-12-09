@@ -75,11 +75,11 @@ export default function Header() {
     await base44.auth.logout();
   };
   
-  const currentPath = location.pathname;
-  const isVault = currentPath.includes("Dashboard") || currentPath === "/" || currentPath === "";
-  const isAddItem = currentPath.includes("AddItem");
-  const isMultiprompt = currentPath.includes("Multiprompt");
-  const isChecks = currentPath.includes("Checks");
+  const currentPath = location.pathname.toLowerCase();
+  const isVault = currentPath.includes("dashboard") || currentPath === "/" || currentPath === "";
+  const isAddItem = currentPath.includes("additem");
+  const isMultiprompt = currentPath.includes("multiprompt");
+  const isChecks = currentPath.includes("checks");
   
   // Save last visited main page
   useEffect(() => {
