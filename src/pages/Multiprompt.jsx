@@ -411,7 +411,7 @@ export default function Multiprompt() {
   // Task 2 & 3: Removed auto-clear to enable autosave persistence
   // The previous useEffect clearing improvedPrompt is removed.
 
-  // AI Improve with Screenshot Analysis using backend proxy
+  // AI Improve with Screenshot Analysis - Direct InvokeLLM (Circadian pattern)
   const handleImprovePrompt = async () => {
     if (!generatedPrompt) return;
     setIsImproving(true);
@@ -419,13 +419,13 @@ export default function Multiprompt() {
       // Collect all screenshots from selected thoughts
       const selectedItems = thoughts.filter(t => selectedThoughtIds.includes(t.id));
       const allScreenshotUrls = selectedItems.flatMap(t => t.screenshot_ids || []);
-      
-      // Use backend function to handle vision analysis with proper Base64 encoding
-      const { result } = await base44.functions.invoke('analyzeScreenshotWithVision', {
+
+      // Direct InvokeLLM call with file_urls (vision analysis)
+      const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Improve this prompt:\n${generatedPrompt}\n\nIMPORTANT: Return ONLY the improved prompt content. Do not include any intro, outro, or conversational filler like "Here is the improved prompt". Just the prompt text itself.`,
-        screenshot_urls: allScreenshotUrls
+        file_urls: allScreenshotUrls.length > 0 ? allScreenshotUrls : undefined
       });
-      
+
       setImprovedPrompt(result);
       toast.success("Prompt improved");
     } catch (error) {
