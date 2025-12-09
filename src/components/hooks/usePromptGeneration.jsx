@@ -80,12 +80,28 @@ export const usePromptGeneration = ({
       const selectedItems = thoughts.filter(t => selectedThoughtIds.includes(t.id));
       const allScreenshotUrls = selectedItems.flatMap(t => t.screenshot_ids || []);
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Improve this prompt:\n${generatedPrompt}\n\nIMPORTANT: Return ONLY the improved prompt content.`,
-        file_urls: allScreenshotUrls.length > 0 ? allScreenshotUrls : undefined
+      // Call backend function with rate limiting
+      const response = await fetch('/api/functions/runPrompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: `Improve this prompt:\n${generatedPrompt}\n\nIMPORTANT: Return ONLY the improved prompt content.`,
+          file_urls: allScreenshotUrls.length > 0 ? allScreenshotUrls : undefined
+        })
       });
 
-      setImprovedPrompt(result);
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          toast.error(data.error || "Rate limit exceeded");
+        } else {
+          toast.error(data.error || "AI Improvement failed");
+        }
+        return;
+      }
+
+      setImprovedPrompt(data.result);
       toast.success("Prompt improved");
     } catch (error) {
       console.error("AI Improvement error:", error);
