@@ -83,7 +83,7 @@ export default function Dashboard() {
             <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
               My Vault
             </h1>
-            <p className="text-slate-600 mt-2">All your prompts and code in one place</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-2">All your prompts and code in one place</p>
           </div>
           <Link to={createPageUrl("AddItem")}>
             <Button className="bg-indigo-600 hover:bg-indigo-700">
@@ -95,7 +95,7 @@ export default function Dashboard() {
 
 
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-8">
           <div className="flex flex-col gap-4 mb-6">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -179,23 +179,23 @@ export default function Dashboard() {
           </div>
 
           <Tabs value={filterType} onValueChange={setFilterType}>
-            <TabsList className="bg-slate-100 flex-wrap h-auto gap-1 p-1">
-              <TabsTrigger value="all" className="data-[state=active]:bg-white text-xs sm:text-sm">
-                All <span className="ml-1 text-xs text-slate-500">({itemCounts.all})</span>
+            <TabsList className="bg-slate-100 dark:bg-slate-900 flex-wrap h-auto gap-1 p-1">
+              <TabsTrigger value="all" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                All <span className="ml-1 text-xs text-slate-500 dark:text-slate-400">({itemCounts.all})</span>
               </TabsTrigger>
-              <TabsTrigger value="prompt" className="data-[state=active]:bg-white text-xs sm:text-sm">
+              <TabsTrigger value="prompt" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
                 <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                Prompts <span className="ml-1 text-xs text-slate-500">({itemCounts.prompt})</span>
+                Prompts <span className="ml-1 text-xs text-slate-500 dark:text-slate-400">({itemCounts.prompt})</span>
               </TabsTrigger>
-              <TabsTrigger value="multiprompt" className="data-[state=active]:bg-white text-xs sm:text-sm">
-                Multi-Steps <span className="ml-1 text-xs text-slate-500">({itemCounts.multiprompt})</span>
+              <TabsTrigger value="multiprompt" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                Multi-Steps <span className="ml-1 text-xs text-slate-500 dark:text-slate-400">({itemCounts.multiprompt})</span>
               </TabsTrigger>
-              <TabsTrigger value="code" className="data-[state=active]:bg-white text-xs sm:text-sm">
+              <TabsTrigger value="code" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
                 <Code2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                Code <span className="ml-1 text-xs text-slate-500">({itemCounts.code})</span>
+                Code <span className="ml-1 text-xs text-slate-500 dark:text-slate-400">({itemCounts.code})</span>
               </TabsTrigger>
-              <TabsTrigger value="snippet" className="data-[state=active]:bg-white text-xs sm:text-sm">
-                Snippets <span className="ml-1 text-xs text-slate-500">({itemCounts.snippet})</span>
+              <TabsTrigger value="snippet" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                Snippets <span className="ml-1 text-xs text-slate-500 dark:text-slate-400">({itemCounts.snippet})</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -204,16 +204,16 @@ export default function Dashboard() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-64 bg-white rounded-2xl animate-pulse" />
+              <div key={i} className="h-64 bg-white dark:bg-slate-800 rounded-2xl animate-pulse" />
             ))}
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-slate-300">
-            <Code2 className="w-16 h-16 mx-auto text-slate-300 mb-4" />
-            <h3 className="text-xl font-semibold text-slate-600 mb-2">
+          <div className="text-center py-16 bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-600">
+            <Code2 className="w-16 h-16 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+            <h3 className="text-xl font-semibold text-slate-600 dark:text-slate-300 mb-2">
               {searchQuery ? "No items found" : "No items yet"}
             </h3>
-            <p className="text-slate-500 mb-6">
+            <p className="text-slate-500 dark:text-slate-400 mb-6">
               {searchQuery ? "Try a different search" : "Start by adding your first prompt or code snippet"}
             </p>
             <Link to={createPageUrl("AddItem")}>
