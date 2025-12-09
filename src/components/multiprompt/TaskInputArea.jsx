@@ -60,22 +60,22 @@ export default function TaskInputArea({
   };
   return (
     <div 
-      className={`relative border-2 rounded-lg transition-all bg-white ${
+      className={`relative border-2 rounded-lg transition-all bg-white dark:bg-slate-900 ${
         selectedProject 
           ? `border-dashed ${projectBorderColors[selectedProject.color]}` 
-          : 'border-slate-200'
+          : 'border-slate-200 dark:border-slate-700'
       } ${
         isDropActive 
-          ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-400 ring-offset-2' 
-          : 'focus-within:border-indigo-400'
+          ? 'border-indigo-500 dark:border-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 ring-2 ring-indigo-400 dark:ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900' 
+          : 'focus-within:border-indigo-400 dark:focus-within:border-indigo-500'
       }`}
       {...dragHandlers}
     >
       {isDropActive && (
-        <div className="absolute inset-0 flex items-center justify-center bg-indigo-100/90 rounded-lg z-20 pointer-events-none">
+        <div className="absolute inset-0 flex items-center justify-center bg-indigo-100/90 dark:bg-indigo-900/80 rounded-lg z-20 pointer-events-none">
           <div className="text-center">
-            <Upload className="w-10 h-10 text-indigo-600 mx-auto mb-2 animate-bounce" />
-            <p className="text-indigo-700 font-semibold text-lg">Drop screenshots hier</p>
+            <Upload className="w-10 h-10 text-indigo-600 dark:text-indigo-400 mx-auto mb-2 animate-bounce" />
+            <p className="text-indigo-700 dark:text-indigo-300 font-semibold text-lg">Drop screenshots hier</p>
           </div>
         </div>
       )}
@@ -88,10 +88,10 @@ export default function TaskInputArea({
         onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), !isLimitReached && onAddThought())}
         onPaste={handleTextareaPaste}
         disabled={isLimitReached}
-        className="min-h-[60px] border-0 focus-visible:ring-0 resize-none"
+        className="min-h-[60px] border-0 focus-visible:ring-0 resize-none dark:bg-slate-900 dark:text-slate-100"
       />
 
-      <div className="flex items-center gap-2 px-3 py-2 border-t border-slate-100 bg-slate-50/50 rounded-b-lg">
+      <div className="flex items-center gap-2 px-3 py-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 rounded-b-lg">
         <ScreenshotUploader
           screenshotIds={newThoughtScreenshots}
           onChange={onScreenshotsChange}
