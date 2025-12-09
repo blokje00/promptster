@@ -4,7 +4,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
-import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText } from "lucide-react";
+import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../i18n/LanguageContext";
 import {
@@ -102,7 +102,7 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 md:px-6 py-3 sticky top-0 z-50">
+    <header className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-b border-slate-200 dark:border-slate-700 px-4 md:px-6 py-3 sticky top-0 z-50 transition-colors">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Left side: Logo */}
         <button 
@@ -178,6 +178,16 @@ export default function Header() {
 
         {/* Right side: Settings */}
         <div className="flex items-center gap-1">
+          <Link to={createPageUrl("Home")}>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+              title="Home & Theme Settings"
+            >
+              <Home className="w-5 h-5" />
+            </Button>
+          </Link>
           <Link to={createPageUrl("Features")}>
             <Button 
               variant="ghost" 
