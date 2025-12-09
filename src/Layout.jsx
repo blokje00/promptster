@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import Header from "./components/layout/Header";
 import { LanguageProvider } from "./components/i18n/LanguageContext";
+import { ThemeProvider } from "./components/theme/ThemeProvider";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -28,23 +29,25 @@ export default function Layout({ children }) {
   }, []);
 
   return (
-    <LanguageProvider>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <style>{`
-          :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-          }
-        `}</style>
+    <ThemeProvider>
+      <LanguageProvider>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors">
+          <style>{`
+            :root {
+              --primary: #6366f1;
+              --primary-dark: #4f46e5;
+            }
+          `}</style>
 
-        <Header />
+          <Header />
 
-        <main>
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
-        </main>
-      </div>
-    </LanguageProvider>
+          <main>
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </main>
+        </div>
+      </LanguageProvider>
+    </ThemeProvider>
   );
 }
