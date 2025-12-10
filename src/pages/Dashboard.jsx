@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import ItemCard from "../components/dashboard/ItemCard";
-import RequireSubscription from "../components/auth/RequireSubscription";
+import AccessGuard from "../components/auth/AccessGuard";
+import TrialBanner from "../components/dashboard/TrialBanner";
 import { projectColors } from "@/components/lib/constants";
 
 export default function Dashboard() {
@@ -75,9 +76,10 @@ export default function Dashboard() {
   }), [items, searchQuery, filterType, showFavoritesOnly, showZipOnly, showPublishedOnly, showPendingCheckOnly, selectedProjectId]);
 
   return (
-    <RequireSubscription>
+    <AccessGuard>
     <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
+        <TrialBanner />
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
@@ -232,6 +234,6 @@ export default function Dashboard() {
         )}
       </div>
     </div>
-    </RequireSubscription>
+    </AccessGuard>
   );
 }

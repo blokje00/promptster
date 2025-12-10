@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { FolderTree, Settings } from "lucide-react";
-import RequireSubscription from "../components/auth/RequireSubscription";
+import AccessGuard from "../components/auth/AccessGuard";
 import { useAutosaveField } from "@/components/hooks/useAutosaveField";
 import UPSEPanel from "../components/upse/UPSEPanel";
 import MaintenanceTools from "../components/settings/MaintenanceTools";
@@ -193,7 +193,7 @@ export default function AIBackoffice() {
   };
 
   return (
-    <RequireSubscription>
+    <AccessGuard>
       <div className="p-4 md:p-8">
         <div className="max-w-5xl mx-auto">
           <div className="mb-8">
@@ -277,6 +277,6 @@ export default function AIBackoffice() {
           </Tabs>
         </div>
       </div>
-    </RequireSubscription>
+    </AccessGuard>
   );
 }

@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { MessageCircle, Send, CheckCircle, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import RequireSubscription from "../components/auth/RequireSubscription";
+import AccessGuard from "../components/auth/AccessGuard";
 import { useAutosaveField } from "@/components/hooks/useAutosaveField";
 
 export default function Support() {
@@ -81,7 +81,7 @@ export default function Support() {
   };
 
   return (
-    <RequireSubscription>
+    <AccessGuard>
       <div className="p-4 md:p-8">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
@@ -197,6 +197,6 @@ export default function Support() {
           )}
         </div>
       </div>
-    </RequireSubscription>
+    </AccessGuard>
   );
 }

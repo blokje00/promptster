@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Circle, RotateCcw, Loader2, XCircle, ArrowUpDown, Search, Filter } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
-import RequireSubscription from "@/components/auth/RequireSubscription";
+import AccessGuard from "@/components/auth/AccessGuard";
 import { toast } from "sonner";
 import { projectColors } from "@/components/lib/constants";
 
@@ -179,7 +179,7 @@ export default function Checks() {
 
 
   return (
-    <RequireSubscription>
+    <AccessGuard pageType="premium">
       <div className="p-4 md:p-8 min-h-screen bg-slate-50/50 dark:bg-slate-900/50">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
@@ -358,6 +358,6 @@ export default function Checks() {
           </div>
         </div>
       </div>
-    </RequireSubscription>
+    </AccessGuard>
   );
 }

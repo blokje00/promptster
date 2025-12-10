@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save, Star } from "lucide-react";
 import ScreenshotUploader from "../components/media/ScreenshotUploader";
 import ZipUploadZone from "../components/dashboard/ZipUploadZone";
-import RequireSubscription from "../components/auth/RequireSubscription";
+import AccessGuard from "../components/auth/AccessGuard";
 import ItemDetailsForm from "../components/items/ItemDetailsForm";
 import StatusSelector from "../components/items/StatusSelector";
 import ContentSection from "../components/items/ContentSection";
@@ -145,7 +145,7 @@ export default function AddItem() {
   };
 
   return (
-    <RequireSubscription>
+    <AccessGuard pageType="premium">
       <div className="p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-8">
@@ -257,6 +257,6 @@ export default function AddItem() {
           </form>
         </div>
       </div>
-    </RequireSubscription>
+    </AccessGuard>
   );
 }

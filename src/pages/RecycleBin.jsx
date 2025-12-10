@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import RequireSubscription from "../components/auth/RequireSubscription";
+import AccessGuard from "../components/auth/AccessGuard";
 
 export default function RecycleBin() {
   const queryClient = useQueryClient();
@@ -109,7 +109,7 @@ export default function RecycleBin() {
   });
 
   return (
-    <RequireSubscription>
+    <AccessGuard>
       <div className="p-4 md:p-8">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-8">
@@ -231,6 +231,6 @@ export default function RecycleBin() {
           )}
         </div>
       </div>
-    </RequireSubscription>
+    </AccessGuard>
   );
 }
