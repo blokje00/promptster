@@ -261,9 +261,9 @@ export default function Multiprompt() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* LEFT COLUMN */}
                 <div className="space-y-4">
-                  <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                  <Card className={`bg-white dark:bg-slate-800 ${!selectedProjectId ? 'border-2 border-slate-800 dark:border-slate-600' : selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : 'border-slate-200 dark:border-slate-700'}`}>
                     <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
                         <Lightbulb className="w-5 h-5 text-yellow-500" />
                         Tasks {selectedProject && <Badge className={projectColors[selectedProject.color]}>{selectedProject.name}</Badge>}
                       </CardTitle>
@@ -285,7 +285,7 @@ export default function Multiprompt() {
                         enableContextSuggestions={enableContextSuggestions}
                       />
                       <div className="flex gap-2">
-                        <Button onClick={handleAddThought} disabled={isLimitReached} className={`flex-1 ${selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'}`}>
+                        <Button onClick={handleAddThought} disabled={isLimitReached} className={`flex-1 ${!selectedProjectId ? 'bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600' : selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'}`}>
                           <Plus className="w-4 h-4 mr-2" /> {isLimitReached ? `Limit Reached (${maxThoughts})` : 'Task'}
                         </Button>
                         <Select value={groupBy} onValueChange={setGroupBy}>

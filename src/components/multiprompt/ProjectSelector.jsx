@@ -1,9 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FolderOpen } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { FolderOpen, Plus } from "lucide-react";
 import { projectColors, projectBorderColors } from "@/components/lib/constants";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
 
 export default function ProjectSelector({
   projects,
@@ -13,8 +19,40 @@ export default function ProjectSelector({
   allThoughtsCount,
   getProjectCount
 }) {
+  const queryClient = useQueryClient();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState("blue");
+  const [newDesc, setNewDesc] = useState("");
+
+  // Create project mutation
+  const createMutation = useMutation({
+    mutationFn: (data) => base44.entities.Project.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      setNewName("");
+      setNewDesc("");
+      setNewColor("blue");
+      setIsCreateDialogOpen(false);
+      toast.success("Project created");
+    }
+  });
+
+  const handleCreate = () => {
+    if (!newName.trim()) return;
+    createMutation.mutate({
+      name: newName,
+      color: newColor,
+      description: newDesc
+    });
+  };
+
+  // Determine if "All Projects" is selected (black theme)
+  const isAllProjectsSelected = !selectedProjectId;
+
   return (
-    <Card className={`mb-6 bg-white dark:bg-slate-800 ${selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : 'border-slate-200 dark:border-slate-700'}`}>
+    <>
+    <Card className={`mb-6 bg-white dark:bg-slate-800 ${isAllProjectsSelected ? 'border-2 border-slate-800 dark:border-slate-600' : selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : 'border-slate-200 dark:border-slate-700'}`}>
       <CardContent className="py-4">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
@@ -26,7 +64,7 @@ export default function ProjectSelector({
               variant={!selectedProjectId ? "default" : "outline"}
               size="sm"
               onClick={() => onSelectProject("")}
-              className={!selectedProjectId ? "bg-slate-700" : ""}
+              className={!selectedProjectId ? "bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600" : ""}
             >
               All Projects
               {allThoughtsCount > 0 && (
@@ -47,9 +85,64 @@ export default function ProjectSelector({
                 {p.name} ({getProjectCount(p.id)})
               </Button>
             ))}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="border-dashed border-2 hover:bg-slate-50 dark:hover:bg-slate-800"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </CardContent>
     </Card>
+
+    {/* Create Project Dialog */}
+    <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+      <DialogContent className="max-w-md bg-white dark:bg-slate-800">
+        <DialogHeader>
+          <DialogTitle className="text-slate-900 dark:text-slate-100">Create New Project</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 pt-4">
+          <Input 
+            placeholder="Project Name..." 
+            value={newName} 
+            onChange={e => setNewName(e.target.value)}
+            className="dark:bg-slate-900 dark:text-slate-100"
+          />
+          
+          <div>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 block">Color</label>
+            <div className="flex gap-2 flex-wrap">
+              {Object.keys(projectColors).map(color => (
+                <button
+                  key={color}
+                  onClick={() => setNewColor(color)}
+                  className={`w-8 h-8 rounded-full ${projectColors[color]} ${newColor === color ? 'ring-2 ring-offset-2 ring-slate-400 dark:ring-offset-slate-800' : ''}`}
+                />
+              ))}
+            </div>
+          </div>
+
+          <Textarea 
+            placeholder="Description..." 
+            value={newDesc} 
+            onChange={e => setNewDesc(e.target.value)} 
+            className="min-h-[80px] dark:bg-slate-900 dark:text-slate-100"
+          />
+          
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreate} className="bg-indigo-600 hover:bg-indigo-700" disabled={!newName}>
+              <Plus className="w-4 h-4 mr-2" /> Create
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

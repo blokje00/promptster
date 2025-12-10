@@ -95,7 +95,7 @@ export default function Features() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-8">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
@@ -108,7 +108,7 @@ export default function Features() {
               getBlockContent('hero_title', 'Promptster Features')
             )}
           </h1>
-          <p className="text-xl text-slate-600">
+          <p className="text-xl text-slate-600 dark:text-slate-400">
             {isAdmin ? (
               <FeatureInlineEditor 
                 blockKey="hero_subtitle" 
@@ -121,7 +121,7 @@ export default function Features() {
         </div>
 
         <Link to={createPageUrl("Subscription")} className="block mb-16 group">
-          <div className="bg-indigo-900 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 transition-colors cursor-pointer">
+          <div className="bg-indigo-900 dark:bg-indigo-950 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 dark:group-hover:bg-indigo-900 transition-colors cursor-pointer">
             <h2 className="text-2xl font-bold mb-4">
               {isAdmin ? (
                 <FeatureInlineEditor 
@@ -175,13 +175,13 @@ export default function Features() {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow duration-300 border-t-4 border-t-indigo-500 relative group">
+            <Card key={index} className="hover:shadow-lg transition-shadow duration-300 border-t-4 border-t-indigo-500 relative group bg-white dark:bg-slate-800">
               <CardHeader>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-slate-100 rounded-lg">
+                  <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
                     {feature.icon}
                   </div>
-                  <CardTitle className="text-xl">
+                  <CardTitle className="text-xl text-slate-900 dark:text-slate-100">
                     {isAdmin ? (
                       <FeatureInlineEditor 
                         blockKey={`feature_${index}_title`}
@@ -192,7 +192,7 @@ export default function Features() {
                     )}
                   </CardTitle>
                 </div>
-                <p className="text-slate-600 text-sm h-10">
+                <p className="text-slate-600 dark:text-slate-400 text-sm h-10">
                   {isAdmin ? (
                     <FeatureInlineEditor 
                       blockKey={`feature_${index}_description`}
@@ -206,8 +206,8 @@ export default function Features() {
               <CardContent>
                 <ul className="space-y-3">
                   {feature.specs.map((spec, i) => (
-                    <li key={i} className="flex items-center text-sm text-slate-700">
-                      <CheckCircle className="w-4 h-4 text-green-500 mr-2 shrink-0" />
+                    <li key={i} className="flex items-center text-sm text-slate-700 dark:text-slate-300">
+                      <CheckCircle className="w-4 h-4 text-green-500 dark:text-green-400 mr-2 shrink-0" />
                       {isAdmin ? (
                         <FeatureInlineEditor 
                           blockKey={`feature_${index}_spec_${i}`}
@@ -225,7 +225,7 @@ export default function Features() {
         </div>
 
         <Link to={createPageUrl("Subscription")} className="block mt-16 group">
-          <div className="bg-indigo-900 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 transition-colors cursor-pointer">
+          <div className="bg-indigo-900 dark:bg-indigo-950 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 dark:group-hover:bg-indigo-900 transition-colors cursor-pointer">
             <h2 className="text-2xl font-bold mb-4">
               {isAdmin ? (
                 <FeatureInlineEditor 
