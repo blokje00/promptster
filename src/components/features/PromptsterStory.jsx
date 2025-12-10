@@ -14,7 +14,14 @@ export default function PromptsterStory({ isAdmin = false }) {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
             </span>
-            A New Way of Building
+            {isAdmin ? (
+              <FeatureInlineEditor 
+                blockKey="intro_badge"
+                currentContent="A New Way of Building"
+              />
+            ) : (
+              "A New Way of Building"
+            )}
           </div>
           <h2 className="text-3xl font-bold text-slate-900 leading-tight">
             Building websites or webapps with AI is incredibly convenient… <span className="text-slate-400">until it suddenly isn’t.</span>
