@@ -42,6 +42,13 @@ const DEFAULT_PERSONAL_PREFERENCES = `# My Personal Development Preferences
 
 const DEFAULT_RETRY_MESSAGE = `This task was previously executed but not approved by the user. There are missing elements, the function doesn't work, or is invisible. Analyze again and apply improvements.`;
 
+// Retry message examples for "Load example" button cycling
+const RETRY_MESSAGE_EXAMPLES = [
+  "This task was previously executed but not approved by the user. Important elements are missing or incorrect. Carefully review the original instructions and deliver a complete, fully working solution.",
+  "The earlier execution of this task did not fully match the requested behavior. Some parts are missing, broken, or not visible. Re-check the full context and provide a robust, end-to-end implementation that covers all requirements.",
+  "This task was executed earlier but did not meet the required standards. Critical elements were missing, incorrect, non-functional, or not visible to the user. Re-analyze the original instructions thoroughly and deliver a fully correct, complete, operational, and clearly visible solution with no omissions."
+];
+
 export default function AIBackoffice() {
   const queryClient = useQueryClient();
   const [modelPreference, setModelPreference] = useState("default");
@@ -49,6 +56,7 @@ export default function AIBackoffice() {
   const [settingsId, setSettingsId] = useState(null);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
   const [isSavingRetryMessage, setIsSavingRetryMessage] = useState(false);
+  const [exampleIndex, setExampleIndex] = useState(0);
 
   const { data: settings = [] } = useQuery({
     queryKey: ['aiSettings'],
@@ -192,6 +200,13 @@ export default function AIBackoffice() {
     }
   };
 
+  // Load next example retry message (cycles through RETRY_MESSAGE_EXAMPLES)
+  const handleLoadExample = () => {
+    const nextMessage = RETRY_MESSAGE_EXAMPLES[exampleIndex];
+    setRetryMessage(nextMessage);
+    setExampleIndex((prev) => (prev + 1) % RETRY_MESSAGE_EXAMPLES.length);
+  };
+
   return (
     <AccessGuard>
       <div className="p-4 md:p-8">
@@ -243,8 +258,8 @@ export default function AIBackoffice() {
                       <Button onClick={handleSaveRetryMessage} disabled={isSavingRetryMessage} className="bg-indigo-600">
                         {isSavingRetryMessage ? "Saving..." : "Save Retry Message"}
                       </Button>
-                      <Button onClick={() => setRetryMessage(DEFAULT_RETRY_MESSAGE)} variant="outline">
-                        Reset to Default
+                      <Button onClick={handleLoadExample} variant="outline">
+                        Load example
                       </Button>
                     </div>
                   </CardContent>
