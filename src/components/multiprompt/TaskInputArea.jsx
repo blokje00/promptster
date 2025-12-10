@@ -44,17 +44,39 @@ export default function TaskInputArea({
       
       try {
         const uploadedUrls = [];
+        const failedUploads = [];
+        
         for (const file of imageFiles) {
-          const url = await uploadImageToSupabase(file);
-          if (url) uploadedUrls.push(url);
+          try {
+            const url = await uploadImageToSupabase(file);
+            if (url && url.startsWith('http')) {
+              uploadedUrls.push(url);
+            } else {
+              failedUploads.push('Invalid URL returned');
+            }
+          } catch (uploadError) {
+            console.error('Paste upload error:', uploadError);
+            failedUploads.push(uploadError.message);
+          }
         }
         
         if (uploadedUrls.length > 0) {
           onScreenshotsChange([...newThoughtScreenshots, ...uploadedUrls]);
-          toast.success(`${uploadedUrls.length} image(s) pasted`);
+          toast.success(`✓ ${uploadedUrls.length} image(s) pasted successfully`);
+        }
+        
+        if (failedUploads.length > 0) {
+          toast.error(`❌ Failed to paste ${failedUploads.length} image(s)`, {
+            description: failedUploads[0],
+            duration: 8000
+          });
         }
       } catch (error) {
-        toast.error("Failed to paste image: " + error.message);
+        console.error('Paste handling error:', error);
+        toast.error("Failed to paste image", {
+          description: error.message,
+          duration: 8000
+        });
       }
     }
   };

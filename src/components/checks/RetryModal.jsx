@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import ScreenshotUploader from "@/components/media/ScreenshotUploader";
+import { toast } from "sonner";
 
 /**
  * RetryModal - Guided flow for creating structured retry prompts
@@ -84,11 +85,26 @@ ${originalTask}
 
   const handleConfirm = async () => {
     if (screenshots.length === 0) {
-      return; // Button should be disabled, but extra safety
+      toast.error('Screenshot required', {
+        description: 'Please upload at least one screenshot showing the issue'
+      });
+      return;
+    }
+
+    // Verify all screenshot URLs are valid
+    const invalidUrls = screenshots.filter(url => !url || !url.startsWith('http'));
+    if (invalidUrls.length > 0) {
+      console.error('[RetryModal] Invalid screenshot URLs detected:', invalidUrls);
+      toast.error('⚠️ Invalid screenshot URLs', {
+        description: 'Some screenshots failed to upload correctly. Please re-upload.',
+        duration: 8000
+      });
+      return;
     }
 
     setIsSubmitting(true);
     try {
+      console.log('[RetryModal] Creating retry with screenshots:', screenshots);
       const structuredPrompt = generateRetryPrompt();
       await onConfirm({
         content: structuredPrompt,
@@ -96,7 +112,14 @@ ${originalTask}
         originalTask: task,
         userExplanation: userExplanation.trim()
       });
+      toast.success('✓ Retry task created successfully');
       onClose();
+    } catch (error) {
+      console.error('[RetryModal] Error creating retry:', error);
+      toast.error('Failed to create retry task', {
+        description: error.message || 'Please try again',
+        duration: 8000
+      });
     } finally {
       setIsSubmitting(false);
     }

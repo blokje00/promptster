@@ -46,25 +46,50 @@ export default function ScreenshotUploader({
 
     for (const file of imageFiles) {
       try {
+        console.log(`[ScreenshotUploader] Uploading ${file.name}...`);
         const fileUrl = await uploadImageToSupabase(file);
-        if (fileUrl) {
-          successfulUrls.push(fileUrl);
-        } else {
-          failedUploads.push(file.name);
+        
+        if (!fileUrl) {
+          console.error(`[ScreenshotUploader] Empty URL returned for ${file.name}`);
+          failedUploads.push(`${file.name}: Empty URL returned`);
+          continue;
         }
+
+        // Verify URL format
+        if (!fileUrl.startsWith('http')) {
+          console.error(`[ScreenshotUploader] Invalid URL format for ${file.name}: ${fileUrl}`);
+          failedUploads.push(`${file.name}: Invalid URL format`);
+          continue;
+        }
+
+        console.log(`[ScreenshotUploader] Successfully uploaded ${file.name}: ${fileUrl}`);
+        successfulUrls.push(fileUrl);
       } catch (error) {
-        console.error(`Upload error for ${file.name}:`, error);
+        console.error(`[ScreenshotUploader] Upload error for ${file.name}:`, error);
         failedUploads.push(`${file.name}: ${error.message}`);
       }
     }
 
     if (successfulUrls.length > 0) {
       onChange([...screenshotIds, ...successfulUrls]);
-      toast.success(`${successfulUrls.length} screenshot(s) uploaded`);
+      toast.success(`✓ ${successfulUrls.length} screenshot(s) uploaded successfully`, {
+        description: successfulUrls.length === 1 ? "Screenshot is ready" : "All screenshots are ready"
+      });
     }
 
     if (failedUploads.length > 0) {
-      toast.error(`Upload mislukt: ${failedUploads.join(', ')}`);
+      console.error('[ScreenshotUploader] Failed uploads:', failedUploads);
+      toast.error(`❌ Upload failed for ${failedUploads.length} file(s)`, {
+        description: failedUploads.join(', '),
+        duration: 8000
+      });
+    }
+
+    if (successfulUrls.length === 0 && failedUploads.length > 0) {
+      toast.error('⚠️ All uploads failed', {
+        description: 'Please try again or use a different image format',
+        duration: 10000
+      });
     }
     
     setIsUploading(false);
