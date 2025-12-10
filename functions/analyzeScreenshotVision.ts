@@ -15,12 +15,18 @@ export interface VisionResult {
   height: number;
   summary: string;
   regions: VisionRegion[];
+  // Level 3 fields (optional)
+  semanticBlocks?: any[];
+  layoutRelations?: any[];
+  // Level 4 fields (optional)
+  visionStructure?: any;
   metadata: {
     processingTime: number;
     ocrAvailable: boolean;
     layoutAvailable: boolean;
     classificationAvailable: boolean;
     analysisLevel?: string;
+    ocrLevel?: string;
     error?: string;
   };
 }
@@ -60,12 +66,14 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
-    // Create vision pipeline with fallback support
+    // Create vision pipeline with Level 3 & 4 support
     const pipeline = new VisionPipeline({
       timeoutMs: 30000,
       enableOCR: true,
       enableLayout: true,
-      enableClassification: true
+      enableClassification: true,
+      enableSemanticAnalysis: true,     // Level 3
+      enableComponentDetection: true    // Level 4
     });
 
     const result = await pipeline.analyze(url);

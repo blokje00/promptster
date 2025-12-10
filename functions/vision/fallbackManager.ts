@@ -2,6 +2,9 @@ import { fetchAndDecodeImage, normalizeImageSize } from "./imageDecoder.ts";
 import { performOCR, terminateOCR } from "./ocrEngine.ts";
 import { detectRegionsFromOCR } from "./layoutDetector.ts";
 import { classifyRegionsHeuristic } from "./classifier.ts";
+import { analyzeSemanticStructure, type SemanticOCRResult } from "./semanticAnalyzer.ts";
+import { detectComponents, type VisionStructure } from "./componentClassifier.ts";
+import { OCRLevel } from "./ocrConfig.ts";
 import type { VisionResult, VisionRegion } from "../analyzeScreenshotVision.ts";
 
 export enum AnalysisLevel {
@@ -15,6 +18,8 @@ export interface FallbackConfig {
   enableOCR: boolean;
   enableLayout: boolean;
   enableClassification: boolean;
+  enableSemanticAnalysis: boolean;  // Level 3
+  enableComponentDetection: boolean; // Level 4
   timeoutMs: number;
 }
 
@@ -27,6 +32,8 @@ export class VisionPipeline {
       enableOCR: true,
       enableLayout: true,
       enableClassification: true,
+      enableSemanticAnalysis: true,  // Level 3 enabled by default
+      enableComponentDetection: true, // Level 4 enabled by default
       timeoutMs: 30000,
       ...config
     };
@@ -62,7 +69,7 @@ export class VisionPipeline {
         }
       }
 
-      // Try Classification
+      // Try Classification (Level 2.5)
       if (this.config.enableClassification && regions.length > 0) {
         try {
           regions = classifyRegionsHeuristic(regions);
@@ -71,9 +78,29 @@ export class VisionPipeline {
         }
       }
 
+      // Level 3: Semantic Analysis
+      let semanticResult: SemanticOCRResult | null = null;
+      if (this.config.enableSemanticAnalysis && ocrResult) {
+        try {
+          semanticResult = analyzeSemanticStructure(ocrResult, normalized);
+        } catch (error) {
+          console.warn('Semantic analysis failed:', error);
+        }
+      }
+
+      // Level 4: Component Detection
+      let visionStructure: VisionStructure | null = null;
+      if (this.config.enableComponentDetection && semanticResult) {
+        try {
+          visionStructure = detectComponents(semanticResult.semanticBlocks, normalized);
+        } catch (error) {
+          console.warn('Component detection failed:', error);
+        }
+      }
+
       const processingTime = Date.now() - startTime;
       
-      return this.buildResult(url, normalized, ocrResult, regions, processingTime);
+      return this.buildResult(url, normalized, ocrResult, regions, processingTime, semanticResult, visionStructure);
     } catch (error) {
       this.level = AnalysisLevel.FAILED;
       return this.buildErrorResult(url, error, Date.now() - startTime);
@@ -97,8 +124,23 @@ export class VisionPipeline {
     }
   }
 
-  private buildResult(url: string, imageData: any, ocrResult: any, regions: any[], processingTime: number): VisionResult {
-    const summary = this.generateLevelAwareSummary(imageData, ocrResult, regions);
+  private buildResult(
+    url: string, 
+    imageData: any, 
+    ocrResult: any, 
+    regions: any[], 
+    processingTime: number,
+    semanticResult?: SemanticOCRResult | null,
+    visionStructure?: VisionStructure | null
+  ): VisionResult {
+    const summary = this.generateLevelAwareSummary(imageData, ocrResult, regions, semanticResult, visionStructure);
+    
+    // Determine OCR level achieved
+    let ocrLevel = OCRLevel.BASIC;
+    if (ocrResult && regions.length > 0) ocrLevel = OCRLevel.LEVEL_2;
+    if (regions.some((r: any) => r.role)) ocrLevel = OCRLevel.LEVEL_2_5;
+    if (semanticResult) ocrLevel = OCRLevel.LEVEL_3;
+    if (visionStructure) ocrLevel = OCRLevel.LEVEL_4;
     
     return {
       sourceUrl: url,
@@ -112,12 +154,18 @@ export class VisionPipeline {
         role: r.role,
         confidence: r.confidence
       })),
+      // Level 3 data (optional)
+      semanticBlocks: semanticResult?.semanticBlocks,
+      layoutRelations: semanticResult?.layoutRelations,
+      // Level 4 data (optional)
+      visionStructure: visionStructure,
       metadata: {
         processingTime,
         ocrAvailable: !!ocrResult,
         layoutAvailable: regions.length > 0,
         classificationAvailable: regions.some((r: any) => r.role),
-        analysisLevel: this.level
+        analysisLevel: this.level,
+        ocrLevel
       }
     };
   }
@@ -140,7 +188,13 @@ export class VisionPipeline {
     };
   }
 
-  private generateLevelAwareSummary(imageData: any, ocrResult: any, regions: any[]): string {
+  private generateLevelAwareSummary(
+    imageData: any, 
+    ocrResult: any, 
+    regions: any[],
+    semanticResult?: SemanticOCRResult | null,
+    visionStructure?: VisionStructure | null
+  ): string {
     const buttonCount = regions.filter((r: any) => r.role === 'button').length;
     const headingCount = regions.filter((r: any) => r.role === 'heading').length;
     const inputCount = regions.filter((r: any) => r.role === 'input').length;
@@ -152,13 +206,25 @@ export class VisionPipeline {
       summary += `Contains ${wordCount} words. `;
     }
     
-    const components = [];
-    if (buttonCount > 0) components.push(`${buttonCount} buttons`);
-    if (headingCount > 0) components.push(`${headingCount} headings`);
-    if (inputCount > 0) components.push(`${inputCount} inputs`);
-    
-    if (components.length > 0) {
-      summary += components.join(', ') + '.';
+    // Level 3/4 summary
+    if (visionStructure) {
+      summary += `[Level 4] Detected ${visionStructure.metadata.componentCount} UI components: `;
+      summary += visionStructure.metadata.detectedTypes.slice(0, 5).join(', ');
+      if (visionStructure.metadata.detectedTypes.length > 5) {
+        summary += `, and ${visionStructure.metadata.detectedTypes.length - 5} more.`;
+      }
+    } else if (semanticResult) {
+      summary += `[Level 3] ${semanticResult.metadata.blockCount} semantic blocks with ${semanticResult.metadata.relationshipCount} relationships. `;
+    } else {
+      // Level 2 summary
+      const components = [];
+      if (buttonCount > 0) components.push(`${buttonCount} buttons`);
+      if (headingCount > 0) components.push(`${headingCount} headings`);
+      if (inputCount > 0) components.push(`${inputCount} inputs`);
+      
+      if (components.length > 0) {
+        summary += components.join(', ') + '.';
+      }
     }
 
     return summary.trim();
