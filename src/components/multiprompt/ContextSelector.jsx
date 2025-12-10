@@ -156,7 +156,7 @@ export default function ContextSelector({
         </button>
       )}
       
-      {/* Selectors - always show all 3 dropdowns */}
+      {/* Selectors - Page first, then Component, then Domain (Design+Logic moved elsewhere) */}
       <div className="flex items-center gap-1">
         <Select 
           value={target_page || ""} 

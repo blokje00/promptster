@@ -462,9 +462,9 @@ export default function Legal() {
                       <p className="font-medium text-indigo-900">Promptster follows industry-standard security practices to protect your data.</p>
                     </div>
                     
-                    <div className="bg-slate-50 p-4 rounded-lg">
-                      <h3 className="text-lg font-bold text-slate-900 mb-3">🔐 Technical Measures</h3>
-                      <ul className="space-y-2 text-slate-700">
+                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3">🔐 Technical Measures</h3>
+                      <ul className="space-y-2 text-slate-700 dark:text-slate-300">
                         <li>• <strong>Encrypted storage:</strong> AES-256</li>
                         <li>• <strong>Encryption in transit:</strong> SSL/TLS</li>
                         <li>• <strong>Access control:</strong> Role-based (RBAC)</li>
@@ -474,6 +474,52 @@ export default function Legal() {
                         <li>• <strong>Backups:</strong> Automated and encrypted</li>
                         <li>• <strong>Authentication:</strong> Secure OAuth 2.0</li>
                       </ul>
+                    </div>
+                    
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3">⚡ Rate Limiting & Abuse Prevention</h3>
+                      <p className="text-slate-700 dark:text-slate-300 mb-3">
+                        To prevent abuse, we limit the number of actions a user can perform in a short time.
+                      </p>
+                      <ul className="space-y-2 text-slate-700 dark:text-slate-300">
+                        <li>• <strong>Login attempts:</strong> Limited on repeated failures</li>
+                        <li>• <strong>Prompt execution:</strong> Basic limit per minute per user</li>
+                        <li>• <strong>Task creation:</strong> Rate limited to ensure platform stability</li>
+                      </ul>
+                      <p className="text-slate-600 dark:text-slate-400 mt-3 text-sm">
+                        This ensures performance, stability, and reduces the risk of brute-force attacks and automated abuse.
+                      </p>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3">💾 Backups & Data Retention</h3>
+                      <p className="text-slate-700 dark:text-slate-300 mb-3">
+                        Our data is stored on a secure platform with periodic database backups.
+                      </p>
+                      <ul className="space-y-2 text-slate-700 dark:text-slate-300">
+                        <li>• <strong>Active accounts:</strong> We retain your projects, prompts, checks, screenshots and billing data</li>
+                        <li>• <strong>After cancellation:</strong> Account deactivated, data retained for 90 days for reactivation or export</li>
+                        <li>• <strong>After 90 days:</strong> Work data deleted or anonymized</li>
+                        <li>• <strong>Billing data:</strong> Retained longer due to legal (tax) obligations</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3">📋 Logging & Privacy</h3>
+                      <p className="text-slate-700 dark:text-slate-300 mb-3">
+                        For security and debugging, we log a limited number of events:
+                      </p>
+                      <ul className="space-y-2 text-slate-700 dark:text-slate-300">
+                        <li>• <strong>Login attempts:</strong> Success/failure tracking</li>
+                        <li>• <strong>Subscription changes:</strong> Billing events</li>
+                        <li>• <strong>Error logs:</strong> Application and external API errors</li>
+                      </ul>
+                      <p className="text-indigo-700 dark:text-indigo-400 font-medium mt-3 text-sm">
+                        ✓ We do NOT log passwords, credit card details, or full prompt content in technical logs
+                      </p>
+                      <p className="text-slate-600 dark:text-slate-400 mt-2 text-sm">
+                        We only collect and retain data necessary to deliver the service, improve quality, and comply with legal obligations.
+                      </p>
                     </div>
                     
                     <div>

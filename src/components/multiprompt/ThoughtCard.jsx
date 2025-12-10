@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckSquare, Square, Trash2, MoreHorizontal, GripVertical, Upload } from "lucide-react";
+import { CheckSquare, Square, Trash2, MoreHorizontal, GripVertical, Upload, ChevronDown, ChevronUp } from "lucide-react";
 import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 import { toast } from "sonner";
 import {
@@ -15,6 +15,52 @@ import {
 } from "@/components/ui/dropdown-menu";
 import ContextSelector from "./ContextSelector";
 import ScreenshotUploader from "../media/ScreenshotUploader";
+
+/**
+ * CollapsibleContent - Shows task content with auto-collapse for long text
+ */
+function CollapsibleContent({ content }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const lines = content.split('\n');
+  const needsCollapse = lines.length > 4;
+
+  if (!needsCollapse) {
+    return (
+      <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words leading-relaxed cursor-text">
+        {content}
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className={`text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words leading-relaxed cursor-text ${
+        isExpanded ? '' : 'line-clamp-4'
+      }`}>
+        {content}
+      </p>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsExpanded(!isExpanded);
+        }}
+        className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
+      >
+        {isExpanded ? (
+          <>
+            <ChevronUp className="w-3 h-3" />
+            Show less
+          </>
+        ) : (
+          <>
+            <ChevronDown className="w-3 h-3" />
+            Show more
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
 
 /**
  * ThoughtCard - UI Component
@@ -261,9 +307,7 @@ export default function ThoughtCard({
               className="min-h-[60px] text-sm resize-none bg-white dark:bg-slate-900 dark:text-slate-100 dark:border-slate-600"
             />
           ) : (
-            <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words leading-relaxed cursor-text">
-              {thought.content}
-            </p>
+            <CollapsibleContent content={thought.content} />
           )}
         </div>
 

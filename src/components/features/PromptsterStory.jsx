@@ -46,8 +46,138 @@ export default function PromptsterStory({ isAdmin = false }) {
         </div>
       </div>
 
+      {/* AI Vision Technology Section */}
+      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 rounded-3xl p-8 md:p-12 shadow-sm border border-purple-200 dark:border-purple-800">
+        <div className="text-center max-w-3xl mx-auto mb-8">
+          <Badge className="mb-4 bg-purple-100 text-purple-700 hover:bg-purple-100 border-purple-200 px-3 py-1 text-sm">
+            {isAdmin ? (
+              <FeatureInlineEditor 
+                blockKey="ai_vision_badge"
+                currentContent="Industry-Standard Technology"
+              />
+            ) : (
+              "Industry-Standard Technology"
+            )}
+          </Badge>
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-6">
+            {isAdmin ? (
+              <FeatureInlineEditor 
+                blockKey="ai_vision_title"
+                currentContent="Based on GUI Element Detection & Vision-to-Code AI"
+              />
+            ) : (
+              "Based on GUI Element Detection & Vision-to-Code AI"
+            )}
+          </h2>
+          <p className="text-lg text-slate-700 dark:text-slate-300 mb-4">
+            {isAdmin ? (
+              <FeatureInlineEditor 
+                blockKey="ai_vision_desc_1"
+                currentContent="Promptster's AI engine understands your interface the way a developer does. Our technology analyzes screenshots with Semantic OCR and Vision-to-Code intelligence, so Promptster doesn't just read text — it truly comprehends UI structures, components and workflows."
+              />
+            ) : (
+              "Promptster's AI engine understands your interface the way a developer does. Our technology analyzes screenshots with Semantic OCR and Vision-to-Code intelligence, so Promptster doesn't just read text — it truly comprehends UI structures, components and workflows."
+            )}
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl p-6 border border-purple-200 dark:border-purple-800">
+            <h3 className="text-lg font-bold text-purple-900 dark:text-purple-100 mb-4 flex items-center gap-2">
+              <Cpu className="w-5 h-5" />
+              {isAdmin ? (
+                <FeatureInlineEditor 
+                  blockKey="ai_vision_what_it_recognizes"
+                  currentContent="What It Recognizes"
+                />
+              ) : (
+                "What It Recognizes"
+              )}
+            </h3>
+            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 shrink-0" />
+                <span>
+                  {isAdmin ? (
+                    <FeatureInlineEditor 
+                      blockKey="ai_vision_rec_1"
+                      currentContent="Recognizes buttons, inputs, cards, modals, tabs and more"
+                    />
+                  ) : (
+                    "Recognizes buttons, inputs, cards, modals, tabs and more"
+                  )}
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 shrink-0" />
+                <span>
+                  {isAdmin ? (
+                    <FeatureInlineEditor 
+                      blockKey="ai_vision_rec_2"
+                      currentContent="Understands context: label → input, title → content, parent → child"
+                    />
+                  ) : (
+                    "Understands context: label → input, title → content, parent → child"
+                  )}
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 shrink-0" />
+                <span>
+                  {isAdmin ? (
+                    <FeatureInlineEditor 
+                      blockKey="ai_vision_rec_3"
+                      currentContent="Automatically builds a visual UI structure used for better prompts"
+                    />
+                  ) : (
+                    "Automatically builds a visual UI structure used for better prompts"
+                  )}
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 shrink-0" />
+                <span>
+                  {isAdmin ? (
+                    <FeatureInlineEditor 
+                      blockKey="ai_vision_rec_4"
+                      currentContent="Ensures higher accuracy, fewer errors and faster multi-task output"
+                    />
+                  ) : (
+                    "Ensures higher accuracy, fewer errors and faster multi-task output"
+                  )}
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl p-6 border border-purple-200 dark:border-purple-800">
+            <h3 className="text-lg font-bold text-purple-900 dark:text-purple-100 mb-4 flex items-center gap-2">
+              <Target className="w-5 h-5" />
+              {isAdmin ? (
+                <FeatureInlineEditor 
+                  blockKey="ai_vision_result_title"
+                  currentContent="The Result"
+                />
+              ) : (
+                "The Result"
+              )}
+            </h3>
+            <p className="text-slate-700 dark:text-slate-300 text-lg font-medium italic">
+              {isAdmin ? (
+                <FeatureInlineEditor 
+                  blockKey="ai_vision_result_desc"
+                  currentContent="AI that guesses less and understands more — making your workflow faster, smarter and more consistent."
+                />
+              ) : (
+                "AI that guesses less and understands more — making your workflow faster, smarter and more consistent."
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Solution Section */}
-      <div className="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-slate-200">
+      <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 md:p-12 shadow-sm border border-slate-200 dark:border-slate-700">
         <div className="text-center max-w-3xl mx-auto mb-12">
           <Badge className="mb-4 bg-green-100 text-green-700 hover:bg-green-100 border-green-200 px-3 py-1 text-sm">
             The Solution
