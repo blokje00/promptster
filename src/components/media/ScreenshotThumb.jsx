@@ -1,14 +1,26 @@
-import React, { useState } from "react" from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Copy, X, ZoomIn } from "lucide-react";
+import { Copy, X, ZoomIn, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import {
   Dialog,
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import OCRDebugPanel from "@/components/admin/OCRDebugPanel";
 
 export default function ScreenshotThumb({ screenshotId, onRemove, showCopyEmbed = true }) {
+  const [showOCRDebug, setShowOCRDebug] = useState(false);
+
+  // Check if user is admin
+  const { data: user } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+  });
+
+  const isAdmin = user?.role === 'admin';
   // screenshotId is now actually a direct URL string
   const imageUrl = screenshotId;
 
@@ -60,6 +72,17 @@ export default function ScreenshotThumb({ screenshotId, onRemove, showCopyEmbed 
         
         {/* Action buttons overlay */}
         <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          {isAdmin && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 bg-purple-500/80 text-white hover:text-white hover:bg-purple-600"
+              onClick={(e) => { e.stopPropagation(); setShowOCRDebug(!showOCRDebug); }}
+              title="OCR Debug (Admin)"
+            >
+              <Eye className="w-3 h-3" />
+            </Button>
+          )}
           {showCopyEmbed && (
             <Button
               size="icon"
@@ -90,6 +113,13 @@ export default function ScreenshotThumb({ screenshotId, onRemove, showCopyEmbed 
           />
         </DialogContent>
       </div>
+
+      {/* OCR Debug Panel (Admin only) */}
+      {isAdmin && showOCRDebug && (
+        <div className="mt-4">
+          <OCRDebugPanel screenshotUrl={imageUrl} />
+        </div>
+      )}
     </Dialog>
   );
 }
