@@ -313,6 +313,20 @@ export default function ThoughtCard({
 
         {/* Controls Footer */}
         <div className="flex flex-wrap items-center gap-2 pt-1">
+          {/* Context Selector */}
+          <ContextSelector 
+            value={{
+              target_page: thought.target_page,
+              target_component: thought.target_component,
+              target_domain: thought.target_domain
+            }}
+            onChange={(newCtx) => onUpdateContext(thought.id, newCtx)}
+            compact={true}
+            thoughtText={thought.content}
+          />
+
+          <div className="h-3 w-px bg-slate-200 dark:bg-slate-700" />
+
           {/* Focus Selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -332,20 +346,6 @@ export default function ThoughtCard({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <div className="h-3 w-px bg-slate-200 dark:bg-slate-700" />
-
-          {/* Context Selector */}
-          <ContextSelector 
-            value={{
-              target_page: thought.target_page,
-              target_component: thought.target_component,
-              target_domain: thought.target_domain
-            }}
-            onChange={(newCtx) => onUpdateContext(thought.id, newCtx)}
-            compact={true}
-            thoughtText={thought.content}
-          />
 
           <div className="h-3 w-px bg-slate-200 dark:bg-slate-700" />
 
