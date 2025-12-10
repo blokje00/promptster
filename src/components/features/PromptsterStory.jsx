@@ -24,7 +24,14 @@ export default function PromptsterStory({ isAdmin = false }) {
             )}
           </div>
           <h2 className="text-3xl font-bold text-slate-900 leading-tight">
-            Building websites or webapps with AI is incredibly convenient… <span className="text-slate-400">until it suddenly isn’t.</span>
+            {isAdmin ? (
+              <FeatureInlineEditor 
+                blockKey="intro_title"
+                currentContent="Building websites or webapps with AI is incredibly convenient… until it suddenly isn't."
+              />
+            ) : (
+              <>Building websites or webapps with AI is incredibly convenient… <span className="text-slate-400">until it suddenly isn't.</span></>
+            )}
           </h2>
           <div className="space-y-4 text-lg text-slate-600">
             <p>
@@ -38,12 +45,24 @@ export default function PromptsterStory({ isAdmin = false }) {
               )}
             </p>
             <p>
-              But then the real work begins: dozens of small prompts that gradually nudge your no-code platform 
-              toward the final result. All the time and cost advantages from that “easy first step” evaporate again: 
-              time-consuming, frustrating, and burning through credits.
+              {isAdmin ? (
+                <FeatureInlineEditor 
+                  blockKey="intro_p2"
+                  currentContent="But then the real work begins: dozens of small prompts that gradually nudge your no-code platform toward the final result. All the time and cost advantages from that "easy first step" evaporate again: time-consuming, frustrating, and burning through credits."
+                />
+              ) : (
+                <>But then the real work begins: dozens of small prompts that gradually nudge your no-code platform toward the final result. All the time and cost advantages from that "easy first step" evaporate again: time-consuming, frustrating, and burning through credits.</>
+              )}
             </p>
             <div className="p-4 bg-orange-50 border-l-4 border-orange-400 rounded-r-lg italic text-orange-800">
-              “It’s like trying to steer without a steering wheel, and then having to parallel-park… using your voice only?”
+              {isAdmin ? (
+                <FeatureInlineEditor 
+                  blockKey="intro_quote"
+                  currentContent=""It's like trying to steer without a steering wheel, and then having to parallel-park… using your voice only?""
+                />
+              ) : (
+                ""It's like trying to steer without a steering wheel, and then having to parallel-park… using your voice only?""
+              )}
             </div>
           </div>
         </div>
@@ -441,7 +460,7 @@ export default function PromptsterStory({ isAdmin = false }) {
           </div>
           <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700 backdrop-blur-sm">
             <p className="text-lg font-medium text-indigo-200 italic mb-4">
-              “Promptster changes how you use AI within no-code platforms—from chaotic loose commands to one tight, predictable and scalable process.”
+              "Promptster changes how you use AI within no-code platforms—from chaotic loose commands to one tight, predictable and scalable process."
             </p>
           </div>
         </div>
