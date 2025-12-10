@@ -90,10 +90,10 @@ export default function Header() {
     else if (isChecks) localStorage.setItem('lastMainPage', 'Checks');
   }, [isVault, isAddItem, isMultiprompt, isChecks]);
 
-  // Redirect to Dashboard on initial load (default startpage)
+  // Redirect to Multiprompt on initial load (default startpage)
   useEffect(() => {
     if (currentPath === "/" || currentPath === "") {
-      navigate(createPageUrl('Dashboard'), { replace: true });
+      navigate(createPageUrl('Multiprompt'), { replace: true });
     }
   }, [currentPath, navigate]);
   
