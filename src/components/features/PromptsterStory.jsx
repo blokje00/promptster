@@ -61,7 +61,7 @@ export default function PromptsterStory({ isAdmin = false }) {
                   currentContent="It's like trying to steer without a steering wheel, and then having to parallel-park using your voice only?"
                 />
               ) : (
-                ""It's like trying to steer without a steering wheel, and then having to parallel-park… using your voice only?""
+                <>&ldquo;It&rsquo;s like trying to steer without a steering wheel, and then having to parallel-park&hellip; using your voice only?&rdquo;</>
               )}
             </div>
           </div>
