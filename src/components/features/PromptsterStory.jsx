@@ -58,7 +58,7 @@ export default function PromptsterStory({ isAdmin = false }) {
               {isAdmin ? (
                 <FeatureInlineEditor 
                   blockKey="intro_quote"
-                  currentContent='"It's like trying to steer without a steering wheel, and then having to parallel-park… using your voice only?"'
+                  currentContent="It's like trying to steer without a steering wheel, and then having to parallel-park using your voice only?"
                 />
               ) : (
                 ""It's like trying to steer without a steering wheel, and then having to parallel-park… using your voice only?""
