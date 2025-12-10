@@ -148,7 +148,7 @@ export default function Checks() {
 
       // If failed, open guided retry modal instead of immediate creation
       if (newStatus === 'failed') {
-        setSelectedRetryTask(task);
+        setSelectedRetryTask({ ...task, originalStatus: task.status || 'open' });
         setRetryModalOpen(true);
       } else {
         toast.success(`Task updated to ${newStatus}`);
@@ -384,7 +384,21 @@ export default function Checks() {
         {/* Retry Modal */}
         <RetryModal
           isOpen={retryModalOpen}
-          onClose={() => {
+          onClose={async () => {
+            // Revert task status to original if user cancels
+            if (selectedRetryTask) {
+              const item = items.find(i => i.id === selectedRetryTask.itemId);
+              if (item) {
+                const newChecks = [...item.task_checks];
+                newChecks[selectedRetryTask.index] = {
+                  ...newChecks[selectedRetryTask.index],
+                  status: selectedRetryTask.originalStatus || 'open',
+                  updated_date: new Date().toISOString()
+                };
+                await base44.entities.Item.update(item.id, { task_checks: newChecks });
+                queryClient.invalidateQueries({ queryKey: ['items'] });
+              }
+            }
             setRetryModalOpen(false);
             setSelectedRetryTask(null);
           }}
