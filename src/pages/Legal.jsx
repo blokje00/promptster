@@ -20,36 +20,36 @@ export default function Legal() {
         </div>
 
         <Tabs defaultValue="tos" className="space-y-6">
-          <TabsList className="bg-white dark:bg-slate-800 grid grid-cols-4 lg:grid-cols-8 gap-1 p-1 h-auto flex-wrap">
-            <TabsTrigger value="tos" className="data-[state=active]:bg-indigo-100"><FileText className="w-4 h-4 mr-1" /> Terms</TabsTrigger>
-            <TabsTrigger value="privacy" className="data-[state=active]:bg-indigo-100"><Shield className="w-4 h-4 mr-1" /> Privacy</TabsTrigger>
-            <TabsTrigger value="cookies" className="data-[state=active]:bg-indigo-100"><Cookie className="w-4 h-4 mr-1" /> Cookies</TabsTrigger>
-            <TabsTrigger value="aup" className="data-[state=active]:bg-indigo-100"><AlertCircle className="w-4 h-4 mr-1" /> AUP</TabsTrigger>
-            <TabsTrigger value="refund" className="data-[state=active]:bg-indigo-100"><CreditCard className="w-4 h-4 mr-1" /> Refunds</TabsTrigger>
-            <TabsTrigger value="ai" className="data-[state=active]:bg-indigo-100"><AlertCircle className="w-4 h-4 mr-1" /> AI</TabsTrigger>
-            <TabsTrigger value="security" className="data-[state=active]:bg-indigo-100"><Lock className="w-4 h-4 mr-1" /> Security</TabsTrigger>
-            <TabsTrigger value="contact" className="data-[state=active]:bg-indigo-100"><Mail className="w-4 h-4 mr-1" /> Support</TabsTrigger>
+          <TabsList className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 grid grid-cols-4 lg:grid-cols-8 gap-1 p-1 h-auto flex-wrap">
+            <TabsTrigger value="tos" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400"><FileText className="w-4 h-4 mr-1" /> Terms</TabsTrigger>
+            <TabsTrigger value="privacy" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400"><Shield className="w-4 h-4 mr-1" /> Privacy</TabsTrigger>
+            <TabsTrigger value="cookies" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400"><Cookie className="w-4 h-4 mr-1" /> Cookies</TabsTrigger>
+            <TabsTrigger value="aup" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400"><AlertCircle className="w-4 h-4 mr-1" /> AUP</TabsTrigger>
+            <TabsTrigger value="refund" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400"><CreditCard className="w-4 h-4 mr-1" /> Refunds</TabsTrigger>
+            <TabsTrigger value="ai" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400"><AlertCircle className="w-4 h-4 mr-1" /> AI</TabsTrigger>
+            <TabsTrigger value="security" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400"><Lock className="w-4 h-4 mr-1" /> Security</TabsTrigger>
+            <TabsTrigger value="contact" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-900 data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400"><Mail className="w-4 h-4 mr-1" /> Support</TabsTrigger>
           </TabsList>
 
           {/* Terms of Service */}
           <TabsContent value="tos">
-            <Card className="dark:bg-slate-800 dark:border-slate-700">
-              <CardHeader>
-                <CardTitle className="dark:text-slate-100">Terms of Service</CardTitle>
+            <Card className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+              <CardHeader className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
+                <CardTitle className="text-slate-900 dark:text-slate-100">Terms of Service</CardTitle>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
-              <CardContent>
+              <CardContent className="bg-white dark:bg-slate-800">
                 <ScrollArea className="h-[600px] pr-4">
-                  <div className="prose prose-slate max-w-none space-y-6">
-                    <div className="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded-r">
-                      <p className="font-medium text-indigo-900 mb-2">Welcome to Promptster</p>
-                      <p className="text-sm text-indigo-800">By creating an account, subscribing, or using the Service, you agree to these Terms of Service. The Service is owned and operated by {companyName} ("we", "us", "our").</p>
+                  <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
+                    <div className="bg-indigo-50 dark:bg-indigo-950/30 border-l-4 border-indigo-500 dark:border-indigo-400 p-4 rounded-r">
+                      <p className="font-medium text-indigo-900 dark:text-indigo-100 mb-2">Welcome to Promptster</p>
+                      <p className="text-sm text-indigo-800 dark:text-indigo-200">By creating an account, subscribing, or using the Service, you agree to these Terms of Service. The Service is owned and operated by {companyName} ("we", "us", "our").</p>
                     </div>
                     
                     <div>
-                      <h3 className="text-lg font-bold text-slate-900 mb-3">1. Description of the Service</h3>
-                      <p className="text-slate-700 leading-relaxed">Promptster is a SaaS platform that helps users create, manage, and optimize multi-step prompts and workflows for use on various no-code platforms and AI providers.</p>
-                      <p className="text-slate-600 text-sm mt-2">The Service is offered on an "as-is" basis.</p>
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3">1. Description of the Service</h3>
+                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed">Promptster is a SaaS platform that helps users create, manage, and optimize multi-step prompts and workflows for use on various no-code platforms and AI providers.</p>
+                      <p className="text-slate-600 dark:text-slate-400 text-sm mt-2">The Service is offered on an "as-is" basis.</p>
                     </div>
                     
                     <div>
