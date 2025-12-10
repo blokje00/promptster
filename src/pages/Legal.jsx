@@ -16,11 +16,11 @@ export default function Legal() {
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
             Legal & Compliance
           </h1>
-          <p className="text-slate-600 mt-2">All terms, policies and legal documentation</p>
+          <p className="text-slate-600 dark:text-slate-400 mt-2">All terms, policies and legal documentation</p>
         </div>
 
         <Tabs defaultValue="tos" className="space-y-6">
-          <TabsList className="bg-white grid grid-cols-4 lg:grid-cols-8 gap-1 p-1 h-auto flex-wrap">
+          <TabsList className="bg-white dark:bg-slate-800 grid grid-cols-4 lg:grid-cols-8 gap-1 p-1 h-auto flex-wrap">
             <TabsTrigger value="tos" className="data-[state=active]:bg-indigo-100"><FileText className="w-4 h-4 mr-1" /> Terms</TabsTrigger>
             <TabsTrigger value="privacy" className="data-[state=active]:bg-indigo-100"><Shield className="w-4 h-4 mr-1" /> Privacy</TabsTrigger>
             <TabsTrigger value="cookies" className="data-[state=active]:bg-indigo-100"><Cookie className="w-4 h-4 mr-1" /> Cookies</TabsTrigger>
@@ -33,10 +33,10 @@ export default function Legal() {
 
           {/* Terms of Service */}
           <TabsContent value="tos">
-            <Card>
+            <Card className="dark:bg-slate-800 dark:border-slate-700">
               <CardHeader>
-                <CardTitle>Terms of Service</CardTitle>
-                <p className="text-sm text-slate-500">Last Updated: {lastUpdated}</p>
+                <CardTitle className="dark:text-slate-100">Terms of Service</CardTitle>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[600px] pr-4">
@@ -132,10 +132,10 @@ export default function Legal() {
 
           {/* Privacy Policy */}
           <TabsContent value="privacy">
-            <Card>
+            <Card className="dark:bg-slate-800 dark:border-slate-700">
               <CardHeader>
-                <CardTitle>Privacy Policy</CardTitle>
-                <p className="text-sm text-slate-500">Last Updated: {lastUpdated}</p>
+                <CardTitle className="dark:text-slate-100">Privacy Policy</CardTitle>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[600px] pr-4">
@@ -241,10 +241,10 @@ export default function Legal() {
 
           {/* Cookie Policy */}
           <TabsContent value="cookies">
-            <Card>
+            <Card className="dark:bg-slate-800 dark:border-slate-700">
               <CardHeader>
-                <CardTitle>Cookie Policy</CardTitle>
-                <p className="text-sm text-slate-500">Last Updated: {lastUpdated}</p>
+                <CardTitle className="dark:text-slate-100">Cookie Policy</CardTitle>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[600px] pr-4">
@@ -290,10 +290,10 @@ export default function Legal() {
 
           {/* Acceptable Use Policy */}
           <TabsContent value="aup">
-            <Card>
+            <Card className="dark:bg-slate-800 dark:border-slate-700">
               <CardHeader>
-                <CardTitle>Acceptable Use Policy</CardTitle>
-                <p className="text-sm text-slate-500">Last Updated: {lastUpdated}</p>
+                <CardTitle className="dark:text-slate-100">Acceptable Use Policy</CardTitle>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[600px] pr-4">
@@ -331,10 +331,10 @@ export default function Legal() {
 
           {/* Refund & Cancellation */}
           <TabsContent value="refund">
-            <Card>
+            <Card className="dark:bg-slate-800 dark:border-slate-700">
               <CardHeader>
-                <CardTitle>Refund & Cancellation Policy</CardTitle>
-                <p className="text-sm text-slate-500">Last Updated: {lastUpdated}</p>
+                <CardTitle className="dark:text-slate-100">Refund & Cancellation Policy</CardTitle>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[600px] pr-4">
@@ -389,10 +389,10 @@ export default function Legal() {
 
           {/* AI Disclaimer */}
           <TabsContent value="ai">
-            <Card>
+            <Card className="dark:bg-slate-800 dark:border-slate-700">
               <CardHeader>
-                <CardTitle>AI Disclaimer</CardTitle>
-                <p className="text-sm text-slate-500">Last Updated: {lastUpdated}</p>
+                <CardTitle className="dark:text-slate-100">AI Disclaimer</CardTitle>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[600px] pr-4">
@@ -450,10 +450,10 @@ export default function Legal() {
 
           {/* Security */}
           <TabsContent value="security">
-            <Card>
+            <Card className="dark:bg-slate-800 dark:border-slate-700">
               <CardHeader>
-                <CardTitle>Security Practices</CardTitle>
-                <p className="text-sm text-slate-500">Last Updated: {lastUpdated}</p>
+                <CardTitle className="dark:text-slate-100">Security Practices</CardTitle>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[600px] pr-4">
@@ -505,10 +505,10 @@ export default function Legal() {
 
           {/* Support/Contact */}
           <TabsContent value="contact">
-            <Card>
+            <Card className="dark:bg-slate-800 dark:border-slate-700">
               <CardHeader>
-                <CardTitle>Support & Contact</CardTitle>
-                <p className="text-sm text-slate-500">Last Updated: {lastUpdated}</p>
+                <CardTitle className="dark:text-slate-100">Support & Contact</CardTitle>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[600px] pr-4">
