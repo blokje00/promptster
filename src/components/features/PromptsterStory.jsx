@@ -28,8 +28,14 @@ export default function PromptsterStory({ isAdmin = false }) {
           </h2>
           <div className="space-y-4 text-lg text-slate-600">
             <p>
-              The first step is easy: type or speak some text, and your app is (almost) there. 
-              That part is simple—and cheap!
+              {isAdmin ? (
+                <FeatureInlineEditor 
+                  blockKey="intro_p1"
+                  currentContent="The first step is easy: type or speak some text, and your app is (almost) there. That part is simple—and cheap!"
+                />
+              ) : (
+                <>The first step is easy: type or speak some text, and your app is (almost) there. That part is simple—and cheap!</>
+              )}
             </p>
             <p>
               But then the real work begins: dozens of small prompts that gradually nudge your no-code platform 
