@@ -48,7 +48,7 @@ export default function PromptsterStory({ isAdmin = false }) {
               {isAdmin ? (
                 <FeatureInlineEditor 
                   blockKey="intro_p2"
-                  currentContent="But then the real work begins: dozens of small prompts that gradually nudge your no-code platform toward the final result. All the time and cost advantages from that "easy first step" evaporate again: time-consuming, frustrating, and burning through credits."
+                  currentContent='But then the real work begins: dozens of small prompts that gradually nudge your no-code platform toward the final result. All the time and cost advantages from that "easy first step" evaporate again: time-consuming, frustrating, and burning through credits.'
                 />
               ) : (
                 <>But then the real work begins: dozens of small prompts that gradually nudge your no-code platform toward the final result. All the time and cost advantages from that "easy first step" evaporate again: time-consuming, frustrating, and burning through credits.</>
@@ -58,7 +58,7 @@ export default function PromptsterStory({ isAdmin = false }) {
               {isAdmin ? (
                 <FeatureInlineEditor 
                   blockKey="intro_quote"
-                  currentContent=""It's like trying to steer without a steering wheel, and then having to parallel-park… using your voice only?""
+                  currentContent='"It's like trying to steer without a steering wheel, and then having to parallel-park… using your voice only?"'
                 />
               ) : (
                 ""It's like trying to steer without a steering wheel, and then having to parallel-park… using your voice only?""
