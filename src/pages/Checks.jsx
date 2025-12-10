@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import AccessGuard from "@/components/auth/AccessGuard";
 import { toast } from "sonner";
 import { projectColors } from "@/components/lib/constants";
+import RetryModal from "@/components/checks/RetryModal";
 
 
 export default function Checks() {
@@ -21,7 +22,8 @@ export default function Checks() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("open");
   const [sortConfig, setSortConfig] = useState({ key: "updated_date", direction: "desc" });
-  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryModalOpen, setRetryModalOpen] = useState(false);
+  const [selectedRetryTask, setSelectedRetryTask] = useState(null);
 
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
@@ -144,35 +146,56 @@ export default function Checks() {
         status: parentStatus
       });
 
-      // TASK-3: If failed, immediately create a Thought to retry
+      // If failed, open guided retry modal instead of immediate creation
       if (newStatus === 'failed') {
-        const retryMsg = currentUser?.retry_task_message || "This task was previously executed but not approved by the user. There are missing elements, the function doesn't work, or is invisible. Analyze again and apply improvements.";
-        const additionalText = `\n\n${retryMsg}`;
-        
-        await base44.entities.Thought.create({
-          content: `[Retry] ${task.full_description || task.task_name}${additionalText}`,
-          project_id: task.projectId,
-          is_selected: true,
-          is_deleted: false,
-          retry_from_item_id: task.itemId,
-          focus_type: 'both'
-        });
-
-        // Update task status to retried
-        newChecks[task.index] = { ...newChecks[task.index], status: 'retried' };
-        await base44.entities.Item.update(item.id, { task_checks: newChecks });
-        
-        toast.success("Task marked as failed and sent to Multi-Task for retry");
+        setSelectedRetryTask(task);
+        setRetryModalOpen(true);
       } else {
         toast.success(`Task updated to ${newStatus}`);
       }
 
-      // Invalidate queries - including thoughts to refresh Multiprompt
+      // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['openTasksCount'] });
-      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
     } catch (error) {
       toast.error("Failed to update task");
+    }
+  };
+
+  const handleRetryConfirm = async (retryData) => {
+    try {
+      const task = selectedRetryTask;
+      const item = items.find(i => i.id === task.itemId);
+      if (!item) return;
+
+      // Create the structured retry Thought
+      await base44.entities.Thought.create({
+        content: retryData.content,
+        screenshot_ids: retryData.screenshots,
+        project_id: task.projectId,
+        is_selected: true,
+        is_deleted: false,
+        retry_from_item_id: task.itemId,
+        focus_type: 'both'
+      });
+
+      // Update task status to retried
+      const newChecks = [...item.task_checks];
+      newChecks[task.index] = { 
+        ...newChecks[task.index], 
+        status: 'retried',
+        updated_date: new Date().toISOString()
+      };
+      await base44.entities.Item.update(item.id, { task_checks: newChecks });
+
+      toast.success("Structured retry task created in Multi-Task");
+      
+      // Invalidate queries to refresh UI
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+      queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] });
+    } catch (error) {
+      toast.error("Failed to create retry task");
     }
   };
 
@@ -357,6 +380,18 @@ export default function Checks() {
             </div>
           </div>
         </div>
+
+        {/* Retry Modal */}
+        <RetryModal
+          isOpen={retryModalOpen}
+          onClose={() => {
+            setRetryModalOpen(false);
+            setSelectedRetryTask(null);
+          }}
+          task={selectedRetryTask}
+          onConfirm={handleRetryConfirm}
+          projectId={selectedRetryTask?.projectId}
+        />
       </div>
     </AccessGuard>
   );
