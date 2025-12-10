@@ -99,6 +99,7 @@ export default function TaskInputArea({
           maxCount={5}
           compact
         />
+        <ContextSelector value={newThoughtContext} onChange={onContextChange} compact enableAISuggestions={enableContextSuggestions} />
         <Select value={newThoughtFocus} onValueChange={onFocusChange}>
           <SelectTrigger className="h-7 text-xs w-[120px]"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -107,7 +108,6 @@ export default function TaskInputArea({
             <SelectItem value="logic">Logic Only</SelectItem>
           </SelectContent>
         </Select>
-        <ContextSelector value={newThoughtContext} onChange={onContextChange} compact enableAISuggestions={enableContextSuggestions} />
       </div>
     </div>
   );
