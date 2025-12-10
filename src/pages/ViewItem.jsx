@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import RequireSubscription from "../components/auth/RequireSubscription";
+import AccessGuard from "../components/auth/AccessGuard";
 
 export default function ViewItem() {
   const navigate = useNavigate();
@@ -185,7 +185,7 @@ export default function ViewItem() {
   }
 
   return (
-    <RequireSubscription>
+    <AccessGuard pageType="premium">
     <div className="p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-8">
@@ -369,6 +369,6 @@ export default function ViewItem() {
         </Card>
       </div>
     </div>
-    </RequireSubscription>
+    </AccessGuard>
   );
 }

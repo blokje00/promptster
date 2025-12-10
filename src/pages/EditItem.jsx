@@ -17,7 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import ZipUploadZone from "../components/dashboard/ZipUploadZone";
 import ScreenshotUploader from "../components/media/ScreenshotUploader";
-import RequireSubscription from "../components/auth/RequireSubscription";
+import AccessGuard from "../components/auth/AccessGuard";
 
 export default function EditItem() {
   const navigate = useNavigate();
@@ -117,7 +117,7 @@ export default function EditItem() {
   }
 
   return (
-    <RequireSubscription>
+    <AccessGuard pageType="premium">
     <div className="p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
@@ -327,6 +327,6 @@ export default function EditItem() {
         </form>
       </div>
     </div>
-    </RequireSubscription>
+    </AccessGuard>
   );
 }
