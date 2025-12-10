@@ -133,12 +133,12 @@ export default function Features() {
                 getBlockContent('cta_title', 'Ready to start?')
               )}
             </h2>
-            <p className="mb-6 text-indigo-200">
+            <p className="mb-6 text-indigo-200 dark:text-indigo-300">
               {isAdmin ? (
                 <FeatureInlineEditor 
                   blockKey="cta_subtitle" 
                   currentContent={getBlockContent('cta_subtitle', 'Try all features for free for 14 days.')}
-                  className="text-indigo-200"
+                  className="text-indigo-200 dark:text-indigo-300"
                 />
               ) : (
                 getBlockContent('cta_subtitle', 'Try all features for free for 14 days.')

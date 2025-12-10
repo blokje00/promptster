@@ -90,12 +90,18 @@ export default function Header() {
     else if (isChecks) localStorage.setItem('lastMainPage', 'Checks');
   }, [isVault, isAddItem, isMultiprompt, isChecks]);
 
-  // Redirect to Multiprompt on initial load (default startpage)
+  // Redirect on initial load - to last visited page for subscribers, Multiprompt for new users
   useEffect(() => {
     if (currentPath === "/" || currentPath === "") {
-      navigate(createPageUrl('Multiprompt'), { replace: true });
+      const hasActiveAccess = user?.subscription_status === 'active' || user?.subscription_status === 'trial';
+      if (hasActiveAccess) {
+        const lastPage = localStorage.getItem('lastMainPage') || 'Multiprompt';
+        navigate(createPageUrl(lastPage), { replace: true });
+      } else {
+        navigate(createPageUrl('Multiprompt'), { replace: true });
+      }
     }
-  }, [currentPath, navigate]);
+  }, [currentPath, navigate, user]);
   
   const handleLogoClick = () => {
     window.location.href = createPageUrl("Multiprompt");

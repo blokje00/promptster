@@ -149,7 +149,7 @@ export default function ContextSelector({
         <button
           type="button"
           onClick={clearSelection}
-          className="text-slate-400 hover:text-slate-600 p-0.5"
+          className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-0.5"
           aria-label={t("clearSelection") || "Wis selectie"}
         >
           <X className="w-3.5 h-3.5" />
@@ -163,14 +163,14 @@ export default function ContextSelector({
           onValueChange={handlePageChange}
         >
           <SelectTrigger 
-            className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white"
+            className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
             aria-label={t("selectPage") || "Selecteer pagina"}
           >
             <SelectValue placeholder={t("page") || "Pagina"} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
             {availablePages.map(page => (
-              <SelectItem key={page} value={page} className="text-xs">
+              <SelectItem key={page} value={page} className="text-xs text-slate-700 dark:text-slate-300">
                 {page}
               </SelectItem>
             ))}
@@ -181,7 +181,7 @@ export default function ContextSelector({
           variant="outline"
           size="sm"
           onClick={() => setIsAddingItem('page')}
-          className="h-7 w-7 p-0 text-slate-500 hover:text-slate-700 bg-white border-dashed"
+          className="h-7 w-7 p-0 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-white dark:bg-slate-900 border-dashed dark:border-slate-700"
           title={t("addPage") || "Nieuwe pagina toevoegen"}
         >
           <Plus className="w-3 h-3" />
@@ -194,20 +194,20 @@ export default function ContextSelector({
           onValueChange={handleComponentChange}
         >
           <SelectTrigger 
-            className="h-7 text-xs w-auto min-w-[90px] border-dashed bg-white"
+            className="h-7 text-xs w-auto min-w-[90px] border-dashed bg-white dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
             aria-label={t("selectComponent") || "Selecteer component"}
           >
             <SelectValue placeholder={t("component") || "Component"} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
             {availableComponents.length > 0 ? (
               availableComponents.map(comp => (
-                <SelectItem key={comp} value={comp} className="text-xs">
+                <SelectItem key={comp} value={comp} className="text-xs text-slate-700 dark:text-slate-300">
                   {comp}
                 </SelectItem>
               ))
             ) : (
-              <SelectItem value="_none" disabled className="text-xs text-slate-400">
+              <SelectItem value="_none" disabled className="text-xs text-slate-400 dark:text-slate-500">
                 {t("choosePageFirst") || "Kies eerst pagina"}
               </SelectItem>
             )}
@@ -219,7 +219,7 @@ export default function ContextSelector({
           size="sm"
           onClick={() => setIsAddingItem('component')}
           disabled={!target_page}
-          className="h-7 w-7 p-0 text-slate-500 hover:text-slate-700 bg-white border-dashed disabled:opacity-30"
+          className="h-7 w-7 p-0 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-white dark:bg-slate-900 border-dashed dark:border-slate-700 disabled:opacity-30"
           title={t("addComponent") || "Nieuw component toevoegen"}
         >
           <Plus className="w-3 h-3" />
@@ -231,14 +231,14 @@ export default function ContextSelector({
         onValueChange={handleDomainChange}
       >
         <SelectTrigger 
-          className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white"
+          className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
           aria-label={t("selectDomain") || "Selecteer domein"}
         >
           <SelectValue placeholder={t("domain") || "Domein"} />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
           {availableDomains.map(domain => (
-            <SelectItem key={domain} value={domain} className="text-xs">
+            <SelectItem key={domain} value={domain} className="text-xs text-slate-700 dark:text-slate-300">
               {domain}
             </SelectItem>
           ))}
