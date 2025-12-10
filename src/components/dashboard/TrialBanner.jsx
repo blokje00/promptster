@@ -40,7 +40,7 @@ export default function TrialBanner() {
           </div>
           <div>
             <h3 className="font-semibold text-slate-900 dark:text-slate-100">
-              Your 14-day free trial is active
+              Your free trial started
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1">
               <Clock className="w-3 h-3" />
