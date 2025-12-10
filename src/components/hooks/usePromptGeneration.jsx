@@ -53,7 +53,7 @@ export const usePromptGeneration = ({
     if (selectedItems.length > 0) {
       const tasks = selectedItems.map((t, i) => ({
         id: `TASK-${i + 1}`,
-        title: t.content.substring(0, 50) + "...",
+        title: t.content.length > 150 ? t.content.substring(0, 150) + "..." : t.content,
         description: t.content,
         files: [t.target_page ? `pages/${t.target_page}.jsx` : "TBD"],
         priority: "Medium",
