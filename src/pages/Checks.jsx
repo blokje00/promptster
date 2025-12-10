@@ -195,6 +195,10 @@ export default function Checks() {
 
       toast.success("Structured retry task created in Multi-Task");
       
+      // Close modal and reset state
+      setRetryModalOpen(false);
+      setSelectedRetryTask(null);
+      
       // Invalidate queries to refresh UI
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
