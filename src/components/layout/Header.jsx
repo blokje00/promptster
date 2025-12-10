@@ -45,12 +45,26 @@ export default function Header() {
     refetchInterval: 5000, 
   });
 
-  // Task 3: Open Tasks Count (Checklist items)
+  // Task 3: All thoughts count (across all projects)
+  const { data: allThoughtsCount = 0 } = useQuery({
+    queryKey: ['allThoughtsCount', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return 0;
+      const thoughts = await base44.entities.Thought.filter({ 
+        created_by: user.email,
+        is_deleted: false
+      });
+      return thoughts?.length || 0;
+    },
+    enabled: !!user?.email,
+    refetchInterval: 5000,
+  });
+
+  // Open Tasks Count (Checklist items)
   const { data: openTasksCount = 0 } = useQuery({
     queryKey: ['openTasksCount', user?.email],
     queryFn: async () => {
       if (!user?.email) return 0;
-      // Fetch all items to count their open tasks
       const items = await base44.entities.Item.filter({ 
         created_by: user.email
       });
@@ -59,7 +73,6 @@ export default function Header() {
       items.forEach(item => {
         if (item.task_checks && Array.isArray(item.task_checks)) {
           item.task_checks.forEach(check => {
-            // Count if status is missing or explicitly 'open'
             if (!check.status || check.status === 'open') {
               count++;
             }
@@ -126,7 +139,7 @@ export default function Header() {
         <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
           <Link to={createPageUrl("Multiprompt")}>
             <div 
-              className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm transition-all ${
+              className={`relative flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm transition-all ${
                 isMultiprompt 
                   ? 'bg-purple-600 text-white shadow-md font-bold' 
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-slate-700 font-medium'
@@ -134,6 +147,11 @@ export default function Header() {
             >
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">Multi-Task</span>
+              {allThoughtsCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-purple-500 text-[10px] text-white">
+                  {allThoughtsCount}
+                </span>
+              )}
             </div>
           </Link>
 
