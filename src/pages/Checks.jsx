@@ -105,6 +105,11 @@ export default function Checks() {
         const nameB = b.task_name || "";
         return sortConfig.direction === "asc" ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
       }
+      if (sortConfig.key === "project") {
+        const projectA = projects.find(p => p.id === a.projectId)?.name || "";
+        const projectB = projects.find(p => p.id === b.projectId)?.name || "";
+        return sortConfig.direction === "asc" ? projectA.localeCompare(projectB) : projectB.localeCompare(projectA);
+      }
       return 0;
     });
 
@@ -258,7 +263,12 @@ export default function Checks() {
                        <ArrowUpDown className="w-3 h-3" />
                      </div>
                    </th>
-                   <th className="px-6 py-3 w-[160px]">Project</th>
+                   <th className="px-6 py-3 w-[160px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('project')}>
+                     <div className="flex items-center gap-2">
+                       Project
+                       <ArrowUpDown className="w-3 h-3" />
+                     </div>
+                   </th>
                    <th className="px-6 py-3 w-[140px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('updated_date')}>
                      <div className="flex items-center gap-2">
                        Updated
