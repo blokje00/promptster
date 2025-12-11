@@ -21,6 +21,7 @@ export default function AccessGuard({ children, pageType = "free" }) {
     queryFn: () => base44.auth.me().catch(() => null),
   });
 
+  // Early returns AFTER all hooks
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -29,7 +30,6 @@ export default function AccessGuard({ children, pageType = "free" }) {
     );
   }
 
-  // Allow free pages for everyone
   if (pageType === "free") {
     return children;
   }
