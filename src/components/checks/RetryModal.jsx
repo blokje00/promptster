@@ -104,7 +104,8 @@ ${originalTask}
 
     setIsSubmitting(true);
     try {
-      console.log('[RetryModal] Creating retry with screenshots:', screenshots);
+      console.log('[RetryModal] ✓ Creating retry with', screenshots.length, 'screenshot(s)');
+      console.log('[RetryModal] Screenshot URLs:', screenshots);
       const structuredPrompt = generateRetryPrompt();
       await onConfirm({
         content: structuredPrompt,

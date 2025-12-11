@@ -1,8 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { runOcrAndLayout, analyzeSemanticStructure, detectComponents } from './vision/visionPipeline.js';
 
 /**
  * Advanced screenshot vision analysis with Level 3 & Level 4 support
  * Provides OCR, layout detection, component classification, and semantic analysis
+ * 
+ * NO BROWSER APIs - Server-side compatible only
  */
 Deno.serve(async (req) => {
   const startTime = Date.now();
@@ -72,8 +75,19 @@ Deno.serve(async (req) => {
     }
 
     console.log('[analyzeScreenshotVision] Starting analysis for:', imageUrl);
+    console.log('[analyzeScreenshotVision] Project ID:', projectId || 'none');
+    console.log('[analyzeScreenshotVision] Analysis level:', level);
 
-    // Step 1: Fetch image dimensions using imageDecoder (Deno-compatible)
+    // Step 1: Try OCR/Layout pipeline first (defensive)
+    let ocrResult = null;
+    try {
+      ocrResult = await runOcrAndLayout({ imageUrl, projectId });
+      console.log('[analyzeScreenshotVision] OCR/layout pipeline completed');
+    } catch (error) {
+      console.warn('[analyzeScreenshotVision] OCR/layout pipeline failed, falling back to LLM:', error.message);
+    }
+
+    // Step 2: Fetch image dimensions using server-compatible method (Deno-compatible)
     let width = 1920;
     let height = 1080;
     
@@ -109,7 +123,7 @@ Deno.serve(async (req) => {
       console.warn('[analyzeScreenshotVision] Could not determine image dimensions:', error.message);
     }
 
-    // Step 2: LLM Vision Analysis (base analysis)
+    // Step 3: LLM Vision Analysis (base analysis or fallback if OCR failed)
     const analysisPrompt = `Analyze this UI screenshot in detail:
 
 1. **Component Detection**: Identify all UI elements (buttons, inputs, headings, cards, images, links, labels)
@@ -221,51 +235,73 @@ Provide analysis as JSON with this structure:
       }, { status: 500 });
     }
 
-    // Step 3: Validate and normalize LLM output
-    const regions = Array.isArray(result.regions) ? result.regions : [];
-    const semanticBlocks = Array.isArray(result.semanticBlocks) ? result.semanticBlocks : [];
+    // Step 4: Validate and normalize LLM output
+    let regions = Array.isArray(result.regions) ? result.regions : [];
+    let semanticBlocks = Array.isArray(result.semanticBlocks) ? result.semanticBlocks : [];
     
     console.log('[analyzeScreenshotVision] LLM returned', regions.length, 'regions and', semanticBlocks.length, 'semantic blocks');
 
-    // Step 4: Generate layout relations (with fallback)
-    let layoutRelations = [];
-    try {
-      layoutRelations = generateLayoutRelations(regions);
-      console.log('[analyzeScreenshotVision] Generated', layoutRelations.length, 'layout relations');
-    } catch (error) {
-      console.warn('[analyzeScreenshotVision] Failed to generate layout relations:', error.message);
-    }
-
-    // Step 5: Generate Level 4 structure if requested (with fallback)
-    let visionStructure = null;
-    if (level === 'level_4' && regions.length > 0) {
+    // Step 5: Semantic Analysis (Level 3) - defensive
+    let semanticResult = null;
+    if (regions.length > 0 && (level === 'full' || level === 'level_3' || level === 'level_4')) {
       try {
-        visionStructure = {
-          components: regions.map(r => ({
-          id: r.id,
-          type: r.type,
-          text: r.text,
-          bbox: r.bbox,
-          confidence: r.confidence,
-          attributes: inferAttributes(r),
-            parent: null,
-            children: []
-          })),
-          layoutTree: { type: 'root', children: regions.map(r => r.id) },
-          metadata: {
-            componentCount: regions.length,
-            detectedTypes: result.detectedComponents || [],
-            enhancedWithLLM: true
-          }
-        };
-        console.log('[analyzeScreenshotVision] Level 4 structure generated');
+        // Try using the OCR result if available, otherwise use LLM regions
+        const baseResult = ocrResult || { regions, width, height };
+        semanticResult = analyzeSemanticStructure(baseResult);
+        
+        // Use semantic blocks from analysis if we got them
+        if (semanticResult.semanticBlocks && semanticResult.semanticBlocks.length > 0) {
+          semanticBlocks = semanticResult.semanticBlocks;
+        }
+        
+        console.log('[analyzeScreenshotVision] Semantic analysis completed');
       } catch (error) {
-        console.warn('[analyzeScreenshotVision] Failed to generate Level 4 structure, falling back:', error.message);
+        console.warn('[analyzeScreenshotVision] Semantic analysis failed, using LLM data:', error.message);
+        semanticResult = { semanticBlocks: [], layoutRelations: [] };
       }
     }
 
-    // Step 6: Build final response
+    // Step 6: Generate layout relations (with fallback)
+    let layoutRelations = semanticResult?.layoutRelations || [];
+    if (layoutRelations.length === 0 && regions.length > 0) {
+      try {
+        layoutRelations = generateLayoutRelations(regions);
+        console.log('[analyzeScreenshotVision] Generated', layoutRelations.length, 'layout relations');
+      } catch (error) {
+        console.warn('[analyzeScreenshotVision] Failed to generate layout relations:', error.message);
+      }
+    }
+
+    // Step 7: Component Detection (Level 4) - defensive
+    let visionStructure = null;
+    if (regions.length > 0 && level === 'level_4') {
+      try {
+        const baseResult = ocrResult || { regions, width, height };
+        visionStructure = detectComponents(baseResult, semanticResult);
+        
+        if (visionStructure) {
+          console.log('[analyzeScreenshotVision] Level 4 component detection completed');
+        } else {
+          console.warn('[analyzeScreenshotVision] Level 4 returned null, falling back to Level 3');
+        }
+      } catch (error) {
+        console.warn('[analyzeScreenshotVision] Component detection failed, falling back to Level 3:', error.message);
+      }
+    }
+
+    // Step 8: Build final response with all defensive checks
     const processingTime = Date.now() - startTime;
+    
+    // Determine actual analysis level achieved
+    let achievedLevel = 'level_2';
+    if (visionStructure) {
+      achievedLevel = 'level_4';
+    } else if (semanticBlocks.length > 0 || layoutRelations.length > 0) {
+      achievedLevel = 'level_3';
+    } else if (regions.length > 0) {
+      achievedLevel = 'level_2';
+    }
+    
     const enrichedResult = {
       ok: true,
       sourceUrl: imageUrl,
@@ -274,21 +310,26 @@ Provide analysis as JSON with this structure:
       width,
       height,
       summary: result.summary || "UI screenshot analyzed",
-      regions,
-      semanticBlocks,
-      layoutRelations,
-      visionStructure,
+      regions: Array.isArray(regions) ? regions : [],
+      semanticBlocks: Array.isArray(semanticBlocks) ? semanticBlocks : [],
+      layoutRelations: Array.isArray(layoutRelations) ? layoutRelations : [],
+      visionStructure: visionStructure || null,
+      ocr: ocrResult || null,
       metadata: {
         processingTime,
-        ocrAvailable: true,
+        ocrAvailable: !!ocrResult,
         layoutAvailable: regions.length > 0,
-        classificationAvailable: regions.length > 0,
-        analysisLevel: visionStructure ? 'level_4' : (semanticBlocks.length > 0 ? 'level_3' : 'level_2'),
-        ocrLevel: visionStructure ? 'level_4' : (semanticBlocks.length > 0 ? 'level_3' : 'level_2')
+        classificationAvailable: visionStructure !== null,
+        analysisLevel: achievedLevel,
+        ocrLevel: achievedLevel,
+        requestedLevel: level
       }
     };
 
-    console.log('[analyzeScreenshotVision] Analysis completed in', processingTime, 'ms');
+    console.log('[analyzeScreenshotVision] ✓ Analysis completed in', processingTime, 'ms');
+    console.log('[analyzeScreenshotVision] ✓ Achieved level:', achievedLevel, '(requested:', level, ')');
+    console.log('[analyzeScreenshotVision] ✓ Regions:', regions.length, '| Semantic blocks:', semanticBlocks.length, '| Relations:', layoutRelations.length);
+    
     return Response.json(enrichedResult);
 
   } catch (error) {

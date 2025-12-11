@@ -62,7 +62,7 @@ export default function ScreenshotUploader({
           continue;
         }
 
-        console.log(`[ScreenshotUploader] Successfully uploaded ${file.name}: ${fileUrl}`);
+        console.log(`[ScreenshotUploader] ✓ Successfully uploaded ${file.name}: ${fileUrl}`);
         successfulUrls.push(fileUrl);
       } catch (error) {
         console.error(`[ScreenshotUploader] Upload error for ${file.name}:`, error);
