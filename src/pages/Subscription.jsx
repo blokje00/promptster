@@ -141,62 +141,59 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {/* Only show plans if user doesn't have an active subscription */}
-      {user?.subscription_status !== 'active' && (
-        <div className="grid gap-6">
-          {plans.map((plan) => (
-          <Card key={plan.id} className={`border-l-4 ${plan.is_active ? 'border-l-green-500' : 'border-l-slate-300'}`}>
-            <CardContent className="p-6 flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h3 className="text-xl font-semibold">{plan.name}</h3>
-                  {!plan.is_active && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Inactive</span>}
-                </div>
-                <p className="text-slate-600 mb-2">{plan.description}</p>
-                <div className="flex gap-4 text-sm text-slate-500">
-                  <span>Month: €{plan.monthly_price_amount}</span>
-                  {plan.annual_price_amount && <span>Year: €{plan.annual_price_amount}</span>}
-                  <span className="font-medium text-indigo-600">Max Tasks: {plan.max_thoughts || 10}</span>
-                </div>
-                {plan.features && plan.features.length > 0 && (
-                  <ul className="mt-3 space-y-1">
-                    {plan.features.map((feature, idx) => (
-                      <li key={idx} className="text-sm text-slate-600">• {feature}</li>
-                    ))}
-                  </ul>
-                )}
+      <div className="grid gap-6">
+        {user?.subscription_status !== 'active' && plans.map((plan) => (
+        <Card key={plan.id} className={`border-l-4 ${plan.is_active ? 'border-l-green-500' : 'border-l-slate-300'}`}>
+          <CardContent className="p-6 flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <h3 className="text-xl font-semibold">{plan.name}</h3>
+                {!plan.is_active && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Inactive</span>}
               </div>
-              <div className="flex gap-2">
-                {user?.plan_id === plan.id ? (
-                  <Button disabled className="bg-slate-400">
-                    Current Plan
-                  </Button>
-                ) : !plan.is_active ? (
-                  <Button disabled variant="outline" className="text-slate-400">
-                    Not Available
-                  </Button>
-                ) : plan.monthly_price_id ? (
-                  <Button 
-                    onClick={() => handleSubscribe(plan)} 
-                    disabled={isProcessing}
-                    className="bg-indigo-600 hover:bg-indigo-700"
-                  >
-                    {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Activate"}
-                  </Button>
-                ) : (
-                  <Button disabled variant="outline">
-                    Contact
-                  </Button>
-                )}
+              <p className="text-slate-600 mb-2">{plan.description}</p>
+              <div className="flex gap-4 text-sm text-slate-500">
+                <span>Month: €{plan.monthly_price_amount}</span>
+                {plan.annual_price_amount && <span>Year: €{plan.annual_price_amount}</span>}
+                <span className="font-medium text-indigo-600">Max Tasks: {plan.max_thoughts || 10}</span>
               </div>
-            </CardContent>
-          </Card>
-          ))}
-          {plans.length === 0 && !isLoading && (
-            <p className="text-center text-slate-500 py-12">No subscription plans configured yet.</p>
-          )}
-        </div>
-      )}
+              {plan.features && plan.features.length > 0 && (
+                <ul className="mt-3 space-y-1">
+                  {plan.features.map((feature, idx) => (
+                    <li key={idx} className="text-sm text-slate-600">• {feature}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="flex gap-2">
+              {user?.plan_id === plan.id ? (
+                <Button disabled className="bg-slate-400">
+                  Current Plan
+                </Button>
+              ) : !plan.is_active ? (
+                <Button disabled variant="outline" className="text-slate-400">
+                  Not Available
+                </Button>
+              ) : plan.monthly_price_id ? (
+                <Button 
+                  onClick={() => handleSubscribe(plan)} 
+                  disabled={isProcessing}
+                  className="bg-indigo-600 hover:bg-indigo-700"
+                >
+                  {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Activate"}
+                </Button>
+              ) : (
+                <Button disabled variant="outline">
+                  Contact
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        ))}
+        {user?.subscription_status !== 'active' && plans.length === 0 && !isLoading && (
+          <p className="text-center text-slate-500 py-12">No subscription plans configured yet.</p>
+        )}
+      </div>
     </div>
   );
 }
