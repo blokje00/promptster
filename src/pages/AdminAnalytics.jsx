@@ -26,27 +26,7 @@ export default function AdminAnalytics() {
     enabled: currentUser?.role === 'admin'
   });
 
-  // Redirect non-admin users
-  if (!loadingUser && currentUser?.role !== 'admin') {
-    return (
-      <div className="p-8 max-w-4xl mx-auto">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <h2 className="text-xl font-bold text-red-800 mb-2">Access Denied</h2>
-          <p className="text-red-600">This page is only accessible to administrators.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loadingUser || loadingViews) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-      </div>
-    );
-  }
-
-  // Calculate statistics
+  // Calculate statistics - MUST be called before any conditional returns
   const stats = useMemo(() => {
     const totalViews = pageViews.length;
     const uniqueSessions = new Set(pageViews.map(pv => pv.session_id)).size;
@@ -116,6 +96,27 @@ export default function AdminAnalytics() {
       topPaths
     };
   }, [pageViews]);
+
+  // Redirect non-admin users - AFTER all hooks
+  if (!loadingUser && currentUser?.role !== 'admin') {
+    return (
+      <div className="p-8 max-w-4xl mx-auto">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <h2 className="text-xl font-bold text-red-800 mb-2">Access Denied</h2>
+          <p className="text-red-600">This page is only accessible to administrators.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state - AFTER all hooks
+  if (loadingUser || loadingViews) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
 
   return (
     <>
