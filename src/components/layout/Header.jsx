@@ -4,10 +4,11 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
-import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText } from "lucide-react";
+import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText, TrendingUp } from "lucide-react";
 import ThemeToggleButton from "@/components/theme/ThemeToggleButton";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../i18n/LanguageContext";
+import StartTrialModal from "../auth/StartTrialModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +26,7 @@ export default function Header() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [showExport, setShowExport] = useState(false);
+  const [showTrialModal, setShowTrialModal] = useState(false);
   
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
@@ -203,6 +205,17 @@ export default function Header() {
         {/* Right side: Settings */}
         <div className="flex items-center gap-1">
           <ThemeToggleButton />
+          
+          {!user ? (
+            <Button 
+              onClick={() => base44.auth.redirectToLogin()}
+              className="ml-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Get Started
+            </Button>
+          ) : null}
+          
           {/* Admin items moved to dropdown */}
           {false && user?.role === 'admin' && (
             <>
@@ -263,7 +276,7 @@ export default function Header() {
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to={createPageUrl("AdminAnalytics")} className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 bg-red-50/50 dark:bg-red-950/30">
-                        <BarChart className="mr-2 h-4 w-4" />
+                        <TrendingUp className="mr-2 h-4 w-4" />
                         <span>Analytics</span>
                       </Link>
                     </DropdownMenuItem>
@@ -315,6 +328,13 @@ export default function Header() {
                <ExportDialogWrapper onClose={() => setShowExport(false)} />
             </DialogContent>
           </Dialog>
+
+          {/* Trial Activation Modal */}
+          <StartTrialModal 
+            isOpen={showTrialModal}
+            onClose={() => setShowTrialModal(false)}
+            onSuccess={() => window.location.reload()}
+          />
         </div>
       </div>
     </header>

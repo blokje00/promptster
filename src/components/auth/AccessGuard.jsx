@@ -1,178 +1,153 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
-import SoftPaywallModal from './SoftPaywallModal';
-import { createPageUrl } from '@/utils';
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { Button } from "@/components/ui/button";
+import { Crown, Lock, Sparkles } from "lucide-react";
+import StartTrialModal from "./StartTrialModal";
 
 /**
- * Central access guard for all protected pages
- * Handles: authentication, trial activation, trial expiration, and access control
+ * AccessGuard - Protects pages based on subscription status
+ * - pageType="free": accessible to everyone
+ * - pageType="premium": requires active trial or subscription
  */
-
-// Pages that are always accessible regardless of subscription status
-const ALWAYS_ACCESSIBLE_PAGES = [
-  '/features',
-  '/subscription',
-  '/legal',
-  '/support',
-  '/aibackoffice'
-];
-
-// Premium pages that require active subscription or trial
-const PREMIUM_PAGES = [
-  '/multiprompt',
-  '/checks',
-  '/additem',
-  '/edititem',
-  '/viewitem'
-];
-
-export function canAccessPage(pathname, subscriptionStatus) {
-  const lowerPath = pathname.toLowerCase();
-  
-  // Always accessible pages
-  if (ALWAYS_ACCESSIBLE_PAGES.some(page => lowerPath.includes(page))) {
-    return { allowed: true, reason: 'always_accessible' };
-  }
-
-  // Dashboard is always accessible (soft paywall inside)
-  if (lowerPath.includes('/dashboard') || lowerPath === '/') {
-    return { allowed: true, reason: 'dashboard' };
-  }
-
-  // Active subscription or trial allows everything
-  if (subscriptionStatus === 'active' || subscriptionStatus === 'trial') {
-    return { allowed: true, reason: 'has_access' };
-  }
-
-  // Trial expired users can see dashboard but not premium features
-  if (subscriptionStatus === 'trial_expired') {
-    if (PREMIUM_PAGES.some(page => lowerPath.includes(page))) {
-      return { allowed: false, reason: 'trial_expired' };
-    }
-    return { allowed: true, reason: 'limited_access' };
-  }
-
-  // No subscription ('none') - redirect to trial activation
-  return { allowed: false, reason: 'needs_trial' };
-}
-
-export default function AccessGuard({ children, pageType = 'premium' }) {
+export default function AccessGuard({ children, pageType = "free" }) {
   const navigate = useNavigate();
-  const location = useLocation();
-  const queryClient = useQueryClient();
-  const [showPaywall, setShowPaywall] = useState(false);
-  const [trialActivationAttempted, setTrialActivationAttempted] = useState(false);
+  const [showTrialModal, setShowTrialModal] = useState(false);
 
-  const { data: user, isLoading: userLoading } = useQuery({
+  const { data: currentUser, isLoading } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-    retry: false,
+    queryFn: () => base44.auth.me().catch(() => null),
   });
 
-  // Check trial status
-  const { data: trialStatus, isLoading: trialLoading } = useQuery({
-    queryKey: ['trialStatus', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      const response = await base44.functions.invoke('checkTrialStatus', {});
-      return response.data;
-    },
-    enabled: !!user,
-    refetchInterval: 60000, // Recheck every minute
-  });
-
-  // Activate trial mutation
-  const activateTrialMutation = useMutation({
-    mutationFn: async () => {
-      const response = await base44.functions.invoke('activateTrial', {});
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-      queryClient.invalidateQueries({ queryKey: ['trialStatus'] });
-    }
-  });
-
-  // Auto-activate trial for new users
-  useEffect(() => {
-    if (user && trialStatus && !trialActivationAttempted) {
-      if (trialStatus.needsTrialActivation || trialStatus.subscription_status === 'none') {
-        setTrialActivationAttempted(true);
-        activateTrialMutation.mutate();
-      }
-    }
-  }, [user, trialStatus, trialActivationAttempted]);
-
-  // Access control logic
-  useEffect(() => {
-    if (!userLoading && !trialLoading) {
-      // Not authenticated - redirect to login
-      if (!user) {
-        base44.auth.redirectToLogin(location.pathname);
-        return;
-      }
-
-      // Still activating trial
-      if (activateTrialMutation.isPending) {
-        return;
-      }
-
-      // Check page access
-      const subscriptionStatus = trialStatus?.subscription_status || user.subscription_status || 'none';
-      const access = canAccessPage(location.pathname, subscriptionStatus);
-
-      if (!access.allowed) {
-        if (access.reason === 'trial_expired') {
-          // Show soft paywall for expired trial users trying to access premium features
-          setShowPaywall(true);
-        } else if (access.reason === 'needs_trial') {
-          // This shouldn't happen if auto-activation works, but just in case
-          navigate(createPageUrl('Dashboard'));
-        }
-      } else {
-        setShowPaywall(false);
-      }
-    }
-  }, [user, trialStatus, userLoading, trialLoading, location.pathname, activateTrialMutation.isPending]);
-
-  // Loading state
-  if (userLoading || trialLoading || activateTrialMutation.isPending || !user) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400">
-            {activateTrialMutation.isPending ? 'Starting your free trial...' : 'Loading...'}
-          </p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
-  const subscriptionStatus = trialStatus?.subscription_status || user.subscription_status || 'none';
-  const access = canAccessPage(location.pathname, subscriptionStatus);
-
-  // Show soft paywall modal
-  if (showPaywall && subscriptionStatus === 'trial_expired') {
-    return (
-      <>
-        {children}
-        <SoftPaywallModal 
-          isOpen={showPaywall} 
-          onClose={() => navigate(createPageUrl('Dashboard'))}
-        />
-      </>
-    );
-  }
-
-  // Render children if access is allowed
-  if (access.allowed) {
+  // Allow free pages for everyone
+  if (pageType === "free") {
     return children;
   }
 
-  // Fallback - redirect to dashboard
-  return null;
+  // Premium pages - require login first
+  if (pageType === "premium") {
+    if (!currentUser) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
+          <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+              Login Required
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              Please log in to access this page
+            </p>
+            <Button 
+              onClick={() => base44.auth.redirectToLogin()}
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Get Started
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    // Check subscription status
+    const now = new Date();
+    const trialEnd = currentUser.trial_end ? new Date(currentUser.trial_end) : null;
+    const hasActiveTrial = currentUser.subscription_status === 'trial' && trialEnd && trialEnd > now;
+    const hasActiveSubscription = currentUser.subscription_status === 'active';
+    const hasNoTrial = currentUser.subscription_status === 'none';
+
+    // User has no trial yet - show trial activation prompt
+    if (hasNoTrial) {
+      return (
+        <>
+          <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
+            <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 text-center">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+                Start Your Free Trial
+              </h2>
+              <p className="text-slate-600 dark:text-slate-400 mb-6">
+                Get 14 days of full access to all premium features. No credit card required.
+              </p>
+              <div className="space-y-3 mb-6">
+                <Button 
+                  onClick={() => setShowTrialModal(true)}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Start Free Trial
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate(createPageUrl("Dashboard"))}
+                  className="w-full"
+                >
+                  Back to Dashboard
+                </Button>
+              </div>
+            </div>
+          </div>
+          <StartTrialModal 
+            isOpen={showTrialModal}
+            onClose={() => setShowTrialModal(false)}
+            onSuccess={() => window.location.reload()}
+          />
+        </>
+      );
+    }
+
+    // Trial expired or no active subscription
+    if (!hasActiveTrial && !hasActiveSubscription) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
+          <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mx-auto mb-4">
+              <Crown className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+              Subscription Required
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              Your trial has ended. Subscribe to continue using Promptster
+            </p>
+            <div className="space-y-3">
+              <Button 
+                onClick={() => navigate(createPageUrl("Subscription"))}
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+              >
+                <Crown className="w-4 h-4 mr-2" />
+                View Plans
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => navigate(createPageUrl("Dashboard"))}
+                className="w-full"
+              >
+                Back to Dashboard
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Has access - render children
+    return children;
+  }
+
+  return children;
 }

@@ -179,7 +179,8 @@ export default function AdminStats() {
                       <th className="pb-2 font-semibold text-slate-700">Email</th>
                       <th className="pb-2 font-semibold text-slate-700">Lid sinds</th>
                       <th className="pb-2 font-semibold text-slate-700">Plan</th>
-                      <th className="pb-2 font-semibold text-slate-700">Trial/Status</th>
+                      <th className="pb-2 font-semibold text-slate-700">Subscription Status</th>
+                      <th className="pb-2 font-semibold text-slate-700">Trial Dates</th>
                       <th className="pb-2 font-semibold text-slate-700">Items</th>
                       <th className="pb-2 font-semibold text-slate-700">Projecten</th>
                       <th className="pb-2 font-semibold text-slate-700">Groei %</th>
@@ -191,25 +192,27 @@ export default function AdminStats() {
                       const userItems = allItems.filter(i => i.created_by === user.email);
                       const userProjects = allProjects.filter(p => p.created_by === user.email);
                       
-                      // Calculate membership info using correct trial fields
+                      // Calculate membership info using subscription_status field
                       const createdDate = user.created_date ? new Date(user.created_date) : null;
+                      const trialStart = user.trial_start ? new Date(user.trial_start) : null;
+                      const trialEnd = user.trial_end ? new Date(user.trial_end) : null;
+                      const now = new Date();
                       
-                      // Use actual subscription_status from database
-                      const isActive = user.subscription_status === 'active';
-                      const isTrial = user.subscription_status === 'trial';
-                      const isTrialExpired = user.subscription_status === 'trial_expired';
+                      // Status labels matching Base44 Dashboard
+                      const statusConfig = {
+                        'none': { label: 'No Trial', color: 'bg-slate-100 text-slate-700', icon: null },
+                        'trial': { 
+                          label: trialEnd && trialEnd > now ? 'Trial Active' : 'Trial Expired', 
+                          color: trialEnd && trialEnd > now ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700',
+                          icon: Clock
+                        },
+                        'active': { label: 'Active', color: 'bg-green-100 text-green-700', icon: CreditCard },
+                        'expired': { label: 'Expired', color: 'bg-red-100 text-red-700', icon: null },
+                        'cancelled': { label: 'Cancelled', color: 'bg-orange-100 text-orange-700', icon: null }
+                      };
                       
-                      // Calculate trial days remaining if on trial
-                      let trialDaysLeft = 0;
-                      if (isTrial && user.trial_end) {
-                        const trialEnd = new Date(user.trial_end);
-                        trialDaysLeft = Math.ceil(differenceInDays(trialEnd, new Date()));
-                      }
-                      
-                      // Calculate days paying if active subscription
-                      const daysPaying = isActive && user.trial_start 
-                        ? differenceInDays(new Date(), new Date(user.trial_start))
-                        : 0;
+                      const currentStatus = statusConfig[user.subscription_status] || statusConfig['none'];
+                      const StatusIcon = currentStatus.icon;
 
                       // CALCULATE GROWTH AND ACTIONS
                       const now = new Date();
@@ -273,27 +276,22 @@ export default function AdminStats() {
                             </Badge>
                           </td>
                           <td className="py-3">
-                            {isActive ? (
-                              <div className="flex items-center gap-1">
-                                <Badge className="bg-green-100 text-green-700 border-green-300">
-                                  <CreditCard className="w-3 h-3 mr-1" />
-                                  Betalend
-                                </Badge>
-                                {daysPaying > 0 && <span className="text-xs text-slate-500">({daysPaying}d)</span>}
+                            <Badge className={currentStatus.color}>
+                              {StatusIcon && <StatusIcon className="w-3 h-3 mr-1" />}
+                              {currentStatus.label}
+                            </Badge>
+                            <div className="text-xs text-slate-500 mt-1">
+                              {user.subscription_status}
+                            </div>
+                          </td>
+                          <td className="py-3 text-sm text-slate-600">
+                            {trialStart && trialEnd ? (
+                              <div className="space-y-0.5">
+                                <div className="text-xs">Start: {format(trialStart, 'dd-MM-yyyy')}</div>
+                                <div className="text-xs">End: {format(trialEnd, 'dd-MM-yyyy')}</div>
                               </div>
-                            ) : isTrial ? (
-                              <Badge className={`${trialDaysLeft <= 3 ? 'bg-red-100 text-red-700 border-red-300 animate-pulse' : 'bg-yellow-100 text-yellow-700 border-yellow-300'}`}>
-                                <Clock className="w-3 h-3 mr-1" />
-                                Trial: {trialDaysLeft}d over
-                              </Badge>
-                            ) : isTrialExpired ? (
-                              <Badge variant="outline" className="bg-slate-100 text-slate-600">
-                                Trial verlopen
-                              </Badge>
                             ) : (
-                              <Badge variant="outline" className="text-slate-400">
-                                Free
-                              </Badge>
+                              <span className="text-slate-400">-</span>
                             )}
                           </td>
                           <td className="py-3">{userItems.length}</td>
