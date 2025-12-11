@@ -1,9 +1,24 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
-import Stripe from 'npm:stripe@14.14.0';
+import Stripe from 'npm:stripe@14.5.0';
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"));
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
 
+/**
+ * T-4: Verifies a Stripe checkout session and updates user subscription status
+ * @param {Request} req - Expects { sessionId: string } in body
+ * @returns {Response} - { status: string, subscription: object }
+ */
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
+  }
+
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
@@ -15,52 +30,58 @@ Deno.serve(async (req) => {
     const { sessionId } = await req.json();
 
     if (!sessionId) {
-      return Response.json({ error: 'Missing sessionId' }, { status: 400 });
+      return Response.json({ error: 'Session ID is required' }, { status: 400 });
     }
 
-    // Retrieve the session from Stripe
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['subscription', 'customer']
+    });
 
-    if (!session) {
-      return Response.json({ error: 'Session not found' }, { status: 404 });
-    }
+    const result = {
+      status: session.payment_status, // 'paid', 'unpaid', 'no_payment_required'
+      session_status: session.status, // 'complete', 'expired', 'open'
+      customer_id: session.customer,
+      subscription_id: session.subscription,
+      metadata: session.metadata
+    };
 
-    // Verify payment status
-    if (session.payment_status === 'paid' || session.payment_status === 'no_payment_required') {
-      
-      // Determine plan based on metadata or line items if needed
-      // For simplicity, we assume the user subscribed to the 'prod_TVmxD3pUgsBYrn' plan if it was a subscription
-      // In a real app, you might store the plan ID in metadata during checkout creation
-      
-      let planId = 'free';
-      let subscriptionStatus = 'active';
-      
-      // You might want to inspect session.metadata.planId if you set it during creation
-      if (session.metadata && session.metadata.planId) {
-        planId = session.metadata.planId;
+    // Update user if payment is successful
+    if (session.payment_status === 'paid' && session.status === 'complete') {
+      const updateData = {
+        stripe_customer_id: session.customer,
+        subscription_status: 'active'
+      };
+
+      if (session.subscription) {
+        updateData.stripe_subscription_id = session.subscription;
       }
 
-      // Update user
-      // Note: We use base44.auth.updateMe if we want to update the current user context, 
-      // but for security/system updates, we might need service role if we were modifying restricted fields.
-      // However, updateMe is safe for user's own data if allowed. 
-      // If `plan_id` is a protected field, we must use service role.
-      // Let's try service role to be safe and sure.
-      
-      await base44.asServiceRole.entities.User.update(user.id, {
-        stripe_customer_id: session.customer,
-        subscription_status: subscriptionStatus,
-        plan_id: planId,
-        updated_date: new Date().toISOString()
-      });
+      if (session.metadata?.planId) {
+        updateData.plan_id = session.metadata.planId;
+      }
 
-      return Response.json({ success: true, planId, subscriptionStatus });
-    } else {
-      return Response.json({ success: false, message: 'Payment not completed' });
+      await base44.asServiceRole.entities.User.update(user.id, updateData);
+
+      // Log activity
+      try {
+        await base44.asServiceRole.entities.ActivityLog.create({
+          user_id: user.id,
+          user_email: user.email,
+          event_type: 'subscription_verified',
+          payload: {
+            session_id: sessionId,
+            payment_status: session.payment_status,
+            plan_id: session.metadata?.planId
+          }
+        });
+      } catch (logError) {
+        console.warn('[verifyStripeSession] ActivityLog failed:', logError.message);
+      }
     }
 
+    return Response.json(result);
   } catch (error) {
-    console.error("Verify session error:", error);
+    console.error('[verifyStripeSession] Error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

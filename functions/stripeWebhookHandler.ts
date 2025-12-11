@@ -43,27 +43,79 @@ Deno.serve(async (req) => {
         const customerId = session.customer;
 
         if (userId) {
-            await client.entities.User.update(userId, {
+            const updateData = {
                 stripe_customer_id: customerId,
-                subscription_status: 'active',
-                plan_id: planId,
-            });
+                subscription_status: 'active'
+            };
+            
+            if (planId) {
+                updateData.plan_id = planId;
+            }
+            
+            if (session.subscription) {
+                updateData.stripe_subscription_id = session.subscription;
+            }
+
+            await client.entities.User.update(userId, updateData);
             console.log(`User ${userId} subscription activated for plan ${planId}.`);
+
+            // T-6: Log activity
+            try {
+              await client.entities.ActivityLog.create({
+                user_id: userId,
+                event_type: 'subscription_created',
+                payload: {
+                  customer_id: customerId,
+                  plan_id: planId,
+                  subscription_id: session.subscription
+                }
+              });
+            } catch (logError) {
+              console.warn('ActivityLog failed:', logError.message);
+            }
         }
         break;
       }
       
       case 'customer.subscription.updated': {
         const subscription = event.data.object;
-        // Sync status (active, past_due, canceled)
-        // Find user by stripe_customer_id
         const users = await client.entities.User.filter({ stripe_customer_id: subscription.customer });
         if (users.length > 0) {
             const user = users[0];
             await client.entities.User.update(user.id, {
-                subscription_status: subscription.status
+                subscription_status: subscription.status,
+                stripe_subscription_id: subscription.id
             });
             console.log(`User ${user.id} subscription updated to ${subscription.status}.`);
+
+            // T-6: Log activity
+            try {
+              await client.entities.ActivityLog.create({
+                user_id: user.id,
+                user_email: user.email,
+                event_type: 'subscription_updated',
+                payload: {
+                  subscription_id: subscription.id,
+                  status: subscription.status,
+                  previous_status: event.data.previous_attributes?.status
+                }
+              });
+            } catch (logError) {
+              console.warn('ActivityLog failed:', logError.message);
+            }
+
+            // T-7: Error notifications for failed payments
+            if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
+              try {
+                await client.integrations.Core.SendEmail({
+                  to: 'patrick.van.zandvoort@gmail.com',
+                  subject: `⚠️ Payment Issue - User ${user.email}`,
+                  body: `User ${user.email} (${user.id}) has subscription status: ${subscription.status}\n\nSubscription ID: ${subscription.id}\nCustomer ID: ${subscription.customer}\n\nAction required: Review in Stripe Dashboard.`
+                });
+              } catch (emailError) {
+                console.error('Failed to send payment issue email:', emailError.message);
+              }
+            }
         }
         break;
       }
@@ -74,9 +126,35 @@ Deno.serve(async (req) => {
         if (users.length > 0) {
             const user = users[0];
             await client.entities.User.update(user.id, {
-                subscription_status: 'canceled'
+                subscription_status: 'cancelled'
             });
-             console.log(`User ${user.id} subscription canceled.`);
+            console.log(`User ${user.id} subscription canceled.`);
+
+            // T-6: Log activity
+            try {
+              await client.entities.ActivityLog.create({
+                user_id: user.id,
+                user_email: user.email,
+                event_type: 'subscription_cancelled',
+                payload: {
+                  subscription_id: subscription.id,
+                  canceled_at: subscription.canceled_at
+                }
+              });
+            } catch (logError) {
+              console.warn('ActivityLog failed:', logError.message);
+            }
+
+            // T-7: Cancellation notification
+            try {
+              await client.integrations.Core.SendEmail({
+                to: 'patrick.van.zandvoort@gmail.com',
+                subject: `📭 Subscription Cancelled - User ${user.email}`,
+                body: `User ${user.email} (${user.id}) has cancelled their subscription.\n\nSubscription ID: ${subscription.id}\nCanceled at: ${new Date(subscription.canceled_at * 1000).toISOString()}`
+              });
+            } catch (emailError) {
+              console.error('Failed to send cancellation email:', emailError.message);
+            }
         }
         break;
       }
@@ -89,6 +167,23 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error("Webhook Handler Error:", error);
+
+    // T-11: Retry strategy - let Stripe retry automatically (return 500)
+    // Log for manual review if critical
+    try {
+      const base44 = createClientFromRequest(req);
+      await base44.asServiceRole.entities.ActivityLog.create({
+        event_type: 'critical_error',
+        payload: {
+          source: 'stripeWebhookHandler',
+          error: error.message,
+          stack: error.stack
+        }
+      });
+    } catch (logError) {
+      console.error('Failed to log webhook error:', logError.message);
+    }
+
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

@@ -1,72 +1,109 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
-import Stripe from 'npm:stripe@14.14.0';
+import Stripe from 'npm:stripe@14.5.0';
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY"));
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
 
+/**
+ * T-5: Syncs subscription status from Stripe to Base44 User entity
+ * @param {Request} req - Expects { userId?, stripe_subscription_id? } in body
+ * @returns {Response} - Updated user subscription data
+ */
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      },
+    });
+  }
+
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const currentUser = await base44.auth.me();
 
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!currentUser || currentUser.role !== 'admin') {
+      return Response.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    // Retrieve the user's Stripe customer ID
-    // Ideally this is stored on the user entity
-    let customerId = user.stripe_customer_id;
+    const { userId, stripe_subscription_id } = await req.json();
 
-    // If not present, we might search Stripe or return error
-    // For this simple sync, we assume it's there or we can't sync
-    if (!customerId) {
-        // Try to find customer by email
-        const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-        if (customers.data.length > 0) {
-            customerId = customers.data[0].id;
-            // Update user while we are at it
-            await base44.asServiceRole.entities.User.update(user.id, { stripe_customer_id: customerId });
-        } else {
-             return Response.json({ success: false, message: 'No Stripe customer found' });
-        }
+    let targetUser;
+
+    if (userId) {
+      const users = await base44.asServiceRole.entities.User.filter({ id: userId });
+      if (!users || users.length === 0) {
+        return Response.json({ error: 'User not found' }, { status: 404 });
+      }
+      targetUser = users[0];
+    } else if (stripe_subscription_id) {
+      const users = await base44.asServiceRole.entities.User.filter({ stripe_subscription_id });
+      if (!users || users.length === 0) {
+        return Response.json({ error: 'User not found for subscription' }, { status: 404 });
+      }
+      targetUser = users[0];
+    } else {
+      return Response.json({ error: 'userId or stripe_subscription_id required' }, { status: 400 });
     }
 
-    // List subscriptions
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: 'all',
-      limit: 1
-    });
+    if (!targetUser.stripe_subscription_id) {
+      return Response.json({ 
+        error: 'User has no subscription ID to sync',
+        user_id: targetUser.id 
+      }, { status: 400 });
+    }
 
-    let status = 'inactive';
-    let planId = 'free';
+    // Fetch subscription from Stripe
+    const subscription = await stripe.subscriptions.retrieve(targetUser.stripe_subscription_id);
 
-    if (subscriptions.data.length > 0) {
-      const sub = subscriptions.data[0];
-      // Check if active or trialing
-      if (['active', 'trialing'].includes(sub.status)) {
-         status = 'active';
-         // Try to map price/product to plan
-         // This depends on your product setup. 
-         // We can check metadata or price ID
-         // For now, we just mark as Pro if active
-         planId = 'prod_TVmxD3pUgsBYrn'; // Hardcoded ID from context for "PromptGuard"
-      } else {
-         status = sub.status; // 'canceled', 'unpaid', etc.
-         planId = 'free';
+    const updateData = {
+      stripe_customer_id: subscription.customer,
+      stripe_subscription_id: subscription.id,
+      subscription_status: subscription.status // active, past_due, canceled, etc.
+    };
+
+    // Try to map Stripe price to plan_id
+    if (subscription.items?.data?.length > 0) {
+      const priceId = subscription.items.data[0].price.id;
+      
+      // Find matching SubscriptionPlan
+      const plans = await base44.asServiceRole.entities.SubscriptionPlan.filter({});
+      const matchingPlan = plans.find(
+        p => p.monthly_price_id === priceId || p.annual_price_id === priceId
+      );
+      
+      if (matchingPlan) {
+        updateData.plan_id = matchingPlan.id;
       }
     }
 
-    // Update user entity
-    await base44.asServiceRole.entities.User.update(user.id, {
-      subscription_status: status,
-      plan_id: planId,
-      updated_date: new Date().toISOString()
+    await base44.asServiceRole.entities.User.update(targetUser.id, updateData);
+
+    // Log activity
+    try {
+      await base44.asServiceRole.entities.ActivityLog.create({
+        user_id: targetUser.id,
+        user_email: targetUser.email,
+        event_type: 'subscription_synced',
+        payload: {
+          subscription_id: subscription.id,
+          status: subscription.status,
+          plan_id: updateData.plan_id
+        }
+      });
+    } catch (logError) {
+      console.warn('[syncSubscriptionStatus] ActivityLog failed:', logError.message);
+    }
+
+    return Response.json({
+      success: true,
+      user_id: targetUser.id,
+      subscription_status: subscription.status,
+      plan_id: updateData.plan_id
     });
-
-    return Response.json({ success: true, status, planId });
-
   } catch (error) {
-    console.error("Sync error:", error);
+    console.error('[syncSubscriptionStatus] Error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
