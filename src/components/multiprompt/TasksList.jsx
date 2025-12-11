@@ -14,7 +14,8 @@ export default function TasksList({
   onUpdateScreenshots,
   onUpdateFocus,
   onUpdateContext,
-  onDragEnd
+  onDragEnd,
+  onDebugScreenshot
 }) {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -42,7 +43,8 @@ export default function TasksList({
                       onUpdateFocus={onUpdateFocus}
                       onUpdateContext={onUpdateContext}
                       dragHandleProps={provided.dragHandleProps}
-                    />
+                      onDebugScreenshot={onDebugScreenshot}
+                      />
                   </div>
                 )}
               </Draggable>

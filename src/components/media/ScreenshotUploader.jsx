@@ -12,7 +12,8 @@ export default function ScreenshotUploader({
   projectId = null,
   taskId = null,
   maxCount = 10,
-  compact = false
+  compact = false,
+  onDebugClick = null
 }) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
@@ -198,6 +199,7 @@ export default function ScreenshotUploader({
                 screenshotId={id}
                 onRemove={handleRemove}
                 showCopyEmbed={!compact}
+                onDebugClick={onDebugClick}
               />
             ))}
           </div>

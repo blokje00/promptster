@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckSquare, Square, Trash2, MoreHorizontal, GripVertical, Upload, ChevronDown, ChevronUp } from "lucide-react";
 import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 import { toast } from "sonner";
+import { base44 } from "@/api/base44Client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,7 +79,8 @@ export default function ThoughtCard({
   onUpdateFocus,
   onUpdateContext,
   dragHandleProps,
-  showDragHandle = true
+  showDragHandle = true,
+  onDebugScreenshot
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(thought.content || "");
@@ -112,6 +114,18 @@ export default function ThoughtCard({
         if (uploadedUrls.length > 0) {
           onUpdateScreenshots(thought.id, [...currentScreenshots, ...uploadedUrls]);
           toast.success(`${uploadedUrls.length} image(s) pasted`);
+          
+          // TASK-7: Trigger OCR vision analysis immediately after paste
+          try {
+            for (const url of uploadedUrls) {
+              base44.functions.invoke('analyzeScreenshotWithCache', {
+                screenshotUrl: url,
+                level: 'full'
+              }).catch(err => console.warn('[ThoughtCard] Vision analysis failed:', err));
+            }
+          } catch (error) {
+            console.warn('[ThoughtCard] Could not trigger vision analysis:', error);
+          }
         }
       } catch (error) {
         toast.error("Failed to paste image");
@@ -192,6 +206,18 @@ export default function ThoughtCard({
       if (successUrls.length > 0) {
         onUpdateScreenshots(thought.id, [...currentScreenshots, ...successUrls]);
         toast.success(`${successUrls.length} afbeelding(en) toegevoegd`);
+        
+        // TASK-7: Trigger OCR vision analysis immediately after drop
+        try {
+          for (const url of successUrls) {
+            base44.functions.invoke('analyzeScreenshotWithCache', {
+              screenshotUrl: url,
+              level: 'full'
+            }).catch(err => console.warn('[ThoughtCard] Vision analysis failed:', err));
+          }
+        } catch (error) {
+          console.warn('[ThoughtCard] Could not trigger vision analysis:', error);
+        }
       } else if (imageFiles.length > 0) {
         toast.error("Uploads mislukt. Probeer opnieuw.");
       }
@@ -357,6 +383,7 @@ export default function ThoughtCard({
             projectId={thought.project_id}
             maxCount={5}
             compact
+            onDebugClick={onDebugScreenshot}
           />
         </div>
       </div>

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "@/utils";
+import OCRDebugModal from "@/components/admin/OCRDebugModal";
 
 // Custom Hooks
 import { useMultipromptData } from "@/components/hooks/useMultipromptState";
@@ -113,6 +114,8 @@ export default function Multiprompt() {
   const [groupBy, setGroupBy] = useState("component");
   const [showBanner, setShowBanner] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showOCRDebug, setShowOCRDebug] = useState(false);
+  const [ocrDebugUrl, setOcrDebugUrl] = useState(null);
 
   // --- Generate Checklist Helper ---
   const generateChecklist = useCallback(() => {
@@ -316,6 +319,12 @@ export default function Multiprompt() {
                           updateThought.mutate({ id, data: { screenshot_ids: s } });
                           if (s && s.length > 0) triggerVisionAnalysis(id, s);
                         }}
+                        onDebugScreenshot={(url) => {
+                          if (currentUser?.role === 'admin') {
+                            setOcrDebugUrl(url);
+                            setShowOCRDebug(true);
+                          }
+                        }}
                         onUpdateFocus={(id, f) => updateThought.mutate({ id, data: { focus_type: f } })}
                         onUpdateContext={(id, ctx) => updateThought.mutate({ 
                           id, 
@@ -407,6 +416,15 @@ export default function Multiprompt() {
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* TASK-5: OCR Debug Modal - Admin Only */}
+        {currentUser?.role === 'admin' && (
+          <OCRDebugModal
+            isOpen={showOCRDebug}
+            onClose={() => setShowOCRDebug(false)}
+            screenshotUrl={ocrDebugUrl}
+          />
+        )}
       </div>
     </AccessGuard>
   );
