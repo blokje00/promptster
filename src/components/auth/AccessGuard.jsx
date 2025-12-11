@@ -79,20 +79,40 @@ export default function AccessGuard({ children, pageType = "free" }) {
     const trialEnd = trialEndRaw ? new Date(trialEndRaw) : null;
     const now = new Date();
 
+    // DEBUG: Log current state for troubleshooting
+    console.log('[AccessGuard] User access check:', {
+      email: currentUser?.email,
+      subscription_status: subscriptionStatus,
+      trial_end: trialEndRaw,
+      trialEndParsed: trialEnd,
+      isTrialExpired: trialEnd ? trialEnd < now : null,
+      now: now.toISOString()
+    });
+
     // Check active statuses
     const hasActiveSubscription = 
       subscriptionStatus === 'active' || 
       subscriptionStatus === 'trialing';
     const hasActiveTrial = !!trialEnd && trialEnd > now;
-    const hasNeverStartedTrial = !trialEnd;
+    const hasNeverStartedTrial = !trialEnd && subscriptionStatus !== 'expired';
+
+    console.log('[AccessGuard] Access conditions:', {
+      hasActiveSubscription,
+      hasActiveTrial,
+      hasNeverStartedTrial
+    });
 
     // Priority 1: Active subscription or trial → Grant access immediately
     if (hasActiveSubscription || hasActiveTrial) {
+      console.log('[AccessGuard] ✓ Access granted - active subscription or trial');
       return children;
     }
 
     // Priority 2: Never started trial AND no active subscription → Show "Start Free Trial"
+    // This should catch new users who have never had a trial
     if (hasNeverStartedTrial && !hasActiveSubscription) {
+      console.log('[AccessGuard] → Showing Start Trial modal (never started)');
+
       return renderWithModal(
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
           <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 text-center">
@@ -127,6 +147,7 @@ export default function AccessGuard({ children, pageType = "free" }) {
     }
 
     // Priority 3: Trial expired or no active subscription → Show "Subscription Required"
+    console.log('[AccessGuard] → Showing Subscription Required (trial expired or used)');
     return renderWithModal(
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
         <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 text-center">
