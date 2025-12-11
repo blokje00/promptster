@@ -80,7 +80,9 @@ export default function AccessGuard({ children, pageType = "free" }) {
     }
 
     // Priority 2: Never started trial AND no active subscription → Show "Start Free Trial"
-    if (hasNeverStartedTrial && !hasActiveSubscription) {
+    const showStartTrialScreen = hasNeverStartedTrial && !hasActiveSubscription;
+    
+    if (showStartTrialScreen) {
       return (
         <>
           <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
@@ -123,35 +125,42 @@ export default function AccessGuard({ children, pageType = "free" }) {
 
     // Priority 3: Trial expired or no active subscription → Show "Subscription Required"
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
-        <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mx-auto mb-4">
-            <Crown className="w-8 h-8 text-white" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-            Subscription Required
-          </h2>
-          <p className="text-slate-600 dark:text-slate-400 mb-6">
-            Your trial has ended. Subscribe to continue using Promptster
-          </p>
-          <div className="space-y-3">
-            <Button 
-              onClick={() => navigate(createPageUrl("Subscription"))}
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-            >
-              <Crown className="w-4 h-4 mr-2" />
-              View Plans
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => navigate(createPageUrl("Multiprompt"))}
-              className="w-full"
-            >
-              Back to Dashboard
-            </Button>
+      <>
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
+          <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 text-center">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mx-auto mb-4">
+              <Crown className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+              Subscription Required
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              Your trial has ended. Subscribe to continue using Promptster
+            </p>
+            <div className="space-y-3">
+              <Button 
+                onClick={() => navigate(createPageUrl("Subscription"))}
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+              >
+                <Crown className="w-4 h-4 mr-2" />
+                View Plans
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => navigate(createPageUrl("Multiprompt"))}
+                className="w-full"
+              >
+                Back to Dashboard
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+        <StartTrialModal 
+          isOpen={showTrialModal}
+          onClose={() => setShowTrialModal(false)}
+          onSuccess={() => window.location.reload()}
+        />
+      </>
     );
   }
 
