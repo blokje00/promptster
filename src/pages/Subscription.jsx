@@ -159,13 +159,13 @@ export default function SubscriptionPage() {
                 {plan.annual_price_amount && <span>Year: €{plan.annual_price_amount}</span>}
                 <span className="font-medium text-indigo-600">Max Tasks: {plan.max_thoughts || 10}</span>
               </div>
-              {plan.features && plan.features.length > 0 && (
+              {plan.features && plan.features.length > 0 ? (
                 <ul className="mt-3 space-y-1">
                   {plan.features.map((feature, idx) => (
                     <li key={idx} className="text-sm text-slate-600">• {feature}</li>
                   ))}
                 </ul>
-              )}
+              ) : null}
             </div>
             <div className="flex gap-2">
               {user?.plan_id === plan.id ? (
