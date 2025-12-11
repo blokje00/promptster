@@ -13,10 +13,12 @@ export default function ScreenshotUploader({
   taskId = null,
   maxCount = 10,
   compact = false,
-  onDebugClick = null
+  onDebugClick = null,
+  showOCRFeedback = true
 }) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [analyzingUrls, setAnalyzingUrls] = useState([]);
 
   /**
    * Handles file upload via Base44 Supabase integration
@@ -73,8 +75,31 @@ export default function ScreenshotUploader({
 
     if (successfulUrls.length > 0) {
       onChange([...screenshotIds, ...successfulUrls]);
+      
+      // Start OCR analysis in background if feedback is enabled
+      if (showOCRFeedback) {
+        setAnalyzingUrls(successfulUrls);
+        
+        // Trigger analysis for each URL
+        Promise.all(
+          successfulUrls.map(url => 
+            base44.functions.invoke('analyzeScreenshotWithCache', {
+              screenshotUrl: url,
+              level: 'full'
+            }).catch(err => {
+              console.error('[ScreenshotUploader] OCR analysis failed:', err);
+              return null;
+            })
+          )
+        ).then(() => {
+          setAnalyzingUrls([]);
+        });
+      }
+      
       toast.success(`✓ ${successfulUrls.length} screenshot(s) uploaded successfully`, {
-        description: successfulUrls.length === 1 ? "Screenshot is ready" : "All screenshots are ready"
+        description: showOCRFeedback 
+          ? "Analyzing with OCR Vision..." 
+          : (successfulUrls.length === 1 ? "Screenshot is ready" : "All screenshots are ready")
       });
     }
 
@@ -193,15 +218,27 @@ export default function ScreenshotUploader({
         {/* Existing images */}
         {screenshotIds.length > 0 && (
           <div className={`flex gap-2 ${compact ? '' : 'flex-wrap'}`}>
-            {screenshotIds.map((id, index) => (
-              <ScreenshotThumb
-                key={`${id}-${index}`}
-                screenshotId={id}
-                onRemove={handleRemove}
-                showCopyEmbed={!compact}
-                onDebugClick={onDebugClick}
-              />
-            ))}
+            {screenshotIds.map((id, index) => {
+              const isAnalyzing = analyzingUrls.includes(id);
+              return (
+                <div key={`${id}-${index}`} className="relative">
+                  <ScreenshotThumb
+                    screenshotId={id}
+                    onRemove={handleRemove}
+                    showCopyEmbed={!compact}
+                    onDebugClick={onDebugClick}
+                  />
+                  {isAnalyzing && showOCRFeedback && (
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] rounded-lg flex items-center justify-center">
+                      <div className="bg-white/90 dark:bg-slate-800/90 px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg">
+                        <Loader2 className="w-3 h-3 animate-spin text-indigo-600" />
+                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">OCR...</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
         

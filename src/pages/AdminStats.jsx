@@ -3,16 +3,46 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart, Users, FolderOpen, Sparkles, FileText, Loader2, Calendar, Clock, CreditCard } from "lucide-react";
+import { BarChart, Users, FolderOpen, Sparkles, FileText, Loader2, Calendar, Clock, CreditCard, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { nl } from "date-fns/locale";
 import RequireSubscription from "../components/auth/RequireSubscription";
+
+/**
+ * Sortable table header component
+ */
+function SortableHeader({ field, label, sortField, sortDirection, onSort }) {
+  const isActive = sortField === field;
+  
+  return (
+    <th 
+      className="pb-2 font-semibold text-slate-700 cursor-pointer hover:text-indigo-600 transition-colors select-none"
+      onClick={() => onSort(field)}
+    >
+      <div className="flex items-center gap-1">
+        {label}
+        {isActive ? (
+          sortDirection === 'asc' ? (
+            <ArrowUp className="w-3 h-3 text-indigo-600" />
+          ) : (
+            <ArrowDown className="w-3 h-3 text-indigo-600" />
+          )
+        ) : (
+          <ArrowUpDown className="w-3 h-3 text-slate-400" />
+        )}
+      </div>
+    </th>
+  );
+}
 
 /**
  * Admin statistieken pagina - alleen zichtbaar voor admin/superuser.
  * Toont overzicht van app gebruik.
  */
 export default function AdminStats() {
+  const [sortField, setSortField] = React.useState(null);
+  const [sortDirection, setSortDirection] = React.useState('asc');
+
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me(),
@@ -73,6 +103,78 @@ export default function AdminStats() {
       </div>
     );
   }
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Prepare user data with calculated fields
+  const usersWithData = React.useMemo(() => {
+    return allUsers.map(user => {
+      const userItems = allItems.filter(i => i.created_by === user.email);
+      const userProjects = allProjects.filter(p => p.created_by === user.email);
+      return {
+        ...user,
+        itemsCount: userItems.length,
+        projectsCount: userProjects.length,
+        userItems,
+        userProjects
+      };
+    });
+  }, [allUsers, allItems, allProjects]);
+
+  // Sort users
+  const sortedUsers = React.useMemo(() => {
+    if (!sortField) return usersWithData;
+
+    const sorted = [...usersWithData].sort((a, b) => {
+      let aVal, bVal;
+
+      switch (sortField) {
+        case 'full_name':
+          aVal = (a.full_name || '').toLowerCase();
+          bVal = (b.full_name || '').toLowerCase();
+          break;
+        case 'email':
+          aVal = a.email.toLowerCase();
+          bVal = b.email.toLowerCase();
+          break;
+        case 'created_date':
+          aVal = new Date(a.created_date || 0);
+          bVal = new Date(b.created_date || 0);
+          break;
+        case 'plan_id':
+          aVal = a.plan_id || '';
+          bVal = b.plan_id || '';
+          break;
+        case 'subscription_status':
+          aVal = a.subscription_status || 'none';
+          bVal = b.subscription_status || 'none';
+          break;
+        case 'items':
+          aVal = a.itemsCount;
+          bVal = b.itemsCount;
+          break;
+        case 'projects':
+          aVal = a.projectsCount;
+          bVal = b.projectsCount;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return sorted;
+  }, [usersWithData, sortField, sortDirection]);
 
   const stats = [
     {
@@ -175,22 +277,22 @@ export default function AdminStats() {
                 <table className="w-full text-sm">
                   <thead className="border-b border-slate-200">
                     <tr className="text-left">
-                      <th className="pb-2 font-semibold text-slate-700">Naam</th>
-                      <th className="pb-2 font-semibold text-slate-700">Email</th>
-                      <th className="pb-2 font-semibold text-slate-700">Lid sinds</th>
-                      <th className="pb-2 font-semibold text-slate-700">Plan</th>
-                      <th className="pb-2 font-semibold text-slate-700">Subscription Status</th>
+                      <SortableHeader field="full_name" label="Naam" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      <SortableHeader field="email" label="Email" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      <SortableHeader field="created_date" label="Lid sinds" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      <SortableHeader field="plan_id" label="Plan" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      <SortableHeader field="subscription_status" label="Subscription Status" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       <th className="pb-2 font-semibold text-slate-700">Trial Dates</th>
-                      <th className="pb-2 font-semibold text-slate-700">Items</th>
-                      <th className="pb-2 font-semibold text-slate-700">Projecten</th>
+                      <SortableHeader field="items" label="Items" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      <SortableHeader field="projects" label="Projecten" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       <th className="pb-2 font-semibold text-slate-700">Groei %</th>
                       <th className="pb-2 font-semibold text-slate-700">Actions %</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {allUsers.map((user) => {
-                      const userItems = allItems.filter(i => i.created_by === user.email);
-                      const userProjects = allProjects.filter(p => p.created_by === user.email);
+                    {sortedUsers.map((user) => {
+                      const userItems = user.userItems;
+                      const userProjects = user.userProjects;
                       
                       // Calculate membership info using subscription_status field
                       const createdDate = user.created_date ? new Date(user.created_date) : null;
