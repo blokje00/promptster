@@ -159,7 +159,24 @@ Return JSON:
                 }
               }
             },
-            semanticBlocks: { type: "array" },
+            semanticBlocks: { 
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  type: { type: "string" },
+                  text: { type: "string" },
+                  components: { type: "array", items: { type: "string" } },
+                  hierarchy: {
+                    type: "object",
+                    properties: {
+                      level: { type: "number" }
+                    }
+                  }
+                }
+              }
+            },
             layoutPattern: { type: "string" },
             detectedComponents: { type: "array", items: { type: "string" } }
           }
