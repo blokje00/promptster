@@ -20,6 +20,7 @@ export default function ProjectsManager({ projects = [] }) {
   const [editColor, setEditColor] = useState("blue");
   const [editDesc, setEditDesc] = useState("");
   const [editConfig, setEditConfig] = useState("");
+  const [pastedJSON, setPastedJSON] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Mutations
@@ -57,6 +58,7 @@ export default function ProjectsManager({ projects = [] }) {
     setEditColor("blue");
     setEditDesc("");
     setEditConfig("");
+    setPastedJSON("");
     setIsDialogOpen(true);
   };
 
@@ -67,28 +69,27 @@ export default function ProjectsManager({ projects = [] }) {
     setEditColor(project.color);
     setEditDesc(project.description || "");
     setEditConfig(project.technical_config_markdown || "");
+    setPastedJSON("");
     setIsDialogOpen(true);
   };
 
-  const handleParseJSON = () => {
-    const input = document.getElementById('llm-response-input').value;
-    if (!input.trim()) {
-      toast.error("Please paste JSON data first");
-      return;
-    }
+  const handleJSONPaste = (value) => {
+    setPastedJSON(value);
+    
+    if (!value.trim()) return;
     
     try {
-      const jsonMatch = input.match(/```json\n([\s\S]*?)\n```/) || input.match(/\{[\s\S]*\}/);
-      const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : input;
+      const jsonMatch = value.match(/```json\n([\s\S]*?)\n```/) || value.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : value;
       const data = JSON.parse(jsonStr);
       
       if (data.name) setEditName(data.name);
       if (data.description) setEditDesc(data.description);
       if (data.technical_config_markdown) setEditConfig(data.technical_config_markdown);
       
-      toast.success("Project structure parsed successfully!");
+      toast.success("Auto-parsed project structure!");
     } catch (e) {
-      toast.error("Failed to parse JSON: " + e.message);
+      // Silent fail - user might still be typing
     }
   };
 
@@ -208,7 +209,7 @@ Format as clear Markdown headers and lists.`;
 
             <div className="space-y-2 pt-4 border-t border-slate-100">
                <div className="flex items-center justify-between">
-                 <label className="text-sm font-medium">LLM Response Parser</label>
+                 <label className="text-sm font-medium">Auto-Parse Project Structure</label>
                  <Button
                    variant="outline"
                    size="sm"
@@ -245,21 +246,13 @@ Be thorough - include ALL pages, components, buttons, forms, and key functionali
                    <Copy className="w-3 h-3" /> Copy Analysis Prompt
                  </Button>
                </div>
-               <div className="flex gap-2">
-                 <Textarea 
-                   placeholder="Paste the LLM's JSON response here..." 
-                   className="min-h-[100px] text-xs font-mono flex-1"
-                   id="llm-response-input"
-                 />
-                 <Button
-                   variant="secondary"
-                   className="h-auto px-3 flex-col gap-1 text-xs"
-                   onClick={handleParseJSON}
-                 >
-                   <Sparkles className="w-4 h-4" />
-                   Parse JSON
-                 </Button>
-               </div>
+               <Textarea 
+                 placeholder="Paste LLM's JSON response (will auto-fill fields above)..." 
+                 className="min-h-[100px] text-xs font-mono"
+                 value={pastedJSON}
+                 onChange={(e) => handleJSONPaste(e.target.value)}
+               />
+               <p className="text-xs text-slate-500">💡 Fields above will auto-populate when you paste valid JSON</p>
             </div>
 
             <div className="flex justify-end gap-2 pt-6 border-t border-slate-100 mt-6">
