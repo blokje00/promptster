@@ -105,9 +105,17 @@ export default function AdminAnalytics() {
           <h2 className="text-xl font-bold text-red-800 mb-2">Access Denied</h2>
           <p className="text-red-600">This page is only accessible to administrators.</p>
         </div>
-      </div>
-    );
-  }
+        </div>
+        );
+        };
+
+        return (
+        <>
+        <PageViewTracker />
+        {renderContent()}
+        </>
+        );
+        }
 
   // Loading state - AFTER all hooks
   if (loadingUser || loadingViews) {
