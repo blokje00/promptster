@@ -141,8 +141,10 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      <div className="grid gap-6">
-        {plans.map((plan) => (
+      {/* Only show plans if user doesn't have an active subscription */}
+      {user?.subscription_status !== 'active' && (
+        <div className="grid gap-6">
+          {plans.map((plan) => (
           <Card key={plan.id} className={`border-l-4 ${plan.is_active ? 'border-l-green-500' : 'border-l-slate-300'}`}>
             <CardContent className="p-6 flex items-center justify-between">
               <div>
@@ -189,11 +191,12 @@ export default function SubscriptionPage() {
               </div>
             </CardContent>
           </Card>
-        ))}
-        {plans.length === 0 && !isLoading && (
-          <p className="text-center text-slate-500 py-12">No subscription plans configured yet.</p>
-        )}
-      </div>
+          ))}
+          {plans.length === 0 && !isLoading && (
+            <p className="text-center text-slate-500 py-12">No subscription plans configured yet.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
