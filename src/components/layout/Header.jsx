@@ -203,16 +203,6 @@ export default function Header() {
         {/* Right side: Settings */}
         <div className="flex items-center gap-1">
           <ThemeToggleButton />
-          <Link to={createPageUrl("Features")}>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-700 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950"
-              title={t("Bekijk de features")}
-            >
-              Features
-            </Button>
-          </Link>
           {/* Admin items moved to dropdown */}
           {false && user?.role === 'admin' && (
             <>
@@ -240,31 +230,6 @@ export default function Header() {
               </Link>
             </>
           )}
-          <Link to={createPageUrl("AIBackoffice")}>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
-              title={t("Instellingen en AI-configuratie")}
-            >
-              <Settings className="w-5 h-5" />
-            </Button>
-          </Link>
-          
-          <Link to={createPageUrl("RecycleBin")}>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className={`relative ${deletedCount > 0 ? 'text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-              title="Recycle Bin"
-            >
-              {deletedCount > 0 ? (
-                <Trash2 className="w-5 h-5" />
-              ) : (
-                <Trash className="w-5 h-5" />
-              )}
-            </Button>
-          </Link>
           
           {user && (
             <DropdownMenu>

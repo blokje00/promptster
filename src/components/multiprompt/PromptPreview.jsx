@@ -26,11 +26,6 @@ export default function PromptPreview({
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle>Preview</CardTitle>
         <div className="flex gap-2">
-          <Link to={createPageUrl("AIBackoffice")}>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-600">
-              <Cog className="w-4 h-4" />
-            </Button>
-          </Link>
           <Button size="sm" variant="outline" onClick={onImprove} disabled={!generatedPrompt}>
             {isImproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />} Improve
           </Button>
@@ -50,7 +45,7 @@ export default function PromptPreview({
       </CardHeader>
       <CardContent className="flex-1 relative group/preview">
         <div className="bg-slate-900 rounded-lg p-4 min-h-[300px] max-h-[500px] overflow-auto text-slate-300 font-mono text-sm whitespace-pre-wrap">
-          {displayPrompt || "// Select tasks to generate prompt..."}
+          {displayPrompt || "// Create / select tasks to generate prompt..."}
         </div>
         {displayPrompt && (
           <Button
