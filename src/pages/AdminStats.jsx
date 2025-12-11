@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { BarChart, Users, FolderOpen, Sparkles, FileText, Loader2, Calendar, Clock, CreditCard, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { nl } from "date-fns/locale";
-import RequireSubscription from "../components/auth/RequireSubscription";
 
 /**
  * Sortable table header component
@@ -84,26 +83,6 @@ export default function AdminStats() {
     enabled: currentUser?.role === 'admin',
   });
 
-  // Redirect non-admins
-  if (currentUser && currentUser.role !== 'admin') {
-    return (
-      <div className="p-8 text-center">
-        <h2 className="text-2xl font-bold text-red-600">Geen Toegang</h2>
-        <p className="text-slate-600 mt-2">Deze pagina is alleen toegankelijk voor administrators.</p>
-      </div>
-    );
-  }
-
-  const isLoading = loadingUsers || loadingItems || loadingProjects || loadingThoughts;
-
-  if (isLoading) {
-    return (
-      <div className="p-8 flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-      </div>
-    );
-  }
-
   const handleSort = (field) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -176,6 +155,26 @@ export default function AdminStats() {
     return sorted;
   }, [usersWithData, sortField, sortDirection]);
 
+  // Check admin access AFTER all hooks
+  if (currentUser && currentUser.role !== 'admin') {
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-2xl font-bold text-red-600">Geen Toegang</h2>
+        <p className="text-slate-600 mt-2">Deze pagina is alleen toegankelijk voor administrators.</p>
+      </div>
+    );
+  }
+
+  const isLoading = loadingUsers || loadingItems || loadingProjects || loadingThoughts;
+
+  if (isLoading) {
+    return (
+      <div className="p-8 flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
   const stats = [
     {
       title: "Totaal Gebruikers",
@@ -218,8 +217,7 @@ export default function AdminStats() {
   ];
 
   return (
-    <RequireSubscription>
-      <div className="p-4 md:p-8">
+    <div className="p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-2">
@@ -425,6 +423,5 @@ export default function AdminStats() {
           </Card>
         </div>
       </div>
-    </RequireSubscription>
   );
 }
