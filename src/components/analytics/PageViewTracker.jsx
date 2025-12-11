@@ -7,17 +7,22 @@ import { base44 } from '@/api/base44Client';
  * Tracks page views, time on page, and navigation
  */
 export default function PageViewTracker() {
-  const location = useLocation();
   const pageStartTime = useRef(null);
   const sessionId = useRef(null);
   const lastPageName = useRef(null);
+  
+  // Initialize session ID once on mount
+  if (!sessionId.current) {
+    sessionId.current = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
 
-  // Initialize session ID once
-  useEffect(() => {
-    if (!sessionId.current) {
-      sessionId.current = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    }
-  }, []);
+  let location;
+  try {
+    location = useLocation();
+  } catch (error) {
+    // Not in Router context, skip tracking
+    return null;
+  }
 
   useEffect(() => {
     // Record previous page exit time
