@@ -61,16 +61,15 @@ export default function AccessGuard({ children, pageType = "free" }) {
       );
     }
 
-    // Check subscription status - handle undefined/null as 'none'
-    const subscriptionStatus = currentUser.subscription_status || 'none';
+    // Check if user has EVER started a trial (trial_end exists)
+    const hasNeverStartedTrial = !currentUser.trial_end;
     const now = new Date();
     const trialEnd = currentUser.trial_end ? new Date(currentUser.trial_end) : null;
-    const hasActiveTrial = subscriptionStatus === 'trial' && trialEnd && trialEnd > now;
-    const hasActiveSubscription = subscriptionStatus === 'active';
-    const hasNoTrial = !subscriptionStatus || subscriptionStatus === 'none';
+    const hasActiveTrial = trialEnd && trialEnd > now && currentUser.subscription_status === 'trial';
+    const hasActiveSubscription = currentUser.subscription_status === 'active';
 
-    // User has no trial yet - show trial activation prompt
-    if (hasNoTrial) {
+    // Priority 1: Never started a trial → Show "Start Free Trial" screen
+    if (hasNeverStartedTrial) {
       return (
         <>
           <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
@@ -111,8 +110,13 @@ export default function AccessGuard({ children, pageType = "free" }) {
       );
     }
 
-    // Trial expired or no active subscription
-    if (!hasActiveTrial && !hasActiveSubscription) {
+    // Priority 2: Has active access → Show content
+    if (hasActiveTrial || hasActiveSubscription) {
+      return children;
+    }
+
+    // Priority 3: Trial expired or no active subscription → Show "Subscription Required"
+    if (true) {
       return (
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
           <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 text-center">
@@ -145,9 +149,6 @@ export default function AccessGuard({ children, pageType = "free" }) {
         </div>
       );
     }
-
-    // Has access - render children
-    return children;
   }
 
   return children;
