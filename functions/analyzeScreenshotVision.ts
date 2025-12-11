@@ -19,17 +19,17 @@ Deno.serve(async (req) => {
     const body = await req.json();
     console.log('[analyzeScreenshotVision] Request body:', JSON.stringify(body));
 
-    const { url, screenshotId, level = 'full' } = body;
+    const { url, screenshotId, screenshotUrl, projectId, level = 'full' } = body;
 
     // Validate request
-    if (!url && !screenshotId) {
+    if (!url && !screenshotId && !screenshotUrl) {
       console.error('[analyzeScreenshotVision] Missing screenshot reference');
       return Response.json({ 
-        error: 'Missing screenshot reference: provide either url or screenshotId' 
+        error: 'Missing screenshot reference: provide either url, screenshotUrl or screenshotId' 
       }, { status: 400 });
     }
 
-    let imageUrl = url;
+    let imageUrl = url || screenshotUrl;
     
     // If screenshotId provided, fetch from database
     if (screenshotId && !url) {
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
     console.log('[analyzeScreenshotVision] Starting analysis for:', imageUrl);
 
-    // Step 1: Fetch image dimensions
+    // Step 1: Fetch image dimensions using imageDecoder (Deno-compatible)
     let width = 1920;
     let height = 1080;
     
@@ -67,11 +67,28 @@ Deno.serve(async (req) => {
       if (!imageResponse.ok) {
         console.warn('[analyzeScreenshotVision] Failed to fetch image for dimensions');
       } else {
-        const imageBlob = await imageResponse.blob();
-        const imageBitmap = await createImageBitmap(imageBlob);
-        width = imageBitmap.width;
-        height = imageBitmap.height;
-        console.log('[analyzeScreenshotVision] Image dimensions:', width, 'x', height);
+        const buffer = await imageResponse.arrayBuffer();
+        const uint8Array = new Uint8Array(buffer);
+        
+        // Simple dimension extraction without createImageBitmap
+        // For PNG: read IHDR chunk at byte 16-24
+        if (uint8Array[0] === 0x89 && uint8Array[1] === 0x50) { // PNG signature
+          width = (uint8Array[16] << 24) | (uint8Array[17] << 16) | (uint8Array[18] << 8) | uint8Array[19];
+          height = (uint8Array[20] << 24) | (uint8Array[21] << 16) | (uint8Array[22] << 8) | uint8Array[23];
+          console.log('[analyzeScreenshotVision] PNG dimensions:', width, 'x', height);
+        } else if (uint8Array[0] === 0xFF && uint8Array[1] === 0xD8) { // JPEG signature
+          // Simple JPEG dimension extraction from SOF marker
+          let offset = 2;
+          while (offset < uint8Array.length - 9) {
+            if (uint8Array[offset] === 0xFF && (uint8Array[offset + 1] === 0xC0 || uint8Array[offset + 1] === 0xC2)) {
+              height = (uint8Array[offset + 5] << 8) | uint8Array[offset + 6];
+              width = (uint8Array[offset + 7] << 8) | uint8Array[offset + 8];
+              console.log('[analyzeScreenshotVision] JPEG dimensions:', width, 'x', height);
+              break;
+            }
+            offset++;
+          }
+        }
       }
     } catch (error) {
       console.warn('[analyzeScreenshotVision] Could not determine image dimensions:', error.message);
@@ -167,7 +184,10 @@ Provide analysis as JSON with this structure:
     } catch (error) {
       console.error('[analyzeScreenshotVision] LLM Vision failed:', error);
       return Response.json({
+        ok: false,
         sourceUrl: imageUrl,
+        imageUrl,
+        projectId: projectId || null,
         width,
         height,
         summary: 'Analysis failed: ' + error.message,
@@ -232,7 +252,10 @@ Provide analysis as JSON with this structure:
     // Step 6: Build final response
     const processingTime = Date.now() - startTime;
     const enrichedResult = {
+      ok: true,
       sourceUrl: imageUrl,
+      imageUrl,
+      projectId: projectId || null,
       width,
       height,
       summary: result.summary || "UI screenshot analyzed",
@@ -256,8 +279,9 @@ Provide analysis as JSON with this structure:
   } catch (error) {
     console.error('[analyzeScreenshotVision] Top-level error:', error);
     return Response.json({ 
+      ok: false,
       error: 'Vision analysis failed: ' + error.message,
-      stack: error.stack,
+      stack: Deno.env.get('NODE_ENV') === 'development' ? error.stack : undefined,
       timestamp: new Date().toISOString()
     }, { status: 500 });
   }

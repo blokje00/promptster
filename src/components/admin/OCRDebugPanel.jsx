@@ -31,9 +31,19 @@ export default function OCRDebugPanel({ screenshotUrl }) {
 
     setIsAnalyzing(true);
     try {
-      const response = await base44.functions.invoke('analyzeScreenshotVision', { url: screenshotUrl });
-      setAnalysisResult(response.data);
-      toast.success(`Analysis complete: ${response.data.metadata.ocrLevel || 'basic'}`);
+      const response = await base44.functions.invoke('analyzeScreenshotVision', { 
+        screenshotUrl,
+        level: 'full'
+      });
+      
+      const result = response.data;
+      
+      if (!result.ok) {
+        throw new Error(result.error || 'Analysis failed');
+      }
+      
+      setAnalysisResult(result);
+      toast.success(`Analysis complete: ${result.metadata.ocrLevel || 'basic'}`);
     } catch (error) {
       console.error('OCR analysis failed:', error);
       toast.error(`Analysis failed: ${error.message}`);
