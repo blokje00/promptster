@@ -4,7 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Scan, Clipboard, Wand2, FolderTree, RefreshCw } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Scan, Clipboard, Wand2, FolderTree, RefreshCw, Save } from "lucide-react";
+import { toast } from "sonner";
+import { base44 } from "@/api/base44Client";
 
 import LiveAppScanner from "./LiveAppScanner";
 import ClipboardConfigParser from "./ClipboardConfigParser";
@@ -29,6 +33,19 @@ export default function UPSEPanel({
   onProjectSelect
 }) {
   const [activeTab, setActiveTab] = useState("overview");
+  const [llmParserInstruction, setLlmParserInstruction] = useState("");
+  const [isSavingParser, setIsSavingParser] = useState(false);
+
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
+
+  // Load LLM Parser instruction when project changes
+  React.useEffect(() => {
+    if (selectedProject?.llm_response_parser_instruction) {
+      setLlmParserInstruction(selectedProject.llm_response_parser_instruction);
+    } else {
+      setLlmParserInstruction("");
+    }
+  }, [selectedProject]);
 
   /**
    * Voegt een nieuwe scan source toe aan de structure
@@ -107,7 +124,26 @@ export default function UPSEPanel({
     return result;
   };
 
-  const selectedProject = projects.find(p => p.id === selectedProjectId);
+  const handleSaveLLMParser = async () => {
+    if (!selectedProjectId) {
+      toast.error("Geen project geselecteerd");
+      return;
+    }
+
+    setIsSavingParser(true);
+    try {
+      await base44.entities.Project.update(selectedProjectId, {
+        llm_response_parser_instruction: llmParserInstruction
+      });
+      toast.success("LLM Response Parser opgeslagen");
+      onProjectSelect(selectedProjectId); // Trigger refresh
+    } catch (error) {
+      toast.error("Kon parser niet opslaan");
+      console.error(error);
+    } finally {
+      setIsSavingParser(false);
+    }
+  };
 
   return (
     <Card className="border-purple-200 bg-gradient-to-br from-purple-50/50 to-indigo-50/50">
@@ -149,10 +185,14 @@ export default function UPSEPanel({
           </div>
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-4 mb-6">
+            <TabsList className="grid grid-cols-5 mb-6">
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <FolderTree className="w-4 h-4" />
                 Overzicht
+              </TabsTrigger>
+              <TabsTrigger value="parser" className="flex items-center gap-2">
+                <Wand2 className="w-4 h-4" />
+                LLM Parser
               </TabsTrigger>
               <TabsTrigger value="liveApp" className="flex items-center gap-2">
                 <Scan className="w-4 h-4" />
@@ -174,6 +214,52 @@ export default function UPSEPanel({
                 project={selectedProject}
                 onRefresh={() => setActiveTab("liveApp")}
               />
+            </TabsContent>
+
+            <TabsContent value="parser">
+              <div className="space-y-4">
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Project-specifieke LLM Response Parser</h3>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    Definieer hoe de LLM de output moet formatteren voor dit project. 
+                    Dit wordt toegevoegd aan elke multiprompt voor {selectedProject?.name}.
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Parser Instructie</Label>
+                  <Textarea
+                    value={llmParserInstruction}
+                    onChange={(e) => setLlmParserInstruction(e.target.value)}
+                    placeholder="Bijvoorbeeld: Return all changes as JSON with file paths and diffs..."
+                    className="min-h-[200px] font-mono text-sm"
+                  />
+                  <p className="text-xs text-slate-500">
+                    Deze instructie wordt automatisch toegevoegd aan elke multiprompt voor dit project.
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setLlmParserInstruction("")}
+                    disabled={!llmParserInstruction}
+                  >
+                    Clear
+                  </Button>
+                  <Button
+                    onClick={handleSaveLLMParser}
+                    disabled={isSavingParser}
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    {isSavingParser ? (
+                      <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Saving...</>
+                    ) : (
+                      <><Save className="w-4 h-4 mr-2" /> Save Parser</>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="liveApp">
