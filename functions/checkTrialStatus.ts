@@ -29,6 +29,13 @@ Deno.serve(async (req) => {
     let needsUpdate = false;
     const updates = {};
 
+    // Ensure subscription_status defaults to 'none' if undefined/null
+    if (!user.subscription_status) {
+      console.log(`[checkTrialStatus] User ${user.email}: no subscription_status, setting to none`);
+      updates.subscription_status = 'none';
+      needsUpdate = true;
+    }
+
     // Case 1: subscription_status is "trial" but trial_start or trial_end missing
     if (user.subscription_status === 'trial' && (!user.trial_start || !user.trial_end)) {
       console.log(`[checkTrialStatus] User ${user.email}: trial status but missing dates, resetting to none`);

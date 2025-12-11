@@ -61,12 +61,13 @@ export default function AccessGuard({ children, pageType = "free" }) {
       );
     }
 
-    // Check subscription status
+    // Check subscription status - handle undefined/null as 'none'
+    const subscriptionStatus = currentUser.subscription_status || 'none';
     const now = new Date();
     const trialEnd = currentUser.trial_end ? new Date(currentUser.trial_end) : null;
-    const hasActiveTrial = currentUser.subscription_status === 'trial' && trialEnd && trialEnd > now;
-    const hasActiveSubscription = currentUser.subscription_status === 'active';
-    const hasNoTrial = currentUser.subscription_status === 'none';
+    const hasActiveTrial = subscriptionStatus === 'trial' && trialEnd && trialEnd > now;
+    const hasActiveSubscription = subscriptionStatus === 'active';
+    const hasNoTrial = !subscriptionStatus || subscriptionStatus === 'none';
 
     // User has no trial yet - show trial activation prompt
     if (hasNoTrial) {
