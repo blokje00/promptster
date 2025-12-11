@@ -129,25 +129,25 @@ export default function OCRDebugPanel({ screenshotUrl }) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white dark:bg-slate-800 p-4 rounded-lg">
                   <p className="text-sm text-slate-500 mb-1">OCR Level</p>
-                  {getLevelBadge(analysisResult.metadata.ocrLevel)}
+                  {getLevelBadge(analysisResult?.metadata?.ocrLevel || 'basic')}
                 </div>
                 <div className="bg-white dark:bg-slate-800 p-4 rounded-lg">
                   <p className="text-sm text-slate-500 mb-1">Processing Time</p>
-                  <p className="font-mono text-sm">{analysisResult.metadata.processingTime}ms</p>
+                  <p className="font-mono text-sm">{analysisResult?.metadata?.processingTime || 0}ms</p>
                 </div>
                 <div className="bg-white dark:bg-slate-800 p-4 rounded-lg">
                   <p className="text-sm text-slate-500 mb-1">Regions Detected</p>
-                  <p className="font-mono text-sm">{analysisResult.regions?.length || 0}</p>
+                  <p className="font-mono text-sm">{analysisResult?.regions?.length || 0}</p>
                 </div>
                 <div className="bg-white dark:bg-slate-800 p-4 rounded-lg">
                   <p className="text-sm text-slate-500 mb-1">Image Size</p>
-                  <p className="font-mono text-sm">{analysisResult.width}x{analysisResult.height}px</p>
+                  <p className="font-mono text-sm">{analysisResult?.width || 0}x{analysisResult?.height || 0}px</p>
                 </div>
               </div>
 
               <div className="bg-white dark:bg-slate-800 p-4 rounded-lg">
                 <p className="text-sm text-slate-500 mb-2">Summary</p>
-                <p className="text-sm text-slate-700 dark:text-slate-300">{analysisResult.summary}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300">{analysisResult?.summary || 'No summary available'}</p>
               </div>
 
               {/* Preview with bounding boxes */}
@@ -158,10 +158,10 @@ export default function OCRDebugPanel({ screenshotUrl }) {
                     <img src={screenshotUrl} alt="Screenshot" className="max-w-full h-auto rounded border" />
                     <svg 
                       className="absolute top-0 left-0 w-full h-full pointer-events-none"
-                      viewBox={`0 0 ${analysisResult.width} ${analysisResult.height}`}
+                      viewBox={`0 0 ${analysisResult?.width || 1920} ${analysisResult?.height || 1080}`}
                       style={{ width: '100%', height: 'auto' }}
                     >
-                      {analysisResult.regions?.map((region, idx) => (
+                      {analysisResult?.regions?.map((region, idx) => (
                         <rect
                           key={idx}
                           x={region.bbox.x}
@@ -183,13 +183,13 @@ export default function OCRDebugPanel({ screenshotUrl }) {
             {/* Level 3 Tab */}
             <TabsContent value="level3">
               <ScrollArea className="h-[500px]">
-                {analysisResult.semanticBlocks ? (
+                {analysisResult?.semanticBlocks && analysisResult.semanticBlocks.length > 0 ? (
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 mb-4">
                       <Layers className="w-4 h-4 text-blue-500" />
-                      <h3 className="font-semibold">Semantic Blocks ({analysisResult.semanticBlocks.length})</h3>
+                      <h3 className="font-semibold">Semantic Blocks ({analysisResult?.semanticBlocks?.length || 0})</h3>
                     </div>
-                    {analysisResult.semanticBlocks.map((block) => (
+                    {analysisResult?.semanticBlocks?.map((block) => (
                       <div key={block.id} className="bg-white dark:bg-slate-800 p-3 rounded border border-blue-200">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
@@ -200,10 +200,12 @@ export default function OCRDebugPanel({ screenshotUrl }) {
                             {Math.round(block.confidence * 100)}%
                           </span>
                         </div>
-                        <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">{block.text}</p>
-                        <div className="text-xs text-slate-500 font-mono">
-                          bbox: [{block.bbox.x}, {block.bbox.y}, {block.bbox.width}, {block.bbox.height}]
-                        </div>
+                        <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">{block?.text || '(no text)'}</p>
+                        {block?.bbox && (
+                          <div className="text-xs text-slate-500 font-mono">
+                            bbox: [{block.bbox.x}, {block.bbox.y}, {block.bbox.width}, {block.bbox.height}]
+                          </div>
+                        )}
                         {block.relationships?.length > 0 && (
                           <div className="mt-2 pt-2 border-t">
                             <p className="text-xs text-slate-500 mb-1">Relationships:</p>
@@ -217,14 +219,14 @@ export default function OCRDebugPanel({ screenshotUrl }) {
                       </div>
                     ))}
 
-                    {analysisResult.layoutRelations && (
+                    {analysisResult?.layoutRelations && analysisResult.layoutRelations.length > 0 && (
                       <div className="mt-6">
                         <div className="flex items-center gap-2 mb-3">
                           <Network className="w-4 h-4 text-blue-500" />
-                          <h3 className="font-semibold">Layout Relations ({analysisResult.layoutRelations.length})</h3>
+                          <h3 className="font-semibold">Layout Relations ({analysisResult?.layoutRelations?.length || 0})</h3>
                         </div>
                         <div className="space-y-2">
-                          {analysisResult.layoutRelations.slice(0, 10).map((rel, idx) => (
+                          {analysisResult?.layoutRelations?.slice(0, 10).map((rel, idx) => (
                             <div key={idx} className="bg-slate-100 dark:bg-slate-700 p-2 rounded text-xs font-mono">
                               {rel.fromId} <span className="text-blue-500">{rel.relation}</span> {rel.toId}
                               <span className="text-slate-400 ml-2">(d: {Math.round(rel.distance)})</span>
@@ -247,19 +249,19 @@ export default function OCRDebugPanel({ screenshotUrl }) {
             {/* Level 4 Tab */}
             <TabsContent value="level4">
               <ScrollArea className="h-[500px]">
-                {analysisResult.visionStructure ? (
+                {analysisResult?.visionStructure ? (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 mb-4">
                       <Box className="w-4 h-4 text-purple-500" />
                       <h3 className="font-semibold">
-                        Detected Components ({analysisResult.visionStructure.metadata.componentCount})
+                        Detected Components ({analysisResult?.visionStructure?.metadata?.componentCount || 0})
                       </h3>
                     </div>
 
                     <div className="bg-white dark:bg-slate-800 p-3 rounded">
                       <p className="text-xs text-slate-500 mb-2">Component Types:</p>
                       <div className="flex flex-wrap gap-2">
-                        {analysisResult.visionStructure.metadata.detectedTypes.map((type, idx) => (
+                        {analysisResult?.visionStructure?.metadata?.detectedTypes?.map((type, idx) => (
                           <Badge key={idx} className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
                             {type}
                           </Badge>
@@ -267,7 +269,7 @@ export default function OCRDebugPanel({ screenshotUrl }) {
                       </div>
                     </div>
 
-                    {analysisResult.visionStructure.components.map((comp) => (
+                    {analysisResult?.visionStructure?.components?.map((comp) => (
                       <div key={comp.id} className="bg-white dark:bg-slate-800 p-3 rounded border-l-4 border-purple-500">
                         <div className="flex items-start justify-between mb-2">
                           <div>
@@ -295,7 +297,7 @@ export default function OCRDebugPanel({ screenshotUrl }) {
                       </div>
                     ))}
 
-                    {analysisResult.visionStructure.layoutTree && (
+                    {analysisResult?.visionStructure?.layoutTree && (
                       <div className="mt-6">
                         <div className="flex items-center gap-2 mb-3">
                           <Network className="w-4 h-4 text-purple-500" />
@@ -303,7 +305,7 @@ export default function OCRDebugPanel({ screenshotUrl }) {
                         </div>
                         <div className="bg-slate-100 dark:bg-slate-700 p-3 rounded">
                           <pre className="text-xs font-mono overflow-auto">
-                            {JSON.stringify(analysisResult.visionStructure.layoutTree, null, 2)}
+                            {JSON.stringify(analysisResult?.visionStructure?.layoutTree, null, 2)}
                           </pre>
                         </div>
                       </div>
