@@ -157,74 +157,73 @@ export default function ContextSelector({
       )}
       
       {/* Selectors - Page first, then Component, then Domain (Design+Logic moved elsewhere) */}
-      <div className="flex items-center gap-1">
-        <Select 
-          value={target_page || ""} 
-          onValueChange={handlePageChange}
+      <Select 
+        value={target_page || ""} 
+        onValueChange={handlePageChange}
+      >
+        <SelectTrigger 
+          className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
+          aria-label={t("selectPage") || "Selecteer pagina"}
         >
-          <SelectTrigger 
-            className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
-            aria-label={t("selectPage") || "Selecteer pagina"}
+          <SelectValue placeholder={t("page") || "Pagina"} />
+        </SelectTrigger>
+        <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+          {availablePages.map(page => (
+            <SelectItem key={page} value={page} className="text-xs text-slate-700 dark:text-slate-300">
+              {page}
+            </SelectItem>
+          ))}
+          <div 
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsAddingItem('page');
+            }}
+            className="flex items-center gap-2 px-2 py-1.5 text-xs cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border-t border-slate-200 dark:border-slate-700"
           >
-            <SelectValue placeholder={t("page") || "Pagina"} />
-          </SelectTrigger>
-          <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
-            {availablePages.map(page => (
-              <SelectItem key={page} value={page} className="text-xs text-slate-700 dark:text-slate-300">
-                {page}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setIsAddingItem('page')}
-          className="h-7 w-7 p-0 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-white dark:bg-slate-900 border-dashed dark:border-slate-700"
-          title={t("addPage") || "Nieuwe pagina toevoegen"}
-        >
-          <Plus className="w-3 h-3" />
-        </Button>
-      </div>
+            <Plus className="w-3 h-3" />
+            {t("addPage") || "Nieuwe pagina"}
+          </div>
+        </SelectContent>
+      </Select>
 
-      <div className="flex items-center gap-1">
-        <Select 
-          value={target_component || ""} 
-          onValueChange={handleComponentChange}
+      <Select 
+        value={target_component || ""} 
+        onValueChange={handleComponentChange}
+      >
+        <SelectTrigger 
+          className="h-7 text-xs w-auto min-w-[90px] border-dashed bg-white dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
+          aria-label={t("selectComponent") || "Selecteer component"}
         >
-          <SelectTrigger 
-            className="h-7 text-xs w-auto min-w-[90px] border-dashed bg-white dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
-            aria-label={t("selectComponent") || "Selecteer component"}
-          >
-            <SelectValue placeholder={t("component") || "Component"} />
-          </SelectTrigger>
-          <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
-            {availableComponents.length > 0 ? (
-              availableComponents.map(comp => (
-                <SelectItem key={comp} value={comp} className="text-xs text-slate-700 dark:text-slate-300">
-                  {comp}
-                </SelectItem>
-              ))
-            ) : (
-              <SelectItem value="_none" disabled className="text-xs text-slate-400 dark:text-slate-500">
-                {t("choosePageFirst") || "Kies eerst pagina"}
+          <SelectValue placeholder={t("component") || "Component"} />
+        </SelectTrigger>
+        <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+          {availableComponents.length > 0 ? (
+            availableComponents.map(comp => (
+              <SelectItem key={comp} value={comp} className="text-xs text-slate-700 dark:text-slate-300">
+                {comp}
               </SelectItem>
-            )}
-          </SelectContent>
-        </Select>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setIsAddingItem('component')}
-          disabled={!target_page}
-          className="h-7 w-7 p-0 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-white dark:bg-slate-900 border-dashed dark:border-slate-700 disabled:opacity-30"
-          title={t("addComponent") || "Nieuw component toevoegen"}
-        >
-          <Plus className="w-3 h-3" />
-        </Button>
-      </div>
+            ))
+          ) : (
+            <SelectItem value="_none" disabled className="text-xs text-slate-400 dark:text-slate-500">
+              {t("choosePageFirst") || "Kies eerst pagina"}
+            </SelectItem>
+          )}
+          <div 
+            onClick={(e) => {
+              e.stopPropagation();
+              if (target_page) setIsAddingItem('component');
+            }}
+            className={`flex items-center gap-2 px-2 py-1.5 text-xs cursor-pointer border-t border-slate-200 dark:border-slate-700 ${
+              target_page 
+                ? 'hover:bg-indigo-50 dark:hover:bg-indigo-950 text-indigo-600 dark:text-indigo-400' 
+                : 'text-slate-400 dark:text-slate-500 cursor-not-allowed'
+            }`}
+          >
+            <Plus className="w-3 h-3" />
+            {t("addComponent") || "Nieuw component"}
+          </div>
+        </SelectContent>
+      </Select>
 
       <Select 
         value={target_domain || ""} 
