@@ -156,37 +156,49 @@ Format as clear Markdown headers and lists.`;
           </div>
 
           <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">LLM Response Parser</label>
-            <div className="flex gap-2">
-              <Textarea 
-                placeholder="Paste LLM response to auto-fill..." 
-                className="min-h-[80px] text-xs font-mono dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500"
-                id="create-llm-response-input"
-              />
-              <Button 
-                variant="secondary" 
-                className="h-auto w-20 flex-col gap-1 text-xs dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">LLM Response Parser</label>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                 onClick={() => {
-                  const input = document.getElementById('create-llm-response-input').value;
-                  if (!input) return;
-                  try {
-                    const jsonMatch = input.match(/```json\n([\s\S]*?)\n```/) || input.match(/\{[\s\S]*\}/);
-                    const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : input;
-                    const data = JSON.parse(jsonStr);
-                    
-                    if (data.technical_config_markdown) setNewConfig(data.technical_config_markdown);
-                    if (data.description) setNewDesc(data.description);
-                    if (data.name) setNewName(data.name);
-                    toast.success("Project auto-filled from LLM");
-                  } catch (e) {
-                    toast.error("Failed to parse JSON");
-                  }
+                  const prompt = `Analyze this codebase and provide a complete structural overview in JSON format:
+
+{
+  "name": "Project Name",
+  "description": "Brief project description",
+  "technical_config_markdown": "# Tech Stack\\n- Framework: ...\\n- Libraries: ...\\n\\n# Architecture\\n...",
+  "pages": [
+    {"name": "PageName", "path": "/path", "components": ["Component1"], "purpose": "..."}
+  ],
+  "components": [
+    {"name": "ComponentName", "location": "components/...", "purpose": "...", "props": ["prop1"]}
+  ],
+  "entities": [
+    {"name": "EntityName", "fields": ["field1", "field2"], "purpose": "..."}
+  ],
+  "buttons_and_actions": [
+    {"label": "Button Text", "location": "PageName", "action": "what it does"}
+  ],
+  "routing": "How navigation works",
+  "state_management": "How data flows",
+  "styling": "Tailwind/CSS approach"
+}
+
+Be thorough - include ALL pages, components, buttons, forms, and key functionality.`;
+                  navigator.clipboard.writeText(prompt);
+                  toast.success("Structure analysis prompt copied!");
                 }}
               >
-                <Sparkles className="w-4 h-4" />
-                Auto Fill
+                <Copy className="w-3 h-3" /> Copy Analysis Prompt
               </Button>
             </div>
+            <Textarea 
+              placeholder="Paste the LLM's JSON response here..." 
+              className="min-h-[80px] text-xs font-mono dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500"
+              id="create-llm-response-input"
+            />
           </div>
           
           <Button onClick={handleCreate} className="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600" disabled={!newName}>
@@ -269,48 +281,60 @@ Format as clear Markdown headers and lists.`;
             </div>
 
             <div className="space-y-2 pt-4 border-t border-slate-100">
-               <label className="text-sm font-medium">LLM Response Parser</label>
-               <div className="flex gap-2">
-                 <Textarea 
-                   placeholder="Paste LLM response JSON here to auto-configure project..." 
-                   className="min-h-[100px] text-xs font-mono"
-                   id="llm-response-input"
-                 />
-                 <Button 
-                   variant="secondary" 
-                   className="h-auto w-24 flex-col gap-1 text-xs"
+               <div className="flex items-center justify-between">
+                 <label className="text-sm font-medium">LLM Response Parser</label>
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   className="h-7 text-xs gap-1"
                    onClick={() => {
-                      const input = document.getElementById('llm-response-input').value;
-                      if (!input) return;
-                      try {
-                        // Attempt to find JSON block
-                        const jsonMatch = input.match(/```json\n([\s\S]*?)\n```/) || input.match(/\{[\s\S]*\}/);
-                        const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : input;
-                        const data = JSON.parse(jsonStr);
-                        
-                        if (data.technical_config_markdown) setEditConfig(data.technical_config_markdown);
-                        if (data.description) setEditDesc(data.description);
-                        if (data.component_mapping) {
-                           // This would need a place to be stored, currently Project entity has component_mapping field
-                           // We are only editing text fields here mostly.
-                           // Let's assume we append mapping to description or config if no direct field in UI, 
-                           // OR better: Just update the technical config markdown if provided.
-                        }
-                        toast.success("Project updated from LLM response");
-                      } catch (e) {
-                        toast.error("Failed to parse JSON");
-                      }
+                     const prompt = `Analyze this codebase and provide a complete structural overview in JSON format:
+
+{
+  "name": "Project Name",
+  "description": "Brief project description",
+  "technical_config_markdown": "# Tech Stack\\n- Framework: ...\\n- Libraries: ...\\n\\n# Architecture\\n...",
+  "pages": [
+    {"name": "PageName", "path": "/path", "components": ["Component1"], "purpose": "..."}
+  ],
+  "components": [
+    {"name": "ComponentName", "location": "components/...", "purpose": "...", "props": ["prop1"]}
+  ],
+  "entities": [
+    {"name": "EntityName", "fields": ["field1", "field2"], "purpose": "..."}
+  ],
+  "buttons_and_actions": [
+    {"label": "Button Text", "location": "PageName", "action": "what it does"}
+  ],
+  "routing": "How navigation works",
+  "state_management": "How data flows",
+  "styling": "Tailwind/CSS approach"
+}
+
+Be thorough - include ALL pages, components, buttons, forms, and key functionality.`;
+                     navigator.clipboard.writeText(prompt);
+                     toast.success("Structure analysis prompt copied!");
                    }}
                  >
-                   <Sparkles className="w-4 h-4" />
-                   Auto Fill
+                   <Copy className="w-3 h-3" /> Copy Analysis Prompt
                  </Button>
                </div>
+               <Textarea 
+                 placeholder="Paste the LLM's JSON response here..." 
+                 className="min-h-[100px] text-xs font-mono"
+                 id="llm-response-input"
+               />
             </div>
 
-            <div className="flex justify-end gap-2 mt-4">
+            <div className="flex justify-end gap-2 pt-6 border-t border-slate-100 mt-6">
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleEditSave}>Save Changes</Button>
+              <Button 
+                onClick={handleEditSave}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                disabled={!editName.trim()}
+              >
+                Save Changes
+              </Button>
             </div>
           </div>
         </DialogContent>
