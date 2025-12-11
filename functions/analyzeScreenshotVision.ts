@@ -17,22 +17,28 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    console.log('[analyzeScreenshotVision] Request body:', JSON.stringify(body));
+    console.log('[analyzeScreenshotVision] ===== INCOMING BODY =====');
+    console.log('[analyzeScreenshotVision]', JSON.stringify(body, null, 2));
+    console.log('[analyzeScreenshotVision] ============================');
 
     const { url, screenshotId, screenshotUrl, projectId, level = 'full' } = body;
 
+    // Flexible URL resolution: accept url, screenshotUrl, or screenshotId
+    const resolvedUrl = url || screenshotUrl;
+
     // Validate request
-    if (!url && !screenshotId && !screenshotUrl) {
+    if (!resolvedUrl && !screenshotId) {
       console.error('[analyzeScreenshotVision] Missing screenshot reference');
       return Response.json({ 
-        error: 'Missing screenshot reference: provide either url, screenshotUrl or screenshotId' 
+        ok: false,
+        error: 'Missing screenshot reference (screenshotId or screenshotUrl/url required)' 
       }, { status: 400 });
     }
 
-    let imageUrl = url || screenshotUrl;
+    let imageUrl = resolvedUrl;
     
-    // If screenshotId provided, fetch from database
-    if (screenshotId && !url) {
+    // If screenshotId provided, fetch from database (even if URL was also provided as fallback)
+    if (screenshotId && !imageUrl) {
       try {
         const assets = await base44.asServiceRole.entities.ScreenshotAsset.filter({ 
           id: screenshotId 
@@ -40,20 +46,29 @@ Deno.serve(async (req) => {
         
         if (!assets || assets.length === 0) {
           console.error('[analyzeScreenshotVision] Screenshot not found:', screenshotId);
-          return Response.json({ error: 'Screenshot not found' }, { status: 404 });
+          return Response.json({ 
+            ok: false,
+            error: 'Screenshot not found in database' 
+          }, { status: 404 });
         }
         
         imageUrl = assets[0].public_url;
         console.log('[analyzeScreenshotVision] Resolved URL from screenshotId:', imageUrl);
       } catch (error) {
-        console.error('[analyzeScreenshotVision] Failed to fetch screenshot:', error);
-        return Response.json({ error: 'Failed to fetch screenshot: ' + error.message }, { status: 500 });
+        console.error('[analyzeScreenshotVision] Failed to fetch screenshot from DB:', error);
+        return Response.json({ 
+          ok: false,
+          error: 'Failed to fetch screenshot: ' + error.message 
+        }, { status: 500 });
       }
     }
 
     if (!imageUrl) {
       console.error('[analyzeScreenshotVision] No image URL after resolution');
-      return Response.json({ error: 'Could not resolve image URL' }, { status: 400 });
+      return Response.json({ 
+        ok: false,
+        error: 'Could not resolve image URL from provided parameters' 
+      }, { status: 400 });
     }
 
     console.log('[analyzeScreenshotVision] Starting analysis for:', imageUrl);

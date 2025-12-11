@@ -31,22 +31,40 @@ export default function OCRDebugPanel({ screenshotUrl }) {
 
     setIsAnalyzing(true);
     try {
+      console.log('[OCRDebugPanel] Calling analyzeScreenshotVision with:', {
+        screenshotUrl,
+        level: 'full'
+      });
+
       const response = await base44.functions.invoke('analyzeScreenshotVision', { 
         screenshotUrl,
         level: 'full'
       });
       
+      console.log('[OCRDebugPanel] Received response:', response.data);
+      
       const result = response.data;
       
-      if (!result.ok) {
-        throw new Error(result.error || 'Analysis failed');
+      // Handle explicit error responses (ok: false)
+      if (result.ok === false) {
+        const errorMsg = result.error || 'Analysis failed without specific error';
+        console.error('[OCRDebugPanel] Analysis returned error:', errorMsg);
+        toast.error(`Analysis failed: ${errorMsg}`);
+        return;
       }
       
       setAnalysisResult(result);
-      toast.success(`Analysis complete: ${result.metadata.ocrLevel || 'basic'}`);
+      toast.success(`Analysis complete: ${result.metadata?.ocrLevel || 'basic'}`);
     } catch (error) {
-      console.error('OCR analysis failed:', error);
-      toast.error(`Analysis failed: ${error.message}`);
+      console.error('[OCRDebugPanel] Exception during analysis:', error);
+      
+      // Try to extract error from response data if available
+      const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
+      
+      toast.error(`Analysis failed: ${errorMessage}`, {
+        description: error.response?.status ? `HTTP ${error.response.status}` : undefined,
+        duration: 8000
+      });
     } finally {
       setIsAnalyzing(false);
     }
