@@ -1,12 +1,13 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Eye, Clock, TrendingUp, Loader2, MousePointerClick, Users } from "lucide-react";
+import { BarChart3, Eye, Clock, TrendingUp, Loader2, MousePointerClick, Users, AlertCircle } from "lucide-react";
 import { format, differenceInSeconds } from "date-fns";
 import { nl } from "date-fns/locale";
 import RequireSubscription from "../components/auth/RequireSubscription";
+import PageViewTracker from "../components/analytics/PageViewTracker";
 
 /**
  * Admin analytics pagina - page views, klikpaden, time on page
@@ -133,6 +134,7 @@ export default function AdminAnalytics() {
 
   return (
     <RequireSubscription>
+      <PageViewTracker />
       <div className="p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">

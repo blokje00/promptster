@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import Header from "./components/layout/Header";
 import { LanguageProvider } from "./components/i18n/LanguageContext";
 import { ThemeProvider } from "./components/theme/ThemeProvider";
-import PageViewTracker from "./components/analytics/PageViewTracker";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -40,7 +39,6 @@ export default function Layout({ children }) {
             }
           `}</style>
 
-          <PageViewTracker />
           <Header />
 
           <main>
