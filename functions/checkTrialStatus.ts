@@ -10,11 +10,15 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
 
     if (!user) {
+      console.warn('[checkTrialStatus] Unauthorized access attempt');
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log(`[checkTrialStatus] User ${user.id} (${user.email}): status=${user.subscription_status}, trial_end=${user.trial_end}`);
+
     // If user is on active paid plan, return immediately
     if (user.subscription_status === 'active') {
+      console.log(`[checkTrialStatus] User ${user.id} has active subscription`);
       return Response.json({ 
         subscription_status: 'active',
         hasAccess: true,
@@ -22,13 +26,28 @@ Deno.serve(async (req) => {
       });
     }
 
-    // If user is on trial, check if expired
-    if (user.subscription_status === 'trial' && user.trial_end) {
+    // If user is on trial, validate trial data
+    if (user.subscription_status === 'trial') {
+      // Check if trial data is corrupt/missing
+      if (!user.trial_end || !user.trial_start) {
+        console.warn(`[checkTrialStatus] User ${user.id} has 'trial' status but missing trial_start/end. Resetting to 'none'.`);
+        await base44.asServiceRole.entities.User.update(user.id, {
+          subscription_status: 'none',
+          trial_start: null,
+          trial_end: null
+        });
+        return Response.json({ 
+          subscription_status: 'none',
+          hasAccess: false,
+          needsTrialActivation: true,
+          message: 'Trial data was corrupt, please reactivate'
+        });
+      }
       const now = new Date();
       const trialEnd = new Date(user.trial_end);
 
       if (now > trialEnd) {
-        // Trial has expired, update status
+        console.log(`[checkTrialStatus] User ${user.id} trial expired at ${user.trial_end}. Updating to trial_expired.`);
         await base44.asServiceRole.entities.User.update(user.id, {
           subscription_status: 'trial_expired'
         });
@@ -43,6 +62,7 @@ Deno.serve(async (req) => {
 
       // Trial is still active
       const daysRemaining = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
+      console.log(`[checkTrialStatus] User ${user.id} has ${daysRemaining} days remaining in trial`);
       return Response.json({ 
         subscription_status: 'trial',
         hasAccess: true,
@@ -54,6 +74,7 @@ Deno.serve(async (req) => {
 
     // User has trial_expired or no subscription
     if (user.subscription_status === 'trial_expired') {
+      console.log(`[checkTrialStatus] User ${user.id} trial is expired`);
       return Response.json({ 
         subscription_status: 'trial_expired',
         hasAccess: false,
@@ -62,6 +83,7 @@ Deno.serve(async (req) => {
     }
 
     // User has 'none' or undefined status - needs trial activation
+    console.log(`[checkTrialStatus] User ${user.id} needs trial activation (status: ${user.subscription_status || 'none'})`);
     return Response.json({ 
       subscription_status: user.subscription_status || 'none',
       hasAccess: false,
@@ -69,7 +91,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Check trial status error:", error);
+    console.error(`[checkTrialStatus] Error for user ${user?.id}:`, error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
