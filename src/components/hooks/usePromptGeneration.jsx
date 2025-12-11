@@ -47,6 +47,11 @@ export const usePromptGeneration = ({
       parts.push(selectedProject.technical_config_markdown);
     }
 
+    // TASK-2: Add project-specific LLM Response Parser instruction
+    if (selectedProject?.llm_response_parser_instruction) {
+      parts.push(`[LLM_RESPONSE_PARSER]\n${selectedProject.llm_response_parser_instruction}\n[/LLM_RESPONSE_PARSER]`);
+    }
+
     const startTmpl = templates.find(t => t.id === startTemplateId);
     if (startTmpl) parts.push(startTmpl.content);
 
