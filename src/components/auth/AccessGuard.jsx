@@ -61,15 +61,26 @@ export default function AccessGuard({ children, pageType = "free" }) {
       );
     }
 
-    // Check if user has EVER started a trial (trial_end exists)
-    const hasNeverStartedTrial = !currentUser.trial_end;
+    // Define subscription and trial status
+    const subscriptionStatus = currentUser?.subscription_status;
+    const trialEndRaw = currentUser?.trial_end;
+    const trialEnd = trialEndRaw ? new Date(trialEndRaw) : null;
     const now = new Date();
-    const trialEnd = currentUser.trial_end ? new Date(currentUser.trial_end) : null;
-    const hasActiveTrial = trialEnd && trialEnd > now && currentUser.subscription_status === 'trial';
-    const hasActiveSubscription = currentUser.subscription_status === 'active';
 
-    // Priority 1: Never started a trial → Show "Start Free Trial" screen
-    if (hasNeverStartedTrial) {
+    // Check active statuses
+    const hasActiveSubscription = 
+      subscriptionStatus === 'active' || 
+      subscriptionStatus === 'trialing';
+    const hasActiveTrial = !!trialEnd && trialEnd > now;
+    const hasNeverStartedTrial = !trialEnd;
+
+    // Priority 1: Active subscription or trial → Grant access immediately
+    if (hasActiveSubscription || hasActiveTrial) {
+      return children;
+    }
+
+    // Priority 2: Never started trial AND no active subscription → Show "Start Free Trial"
+    if (hasNeverStartedTrial && !hasActiveSubscription) {
       return (
         <>
           <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
@@ -110,45 +121,38 @@ export default function AccessGuard({ children, pageType = "free" }) {
       );
     }
 
-    // Priority 2: Has active access → Show content
-    if (hasActiveTrial || hasActiveSubscription) {
-      return children;
-    }
-
     // Priority 3: Trial expired or no active subscription → Show "Subscription Required"
-    if (true) {
-      return (
-        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
-          <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mx-auto mb-4">
-              <Crown className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-              Subscription Required
-            </h2>
-            <p className="text-slate-600 dark:text-slate-400 mb-6">
-              Your trial has ended. Subscribe to continue using Promptster
-            </p>
-            <div className="space-y-3">
-              <Button 
-                onClick={() => navigate(createPageUrl("Subscription"))}
-                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-              >
-                <Crown className="w-4 h-4 mr-2" />
-                View Plans
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => navigate(createPageUrl("Multiprompt"))}
-                className="w-full"
-              >
-                Back to Dashboard
-              </Button>
-            </div>
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mx-auto mb-4">
+            <Crown className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+            Subscription Required
+          </h2>
+          <p className="text-slate-600 dark:text-slate-400 mb-6">
+            Your trial has ended. Subscribe to continue using Promptster
+          </p>
+          <div className="space-y-3">
+            <Button 
+              onClick={() => navigate(createPageUrl("Subscription"))}
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+            >
+              <Crown className="w-4 h-4 mr-2" />
+              View Plans
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => navigate(createPageUrl("Multiprompt"))}
+              className="w-full"
+            >
+              Back to Dashboard
+            </Button>
           </div>
         </div>
-      );
-    }
+      </div>
+    );
   }
 
   return children;
