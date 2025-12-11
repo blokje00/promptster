@@ -191,14 +191,24 @@ export default function AdminStats() {
                       const userItems = allItems.filter(i => i.created_by === user.email);
                       const userProjects = allProjects.filter(p => p.created_by === user.email);
                       
-                      // Calculate membership info
+                      // Calculate membership info using correct trial fields
                       const createdDate = user.created_date ? new Date(user.created_date) : null;
-                      const daysSinceCreation = createdDate ? differenceInDays(new Date(), createdDate) : 0;
-                      const trialDaysLeft = 14 - daysSinceCreation;
-                      const isTrialActive = trialDaysLeft > 0 && !user.subscription_status;
-                      const isPaying = user.subscription_status === 'active' || user.plan_id === 'pro';
-                      const daysPaying = isPaying && user.subscription_start_date 
-                        ? differenceInDays(new Date(), new Date(user.subscription_start_date))
+                      
+                      // Use actual subscription_status from database
+                      const isActive = user.subscription_status === 'active';
+                      const isTrial = user.subscription_status === 'trial';
+                      const isTrialExpired = user.subscription_status === 'trial_expired';
+                      
+                      // Calculate trial days remaining if on trial
+                      let trialDaysLeft = 0;
+                      if (isTrial && user.trial_end) {
+                        const trialEnd = new Date(user.trial_end);
+                        trialDaysLeft = Math.ceil(differenceInDays(trialEnd, new Date()));
+                      }
+                      
+                      // Calculate days paying if active subscription
+                      const daysPaying = isActive && user.trial_start 
+                        ? differenceInDays(new Date(), new Date(user.trial_start))
                         : 0;
 
                       // CALCULATE GROWTH AND ACTIONS
@@ -263,22 +273,26 @@ export default function AdminStats() {
                             </Badge>
                           </td>
                           <td className="py-3">
-                            {isPaying ? (
+                            {isActive ? (
                               <div className="flex items-center gap-1">
                                 <Badge className="bg-green-100 text-green-700 border-green-300">
                                   <CreditCard className="w-3 h-3 mr-1" />
                                   Betalend
                                 </Badge>
-                                <span className="text-xs text-slate-500">({daysPaying}d)</span>
+                                {daysPaying > 0 && <span className="text-xs text-slate-500">({daysPaying}d)</span>}
                               </div>
-                            ) : isTrialActive ? (
+                            ) : isTrial ? (
                               <Badge className={`${trialDaysLeft <= 3 ? 'bg-red-100 text-red-700 border-red-300 animate-pulse' : 'bg-yellow-100 text-yellow-700 border-yellow-300'}`}>
                                 <Clock className="w-3 h-3 mr-1" />
                                 Trial: {trialDaysLeft}d over
                               </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-slate-500">
+                            ) : isTrialExpired ? (
+                              <Badge variant="outline" className="bg-slate-100 text-slate-600">
                                 Trial verlopen
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-slate-400">
+                                Free
                               </Badge>
                             )}
                           </td>
