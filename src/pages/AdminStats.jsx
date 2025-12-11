@@ -215,9 +215,9 @@ export default function AdminStats() {
                       const StatusIcon = currentStatus.icon;
 
                       // CALCULATE GROWTH AND ACTIONS
-                      const now = new Date();
-                      const thirtyDaysAgo = new Date(now.setDate(now.getDate() - 30));
-                      const sixtyDaysAgo = new Date(now.setDate(now.getDate() - 30)); // 60 days ago
+                      const today = new Date();
+                      const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+                      const sixtyDaysAgo = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
                       
                       const itemsLast30 = userItems.filter(i => new Date(i.created_date) > thirtyDaysAgo);
                       const itemsPrev30 = userItems.filter(i => {
