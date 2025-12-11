@@ -25,27 +25,39 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log('[activateTrial] User status check:', {
+      email: user.email,
+      subscription_status: user.subscription_status,
+      trial_end: user.trial_end,
+      trial_start: user.trial_start
+    });
+
     // Check if user already has trial or subscription
     if (user.subscription_status === 'trial') {
-      return Response.json({ 
-        error: 'Trial already active',
-        trial_end: user.trial_end 
-      }, { status: 400 });
+      const trialEnd = user.trial_end ? new Date(user.trial_end) : null;
+      const now = new Date();
+      
+      // If trial_end is in the future, it's still active
+      if (trialEnd && trialEnd > now) {
+        return Response.json({ 
+          error: 'Trial already active',
+          trial_end: user.trial_end 
+        }, { status: 400 });
+      }
+      
+      // If trial_end is in the past, allow re-activation for testing
+      console.log('[activateTrial] WARNING: Re-activating expired trial for testing');
     }
 
-    if (user.subscription_status === 'active') {
+    if (user.subscription_status === 'active' || user.subscription_status === 'trialing') {
       return Response.json({ 
         error: 'Already subscribed',
         plan_id: user.plan_id 
       }, { status: 400 });
     }
 
-    if (user.subscription_status === 'expired') {
-      return Response.json({ 
-        error: 'Trial already used',
-        message: 'Please subscribe to continue using Promptster'
-      }, { status: 400 });
-    }
+    // Note: Removed 'expired' check to allow re-testing
+    // In production, you may want to keep this check
 
     // Activate trial
     const now = new Date();

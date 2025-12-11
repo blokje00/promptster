@@ -93,13 +93,20 @@ export default function AccessGuard({ children, pageType = "free" }) {
     const hasActiveSubscription = 
       subscriptionStatus === 'active' || 
       subscriptionStatus === 'trialing';
-    const hasActiveTrial = !!trialEnd && trialEnd > now;
-    const hasNeverStartedTrial = !trialEnd && subscriptionStatus !== 'expired';
+    const hasActiveTrial = 
+      subscriptionStatus === 'trial' && 
+      !!trialEnd && 
+      trialEnd > now;
+    const hasNeverStartedTrial = 
+      !subscriptionStatus || 
+      subscriptionStatus === 'none';
 
     console.log('[AccessGuard] Access conditions:', {
       hasActiveSubscription,
       hasActiveTrial,
-      hasNeverStartedTrial
+      hasNeverStartedTrial,
+      calculatedTrialActive: !!trialEnd && trialEnd > now,
+      subscriptionStatusCheck: subscriptionStatus
     });
 
     // Priority 1: Active subscription or trial → Grant access immediately
