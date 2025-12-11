@@ -1,55 +1,73 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
 /**
- * Activates a 14-day free trial for a new user
- * Called automatically on first login if subscription_status is 'none'
+ * Activates a 14-day free trial for the user
+ * Only works if user has no active trial or subscription
  */
 Deno.serve(async (req) => {
   try {
+    // CORS handling
+    if (req.method === "OPTIONS") {
+      return new Response(null, {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
+      });
+    }
+
+    // Authenticate user
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
     if (!user) {
-      console.warn('[activateTrial] Unauthorized access attempt');
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log(`[activateTrial] Attempting to activate trial for user ${user.id} (${user.email}), current status: ${user.subscription_status}`);
-
-    // Only activate trial if user has no subscription status or status is 'none'
-    if (user.subscription_status && user.subscription_status !== 'none') {
-      console.log(`[activateTrial] User ${user.id} already has status: ${user.subscription_status}`);
+    // Check if user already has trial or subscription
+    if (user.subscription_status === 'trial') {
       return Response.json({ 
-        success: false, 
-        message: 'User already has a subscription status',
-        currentStatus: user.subscription_status 
-      });
+        error: 'Trial already active',
+        trial_end: user.trial_end 
+      }, { status: 400 });
     }
 
+    if (user.subscription_status === 'active') {
+      return Response.json({ 
+        error: 'Already subscribed',
+        plan_id: user.plan_id 
+      }, { status: 400 });
+    }
+
+    if (user.subscription_status === 'expired') {
+      return Response.json({ 
+        error: 'Trial already used',
+        message: 'Please subscribe to continue using Promptster'
+      }, { status: 400 });
+    }
+
+    // Activate trial
     const now = new Date();
     const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // 14 days from now
 
-    console.log(`[activateTrial] Setting trial for user ${user.id}: start=${now.toISOString()}, end=${trialEnd.toISOString()}`);
-
-    // Update user with trial information
-    await base44.asServiceRole.entities.User.update(user.id, {
+    await base44.auth.updateMe({
       subscription_status: 'trial',
       trial_start: now.toISOString(),
       trial_end: trialEnd.toISOString()
     });
 
-    console.log(`[activateTrial] ✓ Trial activated successfully for user ${user.id}`);
+    console.log(`[activateTrial] Trial activated for ${user.email} until ${trialEnd.toISOString()}`);
 
-    return Response.json({ 
-      success: true, 
-      subscription_status: 'trial',
+    return Response.json({
+      success: true,
       trial_start: now.toISOString(),
       trial_end: trialEnd.toISOString(),
-      message: '14-day free trial activated'
+      days_remaining: 14
     });
 
   } catch (error) {
-    console.error(`[activateTrial] ERROR for user ${user?.id}:`, error);
+    console.error('[activateTrial] Error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
