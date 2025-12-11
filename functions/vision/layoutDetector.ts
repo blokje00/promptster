@@ -1,17 +1,8 @@
-import type { ImageData } from "./imageDecoder.ts";
-import type { OCRResult } from "./ocrEngine.ts";
-
-export interface Region {
-  id: string;
-  bbox: { x: number; y: number; width: number; height: number };
-  text?: string;
-  confidence: number;
-}
-
 /**
+ * Server-side layout detection - NO BROWSER APIs
  * Detect layout regions using OCR + heuristics (lightweight fallback)
  */
-export function detectRegionsFromOCR(ocrResult: OCRResult, imageData: ImageData): Region[] {
+export function detectRegionsFromOCR(ocrResult, imageData) {
   const regions: Region[] = [];
   
   // Group words into visual regions using proximity clustering
@@ -36,7 +27,7 @@ export function detectRegionsFromOCR(ocrResult: OCRResult, imageData: ImageData)
 /**
  * Cluster words by spatial proximity
  */
-function clusterWordsByProximity(words: any[], imageWidth: number): any[][] {
+function clusterWordsByProximity(words, imageWidth) {
   if (words.length === 0) return [];
   
   const threshold = imageWidth * 0.03; // 3% of image width
@@ -66,7 +57,7 @@ function clusterWordsByProximity(words: any[], imageWidth: number): any[][] {
   return clusters;
 }
 
-function computeDistance(bbox1: any, bbox2: any): number {
+function computeDistance(bbox1, bbox2) {
   const cx1 = bbox1.x + bbox1.width / 2;
   const cy1 = bbox1.y + bbox1.height / 2;
   const cx2 = bbox2.x + bbox2.width / 2;
@@ -75,7 +66,7 @@ function computeDistance(bbox1: any, bbox2: any): number {
   return Math.sqrt((cx2 - cx1) ** 2 + (cy2 - cy1) ** 2);
 }
 
-function computeBoundingBox(bboxes: any[]): { x: number; y: number; width: number; height: number } {
+function computeBoundingBox(bboxes) {
   const minX = Math.min(...bboxes.map(b => b.x));
   const minY = Math.min(...bboxes.map(b => b.y));
   const maxX = Math.max(...bboxes.map(b => b.x + b.width));

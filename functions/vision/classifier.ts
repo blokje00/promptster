@@ -1,23 +1,16 @@
-import type { Region } from "./layoutDetector.ts";
-
-export type UIRole = "button" | "input" | "link" | "heading" | "label" | "image" | "card" | "other";
-
-export interface ClassifiedRegion extends Region {
-  role: UIRole;
-}
-
 /**
+ * Server-side component classification - NO BROWSER APIs
  * Classify regions using rule-based heuristics
  * (Fallback when no ML model is available)
  */
-export function classifyRegionsHeuristic(regions: Region[]): ClassifiedRegion[] {
+export function classifyRegionsHeuristic(regions) {
   return regions.map(region => {
     const role = inferRole(region);
     return { ...region, role };
   });
 }
 
-function inferRole(region: Region): UIRole {
+function inferRole(region) {
   const text = region.text || '';
   const { width, height } = region.bbox;
   const aspectRatio = width / height;

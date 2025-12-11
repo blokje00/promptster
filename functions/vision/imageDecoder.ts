@@ -1,18 +1,17 @@
 import { PNG } from "npm:pngjs@7.0.0";
 import jpeg from "npm:jpeg-js@0.4.4";
 
-export interface ImageData {
-  data: Uint8Array;
-  width: number;
-  height: number;
-}
+/**
+ * Server-side image decoder - NO BROWSER APIs
+ * Uses pngjs and jpeg-js for Deno compatibility
+ */
 
 /**
  * Fetch and decode an image from a public URL
- * @param url - Public HTTPS URL to image
- * @returns ImageData with RGBA pixel buffer
+ * @param {string} url - Public HTTPS URL to image
+ * @returns {Promise<Object>} ImageData with RGBA pixel buffer
  */
-export async function fetchAndDecodeImage(url: string): Promise<ImageData> {
+export async function fetchAndDecodeImage(url) {
   try {
     const response = await fetch(url);
     
@@ -37,15 +36,15 @@ export async function fetchAndDecodeImage(url: string): Promise<ImageData> {
   }
 }
 
-function isPNG(data: Uint8Array): boolean {
+function isPNG(data) {
   return data[0] === 0x89 && data[1] === 0x50 && data[2] === 0x4E && data[3] === 0x47;
 }
 
-function isJPEG(data: Uint8Array): boolean {
+function isJPEG(data) {
   return data[0] === 0xFF && data[1] === 0xD8 && data[2] === 0xFF;
 }
 
-function decodePNG(data: Uint8Array): ImageData {
+function decodePNG(data) {
   const png = PNG.sync.read(Buffer.from(data));
   return {
     data: new Uint8Array(png.data),
@@ -54,7 +53,7 @@ function decodePNG(data: Uint8Array): ImageData {
   };
 }
 
-function decodeJPEG(data: Uint8Array): ImageData {
+function decodeJPEG(data) {
   const decoded = jpeg.decode(data, { useTArray: true });
   return {
     data: decoded.data,
@@ -65,8 +64,11 @@ function decodeJPEG(data: Uint8Array): ImageData {
 
 /**
  * Normalize image size (downscale if too large)
+ * @param {Object} img - ImageData object
+ * @param {number} maxDimension - Maximum dimension
+ * @returns {Object} Normalized ImageData
  */
-export function normalizeImageSize(img: ImageData, maxDimension = 1920): ImageData {
+export function normalizeImageSize(img, maxDimension = 1920) {
   if (img.width <= maxDimension && img.height <= maxDimension) {
     return img;
   }

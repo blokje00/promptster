@@ -1,12 +1,15 @@
-import { createWorker, type Worker } from "npm:tesseract.js@5.0.4";
-import type { ImageData } from "./imageDecoder.ts";
+import { createWorker } from "npm:tesseract.js@5.0.4";
 
-let ocrWorker: Worker | null = null;
+/**
+ * Server-side OCR using Tesseract.js - NO BROWSER APIs
+ */
+
+let ocrWorker = null;
 
 /**
  * Initialize OCR worker (call once, reuse)
  */
-export async function initOCR(): Promise<void> {
+export async function initOCR() {
   if (ocrWorker) return;
   
   ocrWorker = await createWorker('eng', 1, {
@@ -19,31 +22,19 @@ export async function initOCR(): Promise<void> {
 /**
  * Terminate OCR worker (cleanup)
  */
-export async function terminateOCR(): Promise<void> {
+export async function terminateOCR() {
   if (ocrWorker) {
     await ocrWorker.terminate();
     ocrWorker = null;
   }
 }
 
-export interface OCRWord {
-  text: string;
-  bbox: { x: number; y: number; width: number; height: number };
-  confidence: number;
-}
-
-export interface OCRResult {
-  text: string;
-  words: OCRWord[];
-  lines: Array<{ text: string; bbox: { x: number; y: number; width: number; height: number } }>;
-}
-
 /**
  * Perform OCR on image
- * @param imageData - RGBA image data
- * @returns Extracted text with bounding boxes
+ * @param {Object} imageData - RGBA image data with width, height, data properties
+ * @returns {Promise<Object>} Extracted text with bounding boxes
  */
-export async function performOCR(imageData: ImageData): Promise<OCRResult> {
+export async function performOCR(imageData) {
   await initOCR();
   
   if (!ocrWorker) {
