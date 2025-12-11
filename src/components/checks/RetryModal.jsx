@@ -90,6 +90,8 @@ export default function RetryModal({
 
     // Include OCR vision analysis if available
     let visionSection = '';
+    let screenshotsPayload = [];
+    
     if (visionAnalysis && visionAnalysis.length > 0) {
       const analysis = visionAnalysis[0];
       visionSection = `\n**OCR Vision Analysis:**
@@ -97,6 +99,36 @@ export default function RetryModal({
 - Text content: "${analysis.ocr?.text?.substring(0, 200) || 'No text detected'}..."
 - Layout level: ${analysis.metadata?.ocrLevel || 'basic'}
 `;
+
+      // Build structured screenshots payload with OCR vision data
+      screenshotsPayload = screenshots.map((url, idx) => {
+        const analysisData = visionAnalysis[idx] || visionAnalysis[0];
+        return {
+          id: url,
+          pageHint: task?.target_page || "Checks page",
+          componentHint: task?.target_component || "Failed task",
+          domain: task?.target_domain || "UI",
+          ocrVision: {
+            ocr: analysisData.ocr,
+            regions: analysisData.regions,
+            semanticBlocks: analysisData.semanticBlocks,
+            layoutRelations: analysisData.layoutRelations,
+            visionStructure: analysisData.visionStructure,
+            width: analysisData.width,
+            height: analysisData.height,
+            summary: analysisData.summary
+          }
+        };
+      });
+    } else {
+      // Fallback without OCR vision
+      screenshotsPayload = screenshots.map(url => ({
+        id: url,
+        pageHint: task?.target_page || "Checks page",
+        componentHint: task?.target_component || "Failed task",
+        domain: task?.target_domain || "UI",
+        ocrVision: "PENDING_ANALYSIS"
+      }));
     }
 
     const prompt = `**Retry — Task Correction Request**
@@ -136,6 +168,11 @@ ${originalTask}
 **Context:**
 - Original task: ${task.itemTitle}
 - Project: ${task.projectId || "No project"}
+
+**Screenshots JSON:**
+\`\`\`json
+${JSON.stringify({ screenshots: screenshotsPayload }, null, 2)}
+\`\`\`
 `;
 
     return prompt;
@@ -165,9 +202,40 @@ ${originalTask}
       console.log('[RetryModal] ✓ Creating retry with', screenshots.length, 'screenshot(s)');
       console.log('[RetryModal] Screenshot URLs:', screenshots);
       const structuredPrompt = generateRetryPrompt();
+      
+      // Build screenshots payload with OCR vision
+      const screenshotsPayload = screenshots.map((url, idx) => {
+        const analysisData = visionAnalysis?.[idx] || visionAnalysis?.[0];
+        if (analysisData) {
+          return {
+            id: url,
+            pageHint: task?.target_page || "Checks page",
+            componentHint: task?.target_component || "Failed task",
+            domain: task?.target_domain || "UI",
+            ocrVision: {
+              ocr: analysisData.ocr,
+              regions: analysisData.regions,
+              semanticBlocks: analysisData.semanticBlocks,
+              layoutRelations: analysisData.layoutRelations,
+              visionStructure: analysisData.visionStructure,
+              width: analysisData.width,
+              height: analysisData.height,
+              summary: analysisData.summary
+            }
+          };
+        }
+        return {
+          id: url,
+          pageHint: task?.target_page || "Checks page",
+          componentHint: task?.target_component || "Failed task",
+          domain: task?.target_domain || "UI"
+        };
+      });
+      
       await onConfirm({
         content: structuredPrompt,
         screenshots: screenshots,
+        screenshotsPayload: screenshotsPayload,
         visionAnalysis: visionAnalysis,
         originalTask: task,
         userExplanation: userExplanation.trim()

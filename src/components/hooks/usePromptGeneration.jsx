@@ -50,15 +50,53 @@ export const usePromptGeneration = ({
     const startTmpl = templates.find(t => t.id === startTemplateId);
     if (startTmpl) parts.push(startTmpl.content);
 
+    // Add Screenshot Context Block if any tasks have screenshots
+    const hasScreenshots = selectedItems.some(t => t.screenshot_ids && t.screenshot_ids.length > 0);
+    if (hasScreenshots) {
+      parts.push(`[SCREENSHOT_CONTEXT]
+
+Je krijgt per taak optioneel een of meer screenshots:
+
+- "pageHint" en "componentHint" geven de vermoedelijke pagina / sectie / functie aan.
+- "ocrVision" bevat:
+  - ocr.text en ocr.regions → alle zichtbare tekst
+  - semanticBlocks → gegroepeerde UI-/content-blokken
+  - layoutRelations → relaties tussen blokken
+  - visionStructure → hogere-orde interpretatie van de UI
+
+Gebruik deze context om beter te begrijpen:
+- op welke pagina we zijn;
+- welke knoppen, dropdowns, inputs zichtbaar zijn;
+- waar een wijziging precies moet plaatsvinden.
+
+Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde app.
+
+[/SCREENSHOT_CONTEXT]`);
+    }
+
     if (selectedItems.length > 0) {
-      const tasks = selectedItems.map((t, i) => ({
-        id: `TASK-${i + 1}`,
-        title: t.content.length > 150 ? t.content.substring(0, 150) + "..." : t.content,
-        description: t.content,
-        files: [t.target_page ? `pages/${t.target_page}.jsx` : "TBD"],
-        priority: "Medium",
-        screenshots: t.screenshot_ids || []
-      }));
+      const tasks = selectedItems.map((t, i) => {
+        const taskObj = {
+          id: `TASK-${i + 1}`,
+          title: t.content.length > 150 ? t.content.substring(0, 150) + "..." : t.content,
+          description: t.content,
+          files: [t.target_page ? `pages/${t.target_page}.jsx` : "TBD"],
+          priority: "Medium"
+        };
+
+        // Add screenshots with pageHint, componentHint, and placeholder for ocrVision
+        if (t.screenshot_ids && t.screenshot_ids.length > 0) {
+          taskObj.screenshots = t.screenshot_ids.map(url => ({
+            id: url,
+            pageHint: t.target_page || "Unknown page",
+            componentHint: t.target_component || "Unknown component",
+            domain: t.target_domain || "UI",
+            ocrVision: "TO_BE_ENRICHED_WITH_CACHE"
+          }));
+        }
+
+        return taskObj;
+      });
 
       const jsonBlock = {
         protocol: { name: "MULTITASK_EXECUTION_v1.0", mode: "serial" },
@@ -80,10 +118,13 @@ export const usePromptGeneration = ({
       const selectedItems = thoughts.filter(t => selectedThoughtIds.includes(t.id));
       const allScreenshotUrls = selectedItems.flatMap(t => t.screenshot_ids || []);
 
-      // Get cached vision analysis for screenshots
+      // Get cached vision analysis for screenshots and enrich prompt
       let visionContext = '';
+      let enrichedPromptWithVision = generatedPrompt;
+      
       if (allScreenshotUrls.length > 0) {
         try {
+          console.log('[usePromptGeneration] Fetching OCR vision for', allScreenshotUrls.length, 'screenshots');
           const visionResults = await Promise.all(
             allScreenshotUrls.map(url => 
               base44.functions.invoke('analyzeScreenshotWithCache', {
@@ -98,6 +139,30 @@ export const usePromptGeneration = ({
             .filter(d => d?.ok);
           
           if (analyses.length > 0) {
+            console.log('[usePromptGeneration] ✓ OCR vision fetched for', analyses.length, 'screenshots');
+            
+            // Replace "TO_BE_ENRICHED_WITH_CACHE" placeholders with actual OCR data
+            enrichedPromptWithVision = generatedPrompt;
+            allScreenshotUrls.forEach((url, idx) => {
+              const analysis = analyses[idx];
+              if (analysis) {
+                const ocrData = {
+                  ocr: analysis.ocr,
+                  regions: analysis.regions,
+                  semanticBlocks: analysis.semanticBlocks,
+                  layoutRelations: analysis.layoutRelations,
+                  visionStructure: analysis.visionStructure,
+                  width: analysis.width,
+                  height: analysis.height,
+                  summary: analysis.summary
+                };
+                enrichedPromptWithVision = enrichedPromptWithVision.replace(
+                  '"TO_BE_ENRICHED_WITH_CACHE"',
+                  JSON.stringify(ocrData, null, 2)
+                );
+              }
+            });
+            
             visionContext = `\n\n**Screenshot Analysis (OCR Vision):**\n${analyses.map((a, i) => 
               `Screenshot ${i + 1}: ${a.regions?.length || 0} UI elements detected\n- Text: "${a.ocr?.text?.substring(0, 150) || 'None'}..."`
             ).join('\n')}\n`;
@@ -107,12 +172,12 @@ export const usePromptGeneration = ({
         }
       }
 
-      // Call backend function with rate limiting
+      // Call backend function with rate limiting using enriched prompt
       const response = await fetch('/api/functions/runPrompt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: `Improve this prompt:\n${generatedPrompt}${visionContext}\n\nIMPORTANT: Return ONLY the improved prompt content.`,
+          prompt: `Improve this prompt:\n${enrichedPromptWithVision}${visionContext}\n\nIMPORTANT: Return ONLY the improved prompt content.`,
           file_urls: allScreenshotUrls.length > 0 ? allScreenshotUrls : undefined
         })
       });
