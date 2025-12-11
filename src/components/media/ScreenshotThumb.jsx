@@ -9,9 +9,8 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import OCRDebugPanel from "@/components/admin/OCRDebugPanel";
 
-export default function ScreenshotThumb({ screenshotId, onRemove, showCopyEmbed = true }) {
+export default function ScreenshotThumb({ screenshotId, onRemove, showCopyEmbed = true, onDebugClick }) {
   const [showOCRDebug, setShowOCRDebug] = useState(false);
 
   // Check if user is admin
@@ -72,12 +71,12 @@ export default function ScreenshotThumb({ screenshotId, onRemove, showCopyEmbed 
         
         {/* Action buttons overlay */}
         <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-          {isAdmin && (
+          {isAdmin && onDebugClick && (
             <Button
               size="icon"
               variant="ghost"
               className="h-6 w-6 bg-purple-500/80 text-white hover:text-white hover:bg-purple-600"
-              onClick={(e) => { e.stopPropagation(); setShowOCRDebug(!showOCRDebug); }}
+              onClick={(e) => { e.stopPropagation(); onDebugClick(imageUrl); }}
               title="OCR Debug (Admin)"
             >
               <Eye className="w-3 h-3" />
@@ -114,12 +113,6 @@ export default function ScreenshotThumb({ screenshotId, onRemove, showCopyEmbed 
         </DialogContent>
       </div>
 
-      {/* OCR Debug Panel (Admin only) */}
-      {isAdmin && showOCRDebug && (
-        <div className="mt-4">
-          <OCRDebugPanel screenshotUrl={imageUrl} />
-        </div>
-      )}
     </Dialog>
   );
 }
