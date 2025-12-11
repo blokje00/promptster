@@ -84,8 +84,15 @@ export default function OCRDebugModal({ isOpen, onClose, screenshotUrl }) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] bg-slate-50 dark:bg-slate-900 border-2 border-purple-500">
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-slate-100 dark:ring-offset-slate-950 dark:focus:ring-slate-300 dark:data-[state=open]:bg-slate-800 z-10"
+          aria-label="Close"
+        >
+          <X className="h-5 w-5 text-slate-700 dark:text-slate-300" />
+        </button>
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pr-8">
             <DialogTitle className="flex items-center gap-2">
               <Eye className="w-5 h-5 text-purple-500" />
               OCR Debug Panel (Admin)

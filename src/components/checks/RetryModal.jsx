@@ -258,7 +258,7 @@ ${JSON.stringify({ screenshots: screenshotsPayload }, null, 2)}
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-slate-900 dark:text-slate-100">
             Retry this task

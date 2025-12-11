@@ -4,7 +4,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
-import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText, TrendingUp } from "lucide-react";
+import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText, TrendingUp, X } from "lucide-react";
 import ThemeToggleButton from "@/components/theme/ThemeToggleButton";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../i18n/LanguageContext";
@@ -105,18 +105,12 @@ export default function Header() {
     else if (isChecks) localStorage.setItem('lastMainPage', 'Checks');
   }, [isVault, isAddItem, isMultiprompt, isChecks]);
 
-  // Redirect on initial load - to last visited page for subscribers, Multiprompt for new users
+  // Redirect on initial load - ALWAYS to Multiprompt for all users
   useEffect(() => {
     if (currentPath === "/" || currentPath === "") {
-      const hasActiveAccess = user?.subscription_status === 'active' || user?.subscription_status === 'trial';
-      if (hasActiveAccess) {
-        const lastPage = localStorage.getItem('lastMainPage') || 'Multiprompt';
-        navigate(createPageUrl(lastPage), { replace: true });
-      } else {
-        navigate(createPageUrl('Multiprompt'), { replace: true });
-      }
+      navigate(createPageUrl('Multiprompt'), { replace: true });
     }
-  }, [currentPath, navigate, user]);
+  }, [currentPath, navigate]);
   
   const handleLogoClick = () => {
     window.location.href = createPageUrl("Multiprompt");
@@ -289,6 +283,18 @@ export default function Header() {
                     <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
                   </>
                 )}
+                <DropdownMenuItem asChild className="hover:bg-slate-100 dark:hover:bg-slate-800">
+                  <Link to={createPageUrl("RecycleBin")} className="cursor-pointer text-slate-700 dark:text-slate-300">
+                    <Trash className="mr-2 h-4 w-4" />
+                    <span>Recycle Bin</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="hover:bg-slate-100 dark:hover:bg-slate-800">
+                  <Link to={createPageUrl("Features")} className="cursor-pointer text-slate-700 dark:text-slate-300">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    <span>Features</span>
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild className="hover:bg-slate-100 dark:hover:bg-slate-800">
                   <Link to={createPageUrl("Support")} className="cursor-pointer text-slate-700 dark:text-slate-300">
                     <MessageCircle className="mr-2 h-4 w-4" />

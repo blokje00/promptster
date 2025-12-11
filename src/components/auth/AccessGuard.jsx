@@ -135,7 +135,7 @@ export default function AccessGuard({ children, pageType = "free" }) {
               </Button>
               <Button 
                 variant="outline"
-                onClick={() => navigate(createPageUrl("Dashboard"))}
+                onClick={() => navigate(createPageUrl("Multiprompt"))}
                 className="w-full"
               >
                 Back to Dashboard
