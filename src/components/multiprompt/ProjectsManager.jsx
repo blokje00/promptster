@@ -13,29 +13,21 @@ import { projectColors, projectBorderColors } from "@/components/lib/constants";
 export default function ProjectsManager({ projects = [] }) {
   const queryClient = useQueryClient();
 
-  // Add State
-  const [newName, setNewName] = useState("");
-  const [newColor, setNewColor] = useState("blue");
-  const [newDesc, setNewDesc] = useState("");
-  const [newConfig, setNewConfig] = useState("");
-
-  // Edit State
+  // Dialog State (used for both create and edit)
+  const [dialogMode, setDialogMode] = useState("edit"); // "create" or "edit"
   const [editingProject, setEditingProject] = useState(null);
   const [editName, setEditName] = useState("");
   const [editColor, setEditColor] = useState("blue");
   const [editDesc, setEditDesc] = useState("");
   const [editConfig, setEditConfig] = useState("");
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Mutations
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Project.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      setNewName("");
-      setNewDesc("");
-      setNewColor("blue");
-      setNewConfig("");
+      setIsDialogOpen(false);
       toast.success("Project created");
     }
   });
@@ -44,7 +36,7 @@ export default function ProjectsManager({ projects = [] }) {
     mutationFn: ({ id, data }) => base44.entities.Project.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      setIsEditDialogOpen(false);
+      setIsDialogOpen(false);
       toast.success("Project updated");
     }
   });
@@ -58,151 +50,83 @@ export default function ProjectsManager({ projects = [] }) {
   });
 
   // Handlers
-  const handleCreate = () => {
-    if (!newName.trim()) return;
-    createMutation.mutate({
-      name: newName,
-      color: newColor,
-      description: newDesc,
-      technical_config_markdown: newConfig
-    });
+  const handleCreateStart = () => {
+    setDialogMode("create");
+    setEditingProject(null);
+    setEditName("");
+    setEditColor("blue");
+    setEditDesc("");
+    setEditConfig("");
+    setIsDialogOpen(true);
   };
 
   const handleEditStart = (project) => {
+    setDialogMode("edit");
     setEditingProject(project);
     setEditName(project.name);
     setEditColor(project.color);
     setEditDesc(project.description || "");
     setEditConfig(project.technical_config_markdown || "");
-    setIsEditDialogOpen(true);
+    setIsDialogOpen(true);
   };
 
-  const handleEditSave = () => {
-    if (!editName.trim()) return;
-    updateMutation.mutate({
-      id: editingProject.id,
-      data: {
-        name: editName,
-        color: editColor,
-        description: editDesc,
-        technical_config_markdown: editConfig
-      }
-    });
+  const handleParseJSON = () => {
+    const input = document.getElementById('llm-response-input').value;
+    if (!input.trim()) {
+      toast.error("Please paste JSON data first");
+      return;
+    }
+    
+    try {
+      const jsonMatch = input.match(/```json\n([\s\S]*?)\n```/) || input.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : input;
+      const data = JSON.parse(jsonStr);
+      
+      if (data.name) setEditName(data.name);
+      if (data.description) setEditDesc(data.description);
+      if (data.technical_config_markdown) setEditConfig(data.technical_config_markdown);
+      
+      toast.success("Project structure parsed successfully!");
+    } catch (e) {
+      toast.error("Failed to parse JSON: " + e.message);
+    }
+  };
+
+  const handleSave = () => {
+    if (!editName.trim()) {
+      toast.error("Project name is required");
+      return;
+    }
+    
+    const projectData = {
+      name: editName,
+      color: editColor,
+      description: editDesc,
+      technical_config_markdown: editConfig
+    };
+
+    if (dialogMode === "create") {
+      createMutation.mutate(projectData);
+    } else {
+      updateMutation.mutate({
+        id: editingProject.id,
+        data: projectData
+      });
+    }
   };
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
-      {/* Create Form */}
+      {/* Create Button Card */}
       <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader><CardTitle className="dark:text-slate-100">New Project</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <Input 
-            placeholder="Project Name..." 
-            value={newName} 
-            onChange={e => setNewName(e.target.value)} 
-            className="dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500"
-          />
-          
-          <div>
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 block">Color</label>
-            <div className="flex gap-2 flex-wrap">
-              {Object.keys(projectColors).map(color => (
-                <button
-                  key={color}
-                  onClick={() => setNewColor(color)}
-                  className={`w-8 h-8 rounded-full ${projectColors[color]} ${newColor === color ? 'ring-2 ring-offset-2 ring-slate-400 dark:ring-slate-500 dark:ring-offset-slate-800' : ''}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          <Textarea 
-            placeholder="Description..." 
-            value={newDesc} 
-            onChange={e => setNewDesc(e.target.value)} 
-            className="min-h-[80px] dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" 
-          />
-          
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Technical Config (Markdown)</label>
-            <Textarea 
-              value={newConfig} 
-              onChange={e => setNewConfig(e.target.value)} 
-              placeholder="Technical project configuration..." 
-              className="font-mono text-sm min-h-[100px] dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" 
-            />
-            <div className="flex justify-between items-center pt-1">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Need structure? Copy this prompt:</span>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                onClick={() => {
-                  const prompt = `Analyze the codebase and provide a technical configuration summary in Markdown. Include:
-1. Tech Stack (Frameworks, Libraries)
-2. File Structure (Key directories)
-3. Key Components & Entities
-4. Styling & Theming Approach
-5. Conventions (Naming, Async, Error Handling)
-
-Format as clear Markdown headers and lists.`;
-                  navigator.clipboard.writeText(prompt);
-                  toast.success("Structure prompt copied!");
-                }}
-              >
-                <Copy className="w-3 h-3" /> Copy Prompt
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">LLM Response Parser</label>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                onClick={() => {
-                  const prompt = `Analyze this codebase and provide a complete structural overview in JSON format:
-
-{
-  "name": "Project Name",
-  "description": "Brief project description",
-  "technical_config_markdown": "# Tech Stack\\n- Framework: ...\\n- Libraries: ...\\n\\n# Architecture\\n...",
-  "pages": [
-    {"name": "PageName", "path": "/path", "components": ["Component1"], "purpose": "..."}
-  ],
-  "components": [
-    {"name": "ComponentName", "location": "components/...", "purpose": "...", "props": ["prop1"]}
-  ],
-  "entities": [
-    {"name": "EntityName", "fields": ["field1", "field2"], "purpose": "..."}
-  ],
-  "buttons_and_actions": [
-    {"label": "Button Text", "location": "PageName", "action": "what it does"}
-  ],
-  "routing": "How navigation works",
-  "state_management": "How data flows",
-  "styling": "Tailwind/CSS approach"
-}
-
-Be thorough - include ALL pages, components, buttons, forms, and key functionality.`;
-                  navigator.clipboard.writeText(prompt);
-                  toast.success("Structure analysis prompt copied!");
-                }}
-              >
-                <Copy className="w-3 h-3" /> Copy Analysis Prompt
-              </Button>
-            </div>
-            <Textarea 
-              placeholder="Paste the LLM's JSON response here..." 
-              className="min-h-[80px] text-xs font-mono dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500"
-              id="create-llm-response-input"
-            />
-          </div>
-          
-          <Button onClick={handleCreate} className="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600" disabled={!newName}>
-            <Plus className="w-4 h-4 mr-2" /> Create Project
+        <CardContent className="flex items-center justify-center min-h-[200px]">
+          <Button 
+            onClick={handleCreateStart} 
+            size="lg"
+            className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+          >
+            <Plus className="w-5 h-5 mr-2" /> Create New Project
           </Button>
         </CardContent>
       </Card>
@@ -236,10 +160,12 @@ Be thorough - include ALL pages, components, buttons, forms, and key functionali
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      {/* Create/Edit Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle>Edit Project</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{dialogMode === "create" ? "Create New Project" : "Edit Project"}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4 pt-4 max-h-[70vh] overflow-y-auto px-1">
             <Input value={editName} onChange={e => setEditName(e.target.value)} />
             <div className="flex gap-2">
@@ -319,21 +245,31 @@ Be thorough - include ALL pages, components, buttons, forms, and key functionali
                    <Copy className="w-3 h-3" /> Copy Analysis Prompt
                  </Button>
                </div>
-               <Textarea 
-                 placeholder="Paste the LLM's JSON response here..." 
-                 className="min-h-[100px] text-xs font-mono"
-                 id="llm-response-input"
-               />
+               <div className="flex gap-2">
+                 <Textarea 
+                   placeholder="Paste the LLM's JSON response here..." 
+                   className="min-h-[100px] text-xs font-mono flex-1"
+                   id="llm-response-input"
+                 />
+                 <Button
+                   variant="secondary"
+                   className="h-auto px-3 flex-col gap-1 text-xs"
+                   onClick={handleParseJSON}
+                 >
+                   <Sparkles className="w-4 h-4" />
+                   Parse JSON
+                 </Button>
+               </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-6 border-t border-slate-100 mt-6">
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
               <Button 
-                onClick={handleEditSave}
+                onClick={handleSave}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white"
                 disabled={!editName.trim()}
               >
-                Save Changes
+                {dialogMode === "create" ? "Create Project" : "Save Changes"}
               </Button>
             </div>
           </div>
