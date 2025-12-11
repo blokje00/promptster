@@ -3,9 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import ScreenshotUploader from "@/components/media/ScreenshotUploader";
 import { toast } from "sonner";
+import { base44 } from "@/api/base44Client";
 
 /**
  * RetryModal - Guided flow for creating structured retry prompts
@@ -21,16 +22,61 @@ export default function RetryModal({
   const [screenshots, setScreenshots] = useState([]);
   const [userExplanation, setUserExplanation] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [visionAnalysis, setVisionAnalysis] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       setScreenshots([]);
       setUserExplanation("");
+      setVisionAnalysis(null);
     }
   }, [isOpen]);
 
-  // Generate structured retry prompt
+  // Auto-analyze screenshots when added (with caching)
+  useEffect(() => {
+    if (screenshots.length > 0 && !visionAnalysis && !isAnalyzing) {
+      analyzeScreenshots();
+    }
+  }, [screenshots]);
+
+  const analyzeScreenshots = async () => {
+    if (screenshots.length === 0) return;
+    
+    setIsAnalyzing(true);
+    try {
+      const results = [];
+      for (const url of screenshots) {
+        console.log('[RetryModal] Analyzing screenshot (with cache):', url);
+        const response = await base44.functions.invoke('analyzeScreenshotWithCache', {
+          screenshotUrl: url,
+          level: 'full'
+        });
+        
+        if (response.data?.ok) {
+          results.push(response.data);
+          console.log('[RetryModal] ✓ Analysis', response.data.cached ? 'from cache' : 'completed');
+        }
+      }
+      
+      if (results.length > 0) {
+        setVisionAnalysis(results);
+        toast.success('📸 Screenshot analysis complete', {
+          description: results[0].cached ? 'Using cached analysis' : 'Fresh analysis saved'
+        });
+      }
+    } catch (error) {
+      console.error('[RetryModal] Vision analysis failed:', error);
+      toast.error('⚠️ Screenshot analysis failed', {
+        description: 'Will use screenshot without analysis'
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Generate structured retry prompt with OCR vision data
   const generateRetryPrompt = () => {
     if (!task) return "";
 
@@ -42,10 +88,22 @@ export default function RetryModal({
       return "⚠️ Please add screenshot and explanation to generate preview";
     }
 
+    // Include OCR vision analysis if available
+    let visionSection = '';
+    if (visionAnalysis && visionAnalysis.length > 0) {
+      const analysis = visionAnalysis[0];
+      visionSection = `\n**OCR Vision Analysis:**
+- Detected UI elements: ${analysis.regions?.length || 0} regions
+- Text content: "${analysis.ocr?.text?.substring(0, 200) || 'No text detected'}..."
+- Layout level: ${analysis.metadata?.ocrLevel || 'basic'}
+`;
+    }
+
     const prompt = `**Retry — Task Correction Request**
 
 **1. User screenshot evidence**
 ${hasScreenshot ? `Attached screenshot shows the area where the issue occurs.` : "⚠️ Screenshot required"}
+${visionSection}
 ${hasExplanation ? `User observation: ${userExplanation.trim()}` : ""}
 
 **2. Original task description**
@@ -110,6 +168,7 @@ ${originalTask}
       await onConfirm({
         content: structuredPrompt,
         screenshots: screenshots,
+        visionAnalysis: visionAnalysis,
         originalTask: task,
         userExplanation: userExplanation.trim()
       });
@@ -170,6 +229,21 @@ ${originalTask}
                 projectId={projectId}
                 maxCount={3}
               />
+              {isAnalyzing && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-indigo-600">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Analyzing screenshot with OCR Vision...</span>
+                </div>
+              )}
+              {visionAnalysis && !isAnalyzing && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-green-600">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>
+                    {visionAnalysis[0]?.regions?.length || 0} UI elements detected
+                    {visionAnalysis[0]?.cached && ' (cached)'}
+                  </span>
+                </div>
+              )}
             </div>
             {screenshots.length === 0 && (
               <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 text-sm">
