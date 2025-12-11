@@ -264,7 +264,7 @@ Return JSON:
     return Response.json({ 
       ok: false,
       error: error.message,
-      stack: Deno.env.get('NODE_ENV') === 'development' ? error.stack : undefined
+      stack: error.stack
     }, { status: 500 });
   }
 });
