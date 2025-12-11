@@ -23,6 +23,9 @@ export default function SubscriptionPage() {
     },
   });
 
+  // Filter plans based on subscription status - prevents hook count changes
+  const displayPlans = user?.subscription_status === 'active' ? [] : plans;
+
   const handleSubscribe = async (plan) => {
     setIsProcessing(true);
     try {
@@ -142,7 +145,7 @@ export default function SubscriptionPage() {
       )}
 
       <div className="grid gap-6">
-        {user?.subscription_status !== 'active' && plans.map((plan) => (
+        {displayPlans.map((plan) => (
         <Card key={plan.id} className={`border-l-4 ${plan.is_active ? 'border-l-green-500' : 'border-l-slate-300'}`}>
           <CardContent className="p-6 flex items-center justify-between">
             <div>
@@ -190,7 +193,7 @@ export default function SubscriptionPage() {
           </CardContent>
         </Card>
         ))}
-        {user?.subscription_status !== 'active' && plans.length === 0 && !isLoading && (
+        {displayPlans.length === 0 && !isLoading && user?.subscription_status !== 'active' && (
           <p className="text-center text-slate-500 py-12">No subscription plans configured yet.</p>
         )}
       </div>
