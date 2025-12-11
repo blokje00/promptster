@@ -124,7 +124,9 @@ Deno.serve(async (req) => {
     }
 
     // Step 3: LLM Vision Analysis (base analysis or fallback if OCR failed)
-    const analysisPrompt = `Analyze this UI screenshot in detail:
+    let result;
+    try {
+      const analysisPrompt = `Analyze this UI screenshot in detail:
 
 1. **Component Detection**: Identify all UI elements (buttons, inputs, headings, cards, images, links, labels)
 2. **Layout Structure**: Describe the visual hierarchy and spatial relationships
@@ -158,57 +160,59 @@ Provide analysis as JSON with this structure:
   "detectedComponents": ["Button", "Input", "Card"]
 }`;
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: analysisPrompt,
-      file_urls: [imageUrl],
-      response_json_schema: {
-        type: "object",
-        properties: {
-          summary: { type: "string" },
-          regions: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                id: { type: "string" },
-                type: { type: "string" },
-                text: { type: "string" },
-                role: { type: "string" },
-                bbox: {
-                  type: "object",
-                  properties: {
-                    x: { type: "number" },
-                    y: { type: "number" },
-                    width: { type: "number" },
-                    height: { type: "number" }
-                  }
-                },
-                confidence: { type: "number" }
+      result = await base44.integrations.Core.InvokeLLM({
+        prompt: analysisPrompt,
+        file_urls: [imageUrl],
+        response_json_schema: {
+          type: "object",
+          properties: {
+            summary: { type: "string" },
+            regions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  type: { type: "string" },
+                  text: { type: "string" },
+                  role: { type: "string" },
+                  bbox: {
+                    type: "object",
+                    properties: {
+                      x: { type: "number" },
+                      y: { type: "number" },
+                      width: { type: "number" },
+                      height: { type: "number" }
+                    }
+                  },
+                  confidence: { type: "number" }
+                }
               }
-            }
-          },
-          semanticBlocks: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                id: { type: "string" },
-                type: { type: "string" },
-                text: { type: "string" },
-                components: { type: "array", items: { type: "string" } },
-                hierarchy: {
-                  type: "object",
-                  properties: {
-                    level: { type: "number" }
+            },
+            semanticBlocks: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string" },
+                  type: { type: "string" },
+                  text: { type: "string" },
+                  components: { type: "array", items: { type: "string" } },
+                  hierarchy: {
+                    type: "object",
+                    properties: {
+                      level: { type: "number" }
+                    }
                   }
                 }
               }
-            }
-          },
-          layoutPattern: { type: "string" },
-          detectedComponents: { type: "array", items: { type: "string" } }
+            },
+            layoutPattern: { type: "string" },
+            detectedComponents: { type: "array", items: { type: "string" } }
+          }
         }
       });
+      
       console.log('[analyzeScreenshotVision] LLM Vision completed successfully');
     } catch (error) {
       console.error('[analyzeScreenshotVision] LLM Vision failed:', error);
