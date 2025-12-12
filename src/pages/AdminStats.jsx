@@ -111,6 +111,22 @@ export default function AdminStats() {
     [pageViews]
   );
 
+  // Filter admin data from items, projects, thoughts (BEFORE using them)
+  const filteredItems = useMemo(() => 
+    allItems.filter(i => i.created_by !== 'patrick.van.zandvoort@gmail.com'),
+    [allItems]
+  );
+
+  const filteredProjects = useMemo(() =>
+    allProjects.filter(p => p.created_by !== 'patrick.van.zandvoort@gmail.com'),
+    [allProjects]
+  );
+
+  const filteredThoughts = useMemo(() =>
+    allThoughts.filter(t => t.created_by !== 'patrick.van.zandvoort@gmail.com'),
+    [allThoughts]
+  );
+
   // Prepare user data with calculated fields
   const usersWithData = React.useMemo(() => {
     return filteredUsers.map(user => {
@@ -205,22 +221,6 @@ export default function AdminStats() {
       </div>
     );
   }
-
-  // Filter admin data from items, projects, thoughts
-  const filteredItems = useMemo(() => 
-    allItems.filter(i => i.created_by !== 'patrick.van.zandvoort@gmail.com'),
-    [allItems]
-  );
-
-  const filteredProjects = useMemo(() =>
-    allProjects.filter(p => p.created_by !== 'patrick.van.zandvoort@gmail.com'),
-    [allProjects]
-  );
-
-  const filteredThoughts = useMemo(() =>
-    allThoughts.filter(t => t.created_by !== 'patrick.van.zandvoort@gmail.com'),
-    [allThoughts]
-  );
 
   const stats = [
     {
