@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Upload, X, FileArchive, Download } from "lucide-react";
 import { toast } from "sonner";
-import { uploadImageToSupabase } from "@/components/lib/uploadImage";
+import { uploadZipFile } from "@/components/lib/uploadFile";
 
 export default function ZipUploadZone({ zipFiles, onZipFilesChange }) {
   const [dragActive, setDragActive] = useState(false);
@@ -57,7 +57,7 @@ export default function ZipUploadZone({ zipFiles, onZipFilesChange }) {
     setUploading(true);
     try {
       const uploadPromises = files.map(async (file) => {
-        const file_url = await uploadImageToSupabase(file);
+        const file_url = await uploadZipFile(file);
         return {
           name: file.name,
           url: file_url
@@ -68,7 +68,7 @@ export default function ZipUploadZone({ zipFiles, onZipFilesChange }) {
       onZipFilesChange([...(zipFiles || []), ...newZipFiles]);
       toast.success(`${files.length} ZIP file(s) uploaded`);
     } catch (error) {
-      toast.error("Error uploading ZIP files");
+      toast.error(error.message || "Error uploading ZIP files");
       console.error(error);
     }
     setUploading(false);
