@@ -13,15 +13,19 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { cn } from "@/lib/utils";
+import { useSaveButton } from "@/components/hooks/useSaveButton";
 
 /**
  * AdminFeatures - Admin-friendly CMS for Features page
  * Bulk edit all feature blocks without inline editors
+ * 
+ * SAVE-RELIABILITY: this component now uses useSaveButton pattern
  */
 export default function AdminFeatures() {
   const queryClient = useQueryClient();
   const [editingBlocks, setEditingBlocks] = useState({});
   const [savedBlockId, setSavedBlockId] = useState(null);
+  const [savingBlockId, setSavingBlockId] = useState(null);
 
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
@@ -60,19 +64,26 @@ export default function AdminFeatures() {
     }
   });
 
-  const handleUpdate = (blockId) => {
+  const handleUpdate = async (blockId) => {
     const block = editingBlocks[blockId];
     if (!block) return;
     
-    updateMutation.mutate({
-      id: blockId,
-      data: {
-        content: block.content,
-        content_type: block.content_type || 'text',
-        order: block.order || 0,
-        metadata: block.metadata || {}
-      }
-    });
+    setSavingBlockId(blockId);
+    try {
+      await updateMutation.mutateAsync({
+        id: blockId,
+        data: {
+          content: block.content,
+          content_type: block.content_type || 'text',
+          order: block.order || 0,
+          metadata: block.metadata || {}
+        }
+      });
+      setSavedBlockId(blockId);
+      setTimeout(() => setSavedBlockId(null), 2000);
+    } finally {
+      setSavingBlockId(null);
+    }
   };
 
   const handleFieldChange = (blockId, field, value) => {
@@ -131,7 +142,7 @@ export default function AdminFeatures() {
                       <Button
                         size="sm"
                         onClick={() => handleUpdate(block.id)}
-                        disabled={updateMutation.isPending}
+                        disabled={savingBlockId === block.id}
                         className={cn(
                           "transition-all",
                           savedBlockId === block.id 
@@ -139,14 +150,14 @@ export default function AdminFeatures() {
                             : "bg-indigo-600 hover:bg-indigo-700"
                         )}
                       >
-                        {updateMutation.isPending ? (
+                        {savingBlockId === block.id ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : savedBlockId === block.id ? (
                           <Check className="w-4 h-4 mr-2" />
                         ) : (
                           <Save className="w-4 h-4 mr-2" />
                         )}
-                        {updateMutation.isPending ? "Saving..." : savedBlockId === block.id ? "Saved!" : "Save"}
+                        {savingBlockId === block.id ? "Saving..." : savedBlockId === block.id ? "Saved!" : "Save"}
                       </Button>
                       <Button
                         size="sm"
