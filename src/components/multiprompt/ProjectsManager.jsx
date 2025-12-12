@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Pencil, Trash2, Plus, Copy, FileText, Sparkles } from "lucide-react";
+import { Pencil, Trash2, Plus, Copy, FileText, Sparkles, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { projectColors, projectBorderColors } from "@/components/lib/constants";
 
@@ -355,7 +355,17 @@ Be thorough - include ALL pages, components, buttons, forms, and key functionali
                 className="bg-indigo-600 hover:bg-indigo-700 text-white"
                 disabled={!editName.trim() || createMutation.isPending || updateMutation.isPending}
               >
-                {(createMutation.isPending || updateMutation.isPending) ? "Saving..." : (dialogMode === "create" ? "Create Project" : "Save Changes")}
+                {(createMutation.isPending || updateMutation.isPending) ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    {dialogMode === "create" ? "Create Project" : "Save Changes"}
+                  </>
+                )}
               </Button>
             </div>
           </div>
