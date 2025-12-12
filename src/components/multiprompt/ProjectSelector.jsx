@@ -55,51 +55,47 @@ export default function ProjectSelector({
 
   return (
     <>
-    <Card className={`mb-6 bg-white dark:bg-slate-800 ${isAllProjectsSelected ? 'border-2 border-slate-800 dark:border-slate-600' : selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : 'border-slate-200 dark:border-slate-700'}`}>
-      <CardContent className="py-4">
-        <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <FolderOpen className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-            <span className="font-medium text-slate-700 dark:text-slate-300">Project:</span>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <Button
-              variant={!selectedProjectId ? "default" : "outline"}
-              size="sm"
-              onClick={() => onSelectProject("")}
-              className={!selectedProjectId ? "bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600" : ""}
-            >
-              All Projects
-              {allThoughtsCount > 0 && (
-                <Badge variant="secondary" className="ml-2 bg-red-500 text-white hover:bg-red-600 border-0 px-1.5 py-0 h-4 text-[10px]">
-                  {allThoughtsCount}
-                </Badge>
-              )}
-            </Button>
-            {projects.map(p => (
-              <Button
-                key={p.id}
-                variant={selectedProjectId === p.id ? "default" : "outline"}
-                size="sm"
-                onClick={() => onSelectProject(p.id)}
-                className={selectedProjectId === p.id ? `${projectColors[p.color]} border-0` : ""}
-              >
-                <div className={`w-2 h-2 rounded-full mr-2 ${projectColors[p.color]?.replace('bg-', 'bg-').replace('600', '400') || 'bg-slate-400'}`} />
-                {p.name} ({getProjectCount(p.id)})
-              </Button>
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="border-dashed border-2 hover:bg-slate-50 dark:hover:bg-slate-800"
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-slate-700 dark:text-slate-300">My Projects</h3>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsCreateDialogOpen(true)}
+          className="border-dashed border-2 hover:bg-indigo-50 dark:hover:bg-slate-800 h-9 px-4"
+        >
+          <Plus className="w-5 h-5 mr-1" />
+          New Project
+        </Button>
+      </div>
+      <div className="flex gap-2 flex-wrap">
+        <Button
+          variant={!selectedProjectId ? "default" : "outline"}
+          size="sm"
+          onClick={() => onSelectProject("")}
+          className={!selectedProjectId ? "bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600" : ""}
+        >
+          All Projects
+          {allThoughtsCount > 0 && (
+            <Badge variant="secondary" className="ml-2 bg-red-500 text-white hover:bg-red-600 border-0 px-1.5 py-0 h-4 text-[10px]">
+              {allThoughtsCount}
+            </Badge>
+          )}
+        </Button>
+        {projects.map(p => (
+          <Button
+            key={p.id}
+            variant={selectedProjectId === p.id ? "default" : "outline"}
+            size="sm"
+            onClick={() => onSelectProject(p.id)}
+            className={selectedProjectId === p.id ? `${projectColors[p.color]} border-0` : ""}
+          >
+            <div className={`w-2 h-2 rounded-full mr-2 ${projectColors[p.color]?.replace('bg-', 'bg-').replace('600', '400') || 'bg-slate-400'}`} />
+            {p.name} ({getProjectCount(p.id)})
+          </Button>
+        ))}
+      </div>
+    </div>
 
     {/* Create Project Dialog */}
     <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
