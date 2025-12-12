@@ -192,24 +192,21 @@ export default function ProjectsManager({ projects = [] }) {
   };
 
   return (
-    <div className="grid lg:grid-cols-2 gap-6">
-      {/* Create Button Card */}
-      <Card className="dark:bg-slate-800 dark:border-slate-700">
-        <CardHeader><CardTitle className="dark:text-slate-100">New Project</CardTitle></CardHeader>
-        <CardContent className="flex items-center justify-center min-h-[200px]">
-          <Button 
-            onClick={handleCreateStart} 
-            size="lg"
-            className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
-          >
-            <Plus className="w-5 h-5 mr-2" /> Create New Project
-          </Button>
-        </CardContent>
-      </Card>
-
+    <div className="max-w-2xl mx-auto">
       {/* Project List */}
       <Card>
-        <CardHeader><CardTitle>My Projects</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>My Projects</CardTitle>
+            <Button 
+              onClick={handleCreateStart}
+              size="icon"
+              className="h-10 w-10 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+            >
+              <Plus className="w-6 h-6" />
+            </Button>
+          </div>
+        </CardHeader>
         <CardContent className="space-y-3">
           {projects.map(project => (
             <div key={project.id} className={`p-4 rounded-lg border-2 ${projectBorderColors[project.color]} bg-white`}>
