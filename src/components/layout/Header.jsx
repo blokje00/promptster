@@ -220,7 +220,7 @@ export default function Header() {
           
           {!user ? (
             <Button 
-              onClick={() => base44.auth.redirectToLogin()}
+              onClick={() => setShowTrialModal(true)}
               className="ml-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
             >
               <Sparkles className="w-4 h-4 mr-2" />

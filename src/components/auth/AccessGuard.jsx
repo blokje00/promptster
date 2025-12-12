@@ -134,7 +134,9 @@ export default function AccessGuard({ children, pageType = "free" }) {
             </p>
             <div className="space-y-3 mb-6">
               <Button 
-                onClick={() => setShowTrialModal(true)}
+                onClick={async () => {
+                  setShowTrialModal(true);
+                }}
                 className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
               >
                 <Sparkles className="w-4 h-4 mr-2" />

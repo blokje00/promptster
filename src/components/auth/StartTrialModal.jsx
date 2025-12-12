@@ -16,9 +16,13 @@ export default function StartTrialModal({ isOpen, onClose, onSuccess }) {
     setIsActivating(true);
     
     try {
+      // Step 1: Activate trial
       const response = await base44.functions.invoke('activateTrial', {});
       
       if (response.data.success) {
+        // Step 2: Seed demo data
+        await base44.functions.invoke('seedDemoData', {});
+        
         toast.success('🎉 Free trial activated!', {
           description: '14 days of full access to all features'
         });
@@ -29,11 +33,11 @@ export default function StartTrialModal({ isOpen, onClose, onSuccess }) {
         onClose();
       } else {
         toast.error(response.data.error || 'Failed to activate trial');
+        setIsActivating(false);
       }
     } catch (error) {
       console.error('[StartTrialModal] Error:', error);
       toast.error('Failed to activate trial. Please try again.');
-    } finally {
       setIsActivating(false);
     }
   };
