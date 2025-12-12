@@ -125,6 +125,44 @@ export default function AdminFeatures() {
         </div>
 
         <div className="space-y-4">
+          {/* Add missing blocks that exist in Features page but not in AdminFeatures */}
+          {[
+            'hero_title', 'hero_subtitle', 
+            'cta_title', 'cta_subtitle', 
+            'badge_version', 'badge_uptime',
+            'feature_0_title', 'feature_0_description', 
+            'feature_1_title', 'feature_1_description',
+            'feature_2_title', 'feature_2_description',
+            'feature_3_title', 'feature_3_description'
+          ].filter(key => !blocks.find(b => b.block_key === key)).map((missingKey, idx) => (
+            <Card key={`missing-${missingKey}`} className="border-dashed border-2 border-yellow-300 bg-yellow-50/50">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <code className="text-sm bg-yellow-100 px-2 py-1 rounded text-yellow-800">
+                      {missingKey} (MISSING)
+                    </code>
+                    <Badge variant="outline" className="bg-yellow-100 text-yellow-800">Not in DB</Badge>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => createMutation.mutate({
+                      block_key: missingKey,
+                      content: `Content for ${missingKey}`,
+                      content_type: 'text',
+                      order: idx,
+                      metadata: {}
+                    })}
+                    className="bg-yellow-600 hover:bg-yellow-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Block
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+            </Card>
+          ))}
+
           {blocks.map((block) => {
             const editing = editingBlocks[block.id] || block;
             
