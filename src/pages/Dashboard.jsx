@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Search, Plus, Star, Code2, Sparkles, FileArchive, GitBranch, ClipboardCheck, FolderOpen, X } from "lucide-react";
+import { Search, Plus, Star, Code2, Sparkles, FileArchive, GitBranch, ClipboardCheck, FolderOpen, X, Grid3x3, Table } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import ItemCard from "../components/dashboard/ItemCard";
 import AccessGuard from "../components/auth/AccessGuard";
 import TrialBanner from "../components/dashboard/TrialBanner";
+import VaultTableView from "../components/dashboard/VaultTableView";
 import { projectColors } from "@/components/lib/constants";
 
 export default function Dashboard() {
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const [showPublishedOnly, setShowPublishedOnly] = useState(false);
   const [showPendingCheckOnly, setShowPendingCheckOnly] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState("all");
+  const [viewMode, setViewMode] = useState("cards");
 
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
@@ -226,12 +228,14 @@ export default function Dashboard() {
               </Button>
             </Link>
           </div>
-        ) : (
+        ) : viewMode === "cards" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredItems.map((item) => (
               <ItemCard key={item.id} item={item} project={projects.find(p => p.id === item.project_id)} />
             ))}
           </div>
+        ) : (
+          <VaultTableView items={filteredItems} projects={projects} />
         )}
       </div>
     </div>
