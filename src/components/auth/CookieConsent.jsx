@@ -12,19 +12,32 @@ export default function CookieConsent() {
   useEffect(() => {
     // Check if user has already consented
     const hasConsented = localStorage.getItem('cookie_consent');
-    if (!hasConsented) {
-      // Delay showing banner slightly for better UX
+    const consentExpiry = localStorage.getItem('cookie_consent_expiry');
+    
+    // Check if consent has expired (30 days)
+    const now = new Date().getTime();
+    if (hasConsented && consentExpiry && now < parseInt(consentExpiry)) {
+      // Consent is valid, don't show banner
+      return;
+    }
+    
+    // Show banner if no consent or expired
+    if (!hasConsented || !consentExpiry || now >= parseInt(consentExpiry)) {
       setTimeout(() => setShowBanner(true), 1000);
     }
   }, []);
 
   const handleAccept = () => {
+    const expiryTime = new Date().getTime() + (30 * 24 * 60 * 60 * 1000); // 30 days
     localStorage.setItem('cookie_consent', 'accepted');
+    localStorage.setItem('cookie_consent_expiry', expiryTime.toString());
     setShowBanner(false);
   };
 
   const handleDecline = () => {
+    const expiryTime = new Date().getTime() + (30 * 24 * 60 * 60 * 1000); // 30 days
     localStorage.setItem('cookie_consent', 'declined');
+    localStorage.setItem('cookie_consent_expiry', expiryTime.toString());
     setShowBanner(false);
   };
 

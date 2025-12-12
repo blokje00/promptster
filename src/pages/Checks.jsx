@@ -151,10 +151,12 @@ export default function Checks() {
         status: parentStatus
       });
 
-      // If failed, open guided retry modal instead of immediate creation
+      // If failed, open guided retry modal
       if (newStatus === 'failed') {
         setSelectedRetryTask({ ...task, originalStatus: task.status || 'open' });
         setRetryModalOpen(true);
+      } else if (newStatus === 'success') {
+        toast.success("Task marked as success");
       } else {
         toast.success(`Task updated to ${newStatus}`);
       }
@@ -181,10 +183,11 @@ export default function Checks() {
         is_selected: true,
         is_deleted: false,
         retry_from_item_id: task.itemId,
-        focus_type: 'both'
+        focus_type: 'both',
+        vision_analysis: retryData.screenshots && retryData.screenshots.length > 0 ? { status: 'pending', results: [] } : undefined
       });
 
-      // Update task status to retried
+      // Update task status to retried (blijft weg uit Checks)
       const newChecks = [...item.task_checks];
       newChecks[task.index] = { 
         ...newChecks[task.index], 
@@ -193,7 +196,7 @@ export default function Checks() {
       };
       await base44.entities.Item.update(item.id, { task_checks: newChecks });
 
-      toast.success("Structured retry task created in Multi-Task");
+      toast.success("Retry task created in Multi-Task!");
       
       // Close modal and reset state
       setRetryModalOpen(false);
@@ -203,6 +206,7 @@ export default function Checks() {
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
       queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] });
+      queryClient.invalidateQueries({ queryKey: ['openTasksCount'] });
     } catch (error) {
       toast.error("Failed to create retry task");
     }

@@ -63,6 +63,7 @@ export default function Dashboard() {
     const matchesSearch = !searchQuery || 
       item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     
     const matchesType = filterType === "all" || item.type === filterType || (filterType === "multiprompt" && item.type === "multiprompt");

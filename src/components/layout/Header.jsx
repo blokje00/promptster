@@ -269,9 +269,9 @@ export default function Header() {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to={createPageUrl("AdminAnalytics")} className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 bg-red-50/50 dark:bg-red-950/30">
+                      <Link to={createPageUrl("AIBackoffice")} className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 bg-red-50/50 dark:bg-red-950/30">
                         <TrendingUp className="mr-2 h-4 w-4" />
-                        <span>Analytics</span>
+                        <span>AI Backoffice</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
