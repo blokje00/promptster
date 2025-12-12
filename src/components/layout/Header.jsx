@@ -111,6 +111,15 @@ export default function Header() {
       navigate(createPageUrl('Multiprompt'), { replace: true });
     }
   }, [currentPath, navigate]);
+
+  // Seed demo data for users who don't have it yet
+  useEffect(() => {
+    if (user && !user.demo_seed_version) {
+      base44.functions.invoke('seedDemoData').catch(err => {
+        console.warn('[Header] Demo seed failed:', err);
+      });
+    }
+  }, [user]);
   
   const handleLogoClick = () => {
     window.location.href = createPageUrl("Multiprompt");
