@@ -15,26 +15,8 @@ export default function AIInstructionForm({
   isSaving,
   onReset 
 }) {
-  const [localInstruction, setLocalInstruction] = React.useState(instruction);
-  const [localModelPreference, setLocalModelPreference] = React.useState(modelPreference);
-
-  // Sync with parent when parent changes
-  React.useEffect(() => {
-    setLocalInstruction(instruction);
-  }, [instruction]);
-
-  React.useEffect(() => {
-    setLocalModelPreference(modelPreference);
-  }, [modelPreference]);
-
   const handleSave = () => {
-    // Update parent state before saving
-    setInstruction(localInstruction);
-    setModelPreference(localModelPreference);
-    // Small delay to ensure state is updated
-    setTimeout(() => {
-      onSave();
-    }, 50);
+    onSave();
   };
 
   return (
@@ -49,8 +31,8 @@ export default function AIInstructionForm({
         <div className="space-y-2">
           <Label>AI Instruction</Label>
           <Textarea
-            value={localInstruction}
-            onChange={(e) => setLocalInstruction(e.target.value)}
+            value={instruction}
+            onChange={(e) => setInstruction(e.target.value)}
             placeholder="Instruction for the AI..."
             className="min-h-[200px] font-mono text-sm"
           />
@@ -61,7 +43,7 @@ export default function AIInstructionForm({
 
         <div className="space-y-2">
           <Label>Model Preference</Label>
-          <Select value={localModelPreference} onValueChange={setLocalModelPreference}>
+          <Select value={modelPreference} onValueChange={setModelPreference}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
