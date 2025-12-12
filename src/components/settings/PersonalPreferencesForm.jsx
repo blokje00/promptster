@@ -10,6 +10,7 @@ export default function PersonalPreferencesForm({
   setPersonalPreferences, 
   onSave, 
   isSaving,
+  isDirty = true,
   defaultExample
 }) {
   return (
@@ -39,7 +40,7 @@ export default function PersonalPreferencesForm({
         <div className="flex gap-2">
           <Button 
             onClick={onSave} 
-            disabled={isSaving}
+            disabled={isSaving || !isDirty}
             className="bg-blue-600 hover:bg-blue-700"
           >
             <Save className="w-4 h-4 mr-2" />
