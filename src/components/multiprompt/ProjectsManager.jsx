@@ -25,20 +25,38 @@ export default function ProjectsManager({ projects = [] }) {
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Project.create(data),
+    mutationFn: async (data) => {
+      console.log('[ProjectsManager] Creating project:', data);
+      const result = await base44.entities.Project.create(data);
+      console.log('[ProjectsManager] Created project:', result);
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       setIsDialogOpen(false);
       toast.success("Project created");
+    },
+    onError: (error) => {
+      console.error('[ProjectsManager] Create error:', error);
+      toast.error("Failed to create project: " + error.message);
     }
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Project.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      console.log('[ProjectsManager] Updating project:', id, data);
+      const result = await base44.entities.Project.update(id, data);
+      console.log('[ProjectsManager] Updated project:', result);
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       setIsDialogOpen(false);
       toast.success("Project updated");
+    },
+    onError: (error) => {
+      console.error('[ProjectsManager] Update error:', error);
+      toast.error("Failed to update project: " + error.message);
     }
   });
 
@@ -94,6 +112,8 @@ export default function ProjectsManager({ projects = [] }) {
   };
 
   const handleSave = () => {
+    console.log('[ProjectsManager] handleSave called', { dialogMode, editName, editColor, editDesc, editConfig });
+    
     if (!editName.trim()) {
       toast.error("Project name is required");
       return;
@@ -106,9 +126,17 @@ export default function ProjectsManager({ projects = [] }) {
       technical_config_markdown: editConfig
     };
 
+    console.log('[ProjectsManager] Saving project data:', projectData);
+
     if (dialogMode === "create") {
+      console.log('[ProjectsManager] Creating new project');
       createMutation.mutate(projectData);
     } else {
+      console.log('[ProjectsManager] Updating existing project:', editingProject?.id);
+      if (!editingProject?.id) {
+        toast.error("No project ID found");
+        return;
+      }
       updateMutation.mutate({
         id: editingProject.id,
         data: projectData
@@ -260,9 +288,9 @@ Be thorough - include ALL pages, components, buttons, forms, and key functionali
               <Button 
                 onClick={handleSave}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                disabled={!editName.trim()}
+                disabled={!editName.trim() || createMutation.isPending || updateMutation.isPending}
               >
-                {dialogMode === "create" ? "Create Project" : "Save Changes"}
+                {(createMutation.isPending || updateMutation.isPending) ? "Saving..." : (dialogMode === "create" ? "Create Project" : "Save Changes")}
               </Button>
             </div>
           </div>
