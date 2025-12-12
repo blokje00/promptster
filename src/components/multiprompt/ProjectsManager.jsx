@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,12 +83,15 @@ export default function ProjectsManager({ projects = [] }) {
   const handleEditStart = (project) => {
     setDialogMode("edit");
     setEditingProject(project);
-    setEditName(project.name);
-    setEditColor(project.color);
-    setEditDesc(project.description || "");
-    setEditConfig(project.technical_config_markdown || "");
-    setPastedJSON("");
     setIsDialogOpen(true);
+    // Set fields AFTER dialog opens to prevent flash
+    setTimeout(() => {
+      setEditName(project.name);
+      setEditColor(project.color);
+      setEditDesc(project.description || "");
+      setEditConfig(project.technical_config_markdown || "");
+      setPastedJSON("");
+    }, 0);
   };
 
   const handleJSONPaste = (value) => {
@@ -111,7 +114,7 @@ export default function ProjectsManager({ projects = [] }) {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     console.log('[ProjectsManager] handleSave called', { dialogMode, editName, editColor, editDesc, editConfig });
     
     if (!editName.trim()) {
@@ -128,19 +131,23 @@ export default function ProjectsManager({ projects = [] }) {
 
     console.log('[ProjectsManager] Saving project data:', projectData);
 
-    if (dialogMode === "create") {
-      console.log('[ProjectsManager] Creating new project');
-      createMutation.mutate(projectData);
-    } else {
-      console.log('[ProjectsManager] Updating existing project:', editingProject?.id);
-      if (!editingProject?.id) {
-        toast.error("No project ID found");
-        return;
+    try {
+      if (dialogMode === "create") {
+        console.log('[ProjectsManager] Creating new project');
+        await createMutation.mutateAsync(projectData);
+      } else {
+        console.log('[ProjectsManager] Updating existing project:', editingProject?.id);
+        if (!editingProject?.id) {
+          toast.error("No project ID found");
+          return;
+        }
+        await updateMutation.mutateAsync({
+          id: editingProject.id,
+          data: projectData
+        });
       }
-      updateMutation.mutate({
-        id: editingProject.id,
-        data: projectData
-      });
+    } catch (error) {
+      console.error('[ProjectsManager] Save failed:', error);
     }
   };
 
