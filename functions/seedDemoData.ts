@@ -44,6 +44,7 @@ Deno.serve(async (req) => {
 
     // Check if demo already seeded
     if (user.demo_seed_version === DEMO_VERSION) {
+      console.log('[seedDemoData] User already has demo data, skipping');
       return Response.json({ 
         status: 'already_seeded',
         message: 'Demo data already exists for this user'
@@ -51,6 +52,11 @@ Deno.serve(async (req) => {
     }
 
     console.log('[seedDemoData] Starting demo seed for user:', user.email);
+
+    // Set marker immediately to prevent duplicate runs
+    await base44.auth.updateMe({
+      demo_seed_version: DEMO_VERSION
+    });
 
     // STEP 1: Create Personal AI Configuration
     await base44.auth.updateMe({
@@ -273,12 +279,6 @@ This project explores prompt design, iteration, and evaluation for AI systems.
     });
 
     console.log('[seedDemoData] ✓ Project 2 created with 3 templates and 5 tasks');
-
-    // STEP 4: Set demo seed marker
-    await base44.auth.updateMe({
-      demo_seed_version: DEMO_VERSION
-    });
-
     console.log('[seedDemoData] ✓ Demo seed completed successfully');
 
     return Response.json({

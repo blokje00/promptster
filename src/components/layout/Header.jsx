@@ -112,12 +112,21 @@ export default function Header() {
     }
   }, [currentPath, navigate]);
 
-  // Seed demo data for users who don't have it yet
+  // Seed demo data for users who don't have it yet (fire-and-forget)
   useEffect(() => {
     if (user && !user.demo_seed_version) {
-      base44.functions.invoke('seedDemoData').catch(err => {
-        console.warn('[Header] Demo seed failed:', err);
-      });
+      // Run in background without blocking UI
+      setTimeout(() => {
+        base44.functions.invoke('seedDemoData')
+          .then(() => {
+            console.log('[Header] Demo data seeded successfully');
+            // Refresh queries to show new data
+            window.location.reload();
+          })
+          .catch(err => {
+            console.warn('[Header] Demo seed failed, user can still use app:', err);
+          });
+      }, 100);
     }
   }, [user]);
   
