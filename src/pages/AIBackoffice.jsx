@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FolderTree, Settings } from "lucide-react";
 import AccessGuard from "../components/auth/AccessGuard";
 import { useAutosaveField } from "@/components/hooks/useAutosaveField";
+import { useReliableSaveButton } from "@/components/hooks/useReliableSaveButton";
 import UPSEPanel from "../components/upse/UPSEPanel";
 import MaintenanceTools from "../components/settings/MaintenanceTools";
 import AIInstructionForm from "../components/settings/AIInstructionForm";
@@ -168,8 +169,6 @@ export default function AIBackoffice() {
   const [modelPreference, setModelPreference] = useState("default");
   const [enableContextSuggestions, setEnableContextSuggestions] = useState(true);
   const [settingsId, setSettingsId] = useState(null);
-  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
-  const [isSavingRetryMessage, setIsSavingRetryMessage] = useState(false);
   const [exampleIndex, setExampleIndex] = useState(0);
 
   const { data: settings = [] } = useQuery({
@@ -224,16 +223,24 @@ export default function AIBackoffice() {
     enabled: !!currentUser?.id,
   });
 
-  const { value: personalPreferences, setValue: setPersonalPreferences, resetValue: resetPersonalPreferences } = useAutosaveField({
-    storageKey: `promptster:aibackoffice:personalPrefs:${currentUser?.id ?? 'anon'}`,
+  const personalPrefsHook = useReliableSaveButton({
+    storageKey: `promptster:personalPrefs:${currentUser?.id ?? 'anon'}`,
     initialValue: currentUser?.personal_preferences_markdown || "",
-    enabled: !!currentUser?.id,
+    mutationFn: async (draft) => {
+      await base44.auth.updateMe({ personal_preferences_markdown: draft });
+      return { success: true };
+    },
+    invalidateKeys: [['currentUser']]
   });
 
-  const { value: retryMessage, setValue: setRetryMessage, resetValue: resetRetryMessage } = useAutosaveField({
-    storageKey: `promptster:aibackoffice:retryMessage:${currentUser?.id ?? 'anon'}`,
+  const retryMessageHook = useReliableSaveButton({
+    storageKey: `promptster:retryMessage:${currentUser?.id ?? 'anon'}`,
     initialValue: currentUser?.retry_task_message || DEFAULT_RETRY_MESSAGE,
-    enabled: !!currentUser?.id,
+    mutationFn: async (draft) => {
+      await base44.auth.updateMe({ retry_task_message: draft });
+      return { success: true };
+    },
+    invalidateKeys: [['currentUser']]
   });
 
   useEffect(() => {
@@ -246,22 +253,9 @@ export default function AIBackoffice() {
     }
   }, [settings, settingsId]);
 
-  const [prefsLoaded, setPrefsLoaded] = useState(false);
-  const [retryMsgLoaded, setRetryMsgLoaded] = useState(false);
-  
-  useEffect(() => {
-    if (currentUser?.personal_preferences_markdown && !prefsLoaded) {
-      setPersonalPreferences(currentUser.personal_preferences_markdown);
-      setPrefsLoaded(true);
-    }
-  }, [currentUser, prefsLoaded]);
 
-  useEffect(() => {
-    if (currentUser?.retry_task_message && !retryMsgLoaded) {
-      setRetryMessage(currentUser.retry_task_message);
-      setRetryMsgLoaded(true);
-    }
-  }, [currentUser, retryMsgLoaded]);
+  
+
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
@@ -287,37 +281,27 @@ export default function AIBackoffice() {
   };
 
   const handleSavePersonalPreferences = async () => {
-    setIsSavingPreferences(true);
-    try {
-      await base44.auth.updateMe({ personal_preferences_markdown: personalPreferences });
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+    await personalPrefsHook.handleSave();
+    if (!personalPrefsHook.error) {
       toast.success("Personal preferences saved");
-      resetPersonalPreferences();
-    } catch (error) {
+    } else {
       toast.error("Could not save preferences");
-    } finally {
-      setIsSavingPreferences(false);
     }
   };
 
   const handleSaveRetryMessage = async () => {
-    setIsSavingRetryMessage(true);
-    try {
-      await base44.auth.updateMe({ retry_task_message: retryMessage });
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+    await retryMessageHook.handleSave();
+    if (!retryMessageHook.error) {
       toast.success("Retry task message saved");
-      resetRetryMessage();
-    } catch (error) {
+    } else {
       toast.error("Could not save retry message");
-    } finally {
-      setIsSavingRetryMessage(false);
     }
   };
 
   // Load next example retry message (cycles through RETRY_MESSAGE_EXAMPLES)
   const handleLoadExample = () => {
     const nextMessage = RETRY_MESSAGE_EXAMPLES[exampleIndex];
-    setRetryMessage(nextMessage);
+    retryMessageHook.setDraft(nextMessage);
     setExampleIndex((prev) => (prev + 1) % RETRY_MESSAGE_EXAMPLES.length);
   };
 
@@ -348,10 +332,11 @@ export default function AIBackoffice() {
               <div className="max-w-3xl space-y-6">
                 <MaintenanceTools currentUser={currentUser} />
                 <PersonalPreferencesForm
-                  personalPreferences={personalPreferences}
-                  setPersonalPreferences={setPersonalPreferences}
+                  personalPreferences={personalPrefsHook.draft}
+                  setPersonalPreferences={personalPrefsHook.setDraft}
                   onSave={handleSavePersonalPreferences}
-                  isSaving={isSavingPreferences}
+                  isSaving={personalPrefsHook.isSaving}
+                  isDirty={personalPrefsHook.isDirty}
                   defaultExample={DEFAULT_PERSONAL_PREFERENCES}
                 />
                 <Card id="retry-message">
@@ -363,14 +348,18 @@ export default function AIBackoffice() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <Textarea
-                      value={retryMessage}
-                      onChange={(e) => setRetryMessage(e.target.value)}
+                      value={retryMessageHook.draft}
+                      onChange={(e) => retryMessageHook.setDraft(e.target.value)}
                       className="min-h-[120px] font-mono text-sm"
                       placeholder={DEFAULT_RETRY_MESSAGE}
                     />
                     <div className="flex gap-2">
-                      <Button onClick={handleSaveRetryMessage} disabled={isSavingRetryMessage} className="bg-indigo-600">
-                        {isSavingRetryMessage ? "Saving..." : "Save Retry Message"}
+                      <Button 
+                        onClick={handleSaveRetryMessage} 
+                        disabled={retryMessageHook.isSaving || !retryMessageHook.isDirty} 
+                        className="bg-indigo-600"
+                      >
+                        {retryMessageHook.isSaving ? "Saving..." : "Save Retry Message"}
                       </Button>
                       <Button onClick={handleLoadExample} variant="outline">
                         Load example
