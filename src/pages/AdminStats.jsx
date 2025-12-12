@@ -114,8 +114,8 @@ export default function AdminStats() {
   // Prepare user data with calculated fields
   const usersWithData = React.useMemo(() => {
     return filteredUsers.map(user => {
-      const userItems = allItems.filter(i => i.created_by === user.email);
-      const userProjects = allProjects.filter(p => p.created_by === user.email);
+      const userItems = filteredItems.filter(i => i.created_by === user.email);
+      const userProjects = filteredProjects.filter(p => p.created_by === user.email);
       return {
         ...user,
         itemsCount: userItems.length,
@@ -124,7 +124,7 @@ export default function AdminStats() {
         userProjects
       };
     });
-  }, [filteredUsers, allItems, allProjects]);
+  }, [filteredUsers, filteredItems, filteredProjects]);
 
   // Analytics stats
   const analyticsStats = useMemo(() => {
@@ -206,6 +206,22 @@ export default function AdminStats() {
     );
   }
 
+  // Filter admin data from items, projects, thoughts
+  const filteredItems = useMemo(() => 
+    allItems.filter(i => i.created_by !== 'patrick.van.zandvoort@gmail.com'),
+    [allItems]
+  );
+
+  const filteredProjects = useMemo(() =>
+    allProjects.filter(p => p.created_by !== 'patrick.van.zandvoort@gmail.com'),
+    [allProjects]
+  );
+
+  const filteredThoughts = useMemo(() =>
+    allThoughts.filter(t => t.created_by !== 'patrick.van.zandvoort@gmail.com'),
+    [allThoughts]
+  );
+
   const stats = [
     {
       title: "Totaal Gebruikers",
@@ -216,15 +232,15 @@ export default function AdminStats() {
     },
     {
       title: "Totaal Items",
-      value: allItems.length,
+      value: filteredItems.length,
       icon: FileText,
       color: "text-green-600",
       bgColor: "bg-green-100",
       breakdown: {
-        prompts: allItems.filter(i => i.type === 'prompt').length,
-        multiprompts: allItems.filter(i => i.type === 'multiprompt').length,
-        code: allItems.filter(i => i.type === 'code').length,
-        snippets: allItems.filter(i => i.type === 'snippet').length,
+        prompts: filteredItems.filter(i => i.type === 'prompt').length,
+        multiprompts: filteredItems.filter(i => i.type === 'multiprompt').length,
+        code: filteredItems.filter(i => i.type === 'code').length,
+        snippets: filteredItems.filter(i => i.type === 'snippet').length,
       }
     },
     {
@@ -241,13 +257,13 @@ export default function AdminStats() {
     },
     {
       title: "Totaal Thoughts",
-      value: allThoughts.length,
+      value: filteredThoughts.length,
       icon: Sparkles,
       color: "text-yellow-600",
       bgColor: "bg-yellow-100",
       breakdown: {
-        active: allThoughts.filter(t => !t.is_deleted).length,
-        deleted: allThoughts.filter(t => t.is_deleted).length,
+        active: filteredThoughts.filter(t => !t.is_deleted).length,
+        deleted: filteredThoughts.filter(t => t.is_deleted).length,
       }
     },
   ];

@@ -306,31 +306,29 @@ export default function Multiprompt() {
                           <Plus className="w-4 h-4 mr-2" /> {isLimitReached ? `Limit Reached (${maxThoughts})` : 'Task'}
                         </Button>
                       </div>
-                      {filteredThoughts.length > 0 && (
-                        <div className="flex items-center justify-between gap-3 px-1 flex-wrap">
-                          <div className="flex gap-3 text-xs font-medium text-slate-500 dark:text-slate-400">
-                            <button onClick={() => selectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 dark:hover:text-indigo-400">Select All</button>
-                            <span className="text-slate-300 dark:text-slate-600">|</span>
-                            <button onClick={() => deselectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 dark:hover:text-indigo-400">Deselect All</button>
-                          </div>
-                          <div className="flex gap-2 items-center">
-                            <input
-                              type="text"
-                              placeholder="Search tasks..."
-                              className="h-8 px-3 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 w-[180px]"
-                              onChange={(e) => setTaskSearchQuery(e.target.value)}
-                            />
-                            <Select value={groupBy} onValueChange={setGroupBy}>
-                              <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="date">By Date</SelectItem>
-                                <SelectItem value="page">By Page</SelectItem>
-                                <SelectItem value="component">By Component</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                      <div className="flex items-center justify-between gap-3 px-1 flex-wrap">
+                        <div className="flex gap-3 text-xs font-medium text-slate-500 dark:text-slate-400">
+                          <button onClick={() => selectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 dark:hover:text-indigo-400">Select All</button>
+                          <span className="text-slate-300 dark:text-slate-600">|</span>
+                          <button onClick={() => deselectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 dark:hover:text-indigo-400">Deselect All</button>
                         </div>
-                      )}
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="text"
+                            placeholder="Search tasks..."
+                            className="h-8 px-3 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 w-[180px]"
+                            onChange={(e) => setTaskSearchQuery(e.target.value)}
+                          />
+                          <Select value={groupBy} onValueChange={setGroupBy}>
+                            <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="date">By Date</SelectItem>
+                              <SelectItem value="page">By Page</SelectItem>
+                              <SelectItem value="component">By Component</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                       <TasksList
                         thoughts={filteredThoughts}
                         projects={projects}

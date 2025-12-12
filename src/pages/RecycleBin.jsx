@@ -180,7 +180,7 @@ export default function RecycleBin() {
                           })()
                         )}
                       </div>
-                      <p className="text-slate-700 whitespace-pre-wrap line-clamp-2">
+                      <p className="text-slate-700 whitespace-pre-wrap break-words">
                         {thought.content}
                       </p>
                     </div>

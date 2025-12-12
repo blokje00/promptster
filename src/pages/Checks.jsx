@@ -101,6 +101,7 @@ export default function Checks() {
             itemTitle: item.title,
             projectId: item.project_id,
             index: index,
+            taskNumber: `TASK-${index + 1}`,
             ...check,
             // Use updated_date if available, otherwise item's updated_date as fallback
             updated_date: check.updated_date || item.updated_date,
@@ -341,13 +342,18 @@ export default function Checks() {
                     filteredTasks.map((task) => {
                       const project = projects.find(p => p.id === task.projectId);
                       return (<tr key={task.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors group">
-                        <td className="px-6 py-4 align-top">
-                         <CollapsibleTaskContent 
-                           taskName={task.task_name}
-                           fullDescription={task.full_description}
-                           status={task.status}
-                         />
-                        </td>
+                        <td className="px-6 py-4 align-top max-w-md">
+                          <div className="flex flex-col gap-2">
+                            <Badge variant="outline" className="w-fit text-xs font-mono">
+                              {task.taskNumber}
+                            </Badge>
+                            <CollapsibleTaskContent 
+                              taskName={task.task_name}
+                              fullDescription={task.full_description}
+                              status={task.status}
+                            />
+                          </div>
+                         </td>
                         <td className="px-6 py-4 align-top">
                           {project ? (
                             <Badge className={`${projectColors[project.color]} text-white text-xs`}>
@@ -368,7 +374,7 @@ export default function Checks() {
                                         <TooltipTrigger asChild>
                                             <div 
                                               onClick={() => updateTaskStatus(task, 'open')} 
-                                              className="cursor-pointer hover:scale-110 transition-transform"
+                                              className="cursor-pointer hover:scale-110 transition-transform shrink-0"
                                             >
                                                 <CheckCircle2 className="w-8 h-8 text-green-600 drop-shadow-sm" strokeWidth={2.5} />
                                             </div>

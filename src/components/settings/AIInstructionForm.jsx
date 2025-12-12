@@ -15,6 +15,28 @@ export default function AIInstructionForm({
   isSaving,
   onReset 
 }) {
+  const [localInstruction, setLocalInstruction] = React.useState(instruction);
+  const [localModelPreference, setLocalModelPreference] = React.useState(modelPreference);
+
+  // Sync with parent when parent changes
+  React.useEffect(() => {
+    setLocalInstruction(instruction);
+  }, [instruction]);
+
+  React.useEffect(() => {
+    setLocalModelPreference(modelPreference);
+  }, [modelPreference]);
+
+  const handleSave = () => {
+    // Update parent state before saving
+    setInstruction(localInstruction);
+    setModelPreference(localModelPreference);
+    // Small delay to ensure state is updated
+    setTimeout(() => {
+      onSave();
+    }, 50);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -27,8 +49,8 @@ export default function AIInstructionForm({
         <div className="space-y-2">
           <Label>AI Instruction</Label>
           <Textarea
-            value={instruction}
-            onChange={(e) => setInstruction(e.target.value)}
+            value={localInstruction}
+            onChange={(e) => setLocalInstruction(e.target.value)}
             placeholder="Instruction for the AI..."
             className="min-h-[200px] font-mono text-sm"
           />
@@ -39,7 +61,7 @@ export default function AIInstructionForm({
 
         <div className="space-y-2">
           <Label>Model Preference</Label>
-          <Select value={modelPreference} onValueChange={setModelPreference}>
+          <Select value={localModelPreference} onValueChange={setLocalModelPreference}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -53,7 +75,7 @@ export default function AIInstructionForm({
 
         <div className="flex gap-2">
           <Button 
-            onClick={onSave} 
+            onClick={handleSave} 
             disabled={isSaving}
             className="bg-indigo-600 hover:bg-indigo-700"
           >
