@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Cookie, X } from "lucide-react";
 
@@ -27,18 +28,32 @@ export default function CookieConsent() {
     }
   }, []);
 
-  const handleAccept = () => {
+  const handleAccept = async () => {
     const expiryTime = new Date().getTime() + (30 * 24 * 60 * 60 * 1000); // 30 days
     localStorage.setItem('cookie_consent', 'accepted');
     localStorage.setItem('cookie_consent_expiry', expiryTime.toString());
     setShowBanner(false);
+    
+    // Trigger demo seeding in background
+    try {
+      await base44.functions.invoke('seedDemoData');
+    } catch (error) {
+      console.warn('[CookieConsent] Demo seed failed:', error);
+    }
   };
 
-  const handleDecline = () => {
+  const handleDecline = async () => {
     const expiryTime = new Date().getTime() + (30 * 24 * 60 * 60 * 1000); // 30 days
     localStorage.setItem('cookie_consent', 'declined');
     localStorage.setItem('cookie_consent_expiry', expiryTime.toString());
     setShowBanner(false);
+    
+    // Trigger demo seeding in background (even if declined)
+    try {
+      await base44.functions.invoke('seedDemoData');
+    } catch (error) {
+      console.warn('[CookieConsent] Demo seed failed:', error);
+    }
   };
 
   if (!showBanner) return null;
