@@ -14,6 +14,7 @@ import AdminSupportTickets from './pages/AdminSupportTickets';
 import Checks from './pages/Checks';
 import Legal from './pages/Legal';
 import AdminAnalytics from './pages/AdminAnalytics';
+import AdminFeatures from './pages/AdminFeatures';
 import __Layout from './Layout.jsx';
 
 
@@ -34,6 +35,7 @@ export const PAGES = {
     "Checks": Checks,
     "Legal": Legal,
     "AdminAnalytics": AdminAnalytics,
+    "AdminFeatures": AdminFeatures,
 }
 
 export const pagesConfig = {

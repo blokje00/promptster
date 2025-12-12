@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart, Users, FolderOpen, Sparkles, FileText, Loader2, Calendar, Clock, CreditCard, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { BarChart, Users, FolderOpen, Sparkles, FileText, Loader2, Calendar, Clock, CreditCard, ArrowUpDown, ArrowUp, ArrowDown, Eye, MousePointerClick, TrendingUp } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -83,6 +83,14 @@ export default function AdminStats() {
     enabled: currentUser?.role === 'admin',
   });
 
+  const { data: pageViews = [], isLoading: loadingViews } = useQuery({
+    queryKey: ['pageViews'],
+    queryFn: async () => {
+      return await base44.entities.PageView.list('-created_date', 1000);
+    },
+    enabled: currentUser?.role === 'admin'
+  });
+
   const handleSort = (field) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -92,9 +100,20 @@ export default function AdminStats() {
     }
   };
 
+  // Filter out admin user (patrick.van.zandvoort@gmail.com)
+  const filteredUsers = useMemo(() => 
+    allUsers.filter(u => u.email !== 'patrick.van.zandvoort@gmail.com'),
+    [allUsers]
+  );
+
+  const filteredPageViews = useMemo(() =>
+    pageViews.filter(pv => pv.user_email !== 'patrick.van.zandvoort@gmail.com'),
+    [pageViews]
+  );
+
   // Prepare user data with calculated fields
   const usersWithData = React.useMemo(() => {
-    return allUsers.map(user => {
+    return filteredUsers.map(user => {
       const userItems = allItems.filter(i => i.created_by === user.email);
       const userProjects = allProjects.filter(p => p.created_by === user.email);
       return {
@@ -105,7 +124,19 @@ export default function AdminStats() {
         userProjects
       };
     });
-  }, [allUsers, allItems, allProjects]);
+  }, [filteredUsers, allItems, allProjects]);
+
+  // Analytics stats
+  const analyticsStats = useMemo(() => {
+    const totalViews = filteredPageViews.length;
+    const uniqueSessions = new Set(filteredPageViews.map(pv => pv.session_id)).size;
+    const uniqueUsers = new Set(filteredPageViews.filter(pv => pv.user_id).map(pv => pv.user_id)).size;
+    
+    const totalTime = filteredPageViews.reduce((sum, pv) => sum + (pv.time_on_page || 0), 0);
+    const avgTimePerPage = totalViews > 0 ? Math.round(totalTime / totalViews) : 0;
+
+    return { totalViews, uniqueSessions, uniqueUsers, avgTimePerPage };
+  }, [filteredPageViews]);
 
   // Sort users
   const sortedUsers = React.useMemo(() => {
@@ -165,7 +196,7 @@ export default function AdminStats() {
     );
   }
 
-  const isLoading = loadingUsers || loadingItems || loadingProjects || loadingThoughts;
+  const isLoading = loadingUsers || loadingItems || loadingProjects || loadingThoughts || loadingViews;
 
   if (isLoading) {
     return (
@@ -178,7 +209,7 @@ export default function AdminStats() {
   const stats = [
     {
       title: "Totaal Gebruikers",
-      value: allUsers.length,
+      value: filteredUsers.length,
       icon: Users,
       color: "text-blue-600",
       bgColor: "bg-blue-100"
@@ -197,11 +228,16 @@ export default function AdminStats() {
       }
     },
     {
-      title: "Totaal Projecten",
-      value: allProjects.length,
-      icon: FolderOpen,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100"
+      title: "Page Views",
+      value: analyticsStats.totalViews,
+      icon: Eye,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-100",
+      breakdown: {
+        sessions: analyticsStats.uniqueSessions,
+        users: analyticsStats.uniqueUsers,
+        avgTime: `${analyticsStats.avgTimePerPage}s`
+      }
     },
     {
       title: "Totaal Thoughts",
@@ -222,13 +258,13 @@ export default function AdminStats() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-2">
               <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Admin Statistieken
+                Admin Dashboard
               </h1>
               <Badge variant="outline" className="bg-red-100 text-red-700 border-red-300">
                 ADMIN ONLY
               </Badge>
             </div>
-            <p className="text-slate-600">Applicatie statistieken en gebruik</p>
+            <p className="text-slate-600">Analytics, gebruikers & app statistieken (admin data gefilterd)</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

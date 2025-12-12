@@ -291,20 +291,22 @@ export default function Multiprompt() {
                         <Button onClick={handleAddThought} disabled={isLimitReached} className={`flex-1 ${!selectedProjectId ? 'bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600' : selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'}`}>
                           <Plus className="w-4 h-4 mr-2" /> {isLimitReached ? `Limit Reached (${maxThoughts})` : 'Task'}
                         </Button>
-                        <Select value={groupBy} onValueChange={setGroupBy}>
-                          <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="date">By Date</SelectItem>
-                            <SelectItem value="page">By Page</SelectItem>
-                            <SelectItem value="component">By Component</SelectItem>
-                          </SelectContent>
-                        </Select>
                       </div>
                       {filteredThoughts.length > 0 && (
-                        <div className="flex justify-end gap-3 text-xs font-medium text-slate-500 dark:text-slate-400 px-1">
-                          <button onClick={() => selectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 dark:hover:text-indigo-400">Select All</button>
-                          <span className="text-slate-300 dark:text-slate-600">|</span>
-                          <button onClick={() => deselectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 dark:hover:text-indigo-400">Deselect All</button>
+                        <div className="flex items-center justify-between gap-3 px-1">
+                          <div className="flex gap-3 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            <button onClick={() => selectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 dark:hover:text-indigo-400">Select All</button>
+                            <span className="text-slate-300 dark:text-slate-600">|</span>
+                            <button onClick={() => deselectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 dark:hover:text-indigo-400">Deselect All</button>
+                          </div>
+                          <Select value={groupBy} onValueChange={setGroupBy}>
+                            <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="date">By Date</SelectItem>
+                              <SelectItem value="page">By Page</SelectItem>
+                              <SelectItem value="component">By Component</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       )}
                       <TasksList

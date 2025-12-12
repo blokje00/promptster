@@ -7,8 +7,52 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle, RotateCcw, Loader2, XCircle, ArrowUpDown, Search, Filter } from "lucide-react";
+import { CheckCircle2, Circle, RotateCcw, Loader2, XCircle, ArrowUpDown, Search, Filter, ChevronDown, ChevronUp } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+/**
+ * CollapsibleTaskContent - Shows 5 lines max, expandable dropdown
+ */
+function CollapsibleTaskContent({ taskName, fullDescription, status }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const content = fullDescription || taskName;
+  const lines = content.split('\n');
+  const needsCollapse = lines.length > 5;
+  const displayContent = needsCollapse && !isExpanded 
+    ? lines.slice(0, 5).join('\n') 
+    : content;
+
+  const statusClasses = 
+    status === 'success' ? 'text-slate-400 dark:text-slate-500 line-through' : 
+    status === 'retried' ? 'text-slate-500 dark:text-slate-400 line-through decoration-red-500/50' : 
+    'text-slate-900 dark:text-slate-100';
+
+  return (
+    <div className="space-y-2">
+      <p className={`font-medium leading-relaxed whitespace-pre-wrap ${statusClasses}`}>
+        {displayContent}
+      </p>
+      {needsCollapse && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
+        >
+          {isExpanded ? (
+            <>
+              <ChevronUp className="w-3 h-3" />
+              Show less
+            </>
+          ) : (
+            <>
+              <ChevronDown className="w-3 h-3" />
+              Show more ({lines.length - 5} more lines)
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
 import { format } from "date-fns";
 import AccessGuard from "@/components/auth/AccessGuard";
 import { toast } from "sonner";
@@ -298,24 +342,11 @@ export default function Checks() {
                       const project = projects.find(p => p.id === task.projectId);
                       return (<tr key={task.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors group">
                         <td className="px-6 py-4 align-top">
-                          <div className="space-y-1">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <p className={`font-medium leading-relaxed line-clamp-3 ${
-                                    task.status === 'success' ? 'text-slate-400 dark:text-slate-500 line-through' : 
-                                    task.status === 'retried' ? 'text-slate-500 dark:text-slate-400 line-through decoration-red-500/50' : 
-                                    'text-slate-900 dark:text-slate-100'
-                                  }`}>
-                                    {task.task_name}
-                                  </p>
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-lg bg-slate-900 text-white p-3">
-                                  <p className="whitespace-pre-wrap">{task.full_description || task.task_name}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
+                         <CollapsibleTaskContent 
+                           taskName={task.task_name}
+                           fullDescription={task.full_description}
+                           status={task.status}
+                         />
                         </td>
                         <td className="px-6 py-4 align-top">
                           {project ? (
