@@ -96,12 +96,17 @@ export default function ProjectsManager({ projects = [] }) {
 
   const handleJSONPaste = (value) => {
     setPastedJSON(value);
-    
-    if (!value.trim()) return;
+  };
+
+  const handleJSONImport = () => {
+    if (!pastedJSON.trim()) {
+      toast.error("Please paste JSON first");
+      return;
+    }
     
     try {
-      const jsonMatch = value.match(/```json\n([\s\S]*?)\n```/) || value.match(/\{[\s\S]*\}/);
-      const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : value;
+      const jsonMatch = pastedJSON.match(/```json\n([\s\S]*?)\n```/) || pastedJSON.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : pastedJSON;
       const data = JSON.parse(jsonStr);
       
       if (data.name) setEditName(data.name);
@@ -109,8 +114,10 @@ export default function ProjectsManager({ projects = [] }) {
       if (data.technical_config_markdown) setEditConfig(data.technical_config_markdown);
       
       toast.success("Auto-parsed project structure!");
+      setPastedJSON(""); // Clear after successful import
     } catch (e) {
-      // Silent fail - user might still be typing
+      toast.error("Invalid JSON format");
+      console.error("JSON parse error:", e);
     }
   };
 
@@ -213,7 +220,12 @@ export default function ProjectsManager({ projects = [] }) {
                 />
               ))}
             </div>
-            <Textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} placeholder="Description..." />
+            <Textarea 
+              value={editDesc} 
+              onChange={e => setEditDesc(e.target.value)} 
+              placeholder="Short project description (shown in project list)..." 
+              className="min-h-[80px]"
+            />
             
             <div className="space-y-2">
               <label className="text-sm font-medium">Technical Config (Markdown)</label>
@@ -282,12 +294,22 @@ Be thorough - include ALL pages, components, buttons, forms, and key functionali
                  </Button>
                </div>
                <Textarea 
-                 placeholder="Paste LLM's JSON response (will auto-fill fields above)..." 
+                 placeholder="Paste LLM's JSON response here..." 
                  className="min-h-[100px] text-xs font-mono"
                  value={pastedJSON}
                  onChange={(e) => handleJSONPaste(e.target.value)}
                />
-               <p className="text-xs text-slate-500">💡 Fields above will auto-populate when you paste valid JSON</p>
+               <div className="flex items-center justify-between">
+                 <p className="text-xs text-slate-500">💡 Click Import to fill fields above</p>
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={handleJSONImport}
+                   disabled={!pastedJSON.trim()}
+                 >
+                   Import JSON
+                 </Button>
+               </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-6 border-t border-slate-100 mt-6">
