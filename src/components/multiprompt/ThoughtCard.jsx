@@ -349,6 +349,7 @@ export default function ThoughtCard({
             onChange={(newCtx) => onUpdateContext(thought.id, newCtx)}
             compact={true}
             thoughtText={thought.content}
+            selectedProject={project}
           />
 
           <div className="h-3 w-px bg-slate-200 dark:bg-slate-700" />

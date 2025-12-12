@@ -21,6 +21,8 @@ export default function ProjectsManager({ projects = [] }) {
   const [editDesc, setEditDesc] = useState("");
   const [editConfig, setEditConfig] = useState("");
   const [pastedJSON, setPastedJSON] = useState("");
+  const [editComponentMapping, setEditComponentMapping] = useState({});
+  const [editDomains, setEditDomains] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Mutations
@@ -77,6 +79,8 @@ export default function ProjectsManager({ projects = [] }) {
     setEditDesc("");
     setEditConfig("");
     setPastedJSON("");
+    setEditComponentMapping({});
+    setEditDomains([]);
     setIsDialogOpen(true);
   };
 
@@ -91,6 +95,8 @@ export default function ProjectsManager({ projects = [] }) {
       setEditDesc(project.description || "");
       setEditConfig(project.technical_config_markdown || "");
       setPastedJSON("");
+      setEditComponentMapping(project.component_mapping || {});
+      setEditDomains(project.domains || []);
     }, 0);
   };
 
@@ -109,9 +115,35 @@ export default function ProjectsManager({ projects = [] }) {
       const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : pastedJSON;
       const data = JSON.parse(jsonStr);
       
+      // Basis velden
       if (data.name) setEditName(data.name);
       if (data.description) setEditDesc(data.description);
       if (data.technical_config_markdown) setEditConfig(data.technical_config_markdown);
+      
+      // Bouw component_mapping uit pages array (voor Page->Component dropdowns)
+      if (data.pages && Array.isArray(data.pages)) {
+        const mapping = {};
+        data.pages.forEach(page => {
+          if (page.name) {
+            mapping[page.name] = page.components || [];
+          }
+        });
+        setEditComponentMapping(mapping);
+      }
+      
+      // Of gebruik direct component_mapping als die er is
+      if (data.component_mapping && typeof data.component_mapping === 'object') {
+        setEditComponentMapping(data.component_mapping);
+      }
+      
+      // Domains uit entities halen of directe domains array
+      if (data.domains && Array.isArray(data.domains)) {
+        setEditDomains(data.domains);
+      } else if (data.entities && Array.isArray(data.entities)) {
+        // Maak domains van entity names
+        const domainNames = data.entities.map(e => e.name || e).filter(Boolean);
+        setEditDomains(domainNames);
+      }
       
       toast.success("Auto-parsed project structure!");
       setPastedJSON(""); // Clear after successful import
@@ -122,7 +154,7 @@ export default function ProjectsManager({ projects = [] }) {
   };
 
   const handleSave = async () => {
-    console.log('[ProjectsManager] handleSave called', { dialogMode, editName, editColor, editDesc, editConfig });
+    console.log('[ProjectsManager] handleSave called', { dialogMode, editName, editColor, editDesc, editConfig, editComponentMapping, editDomains });
     
     if (!editName.trim()) {
       toast.error("Project name is required");
@@ -133,7 +165,9 @@ export default function ProjectsManager({ projects = [] }) {
       name: editName,
       color: editColor,
       description: editDesc,
-      technical_config_markdown: editConfig
+      technical_config_markdown: editConfig,
+      component_mapping: editComponentMapping,
+      domains: editDomains
     };
 
     console.log('[ProjectsManager] Saving project data:', projectData);

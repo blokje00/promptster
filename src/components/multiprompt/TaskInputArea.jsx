@@ -134,7 +134,13 @@ export default function TaskInputArea({
           maxCount={5}
           compact
         />
-        <ContextSelector value={newThoughtContext} onChange={onContextChange} compact enableAISuggestions={enableContextSuggestions} />
+        <ContextSelector 
+          value={newThoughtContext} 
+          onChange={onContextChange} 
+          compact 
+          enableAISuggestions={enableContextSuggestions}
+          selectedProject={selectedProject}
+        />
         <Select value={newThoughtFocus} onValueChange={onFocusChange}>
           <SelectTrigger className="h-7 text-xs w-[120px]"><SelectValue /></SelectTrigger>
           <SelectContent>
