@@ -146,7 +146,6 @@ export default function ProjectsManager({ projects = [] }) {
       }
       
       toast.success("Auto-parsed project structure!");
-      setPastedJSON(""); // Clear after successful import
     } catch (e) {
       toast.error("Invalid JSON format");
       console.error("JSON parse error:", e);
