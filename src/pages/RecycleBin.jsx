@@ -162,67 +162,68 @@ export default function RecycleBin() {
             <div className="grid gap-4">
               {deletedThoughts.map((thought) => (
                 <Card key={thought.id} className="group hover:shadow-md transition-shadow">
-                  <CardContent className="p-4 flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="secondary" className="text-xs">
-                          {new Date(thought.deleted_at || thought.updated_date).toLocaleDateString()}
-                        </Badge>
-                        {/* Task 4: RecycleBin Project Colors */}
-                        {thought.project_id && (
-                          (() => {
-                            const p = projects.find(p => p.id === thought.project_id);
-                            return (
-                              <Badge variant="outline" className={`text-xs ${p ? `text-${p.color}-600 border-${p.color}-200 bg-${p.color}-50` : 'text-blue-600 border-blue-200 bg-blue-50'}`}>
-                                {p?.name || "Promptster.app"}
-                              </Badge>
-                            );
-                          })()
-                        )}
+                  <CardContent className="p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <Badge variant="secondary" className="text-xs">
+                            {new Date(thought.deleted_at || thought.updated_date).toLocaleDateString()}
+                          </Badge>
+                          {thought.project_id && (
+                            (() => {
+                              const p = projects.find(p => p.id === thought.project_id);
+                              return (
+                                <Badge variant="outline" className={`text-xs ${p ? `text-${p.color}-600 border-${p.color}-200 bg-${p.color}-50` : 'text-blue-600 border-blue-200 bg-blue-50'}`}>
+                                  {p?.name || "Promptster.app"}
+                                </Badge>
+                              );
+                            })()
+                          )}
+                        </div>
+                        <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words overflow-wrap-anywhere">
+                          {thought.content}
+                        </p>
                       </div>
-                      <p className="text-slate-700 whitespace-pre-wrap break-words">
-                        {thought.content}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => restoreMutation.mutate(thought.id)}
-                        disabled={restoreMutation.isPending}
-                        className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
-                      >
-                        <RotateCcw className="w-4 h-4 mr-2" />
-                        Restore
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            className="text-red-400 hover:text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Permanently?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => deletePermanentMutation.mutate(thought.id)}
-                              className="bg-red-600 hover:bg-red-700"
+                      <div className="flex sm:flex-col items-center gap-2 shrink-0">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => restoreMutation.mutate(thought.id)}
+                          disabled={restoreMutation.isPending}
+                          className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700 whitespace-nowrap"
+                        >
+                          <RotateCcw className="w-4 h-4 mr-2" />
+                          Restore
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="text-red-400 hover:text-red-600 hover:bg-red-50"
                             >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Permanently?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => deletePermanentMutation.mutate(thought.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
