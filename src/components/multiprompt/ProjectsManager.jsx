@@ -333,15 +333,15 @@ Be thorough - include ALL pages, components, buttons, forms, and key functionali
                  value={pastedJSON}
                  onChange={(e) => handleJSONPaste(e.target.value)}
                />
-               <div className="flex items-center justify-between">
-                 <p className="text-xs text-slate-500">💡 Click Import to fill fields above</p>
+               <div className="flex justify-end">
                  <Button
                    variant="outline"
                    size="sm"
                    onClick={handleJSONImport}
                    disabled={!pastedJSON.trim()}
                  >
-                   Import JSON
+                   <Save className="w-4 h-4 mr-2" />
+                   Save
                  </Button>
                </div>
             </div>
