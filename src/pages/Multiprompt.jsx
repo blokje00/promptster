@@ -116,6 +116,7 @@ export default function Multiprompt() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showOCRDebug, setShowOCRDebug] = useState(false);
   const [ocrDebugUrl, setOcrDebugUrl] = useState(null);
+  const [taskSearchQuery, setTaskSearchQuery] = useState("");
 
   // --- Generate Checklist Helper ---
   const generateChecklist = useCallback(() => {
@@ -223,12 +224,25 @@ export default function Multiprompt() {
   }, [updateThought]);
 
   const filteredThoughts = useMemo(() => {
-    return [...thoughts].sort((a, b) => {
+    let filtered = thoughts;
+    
+    // Apply search filter
+    if (taskSearchQuery.trim()) {
+      const query = taskSearchQuery.toLowerCase();
+      filtered = filtered.filter(t => 
+        t.content?.toLowerCase().includes(query) ||
+        t.target_page?.toLowerCase().includes(query) ||
+        t.target_component?.toLowerCase().includes(query)
+      );
+    }
+    
+    // Apply sorting
+    return [...filtered].sort((a, b) => {
       if (groupBy === 'component') return (a.target_component || "").localeCompare(b.target_component || "");
       if (groupBy === 'page') return (a.target_page || "").localeCompare(b.target_page || "");
       return 0;
     });
-  }, [thoughts, groupBy]);
+  }, [thoughts, groupBy, taskSearchQuery]);
 
   // --- Render ---
   return (
@@ -293,20 +307,28 @@ export default function Multiprompt() {
                         </Button>
                       </div>
                       {filteredThoughts.length > 0 && (
-                        <div className="flex items-center justify-between gap-3 px-1">
+                        <div className="flex items-center justify-between gap-3 px-1 flex-wrap">
                           <div className="flex gap-3 text-xs font-medium text-slate-500 dark:text-slate-400">
                             <button onClick={() => selectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 dark:hover:text-indigo-400">Select All</button>
                             <span className="text-slate-300 dark:text-slate-600">|</span>
                             <button onClick={() => deselectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 dark:hover:text-indigo-400">Deselect All</button>
                           </div>
-                          <Select value={groupBy} onValueChange={setGroupBy}>
-                            <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="date">By Date</SelectItem>
-                              <SelectItem value="page">By Page</SelectItem>
-                              <SelectItem value="component">By Component</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex gap-2 items-center">
+                            <input
+                              type="text"
+                              placeholder="Search tasks..."
+                              className="h-8 px-3 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 w-[180px]"
+                              onChange={(e) => setTaskSearchQuery(e.target.value)}
+                            />
+                            <Select value={groupBy} onValueChange={setGroupBy}>
+                              <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="date">By Date</SelectItem>
+                                <SelectItem value="page">By Page</SelectItem>
+                                <SelectItem value="component">By Component</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       )}
                       <TasksList

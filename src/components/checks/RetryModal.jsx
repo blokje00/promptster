@@ -179,22 +179,18 @@ ${JSON.stringify({ screenshots: screenshotsPayload }, null, 2)}
   };
 
   const handleConfirm = async () => {
-    if (screenshots.length === 0) {
-      toast.error('Screenshot required', {
-        description: 'Please upload at least one screenshot showing the issue'
-      });
-      return;
-    }
-
-    // Verify all screenshot URLs are valid
-    const invalidUrls = screenshots.filter(url => !url || !url.startsWith('http'));
-    if (invalidUrls.length > 0) {
-      console.error('[RetryModal] Invalid screenshot URLs detected:', invalidUrls);
-      toast.error('⚠️ Invalid screenshot URLs', {
-        description: 'Some screenshots failed to upload correctly. Please re-upload.',
-        duration: 8000
-      });
-      return;
+    // Screenshots are now optional
+    if (screenshots.length > 0) {
+      // Verify all screenshot URLs are valid if provided
+      const invalidUrls = screenshots.filter(url => !url || !url.startsWith('http'));
+      if (invalidUrls.length > 0) {
+        console.error('[RetryModal] Invalid screenshot URLs detected:', invalidUrls);
+        toast.error('⚠️ Invalid screenshot URLs', {
+          description: 'Some screenshots failed to upload correctly. Please re-upload.',
+          duration: 8000
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -253,7 +249,7 @@ ${JSON.stringify({ screenshots: screenshotsPayload }, null, 2)}
     }
   };
 
-  const canSubmit = screenshots.length > 0 && userExplanation.trim().length > 0;
+  const canSubmit = userExplanation.trim().length > 0;
   const previewPrompt = generateRetryPrompt();
 
   return (
@@ -277,18 +273,18 @@ ${JSON.stringify({ screenshots: screenshotsPayload }, null, 2)}
             </p>
           </div>
 
-          {/* Step 1: Screenshot - REQUIRED */}
+          {/* Step 1: Screenshot - OPTIONAL */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Label className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                1. Screenshot Evidence <span className="text-red-500">*</span>
+                1. Screenshot Evidence <span className="text-slate-400">(optional)</span>
               </Label>
               {screenshots.length > 0 && (
                 <CheckCircle2 className="w-4 h-4 text-green-600" />
               )}
             </div>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Upload a screenshot showing what is missing, incorrect, or not working.
+              Upload a screenshot if visual evidence would help (recommended for UI issues).
             </p>
             <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50/50 dark:bg-slate-950/50">
               <ScreenshotUploader
@@ -314,9 +310,9 @@ ${JSON.stringify({ screenshots: screenshotsPayload }, null, 2)}
               )}
             </div>
             {screenshots.length === 0 && (
-              <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 text-sm">
+              <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
                 <AlertCircle className="w-4 h-4" />
-                <span>Screenshot is required to continue</span>
+                <span>Screenshot optional - only needed for visual issues</span>
               </div>
             )}
           </div>

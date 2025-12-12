@@ -100,16 +100,11 @@ export const useMultipromptData = ({
     }
   });
 
-  // Trigger vision analysis for screenshots (Pro users only)
+  // Trigger vision analysis for screenshots using cached endpoint
   const triggerVisionAnalysis = useCallback(async (thoughtId, screenshotUrls) => {
     if (!screenshotUrls || screenshotUrls.length === 0) return;
 
-    // Check if user has Pro plan
-    const plans = await base44.entities.SubscriptionPlan.list();
-    const userPlan = plans.find(p => p.id === currentUser?.plan_id);
-    if (!userPlan || userPlan.name !== 'Pro') {
-      return; // Silently skip for non-Pro users
-    }
+    console.log('[useMultipromptState] Starting vision analysis for thought:', thoughtId);
 
     // Update status to analyzing
     await base44.entities.Thought.update(thoughtId, {
@@ -119,31 +114,43 @@ export const useMultipromptData = ({
     try {
       const results = [];
       
-      // Analyze each screenshot
+      // Analyze each screenshot using the cached endpoint
       for (const url of screenshotUrls) {
         try {
-          const response = await base44.functions.invoke('analyzeScreenshotVision', { url });
-          results.push(response.data);
+          console.log('[useMultipromptState] Analyzing screenshot:', url);
+          const response = await base44.functions.invoke('analyzeScreenshotWithCache', { 
+            screenshotUrl: url,
+            level: 'full'
+          });
+          
+          if (response.data?.ok) {
+            console.log('[useMultipromptState] ✓ Analysis complete', response.data.cached ? '(cached)' : '(fresh)');
+            results.push(response.data);
+          } else {
+            console.error('[useMultipromptState] Analysis failed:', response.data);
+            results.push({ error: 'Analysis failed', sourceUrl: url });
+          }
         } catch (error) {
-          console.error('Vision analysis failed for', url, error);
+          console.error('[useMultipromptState] Vision analysis failed for', url, error);
           results.push({ error: error.message, sourceUrl: url });
         }
       }
 
-      // Save results
+      // Save results to thought entity
       await base44.entities.Thought.update(thoughtId, {
         vision_analysis: { status: 'completed', results }
       });
 
+      console.log('[useMultipromptState] ✓ Vision analysis saved to thought');
       invalidateAllThoughts();
     } catch (error) {
-      console.error('Vision analysis error:', error);
+      console.error('[useMultipromptState] Vision analysis error:', error);
       await base44.entities.Thought.update(thoughtId, {
         vision_analysis: { status: 'failed', results: [] }
       });
       invalidateAllThoughts();
     }
-  }, [currentUser, invalidateAllThoughts]);
+  }, [invalidateAllThoughts]);
 
   const deleteThought = useMutation({
     mutationFn: async (id) => {
