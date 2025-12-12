@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Sparkles } from "lucide-react";
+import { Save, Sparkles, Loader2 } from "lucide-react";
 
 export default function AIInstructionForm({ 
   instruction, 
@@ -57,7 +57,11 @@ export default function AIInstructionForm({
             disabled={isSaving}
             className="bg-indigo-600 hover:bg-indigo-700"
           >
-            <Save className="w-4 h-4 mr-2" />
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
             {isSaving ? "Saving..." : "Save"}
           </Button>
           <Button variant="outline" onClick={onReset}>

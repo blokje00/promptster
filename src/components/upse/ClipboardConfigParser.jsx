@@ -34,6 +34,7 @@ export default function ClipboardConfigParser({ onParse }) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [error, setError] = useState(null);
+  const [isSavingToProject, setIsSavingToProject] = useState(false);
 
   /**
    * Analyseert de geplakte config met AI
@@ -147,28 +148,36 @@ Voor elk item, geef een korte beschrijving die bruikbaar is voor AI code-generat
   /**
    * Slaat het analyseresultaat op
    */
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!analysisResult) return;
 
-    onParse(
-      {
-        platform_label: analysisResult.platform_detected || platform,
-        pages: analysisResult.pages || [],
-        entities: analysisResult.entities || [],
-        workflows: analysisResult.workflows || [],
-        navigation: analysisResult.navigation || []
-      },
-      {
-        source_platform: platform,
-        confidence: analysisResult.confidence,
-        config_length: configText.length
-      }
-    );
+    setIsSavingToProject(true);
+    try {
+      await onParse(
+        {
+          platform_label: analysisResult.platform_detected || platform,
+          pages: analysisResult.pages || [],
+          entities: analysisResult.entities || [],
+          workflows: analysisResult.workflows || [],
+          navigation: analysisResult.navigation || []
+        },
+        {
+          source_platform: platform,
+          confidence: analysisResult.confidence,
+          config_length: configText.length
+        }
+      );
 
-    // Reset
-    setConfigText("");
-    setAnalysisResult(null);
-    toast.success("Structuur opgeslagen!");
+      // Reset
+      setConfigText("");
+      setAnalysisResult(null);
+      toast.success("Structuur opgeslagen!");
+    } catch (error) {
+      toast.error("Kon structuur niet opslaan");
+      console.error(error);
+    } finally {
+      setIsSavingToProject(false);
+    }
   };
 
   const getConfidenceColor = (conf) => {
@@ -342,10 +351,15 @@ Bijvoorbeeld:
 
                 <Button 
                   onClick={handleSave}
+                  disabled={isSavingToProject}
                   className="w-full bg-green-600 hover:bg-green-700"
                 >
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Opslaan in Project
+                  {isSavingToProject ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 mr-2" />
+                  )}
+                  {isSavingToProject ? "Opslaan..." : "Opslaan in Project"}
                 </Button>
               </CardContent>
             </Card>
