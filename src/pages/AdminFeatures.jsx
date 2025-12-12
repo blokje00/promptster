@@ -8,10 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Plus, Trash2, Eye, ArrowUpDown } from "lucide-react";
+import { Save, Plus, Trash2, Eye, ArrowUpDown, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { cn } from "@/lib/utils";
 
 /**
  * AdminFeatures - Admin-friendly CMS for Features page
@@ -20,6 +21,7 @@ import { createPageUrl } from "@/utils";
 export default function AdminFeatures() {
   const queryClient = useQueryClient();
   const [editingBlocks, setEditingBlocks] = useState({});
+  const [savedBlockId, setSavedBlockId] = useState(null);
 
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
@@ -33,9 +35,12 @@ export default function AdminFeatures() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.FeatureBlock.update(id, data),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['featureBlocks'] });
       toast.success("Block updated");
+      // Flash success state
+      setSavedBlockId(variables.id);
+      setTimeout(() => setSavedBlockId(null), 2000);
     }
   });
 
@@ -127,10 +132,21 @@ export default function AdminFeatures() {
                         size="sm"
                         onClick={() => handleUpdate(block.id)}
                         disabled={updateMutation.isPending}
-                        className="bg-indigo-600 hover:bg-indigo-700"
+                        className={cn(
+                          "transition-all",
+                          savedBlockId === block.id 
+                            ? "bg-green-600 hover:bg-green-700" 
+                            : "bg-indigo-600 hover:bg-indigo-700"
+                        )}
                       >
-                        <Save className="w-4 h-4 mr-2" />
-                        {updateMutation.isPending ? "Saving..." : "Save"}
+                        {updateMutation.isPending ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : savedBlockId === block.id ? (
+                          <Check className="w-4 h-4 mr-2" />
+                        ) : (
+                          <Save className="w-4 h-4 mr-2" />
+                        )}
+                        {updateMutation.isPending ? "Saving..." : savedBlockId === block.id ? "Saved!" : "Save"}
                       </Button>
                       <Button
                         size="sm"
