@@ -102,6 +102,7 @@ export default function Checks() {
             projectId: item.project_id,
             index: index,
             taskNumber: `TASK-${index + 1}`,
+            screenshot_ids: item.screenshot_ids || [],
             ...check,
             // Use updated_date if available, otherwise item's updated_date as fallback
             updated_date: check.updated_date || item.updated_date,
@@ -146,9 +147,10 @@ export default function Checks() {
         return sortConfig.direction === "asc" ? statusA.localeCompare(statusB) : statusB.localeCompare(statusA);
       }
       if (sortConfig.key === "task_name") {
-        const nameA = a.task_name || "";
-        const nameB = b.task_name || "";
-        return sortConfig.direction === "asc" ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+        // TASK-4 FIX: Sort by full_description, fall back to task_name
+        const textA = (a.full_description || a.task_name || "").toLowerCase();
+        const textB = (b.full_description || b.task_name || "").toLowerCase();
+        return sortConfig.direction === "asc" ? textA.localeCompare(textB) : textB.localeCompare(textA);
       }
       if (sortConfig.key === "project") {
         const projectA = projects.find(p => p.id === a.projectId)?.name || "";
@@ -352,6 +354,23 @@ export default function Checks() {
                               fullDescription={task.full_description}
                               status={task.status}
                             />
+                            {task.screenshot_ids && task.screenshot_ids.length > 0 && (
+                              <div className="flex gap-2 mt-2 flex-wrap">
+                                {task.screenshot_ids.map((url, idx) => (
+                                  <button
+                                    key={idx}
+                                    onClick={() => window.open(url, '_blank')}
+                                    className="relative group"
+                                  >
+                                    <img 
+                                      src={url} 
+                                      alt={`Screenshot ${idx + 1}`}
+                                      className="w-20 h-20 object-cover rounded border border-slate-200 hover:scale-150 hover:z-50 transition-transform cursor-pointer"
+                                    />
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                          </td>
                         <td className="px-6 py-4 align-top">

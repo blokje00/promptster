@@ -31,16 +31,38 @@ export default function ContextSelector({
 
   const { target_page, target_component, target_domain } = value;
 
-  // Get pages list - use project mapping if available, otherwise default
+  // TASK-5: Track usage counts
+  const [pageUsage, setPageUsage] = useState({});
+  const [componentUsage, setComponentUsage] = useState({});
+
+  // Update usage when value changes
+  useEffect(() => {
+    if (value.target_page) {
+      setPageUsage(prev => ({ ...prev, [value.target_page]: (prev[value.target_page] || 0) + 1 }));
+    }
+    if (value.target_component) {
+      setComponentUsage(prev => ({ ...prev, [value.target_component]: (prev[value.target_component] || 0) + 1 }));
+    }
+  }, [value.target_page, value.target_component]);
+
+  // Get pages list - sorted by usage then alphabetically
   const availablePages = useMemo(() => {
     let pages = DEFAULT_PAGES;
     if (selectedProject?.component_mapping && Object.keys(selectedProject.component_mapping).length > 0) {
       pages = Object.keys(selectedProject.component_mapping);
     }
-    return [...new Set([...pages, ...customPages])];
-  }, [selectedProject, customPages]);
+    const allPages = [...new Set([...pages, ...customPages])];
+    
+    // Sort: most used first, then alphabetically
+    return allPages.sort((a, b) => {
+      const usageA = pageUsage[a] || 0;
+      const usageB = pageUsage[b] || 0;
+      if (usageA !== usageB) return usageB - usageA;
+      return a.localeCompare(b);
+    });
+  }, [selectedProject, customPages, pageUsage]);
 
-  // Available components based on selected page - use project mapping if available
+  // Available components based on selected page - sorted by usage then alphabetically
   const availableComponents = useMemo(() => {
     if (!target_page) return [];
     let comps = DEFAULT_PAGE_COMPONENT_MAP[target_page] || [];
@@ -48,8 +70,16 @@ export default function ContextSelector({
     if (selectedProject?.component_mapping && selectedProject.component_mapping[target_page]) {
       comps = selectedProject.component_mapping[target_page];
     }
-    return [...new Set([...comps, ...customComponents])];
-  }, [target_page, selectedProject, customComponents]);
+    const allComps = [...new Set([...comps, ...customComponents])];
+    
+    // Sort: most used first, then alphabetically
+    return allComps.sort((a, b) => {
+      const usageA = componentUsage[a] || 0;
+      const usageB = componentUsage[b] || 0;
+      if (usageA !== usageB) return usageB - usageA;
+      return a.localeCompare(b);
+    });
+  }, [target_page, selectedProject, customComponents, componentUsage]);
 
   const handleAddItem = (name) => {
     if (isAddingItem === 'page') {
