@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileCode, Save, ChevronDown, ChevronUp, Brain, ClipboardPaste } from "lucide-react";
+import { FileCode, Save, ChevronDown, ChevronUp, Brain, ClipboardPaste, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function FileChangesFeedback({ 
@@ -15,6 +15,7 @@ export default function FileChangesFeedback({
 }) {
   const [isExpanded, setIsExpanded] = useState(!!value);
   const [localValue, setLocalValue] = useState(value || "");
+  const [localSaving, setLocalSaving] = useState(false);
 
   const handlePaste = async () => {
     try {
@@ -27,11 +28,18 @@ export default function FileChangesFeedback({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (onSave) {
-      onSave(localValue);
+      setLocalSaving(true);
+      try {
+        await onSave(localValue);
+      } finally {
+        setLocalSaving(false);
+      }
     }
   };
+
+  const effectiveSaving = isSaving || localSaving;
 
   // Parse feedback to extract file names for display
   const extractFileNames = (feedback) => {
@@ -142,11 +150,15 @@ New file: components/DragHandle.jsx`}
                   <Button
                     type="button"
                     onClick={handleSave}
-                    disabled={isSaving}
+                    disabled={effectiveSaving}
                     className="bg-purple-600 hover:bg-purple-700"
                   >
-                    <Save className="w-4 h-4 mr-2" />
-                    {isSaving ? "Saving..." : "Save Feedback"}
+                    {effectiveSaving ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4 mr-2" />
+                    )}
+                    {effectiveSaving ? "Saving..." : "Save Feedback"}
                   </Button>
                 )}
               </div>
