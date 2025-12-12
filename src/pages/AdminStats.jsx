@@ -416,9 +416,6 @@ export default function AdminStats() {
                               {StatusIcon && <StatusIcon className="w-3 h-3 mr-1" />}
                               {currentStatus.label}
                             </Badge>
-                            <div className="text-xs text-slate-500 mt-1">
-                              {user.subscription_status}
-                            </div>
                           </td>
                           <td className="py-3 text-sm text-slate-600">
                             {trialStart && trialEnd ? (
