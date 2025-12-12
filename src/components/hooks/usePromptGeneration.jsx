@@ -89,15 +89,42 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
           priority: "Medium"
         };
 
-        // Add screenshots with pageHint, componentHint, and placeholder for ocrVision
+        // Add screenshots with real OCR vision data from thought entity
         if (t.screenshot_ids && t.screenshot_ids.length > 0) {
-          taskObj.screenshots = t.screenshot_ids.map(url => ({
-            id: url,
-            pageHint: t.target_page || "Unknown page",
-            componentHint: t.target_component || "Unknown component",
-            domain: t.target_domain || "UI",
-            ocrVision: "TO_BE_ENRICHED_WITH_CACHE"
-          }));
+          const visionResults = t.vision_analysis?.results || [];
+          
+          taskObj.screenshots = t.screenshot_ids.map((url, idx) => {
+            const visionData = visionResults[idx];
+            
+            // If we have OCR vision data, use it
+            if (visionData && visionData.ocr) {
+              return {
+                id: url,
+                pageHint: t.target_page || "Unknown page",
+                componentHint: t.target_component || "Unknown component",
+                domain: t.target_domain || "UI",
+                ocrVision: {
+                  ocr: visionData.ocr,
+                  regions: visionData.regions,
+                  semanticBlocks: visionData.semanticBlocks,
+                  layoutRelations: visionData.layoutRelations,
+                  visionStructure: visionData.visionStructure,
+                  width: visionData.width,
+                  height: visionData.height,
+                  summary: visionData.summary
+                }
+              };
+            }
+            
+            // Fallback to placeholder if no vision data yet
+            return {
+              id: url,
+              pageHint: t.target_page || "Unknown page",
+              componentHint: t.target_component || "Unknown component",
+              domain: t.target_domain || "UI",
+              ocrVision: "TO_BE_ENRICHED_WITH_CACHE"
+            };
+          });
         }
 
         return taskObj;
