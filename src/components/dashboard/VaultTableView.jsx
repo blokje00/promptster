@@ -71,6 +71,14 @@ export default function VaultTableView({ items, projects }) {
     return result;
   }, [items, projects, sortConfig, startDate, endDate]);
 
+  const totalTasks = useMemo(() => {
+    return sortedAndFilteredItems
+      .filter(item => item.type === "multiprompt")
+      .reduce((count, item) => {
+        return count + (item.task_checks?.length || 0);
+      }, 0);
+  }, [sortedAndFilteredItems]);
+
   const getTypeLabel = (type) => {
     const labels = {
       prompt: "Prompt",
@@ -125,8 +133,14 @@ export default function VaultTableView({ items, projects }) {
             Clear
           </Button>
         )}
-        <div className="ml-auto text-sm text-slate-500 dark:text-slate-400">
-          {sortedAndFilteredItems.length} items
+        <div className="ml-auto flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+          <span>{sortedAndFilteredItems.length} items</span>
+          {totalTasks > 0 && (
+            <>
+              <span className="text-slate-300 dark:text-slate-600">|</span>
+              <span>{totalTasks} tasks in multiprompts</span>
+            </>
+          )}
         </div>
       </div>
 
