@@ -291,7 +291,9 @@ Be thorough - include ALL pages, components, buttons, forms, and key functionali
             </div>
 
             <div className="flex justify-end gap-2 pt-6 border-t border-slate-100 mt-6">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={createMutation.isPending || updateMutation.isPending}>
+                Cancel
+              </Button>
               <Button 
                 onClick={handleSave}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white"

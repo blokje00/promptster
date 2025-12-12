@@ -68,17 +68,24 @@ export default function TemplatesManager({ templates = [], projects = [], select
 
   const handleEditStart = (template) => {
     setEditingTemplate(template);
-    setEditName(template.name);
-    setEditContent(template.content);
     setIsEditDialogOpen(true);
+    // Set fields AFTER dialog opens to prevent flash
+    setTimeout(() => {
+      setEditName(template.name);
+      setEditContent(template.content);
+    }, 0);
   };
 
-  const handleEditSave = () => {
+  const handleEditSave = async () => {
     if (!editName.trim() || !editContent.trim()) return;
-    updateMutation.mutate({
-      id: editingTemplate.id,
-      data: { name: editName, content: editContent }
-    });
+    try {
+      await updateMutation.mutateAsync({
+        id: editingTemplate.id,
+        data: { name: editName, content: editContent }
+      });
+    } catch (error) {
+      console.error('[TemplatesManager] Update failed:', error);
+    }
   };
 
   // Render Helpers
@@ -155,8 +162,12 @@ export default function TemplatesManager({ templates = [], projects = [], select
             <Input value={editName} onChange={e => setEditName(e.target.value)} />
             <Textarea value={editContent} onChange={e => setEditContent(e.target.value)} className="min-h-[200px]" />
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleEditSave}>Save Changes</Button>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={updateMutation.isPending}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditSave} disabled={updateMutation.isPending || !editName.trim() || !editContent.trim()}>
+                {updateMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
             </div>
           </div>
         </DialogContent>
