@@ -111,7 +111,25 @@ export default function Dashboard() {
                 className="pl-10 h-12 border-slate-200 focus:border-indigo-500 focus:ring-indigo-500"
               />
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
+              <div className="flex gap-1 bg-slate-200 dark:bg-slate-700 rounded-md p-1">
+                <Button
+                  variant={viewMode === "cards" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("cards")}
+                  className="h-7 px-2"
+                >
+                  <Grid3x3 className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "table" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("table")}
+                  className="h-7 px-2"
+                >
+                  <Table className="w-4 h-4" />
+                </Button>
+              </div>
               <Button
                 variant={showFavoritesOnly ? "default" : "outline"}
                 onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
