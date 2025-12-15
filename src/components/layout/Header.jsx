@@ -191,7 +191,7 @@ export default function Header() {
         <div className="flex items-center gap-1">
           <ThemeToggleButton />
           
-          {isReady && !user ? (
+          {isReady && (!user || !user?.plan_id) ? (
             <Button 
               onClick={() => setShowTrialModal(true)}
               className="ml-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
