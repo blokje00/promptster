@@ -112,9 +112,16 @@ export default function Header() {
       } else if (response.data?.status === 'success') {
         console.log('[Header] ✨ Demo created successfully!', response.data);
         toast.success(`Demo created: ${response.data.projects} projects, ${response.data.tasks} tasks!`);
+        
+        // Force full page reload to refresh all caches
+        console.log('[Header] 🔄 Reloading page to show demo data...');
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
         console.log('[Header] ⚠️ Unexpected response format:', response);
         toast.success('Demo data created!');
+        setTimeout(() => window.location.reload(), 1500);
       }
     } catch (error) {
       console.error('[Header] ❌ Seed error:', error);
