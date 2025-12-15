@@ -31,6 +31,7 @@ export const useMultipromptData = ({
 
   // Client-side filtering for view
   const thoughts = useMemo(() => {
+    if (!allThoughts) return [];
     if (!selectedProjectId) return allThoughts;
     return allThoughts.filter(t => t.project_id === selectedProjectId);
   }, [allThoughts, selectedProjectId]);
@@ -39,7 +40,7 @@ export const useMultipromptData = ({
   const [hasInitialSelected, setHasInitialSelected] = useState(false);
 
   useEffect(() => {
-    if (thoughts.length > 0 && !hasInitialSelected) {
+    if (thoughts?.length > 0 && !hasInitialSelected) {
       if (idsToAutoSelect && idsToAutoSelect.length > 0) {
         // Retry logic: Select specific IDs (Task 1 Fix: Don't filter against thoughts yet to avoid race conditions)
         setSelectedThoughtIds(idsToAutoSelect);
