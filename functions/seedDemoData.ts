@@ -362,8 +362,11 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     console.info('[SEED-BACKEND][START]', { reqId });
     
+    // Parse payload first to check for forceReset
+    const payload = await req.json().catch(() => ({}));
+    
     const user = await base44.auth.me();
-    console.info('[SEED-BACKEND][USER]', { reqId, hasUser: !!user, email: user?.email, id: user?.id });
+    console.info('[SEED-BACKEND][USER]', { reqId, hasUser: !!user, email: user?.email, id: user?.id, forceReset: payload.forceReset });
     
     if (!user?.email || !user?.id) {
       console.warn('[SEED-BACKEND][NO_USER_CTX]', { reqId, user });
@@ -431,8 +434,8 @@ Deno.serve(async (req) => {
     });
     console.info('[SEED-BACKEND][LOCK_ACQUIRED]', { reqId, seedTimestamp, version: CURRENT_VERSION });
 
-    // TESTER RESET: Always wipe existing data for whitelisted users
-    if (user.email === 'patrickz@sunshower.nl') {
+    // TESTER RESET: Only wipe if explicitly requested via payload
+    if (user.email === 'patrickz@sunshower.nl' && payload.forceReset === true) {
       console.info('[SEED-BACKEND][TESTER_MODE]', { reqId, action: 'wiping' });
       
       // Delete ONLY demo data - NULL-SAFE
