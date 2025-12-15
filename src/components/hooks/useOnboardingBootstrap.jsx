@@ -57,11 +57,17 @@ export function useOnboardingBootstrap() {
     }
   }, []);
 
+  const isTesterUser = useCallback((user) => {
+    return user?.email === "patrickz@sunshower.nl";
+  }, []);
+
   const needsSeeding = useCallback((user) => {
     if (!user) return false;
+    // Tester ALWAYS needs seeding (fresh data every login)
+    if (isTesterUser(user)) return true;
     // User needs seeding if demo_seed_version is missing OR outdated
     return !user.demo_seed_version || user.demo_seed_version !== CURRENT_DEMO_VERSION;
-  }, []);
+  }, [isTesterUser]);
 
   const invalidateAllDataQueries = useCallback(async (userEmail) => {
     // Invalidate with EXACT keys matching how pages query data
@@ -106,8 +112,8 @@ export function useOnboardingBootstrap() {
         return;
       }
 
-      // Gate 3: Already attempted this browser session
-      if (hasAttemptedThisSession()) {
+      // Gate 3: Already attempted this browser session (SKIP FOR TESTER)
+      if (hasAttemptedThisSession() && !isTesterUser(currentUser)) {
         addDebugLog("Already attempted this session, skipping", { 
           demo_seed_version: currentUser.demo_seed_version 
         });
@@ -115,13 +121,20 @@ export function useOnboardingBootstrap() {
         return;
       }
 
-      // Gate 4 REMOVED: Don't trust demo_seed_version alone - let backend verify real data exists
-      // This fixes the "ghost marker" problem where user has version but no actual projects
+      // Gate 4: Check if seeding is needed
+      if (!needsSeeding(currentUser)) {
+        addDebugLog("User does not need seeding", { 
+          demo_seed_version: currentUser.demo_seed_version,
+          is_tester: isTesterUser(currentUser)
+        });
+        setStatus("success");
+        return;
+      }
 
-      // Start seeding (backend will verify if data actually exists)
+      // Start seeding (backend will verify/wipe/reseed)
       markAttempted();
       setStatus("seeding");
-      addDebugLog("Calling backend to verify/seed demo data", { 
+      addDebugLog("Calling backend to seed demo data", { 
         user_id: currentUser.id, 
         email: currentUser.email,
         existing_version: currentUser.demo_seed_version

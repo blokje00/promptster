@@ -45,35 +45,20 @@ Deno.serve(async (req) => {
 
     const isTester = user.email === TESTER_EMAIL;
 
-    // REALITY CHECK: Does user actually have demo projects?
-    const existingProjects = await base44.asServiceRole.entities.Project.filter({ created_by: user.email });
-    const hasRealData = existingProjects.length > 0;
-
-    // Check if demo already seeded (skip for tester user)
-    if (user.demo_seed_version === DEMO_VERSION && !isTester && hasRealData) {
-      console.log('[seedDemoData] User already has demo data, skipping');
-      console.log('[seedDemoData] Version:', user.demo_seed_version);
-      console.log('[seedDemoData] Projects found:', existingProjects.length);
-      return Response.json({ 
-        status: 'already_seeded',
-        message: 'Demo data already exists for this user',
-        version: user.demo_seed_version
-      });
-    }
-
-    // GHOST MARKER FIX: User has marker but no data - reseed!
-    if (user.demo_seed_version === DEMO_VERSION && !hasRealData && !isTester) {
-      console.log('[seedDemoData] ⚠️ GHOST MARKER DETECTED - User has version marker but no projects!');
-      console.log('[seedDemoData] Clearing marker and reseeding...');
-      await base44.auth.updateMe({ demo_seed_version: null });
-    }
-
     if (isTester) {
-      console.log('[seedDemoData] ⚠️ TESTER USER DETECTED - Force reseeding!');
-      // Delete ALL existing demo data for tester (already fetched above)
-      const existingThoughts = await base44.asServiceRole.entities.Thought.filter({ created_by: user.email });
-      const existingTemplates = await base44.asServiceRole.entities.PromptTemplate.filter({ created_by: user.email });
-      const existingItems = await base44.asServiceRole.entities.Item.filter({ created_by: user.email });
+      console.log('[seedDemoData] ⚠️ TESTER USER DETECTED - Force wipe and reseed!');
+      
+      // Step 1: Clear marker FIRST (prevent race conditions)
+      await base44.auth.updateMe({ demo_seed_version: null });
+      console.log('[seedDemoData] ✓ Marker cleared');
+      
+      // Step 2: Delete ALL existing data
+      const [existingProjects, existingThoughts, existingTemplates, existingItems] = await Promise.all([
+        base44.asServiceRole.entities.Project.filter({ created_by: user.email }),
+        base44.asServiceRole.entities.Thought.filter({ created_by: user.email }),
+        base44.asServiceRole.entities.PromptTemplate.filter({ created_by: user.email }),
+        base44.asServiceRole.entities.Item.filter({ created_by: user.email })
+      ]);
       
       await Promise.all([
         ...existingProjects.map(p => base44.asServiceRole.entities.Project.delete(p.id)),
@@ -81,12 +66,35 @@ Deno.serve(async (req) => {
         ...existingTemplates.map(t => base44.asServiceRole.entities.PromptTemplate.delete(t.id)),
         ...existingItems.map(i => base44.asServiceRole.entities.Item.delete(i.id))
       ]);
-      console.log('[seedDemoData] ✓ Tester data cleared');
+      console.log('[seedDemoData] ✓ All tester data deleted (projects:', existingProjects.length, ', thoughts:', existingThoughts.length, ', templates:', existingTemplates.length, ', items:', existingItems.length, ')');
+    } else {
+      // REALITY CHECK: Does user actually have demo projects?
+      const existingProjects = await base44.asServiceRole.entities.Project.filter({ created_by: user.email });
+      const hasRealData = existingProjects.length > 0;
+
+      // Check if demo already seeded
+      if (user.demo_seed_version === DEMO_VERSION && hasRealData) {
+        console.log('[seedDemoData] User already has demo data, skipping');
+        console.log('[seedDemoData] Version:', user.demo_seed_version);
+        console.log('[seedDemoData] Projects found:', existingProjects.length);
+        return Response.json({ 
+          status: 'already_seeded',
+          message: 'Demo data already exists for this user',
+          version: user.demo_seed_version
+        });
+      }
+
+      // GHOST MARKER FIX: User has marker but no data - reseed!
+      if (user.demo_seed_version === DEMO_VERSION && !hasRealData) {
+        console.log('[seedDemoData] ⚠️ GHOST MARKER DETECTED - User has version marker but no projects!');
+        console.log('[seedDemoData] Clearing marker and reseeding...');
+        await base44.auth.updateMe({ demo_seed_version: null });
+      }
     }
 
-    console.log('[seedDemoData] Starting demo seed for user:', user.email);
+    console.log('[seedDemoData] Starting fresh demo seed for user:', user.email);
     console.log('[seedDemoData] User ID:', user.id);
-    console.log('[seedDemoData] Current version:', user.demo_seed_version || 'none');
+    console.log('[seedDemoData] Is tester:', isTester);
 
     // STEP 1: Create Personal AI Configuration
     await base44.auth.updateMe({
