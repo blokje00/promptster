@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/components/hooks/useUser";
 import { base44 } from "@/api/base44Client";
+import { getOrCreateTraceId, subscribeToQueryCache } from "@/components/debug/queryLogger";
 
 const BootstrapContext = createContext({
   status: 'loading',
@@ -17,6 +18,12 @@ export function BootstrapProvider({ children }) {
   const { user, isReady } = useUser();
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState(null);
+
+  // Subscribe to query cache for debugging
+  useEffect(() => {
+    const unsubscribe = subscribeToQueryCache(queryClient);
+    return unsubscribe;
+  }, [queryClient]);
 
   useEffect(() => {
     if (!isReady) {
@@ -34,7 +41,8 @@ export function BootstrapProvider({ children }) {
     let isMounted = true;
     
     async function bootstrap() {
-      const logPrefix = `[BOOTSTRAP ${new Date().toISOString().split('T')[1].slice(0,8)}]`;
+      const traceId = getOrCreateTraceId();
+      const logPrefix = `[BOOTSTRAP ${new Date().toISOString().split('T')[1].slice(0,8)}] [${traceId}]`;
       
       if (!isMounted) return;
       
