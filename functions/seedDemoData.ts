@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
     // STEP 2: Create Demo Project 1 - SaaS Web App Refactor
     console.log('[seedDemoData] ⏳ Step 2: Creating Project 1...');
     const project1 = await base44.asServiceRole.entities.Project.create({
-      name: "SaaS Web App Refactor",
+      name: "DEMO: SaaS Web App Refactor",
       color: "blue",
       description: "Refactoring and improving a medium-sized SaaS web application",
       technical_config_markdown: `# Project AI Configuration — SaaS Web App Refactor
@@ -99,7 +99,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     // Project 1 Templates
     console.log('[seedDemoData] ⏳ Creating templates for Project 1...');
     const t1 = await base44.asServiceRole.entities.PromptTemplate.create({
-      name: "UI Review Template",
+      name: "DEMO: UI Review Template",
       type: "start",
       content: "Review the following UI for usability, accessibility, and visual consistency.\nProvide concrete improvement suggestions.",
       project_id: project1.id,
@@ -108,7 +108,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     console.log('[seedDemoData] ✅ Template 1 created:', t1?.id);
 
     const t2 = await base44.asServiceRole.entities.PromptTemplate.create({
-      name: "Code Refactor Template",
+      name: "DEMO: Code Refactor Template",
       type: "start",
       content: "Analyze the provided code and propose a refactor.\nFocus on clarity, reusability, and long-term maintainability.",
       project_id: project1.id,
@@ -117,7 +117,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     console.log('[seedDemoData] ✅ Template 2 created:', t2?.id);
 
     const t3 = await base44.asServiceRole.entities.PromptTemplate.create({
-      name: "Bug Analysis Template",
+      name: "DEMO: Bug Analysis Template",
       type: "eind",
       content: "Investigate the described issue.\nIdentify root causes and suggest fixes.",
       project_id: project1.id,
@@ -128,7 +128,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     // Project 1 Tasks (NO SCREENSHOTS)
     console.log('[seedDemoData] ⏳ Creating tasks for Project 1...');
     const task1 = await base44.asServiceRole.entities.Thought.create({
-      content: "Review the homepage layout and visual hierarchy",
+      content: "DEMO: Review the homepage layout and visual hierarchy",
       project_id: project1.id,
       is_selected: true,
       is_deleted: false,
@@ -140,7 +140,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     console.log('[seedDemoData] ✅ Task 1 created:', task1?.id);
 
     const task2 = await base44.asServiceRole.entities.Thought.create({
-      content: "Identify usability issues in the admin dashboard",
+      content: "DEMO: Identify usability issues in the admin dashboard",
       project_id: project1.id,
       is_selected: true,
       is_deleted: false,
@@ -149,9 +149,10 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       target_domain: "UI",
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Task 2 created:', task2?.id);
 
-    await base44.asServiceRole.entities.Thought.create({
-      content: "Analyze a reported issue in the signup flow",
+    const task3 = await base44.asServiceRole.entities.Thought.create({
+      content: "DEMO: Analyze a reported issue in the signup flow",
       project_id: project1.id,
       is_selected: true,
       is_deleted: false,
@@ -159,9 +160,10 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       target_domain: "UploadFlow",
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Task 3 created:', task3?.id);
 
-    await base44.asServiceRole.entities.Thought.create({
-      content: "Propose improvements to the settings page code structure",
+    const task4 = await base44.asServiceRole.entities.Thought.create({
+      content: "DEMO: Propose improvements to the settings page code structure",
       project_id: project1.id,
       is_selected: true,
       is_deleted: false,
@@ -170,9 +172,10 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       target_domain: "UI",
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Task 4 created:', task4?.id);
 
-    await base44.asServiceRole.entities.Thought.create({
-      content: "Review mobile layout issues and responsiveness",
+    const task5 = await base44.asServiceRole.entities.Thought.create({
+      content: "DEMO: Review mobile layout issues and responsiveness",
       project_id: project1.id,
       is_selected: true,
       is_deleted: false,
@@ -180,13 +183,15 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       target_domain: "Styling",
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Task 5 created:', task5?.id);
 
     console.log('[seedDemoData] ✅ All Project 1 tasks created');
     console.log('[seedDemoData] ✓ Project 1 COMPLETE: 3 templates and 5 tasks');
 
     // STEP 3: Create Demo Project 2 - AI Prompt Engineering Playground
+    console.log('[seedDemoData] ⏳ Step 3: Creating Project 2...');
     const project2 = await base44.asServiceRole.entities.Project.create({
-      name: "AI Prompt Engineering Playground",
+      name: "DEMO: AI Prompt Engineering Playground",
       color: "purple",
       description: "Exploring prompt design, iteration, and evaluation for AI systems",
       technical_config_markdown: `# Project AI Configuration — Prompt Engineering Playground
@@ -200,35 +205,41 @@ This project explores prompt design, iteration, and evaluation for AI systems.
 - Improve reliability of AI responses`,
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Project 2 created:', project2?.id);
 
     // Project 2 Templates
-    await base44.asServiceRole.entities.PromptTemplate.create({
-      name: "Prompt Critique Template",
+    console.log('[seedDemoData] ⏳ Creating templates for Project 2...');
+    const t4 = await base44.asServiceRole.entities.PromptTemplate.create({
+      name: "DEMO: Prompt Critique Template",
       type: "start",
       content: "Critically evaluate the prompt.\nIdentify ambiguities and suggest improvements.",
       project_id: project2.id,
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Template 4 created:', t4?.id);
 
-    await base44.asServiceRole.entities.PromptTemplate.create({
-      name: "Prompt Rewrite Template",
+    const t5 = await base44.asServiceRole.entities.PromptTemplate.create({
+      name: "DEMO: Prompt Rewrite Template",
       type: "start",
       content: "Rewrite the prompt to be more precise, robust, and testable.",
       project_id: project2.id,
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Template 5 created:', t5?.id);
 
-    await base44.asServiceRole.entities.PromptTemplate.create({
-      name: "Output Evaluation Template",
+    const t6 = await base44.asServiceRole.entities.PromptTemplate.create({
+      name: "DEMO: Output Evaluation Template",
       type: "eind",
       content: "Evaluate the AI output against the original intent.\nScore clarity, correctness, and usefulness.",
       project_id: project2.id,
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Template 6 created:', t6?.id);
 
     // Project 2 Tasks (NO SCREENSHOTS)
-    await base44.asServiceRole.entities.Thought.create({
-      content: "Rewrite a poorly defined AI prompt for clarity and precision",
+    console.log('[seedDemoData] ⏳ Creating tasks for Project 2...');
+    const task6 = await base44.asServiceRole.entities.Thought.create({
+      content: "DEMO: Rewrite a poorly defined AI prompt for clarity and precision",
       project_id: project2.id,
       is_selected: true,
       is_deleted: false,
@@ -236,9 +247,10 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       target_domain: "PromptEngine",
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Task 6 created:', task6?.id);
 
-    await base44.asServiceRole.entities.Thought.create({
-      content: "Analyze differences between concise and verbose prompt styles",
+    const task7 = await base44.asServiceRole.entities.Thought.create({
+      content: "DEMO: Analyze differences between concise and verbose prompt styles",
       project_id: project2.id,
       is_selected: true,
       is_deleted: false,
@@ -246,9 +258,10 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       target_domain: "PromptEngine",
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Task 7 created:', task7?.id);
 
-    await base44.asServiceRole.entities.Thought.create({
-      content: "Identify hidden assumptions in a prompt",
+    const task8 = await base44.asServiceRole.entities.Thought.create({
+      content: "DEMO: Identify hidden assumptions in a prompt",
       project_id: project2.id,
       is_selected: true,
       is_deleted: false,
@@ -256,9 +269,10 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       target_domain: "PromptEngine",
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Task 8 created:', task8?.id);
 
-    await base44.asServiceRole.entities.Thought.create({
-      content: "Score an AI response against clear evaluation criteria",
+    const task9 = await base44.asServiceRole.entities.Thought.create({
+      content: "DEMO: Score an AI response against clear evaluation criteria",
       project_id: project2.id,
       is_selected: true,
       is_deleted: false,
@@ -266,9 +280,10 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       target_domain: "PromptEngine",
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Task 9 created:', task9?.id);
 
-    await base44.asServiceRole.entities.Thought.create({
-      content: "Design a system prompt for consistent AI behavior across sessions",
+    const task10 = await base44.asServiceRole.entities.Thought.create({
+      content: "DEMO: Design a system prompt for consistent AI behavior across sessions",
       project_id: project2.id,
       is_selected: true,
       is_deleted: false,
@@ -276,12 +291,15 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       target_domain: "PromptEngine",
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Task 10 created:', task10?.id);
 
-    console.log('[seedDemoData] ✓ Project 2 created with 3 templates and 5 tasks');
+    console.log('[seedDemoData] ✅ All Project 2 tasks created');
+    console.log('[seedDemoData] ✓ Project 2 COMPLETE: 3 templates and 5 tasks');
 
     // STEP 4: Create 2 Vault Prompts (NO IMAGES)
-    await base44.asServiceRole.entities.Item.create({
-      title: "System Prompt - Code Review Assistant",
+    console.log('[seedDemoData] ⏳ Step 4: Creating vault items...');
+    const item1 = await base44.asServiceRole.entities.Item.create({
+      title: "DEMO: System Prompt - Code Review Assistant",
       type: "prompt",
       project_id: project1.id,
       content: `You are an expert code reviewer focused on React and modern JavaScript/TypeScript.
@@ -299,9 +317,10 @@ Provide constructive feedback with specific examples and alternative implementat
       is_favorite: true,
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Vault Item 1 created:', item1?.id);
 
-    await base44.asServiceRole.entities.Item.create({
-      title: "Prompt Engineering Best Practices",
+    const item2 = await base44.asServiceRole.entities.Item.create({
+      title: "DEMO: Prompt Engineering Best Practices",
       type: "prompt",
       project_id: project2.id,
       content: `# Prompt Engineering Principles
@@ -327,6 +346,7 @@ Provide constructive feedback with specific examples and alternative implementat
       is_favorite: false,
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Vault Item 2 created:', item2?.id);
 
     console.log('[seedDemoData] ✓ 2 Vault prompts created');
     console.log('[seedDemoData] ✨✨✨ Demo seed completed successfully ✨✨✨');
