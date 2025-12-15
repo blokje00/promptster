@@ -15,23 +15,27 @@ export const useMultipromptData = ({
   const queryClient = useQueryClient();
   const [selectedThoughtIds, setSelectedThoughtIds] = useState([]);
 
-  // 1. Fetch ALL Thoughts - Single Source of Truth (using RLS)
+  // 1. Fetch ALL Thoughts - Single Source of Truth
   const { data: allThoughts = [], isLoading } = useQuery({
-    queryKey: ['thoughts'],
+    queryKey: ['thoughts', { 
+      userEmail: currentUser?.email
+    }],
     queryFn: async () => {
-      // Fetch ALL non-deleted thoughts (RLS filters by user automatically)
+      if (!currentUser?.email) return [];
+
+      // Fetch ALL non-deleted thoughts for user (Client-side filtering for projects)
       return await base44.entities.Thought.filter({ 
+        created_by: currentUser.email,
         is_deleted: false 
       }, "-created_date");
     },
-    enabled: !!currentUser,
-    staleTime: 0,
+    enabled: !!currentUser?.email,
+    staleTime: 0, // Always fetch fresh on mount/invalidate
     refetchOnWindowFocus: true,
   });
 
   // Client-side filtering for view
   const thoughts = useMemo(() => {
-    if (!allThoughts) return [];
     if (!selectedProjectId) return allThoughts;
     return allThoughts.filter(t => t.project_id === selectedProjectId);
   }, [allThoughts, selectedProjectId]);
@@ -40,7 +44,7 @@ export const useMultipromptData = ({
   const [hasInitialSelected, setHasInitialSelected] = useState(false);
 
   useEffect(() => {
-    if (thoughts?.length > 0 && !hasInitialSelected) {
+    if (thoughts.length > 0 && !hasInitialSelected) {
       if (idsToAutoSelect && idsToAutoSelect.length > 0) {
         // Retry logic: Select specific IDs (Task 1 Fix: Don't filter against thoughts yet to avoid race conditions)
         setSelectedThoughtIds(idsToAutoSelect);
@@ -68,7 +72,9 @@ export const useMultipromptData = ({
     onSuccess: async (newThought) => {
       // Optimistic update: direct toevoegen aan cache
       if (newThought) {
-        const queryKey = ['thoughts'];
+        const queryKey = ['thoughts', { 
+          userEmail: currentUser?.email
+        }];
         queryClient.setQueryData(queryKey, (old) => [newThought, ...(old || [])]);
       }
       

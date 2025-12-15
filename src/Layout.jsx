@@ -5,7 +5,6 @@ import { ThemeProvider } from "./components/theme/ThemeProvider";
 import CookieConsent from "./components/auth/CookieConsent";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { BootstrapProvider } from "@/components/contexts/BootstrapContext";
 
 export default function Layout({ children }) {
   useEffect(() => {
@@ -33,27 +32,25 @@ export default function Layout({ children }) {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <BootstrapProvider>
-          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors">
-            <style>{`
-              :root {
-                --primary: #6366f1;
-                --primary-dark: #4f46e5;
-              }
-            `}</style>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors">
+          <style>{`
+            :root {
+              --primary: #6366f1;
+              --primary-dark: #4f46e5;
+            }
+          `}</style>
 
-            <Header />
+          <Header />
 
-            <main>
-              <ErrorBoundary>
-                {children}
-              </ErrorBoundary>
-            </main>
+          <main>
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </main>
 
-            <CookieConsent />
+          <CookieConsent />
           </div>
-        </BootstrapProvider>
-      </LanguageProvider>
-    </ThemeProvider>
-  );
-}
+          </LanguageProvider>
+          </ThemeProvider>
+          );
+          }

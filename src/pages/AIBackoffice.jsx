@@ -14,9 +14,6 @@ import MaintenanceTools from "../components/settings/MaintenanceTools";
 import AIInstructionForm from "../components/settings/AIInstructionForm";
 import PersonalPreferencesForm from "../components/settings/PersonalPreferencesForm";
 import AIContextToggle from "../components/settings/AIContextToggle";
-import DemoDataOverview from "../components/settings/DemoDataOverview";
-import DemoSeedDebugPanel from "../components/settings/DemoSeedDebugPanel";
-import QueryDebugPanel from "../components/debug/QueryDebugPanel";
 import { toast } from "sonner";
 
 const getDefaultInstruction = () => `Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.`;
@@ -185,15 +182,21 @@ export default function AIBackoffice() {
   });
 
   const { data: projects = [] } = useQuery({
-    queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
-    enabled: !!currentUser,
+    queryKey: ['projects', currentUser?.email],
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+      return await base44.entities.Project.filter({ created_by: currentUser.email });
+    },
+    enabled: !!currentUser?.email,
   });
 
   const { data: projectStructures = [] } = useQuery({
-    queryKey: ['projectStructures'],
-    queryFn: () => base44.entities.ProjectStructure.list(),
-    enabled: !!currentUser,
+    queryKey: ['projectStructures', currentUser?.email],
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+      return await base44.entities.ProjectStructure.filter({ created_by: currentUser.email });
+    },
+    enabled: !!currentUser?.email,
   });
 
   const [selectedProjectId, setSelectedProjectId] = useState("");
@@ -327,9 +330,6 @@ export default function AIBackoffice() {
 
             <TabsContent value="settings" className="space-y-6">
               <div className="max-w-3xl space-y-6">
-                <QueryDebugPanel />
-                <DemoSeedDebugPanel />
-                <DemoDataOverview />
                 <MaintenanceTools currentUser={currentUser} />
                 <PersonalPreferencesForm
                   personalPreferences={personalPrefsHook.draft}

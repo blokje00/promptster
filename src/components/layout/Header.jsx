@@ -4,7 +4,6 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
-import { useUser } from "@/components/hooks/useUser";
 import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText, TrendingUp, X } from "lucide-react";
 import ThemeToggleButton from "@/components/theme/ThemeToggleButton";
 import { Button } from "@/components/ui/button";
@@ -29,42 +28,48 @@ export default function Header() {
   const [showExport, setShowExport] = useState(false);
   const [showTrialModal, setShowTrialModal] = useState(false);
   
-  const { user, isReady } = useUser();
+  const { data: user } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+  });
 
   const { data: deletedCount = 0 } = useQuery({
-    queryKey: ['thoughts', user?.email, { is_deleted: true }, 'count'],
+    queryKey: ['deletedThoughtsCount', user?.email],
     queryFn: async () => {
+      if (!user?.email) return 0;
       const result = await base44.entities.Thought.filter({ 
+        created_by: user.email,
         is_deleted: true 
       });
       return result?.length || 0;
     },
     enabled: !!user?.email,
-    refetchOnWindowFocus: false,
-    staleTime: 30000,
-    refetchInterval: false,
+    refetchInterval: 1000,
   });
 
-  // Task 3: All thoughts count (across all projects - using RLS)
+  // Task 3: All thoughts count (across all projects)
   const { data: allThoughtsCount = 0 } = useQuery({
-    queryKey: ['thoughts', user?.email, { is_deleted: false }, 'count'],
+    queryKey: ['allThoughtsCount', user?.email],
     queryFn: async () => {
+      if (!user?.email) return 0;
       const thoughts = await base44.entities.Thought.filter({ 
+        created_by: user.email,
         is_deleted: false
       });
       return thoughts?.length || 0;
     },
     enabled: !!user?.email,
-    refetchOnWindowFocus: false,
-    staleTime: 30000,
-    refetchInterval: false,
+    refetchInterval: 1000,
   });
 
-  // Open Tasks Count (Checklist items - using RLS)
+  // Open Tasks Count (Checklist items)
   const { data: openTasksCount = 0 } = useQuery({
-    queryKey: ['openTasksCount'],
+    queryKey: ['openTasksCount', user?.email],
     queryFn: async () => {
-      const items = await base44.entities.Item.list();
+      if (!user?.email) return 0;
+      const items = await base44.entities.Item.filter({ 
+        created_by: user.email
+      });
       
       let count = 0;
       items.forEach(item => {
@@ -78,7 +83,7 @@ export default function Header() {
       });
       return count;
     },
-    enabled: !!user,
+    enabled: !!user?.email,
     refetchInterval: 1000,
   });
 
@@ -106,6 +111,24 @@ export default function Header() {
       navigate(createPageUrl('Multiprompt'), { replace: true });
     }
   }, [currentPath, navigate]);
+
+  // Seed demo data for users who don't have it yet (fire-and-forget)
+  useEffect(() => {
+    if (user && !user.demo_seed_version) {
+      // Run in background without blocking UI
+      setTimeout(() => {
+        base44.functions.invoke('seedDemoData')
+          .then(() => {
+            console.log('[Header] Demo data seeded successfully');
+            // Refresh queries to show new data
+            window.location.reload();
+          })
+          .catch(err => {
+            console.warn('[Header] Demo seed failed, user can still use app:', err);
+          });
+      }, 100);
+    }
+  }, [user]);
   
   const handleLogoClick = () => {
     window.location.href = createPageUrl("Multiprompt");
@@ -195,15 +218,7 @@ export default function Header() {
         <div className="flex items-center gap-1">
           <ThemeToggleButton />
           
-          {/* DEBUG LOGGING FOR BUTTON VISIBILITY */}
-          {(() => {
-             const showButton = isReady && (!user || !user.plan_id || user.plan_id === 'free');
-             if (Math.random() > 0.95) console.log('[Header] Button State:', { isReady, hasUser: !!user, plan: user?.plan_id, showButton });
-             return null;
-          })()}
-
-          {/* Show button if user is NOT logged in OR if user has NO plan */}
-          {isReady && (!user || !user.plan_id || user.plan_id === 'free') ? (
+          {!user ? (
             <Button 
               onClick={() => setShowTrialModal(true)}
               className="ml-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"

@@ -34,7 +34,7 @@ export default function CookieConsent() {
     localStorage.setItem('cookie_consent_expiry', expiryTime.toString());
     setShowBanner(false);
     
-    // Demo seeding is now handled globally by useOnboardingBootstrap in Layout
+    // Demo seeding is handled by Header component for logged-in users
   };
 
   const handleDecline = () => {
@@ -43,7 +43,7 @@ export default function CookieConsent() {
     localStorage.setItem('cookie_consent_expiry', expiryTime.toString());
     setShowBanner(false);
     
-    // Demo seeding is now handled globally by useOnboardingBootstrap in Layout
+    // Demo seeding is handled by Header component for logged-in users
   };
 
   if (!showBanner) return null;

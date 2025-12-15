@@ -34,13 +34,11 @@ import TemplateSelector from "@/components/multiprompt/TemplateSelector";
 import PromptPreview from "@/components/multiprompt/PromptPreview";
 import SuccessBanner from "@/components/multiprompt/SuccessBanner";
 import { projectColors, projectBorderColors } from "@/components/lib/constants";
-import { useBootstrap } from "@/components/contexts/BootstrapContext";
 
 export default function Multiprompt() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const { status: bootstrapStatus } = useBootstrap();
 
   // --- Data Queries ---
   const { data: currentUser } = useQuery({
@@ -49,27 +47,26 @@ export default function Multiprompt() {
   });
 
   const { data: projects = [] } = useQuery({
-    queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
-    enabled: !!currentUser && bootstrapStatus === 'ready'
+    queryKey: ['projects', currentUser?.email],
+    queryFn: async () => currentUser ? await base44.entities.Project.filter({ created_by: currentUser.email }) : [],
+    enabled: !!currentUser
   });
 
   const { data: templates = [] } = useQuery({
-    queryKey: ['templates'],
-    queryFn: () => base44.entities.PromptTemplate.list(),
-    enabled: !!currentUser && bootstrapStatus === 'ready'
+    queryKey: ['templates', currentUser?.email],
+    queryFn: async () => currentUser ? await base44.entities.PromptTemplate.filter({ created_by: currentUser.email }) : [],
+    enabled: !!currentUser
   });
 
   const { data: aiSettings = [] } = useQuery({
-    queryKey: ['aiSettings'],
-    queryFn: async () => await base44.entities.AISettings.list(),
-    enabled: !!currentUser && bootstrapStatus === 'ready'
+    queryKey: ['aiSettings', currentUser?.email],
+    queryFn: async () => currentUser ? await base44.entities.AISettings.filter({ created_by: currentUser.email }) : [],
+    enabled: !!currentUser
   });
 
   const { data: subscriptionPlans = [] } = useQuery({
     queryKey: ['subscriptionPlans'],
     queryFn: () => base44.entities.SubscriptionPlan.list(),
-    enabled: bootstrapStatus === 'ready'
   });
 
   // --- Custom Hooks ---
@@ -110,7 +107,7 @@ export default function Multiprompt() {
   // --- Derived State ---
   const currentPlan = subscriptionPlans.find(p => p.id === currentUser?.plan_id) || {};
   const maxThoughts = currentPlan.max_thoughts || 10;
-  const isLimitReached = currentUser?.role !== 'admin' && (thoughts?.length || 0) >= maxThoughts;
+  const isLimitReached = currentUser?.role !== 'admin' && thoughts.length >= maxThoughts;
   const enableContextSuggestions = aiSettings[0]?.enable_context_suggestions !== false;
 
   // --- Local UI State ---
@@ -227,7 +224,7 @@ export default function Multiprompt() {
   }, [updateThought]);
 
   const filteredThoughts = useMemo(() => {
-    let filtered = thoughts || [];
+    let filtered = thoughts;
     
     // Apply search filter
     if (taskSearchQuery.trim()) {

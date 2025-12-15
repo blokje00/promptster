@@ -20,7 +20,8 @@ export default function StartTrialModal({ isOpen, onClose, onSuccess }) {
       const response = await base44.functions.invoke('activateTrial', {});
       
       if (response.data.success) {
-        // Step 2: Seed demo data (handled automatically by useOnboardingBootstrap after page reload)
+        // Step 2: Seed demo data
+        await base44.functions.invoke('seedDemoData', {});
         
         toast.success('🎉 Free trial activated!', {
           description: '14 days of full access to all features'

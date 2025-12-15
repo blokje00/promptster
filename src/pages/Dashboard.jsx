@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -16,10 +16,8 @@ import AccessGuard from "../components/auth/AccessGuard";
 import TrialBanner from "../components/dashboard/TrialBanner";
 import VaultTableView from "../components/dashboard/VaultTableView";
 import { projectColors } from "@/components/lib/constants";
-import { useBootstrap } from "@/components/contexts/BootstrapContext";
 
 export default function Dashboard() {
-  const { status: bootstrapStatus } = useBootstrap();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -35,28 +33,35 @@ export default function Dashboard() {
   });
 
   const { data: projects = [] } = useQuery({
-    queryKey: ['projects'],
-    queryFn: () => base44.entities.Project.list(),
-    enabled: !!currentUser && bootstrapStatus === 'ready',
+    queryKey: ['projects', currentUser?.email],
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+      const result = await base44.entities.Project.filter({ created_by: currentUser.email });
+      return result || [];
+    },
+    enabled: !!currentUser?.email,
   });
 
-  const { data: items, isLoading, refetch } = useQuery({
-    queryKey: ['items'],
-    queryFn: () => base44.entities.Item.list("-updated_date"),
-    enabled: !!currentUser && bootstrapStatus === 'ready',
+  const { data: items, isLoading } = useQuery({
+    queryKey: ['items', currentUser?.email],
+    queryFn: async () => {
+      if (!currentUser?.email) return [];
+      const result = await base44.entities.Item.filter({ created_by: currentUser.email }, "-updated_date");
+      return result || [];
+    },
+    enabled: !!currentUser?.email,
+    initialData: [],
   });
-
-  // Removed fallback - bootstrap now guarantees data availability
 
   const itemCounts = useMemo(() => ({
-    all: items?.length || 0,
-    prompt: items?.filter(i => i.type === 'prompt').length || 0,
-    multiprompt: items?.filter(i => i.type === 'multiprompt').length || 0,
-    code: items?.filter(i => i.type === 'code').length || 0,
-    snippet: items?.filter(i => i.type === 'snippet').length || 0,
+    all: items.length,
+    prompt: items.filter(i => i.type === 'prompt').length,
+    multiprompt: items.filter(i => i.type === 'multiprompt').length,
+    code: items.filter(i => i.type === 'code').length,
+    snippet: items.filter(i => i.type === 'snippet').length,
   }), [items]);
 
-  const filteredItems = useMemo(() => (items || []).filter(item => {
+  const filteredItems = useMemo(() => items.filter(item => {
     const matchesSearch = !searchQuery || 
       item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -219,7 +224,7 @@ export default function Dashboard() {
           </Tabs>
         </div>
 
-        {isLoading || bootstrapStatus === 'loading' || bootstrapStatus === 'seeding' ? (
+        {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="h-64 bg-white dark:bg-slate-800 rounded-2xl animate-pulse" />
