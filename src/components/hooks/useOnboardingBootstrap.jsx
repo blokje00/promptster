@@ -69,17 +69,17 @@ export function useOnboardingBootstrap() {
       try {
         console.log(`${logPrefix} ⚡ Invoking server function 'seedDemoData'...`);
         
-        let result;
         const startTime = Date.now();
+        let res;
         
         try {
-          result = await base44.functions.invoke('seedDemoData', {
+          res = await base44.functions.invoke('seedDemoData', {
             userId: user.id,
             userEmail: user.email,
             force: true
           });
           const duration = Date.now() - startTime;
-          console.log(`${logPrefix} 📬 Response received (took ${duration}ms)`);
+          console.log(`${logPrefix} 📬 Raw response received (took ${duration}ms):`, res);
         } catch (invokeError) {
           const duration = Date.now() - startTime;
           console.error(`${logPrefix} ❌ Invoke error (after ${duration}ms):`, {
@@ -97,32 +97,28 @@ export function useOnboardingBootstrap() {
           throw new Error(`Backend invoke failed: ${invokeError.message || 'Network error'}`);
         }
         
-        console.log(`${logPrefix} 📦 Server response (raw):`, JSON.stringify(result, null, 2));
+        // CRITICAL FIX: Base44 sometimes wraps in { data: ... }
+        const payload = res?.data ?? res;
+        console.log(`${logPrefix} 📦 Parsed payload:`, JSON.stringify(payload, null, 2));
         
-        // Check if result is valid
-        if (!result) {
-          console.error(`${logPrefix} ❌ Empty response from backend`);
-          throw new Error('Backend returned empty response');
+        // Validate payload
+        if (!payload || typeof payload !== 'object') {
+          console.error(`${logPrefix} ❌ Invalid payload:`, { type: typeof payload, payload });
+          throw new Error(`Backend returned invalid payload: ${typeof payload}`);
         }
         
-        if (typeof result !== 'object') {
-          console.error(`${logPrefix} ❌ Invalid response type:`, typeof result, result);
-          throw new Error(`Backend returned invalid response type: ${typeof result}`);
-        }
-        
-        // Log the exact result structure
-        console.log(`${logPrefix} 🔍 Response analysis:`, {
-          hasStatus: 'status' in result,
-          status: result.status,
-          hasError: 'error' in result,
-          error: result.error,
-          hasDetails: 'details' in result,
-          details: result.details,
-          allKeys: Object.keys(result)
+        console.log(`${logPrefix} 🔍 Payload analysis:`, {
+          hasStatus: 'status' in payload,
+          status: payload.status,
+          hasReqId: 'reqId' in payload,
+          reqId: payload.reqId,
+          hasError: 'error' in payload,
+          error: payload.error,
+          allKeys: Object.keys(payload)
         });
 
-        if (result && result.status === 'success') {
-          console.log(`${logPrefix} ✅ SEED SUCCESS! Invalidating queries...`);
+        if (payload.status === 'success') {
+          console.log(`${logPrefix} ✅ SEED SUCCESS! reqId=${payload.reqId}. Invalidating queries...`);
           setSeedStatus('success');
           
           // Force wait to ensure DB consistency
@@ -130,22 +126,20 @@ export function useOnboardingBootstrap() {
           
           // Aggressively invalidate everything
           await queryClient.invalidateQueries(); 
-          console.log(`${logPrefix} Queries invalidated. UI should update.`);
+          console.log(`${logPrefix} ✅ Queries invalidated. UI should update.`);
 
-        } else if (result && result.status === 'already_seeded') {
-          console.log(`${logPrefix} Backend says: Already seeded.`);
+        } else if (payload.status === 'already_seeded') {
+          console.log(`${logPrefix} ℹ️ Backend says: Already seeded (reqId=${payload.reqId}).`);
           setSeedStatus('already_done');
         } else {
-          // Backend returned something unexpected
-          console.error(`${logPrefix} ❌ Unexpected backend response:`, {
-            fullResult: result,
-            stringified: JSON.stringify(result)
-          });
+          // Backend returned error or unknown status
+          console.error(`${logPrefix} ❌ Unexpected payload:`, payload);
           
-          const errorMsg = result?.error || result?.details || result?.message || 'Unknown backend error';
-          const errorType = result?.errorType || result?.name || 'UnknownError';
-          const fullError = `${errorType}: ${errorMsg}`;
+          const errorMsg = payload?.error || payload?.message || 'Unknown backend error';
+          const errorType = payload?.errorType || 'UnknownError';
+          const reqId = payload?.reqId || 'no-req-id';
           
+          const fullError = `${errorType}: ${errorMsg} (reqId=${reqId})`;
           console.error(`${logPrefix} 🚨 Throwing error:`, fullError);
           throw new Error(fullError);
         }

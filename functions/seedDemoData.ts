@@ -1,5 +1,19 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
+// Helper: 429 retry wrapper
+async function with429Retry(fn, label) {
+  try { 
+    return await fn(); 
+  } catch (e) {
+    const msg = e?.message || "";
+    const is429 = e?.status === 429 || msg.includes("429");
+    if (!is429) throw e;
+    console.warn(`[DEMO_SEED][429_RETRY] ${label}`);
+    await new Promise(r => setTimeout(r, 1200));
+    return await fn(); // 1 retry
+  }
+}
+
 const PERSONAL_PREFERENCES = `# My Personal Development Preferences
 
 ## Code Style
@@ -240,30 +254,42 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
 }
 
 Deno.serve(async (req) => {
-  console.info('[SEED-BACKEND] Function invoked');
-  
+  const reqId = crypto.randomUUID();
+  const startedAt = Date.now();
+
+  const safeErr = (e) => ({
+    name: e?.name,
+    message: e?.message || String(e),
+    stack: (e?.stack || "").split("\n").slice(0, 8).join("\n"),
+    code: e?.code,
+    status: e?.status,
+  });
+
   try {
     const base44 = createClientFromRequest(req);
-    console.info('[SEED-BACKEND] Client created, fetching user...');
+    console.info('[SEED-BACKEND][START]', { reqId });
     
     const user = await base44.auth.me();
-    console.info('[SEED-BACKEND] User fetched:', user?.email || 'NO USER');
+    console.info('[SEED-BACKEND][USER]', { reqId, hasUser: !!user, email: user?.email, id: user?.id });
     
-    if (!user) {
-      console.error('[SEED-BACKEND] No user found!');
+    if (!user?.email || !user?.id) {
+      console.warn('[SEED-BACKEND][NO_USER_CTX]', { reqId, user });
       return Response.json({ 
         status: 'error',
-        error: 'Unauthorized - no user found' 
+        reqId,
+        error: 'No user context in function',
+        where: 'auth'
       }, { status: 401 });
     }
 
-    console.info('[SEED-BACKEND] Check for:', user.email);
+    console.info('[SEED-BACKEND][CHECK_FOR]', { reqId, email: user.email });
 
     // ✅ IDEMPOTENCY: Check flag first (prevents race conditions)
     if (user.demo_seeded_at && user.email !== 'patrickz@sunshower.nl') {
-      console.info('[SEED] Already seeded at:', user.demo_seeded_at);
+      console.info('[SEED-BACKEND][ALREADY_SEEDED]', { reqId, seeded_at: user.demo_seeded_at });
       return Response.json({ 
         status: 'already_seeded',
+        reqId,
         seeded_at: user.demo_seeded_at
       });
     }
@@ -273,41 +299,53 @@ Deno.serve(async (req) => {
     await base44.auth.updateMe({
       demo_seeded_at: seedTimestamp
     });
-    console.info('[SEED] Marked user as seeding:', seedTimestamp);
+    console.info('[SEED-BACKEND][MARKED_SEEDING]', { reqId, seedTimestamp });
 
     // TESTER RESET: Always wipe existing data for whitelisted users
     if (user.email === 'patrickz@sunshower.nl') {
-      console.info('[SEED] TESTER MODE: Wiping existing data...');
+      console.info('[SEED-BACKEND][TESTER_MODE]', { reqId, action: 'wiping' });
       
-      // Delete in correct order (respect foreign keys)
+      // Delete in correct order (respect foreign keys) - NULL-SAFE
       const existingThoughts = await base44.asServiceRole.entities.Thought.filter({ created_by: user.email });
-      for (const t of existingThoughts) {
-        await base44.asServiceRole.entities.Thought.delete(t.id);
+      console.info('[SEED-BACKEND][WIPE_THOUGHTS]', { reqId, count: Array.isArray(existingThoughts) ? existingThoughts.length : 0 });
+      if (Array.isArray(existingThoughts) && existingThoughts.length > 0) {
+        for (const t of existingThoughts) {
+          await base44.asServiceRole.entities.Thought.delete(t.id);
+        }
       }
       
       const existingTemplates = await base44.asServiceRole.entities.PromptTemplate.filter({ created_by: user.email });
-      for (const t of existingTemplates) {
-        await base44.asServiceRole.entities.PromptTemplate.delete(t.id);
+      console.info('[SEED-BACKEND][WIPE_TEMPLATES]', { reqId, count: Array.isArray(existingTemplates) ? existingTemplates.length : 0 });
+      if (Array.isArray(existingTemplates) && existingTemplates.length > 0) {
+        for (const t of existingTemplates) {
+          await base44.asServiceRole.entities.PromptTemplate.delete(t.id);
+        }
       }
       
       const existingProjects = await base44.asServiceRole.entities.Project.filter({ created_by: user.email });
-      for (const p of existingProjects) {
-        await base44.asServiceRole.entities.Project.delete(p.id);
+      console.info('[SEED-BACKEND][WIPE_PROJECTS]', { reqId, count: Array.isArray(existingProjects) ? existingProjects.length : 0 });
+      if (Array.isArray(existingProjects) && existingProjects.length > 0) {
+        for (const p of existingProjects) {
+          await base44.asServiceRole.entities.Project.delete(p.id);
+        }
       }
       
       const existingSettings = await base44.asServiceRole.entities.AISettings.filter({ created_by: user.email });
-      for (const s of existingSettings) {
-        await base44.asServiceRole.entities.AISettings.delete(s.id);
+      console.info('[SEED-BACKEND][WIPE_SETTINGS]', { reqId, count: Array.isArray(existingSettings) ? existingSettings.length : 0 });
+      if (Array.isArray(existingSettings) && existingSettings.length > 0) {
+        for (const s of existingSettings) {
+          await base44.asServiceRole.entities.AISettings.delete(s.id);
+        }
       }
       
       // Reset marker
       await base44.auth.updateMe({ demo_seeded_at: null });
       
-      console.info('[SEED] TESTER MODE: Wipe complete');
+      console.info('[SEED-BACKEND][TESTER_WIPE_DONE]', { reqId });
     }
 
-    console.info('[SEED] 🚀 Building demo dataset...');
-    
+    console.info('[SEED-BACKEND][BUILD_DATASET]', { reqId });
+
     // Build complete dataset
     const dataset = buildDemoDataset(user.email);
     const now = new Date().toISOString();
@@ -315,112 +353,100 @@ Deno.serve(async (req) => {
     // Helper: delay to avoid rate limits
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-    // BULK INSERT 1: AI Settings
-    console.info('[SEED] 📝 Step 1/4: Inserting AI settings...', { count: dataset.aiSettings.length });
-    try {
+    // BULK INSERT 1: AI Settings (with 429 retry)
+    console.info('[SEED-BACKEND][STEP_1]', { reqId, entity: 'AISettings', count: dataset.aiSettings.length });
+    await with429Retry(async () => {
       await base44.asServiceRole.entities.AISettings.bulkCreate(dataset.aiSettings);
-      console.info('[SEED] ✅ AI Settings created successfully');
-    } catch (err) {
-      console.error('[SEED] ❌ AI Settings FAILED:', { status: err.status, message: err.message, is429: err.status === 429 });
-      throw err;
-    }
-    await delay(1000); // Increased delay
-
-    // BULK INSERT 2: Projects
-    console.info('[SEED] 📁 Step 2/4: Inserting projects...', { count: dataset.projects.length });
-    let createdProjects;
-    try {
-      createdProjects = await base44.asServiceRole.entities.Project.bulkCreate(dataset.projects);
-      console.info('[SEED] ✅ Projects created successfully', { ids: createdProjects.map(p => p.id) });
-    } catch (err) {
-      console.error('[SEED] ❌ Projects FAILED:', { status: err.status, message: err.message, is429: err.status === 429 });
-      throw err;
-    }
+      console.info('[SEED-BACKEND][STEP_1_OK]', { reqId });
+    }, 'AISettings');
     await delay(1000);
 
-    // BULK INSERT 3: Templates (per project, split to avoid rate limits)
-    console.info('[SEED] 📋 Step 3/4: Inserting templates...');
+    // BULK INSERT 2: Projects (with 429 retry)
+    console.info('[SEED-BACKEND][STEP_2]', { reqId, entity: 'Project', count: dataset.projects.length });
+    let createdProjects;
+    await with429Retry(async () => {
+      createdProjects = await base44.asServiceRole.entities.Project.bulkCreate(dataset.projects);
+      console.info('[SEED-BACKEND][STEP_2_OK]', { reqId, ids: createdProjects?.map(p => p.id) || [] });
+    }, 'Projects');
+    await delay(1000);
+
+    // BULK INSERT 3: Templates (per project, with 429 retry)
+    console.info('[SEED-BACKEND][STEP_3]', { reqId, entity: 'PromptTemplate' });
     let templateCount = 0;
-    for (let i = 0; i < createdProjects.length; i++) {
+    const projectCount = Array.isArray(createdProjects) ? createdProjects.length : 0;
+    for (let i = 0; i < projectCount; i++) {
       const project = createdProjects[i];
       const templates = buildTemplates(project.id, project.name, user.email, now);
-      if (templates.length > 0) {
-        console.info(`[SEED] Creating ${templates.length} templates for project ${i+1}/${createdProjects.length}: ${project.name}`);
-        try {
+      if (Array.isArray(templates) && templates.length > 0) {
+        console.info('[SEED-BACKEND][STEP_3_PROJECT]', { reqId, projectIndex: i+1, total: projectCount, templateCount: templates.length });
+        await with429Retry(async () => {
           await base44.asServiceRole.entities.PromptTemplate.bulkCreate(templates);
           templateCount += templates.length;
-          console.info(`[SEED] ✅ Templates created (${templateCount} total)`);
-        } catch (err) {
-          console.error('[SEED] ❌ Templates FAILED:', { projectId: project.id, status: err.status, message: err.message, is429: err.status === 429 });
-          throw err;
-        }
-        await delay(800); // Increased delay
+          console.info('[SEED-BACKEND][STEP_3_PROJECT_OK]', { reqId, templateCount });
+        }, `Templates-${project.name}`);
+        await delay(800);
       }
     }
 
-    // BULK INSERT 4: Thoughts (per project, split to avoid rate limits)
-    console.info('[SEED] 💭 Step 4/4: Inserting thoughts...');
+    // BULK INSERT 4: Thoughts (per project, with 429 retry)
+    console.info('[SEED-BACKEND][STEP_4]', { reqId, entity: 'Thought' });
     let thoughtCount = 0;
-    for (let i = 0; i < createdProjects.length; i++) {
+    for (let i = 0; i < projectCount; i++) {
       const project = createdProjects[i];
       const thoughts = buildThoughts(project.id, project.name, user.email, now);
-      if (thoughts.length > 0) {
-        console.info(`[SEED] Creating ${thoughts.length} thoughts for project ${i+1}/${createdProjects.length}: ${project.name}`);
-        try {
+      if (Array.isArray(thoughts) && thoughts.length > 0) {
+        console.info('[SEED-BACKEND][STEP_4_PROJECT]', { reqId, projectIndex: i+1, total: projectCount, thoughtCount: thoughts.length });
+        await with429Retry(async () => {
           await base44.asServiceRole.entities.Thought.bulkCreate(thoughts);
           thoughtCount += thoughts.length;
-          console.info(`[SEED] ✅ Thoughts created (${thoughtCount} total)`);
-        } catch (err) {
-          console.error('[SEED] ❌ Thoughts FAILED:', { projectId: project.id, status: err.status, message: err.message, is429: err.status === 429 });
-          throw err;
-        }
-        await delay(800); // Increased delay
+          console.info('[SEED-BACKEND][STEP_4_PROJECT_OK]', { reqId, thoughtCount });
+        }, `Thoughts-${project.name}`);
+        await delay(800);
       }
     }
 
     // UPDATE PERSONAL PREFERENCES
-    console.info('[SEED] Updating user preferences...');
+    console.info('[SEED-BACKEND][UPDATE_PREFS]', { reqId });
     await base44.auth.updateMe({
       personal_preferences_markdown: PERSONAL_PREFERENCES
     });
 
-    console.info('[SEED] ✅ COMPLETE', {
-      user: user.email,
-      seeded_at: seedTimestamp,
-      projects: createdProjects.length
+    console.info('[SEED-BACKEND][DONE]', {
+      reqId,
+      ms: Date.now() - startedAt,
+      email: user.email,
+      projectCount
     });
 
     return Response.json({
       status: 'success',
+      reqId,
       seeded_at: seedTimestamp,
       stats: {
-        projects: createdProjects.length
+        projects: projectCount,
+        templates: templateCount,
+        thoughts: thoughtCount
       }
     });
 
   } catch (error) {
-    const errorInfo = {
-      message: error.message,
-      name: error.name,
-      stack: error.stack?.substring(0, 500),
-      cause: error.cause,
-      timestamp: new Date().toISOString()
-    };
-    
-    console.error('[SEED-BACKEND] ❌ CRITICAL ERROR:', errorInfo);
-    console.error('[SEED-BACKEND] Full error object:', error);
-    
-    const errorResponse = { 
+    const err = safeErr(error);
+    console.error('[SEED-BACKEND][FATAL]', { 
+      reqId, 
+      ms: Date.now() - startedAt, 
+      err 
+    });
+
+    // ALWAYS return JSON, never throw
+    return Response.json({
       status: 'error',
-      error: error.message || 'Unknown server error',
-      errorType: error.name || 'Error',
-      details: error.cause?.message || error.stack?.split('\n')[0] || 'No details available',
-      timestamp: new Date().toISOString()
-    };
-    
-    console.error('[SEED-BACKEND] Sending error response:', errorResponse);
-    
-    return Response.json(errorResponse, { 
+      reqId,
+      error: err.message,
+      errorType: err.name,
+      details: err.stack,
+      code: err.code,
+      httpStatus: err.status
+    }, { 
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
