@@ -111,24 +111,6 @@ export default function Header() {
       navigate(createPageUrl('Multiprompt'), { replace: true });
     }
   }, [currentPath, navigate]);
-
-  // Seed demo data for users who don't have it yet (fire-and-forget)
-  useEffect(() => {
-    if (user && !user.demo_seed_version) {
-      // Run in background without blocking UI
-      setTimeout(() => {
-        base44.functions.invoke('seedDemoData')
-          .then(() => {
-            console.log('[Header] Demo data seeded successfully');
-            // Refresh queries to show new data
-            window.location.reload();
-          })
-          .catch(err => {
-            console.warn('[Header] Demo seed failed, user can still use app:', err);
-          });
-      }, 100);
-    }
-  }, [user]);
   
   const handleLogoClick = () => {
     window.location.href = createPageUrl("Multiprompt");

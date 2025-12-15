@@ -5,8 +5,11 @@ import { ThemeProvider } from "./components/theme/ThemeProvider";
 import CookieConsent from "./components/auth/CookieConsent";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useOnboardingBootstrap } from "@/components/hooks/useOnboardingBootstrap";
 
 export default function Layout({ children }) {
+  // Global bootstrap: seed demo data for new users
+  useOnboardingBootstrap();
   useEffect(() => {
     const iconUrl = "https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/59f339046_Promptguardlogopurplebeta.png";
     
