@@ -95,16 +95,18 @@ export default function Header() {
   const handleSeedDemoData = async () => {
     try {
       toast.info('Creating demo data...');
-      const response = await base44.functions.invoke('seedDemoData');
-      if (response.data.status === 'already_seeded') {
+      const response = await base44.functions.invoke('seedDemoData', {});
+      
+      if (response.data?.status === 'already_seeded') {
         toast.info('Demo data already exists');
+      } else if (response.data?.status === 'success') {
+        toast.success(`Demo created: ${response.data.projects} projects, ${response.data.tasks} tasks!`);
       } else {
-        toast.success('Demo data created successfully!');
-        setTimeout(() => window.location.reload(), 1500);
+        toast.success('Demo data created!');
       }
     } catch (error) {
-      toast.error('Failed to create demo data');
-      console.error(error);
+      console.error('[Header] Seed error:', error);
+      toast.error(`Failed: ${error.message || 'Unknown error'}`);
     }
   };
   
@@ -129,22 +131,7 @@ export default function Header() {
     }
   }, [currentPath, navigate]);
 
-  // Seed demo data for users who don't have it yet (fire-and-forget)
-  useEffect(() => {
-    if (user && !user.demo_seeded_at) {
-      // Run in background without blocking UI
-      setTimeout(() => {
-        base44.functions.invoke('seedDemoData')
-          .then(() => {
-            console.log('[Header] Demo data seeded successfully');
-            // NO reload - just invalidate queries
-          })
-          .catch(err => {
-            console.warn('[Header] Demo seed failed, user can still use app:', err);
-          });
-      }, 100);
-    }
-  }, [user?.id]); // Only trigger on user ID change, not on every user update
+  // Removed automatic demo seeding - only manual via admin button
   
   const handleLogoClick = () => {
     window.location.href = createPageUrl("Multiprompt");
