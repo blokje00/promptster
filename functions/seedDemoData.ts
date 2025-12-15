@@ -573,7 +573,33 @@ Deno.serve(async (req) => {
       personal_preferences_markdown: PERSONAL_PREFERENCES
     });
 
-    // ✅ MARK SUCCESS
+    // VERIFICATION: Check if data is actually readable before marking success
+    console.info('[SEED-BACKEND][VERIFY]', { reqId, msg: 'Verifying data is readable...' });
+    await delay(2000); // Wait for DB consistency
+    
+    const [verifyProjects, verifyItems] = await Promise.all([
+      base44.asServiceRole.entities.Project.filter({ created_by: user.email, is_demo: true }),
+      base44.asServiceRole.entities.Item.filter({ created_by: user.email, is_demo: true })
+    ]);
+    
+    const projectsFound = Array.isArray(verifyProjects) ? verifyProjects.length : 0;
+    const itemsFound = Array.isArray(verifyItems) ? verifyItems.length : 0;
+    
+    if (projectsFound === 0 || itemsFound === 0) {
+      console.error('[SEED-BACKEND][VERIFY_FAILED]', { 
+        reqId, 
+        msg: 'Data written but not readable',
+        projectsExpected: projectCount,
+        projectsFound,
+        itemsExpected: itemCount,
+        itemsFound
+      });
+      throw new Error(`Verification failed: projects=${projectsFound}, items=${itemsFound}`);
+    }
+    
+    console.info('[SEED-BACKEND][VERIFY_OK]', { reqId, projectsFound, itemsFound });
+
+    // ✅ MARK SUCCESS (only after verification)
     await base44.auth.updateMe({
       demo_seed_status: 'success',
       demo_seed_version: CURRENT_VERSION
