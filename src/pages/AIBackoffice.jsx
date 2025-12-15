@@ -14,7 +14,6 @@ import MaintenanceTools from "../components/settings/MaintenanceTools";
 import AIInstructionForm from "../components/settings/AIInstructionForm";
 import PersonalPreferencesForm from "../components/settings/PersonalPreferencesForm";
 import AIContextToggle from "../components/settings/AIContextToggle";
-import DemoSeedDebugPanel from "../components/settings/DemoSeedDebugPanel";
 import DemoDataOverview from "../components/settings/DemoDataOverview";
 import { toast } from "sonner";
 
@@ -332,7 +331,6 @@ export default function AIBackoffice() {
 
             <TabsContent value="settings" className="space-y-6">
               <div className="max-w-3xl space-y-6">
-                <DemoSeedDebugPanel />
                 <DemoDataOverview />
                 <MaintenanceTools currentUser={currentUser} />
                 <PersonalPreferencesForm
