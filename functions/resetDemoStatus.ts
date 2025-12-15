@@ -22,6 +22,7 @@ Deno.serve(async (req) => {
 
     // Get all users
     const allUsers = await base44.asServiceRole.entities.User.list();
+    console.log('[resetDemoStatus] Found', allUsers.length, 'total users');
     
     let resetCount = 0;
     const errors = [];
@@ -29,18 +30,21 @@ Deno.serve(async (req) => {
     // Reset demo_seeded_at for all users
     for (const u of allUsers) {
       try {
-        // Only update if demo_seeded_at is set
-        if (u.demo_seeded_at || u.demo_seed_version) {
-          await base44.asServiceRole.entities.User.update(u.id, {
-            demo_seeded_at: null,
-            demo_seed_version: null
-          });
-          resetCount++;
-          console.log(`[resetDemoStatus] Reset demo status for user: ${u.email}`);
-        }
+        console.log(`[resetDemoStatus] Checking user ${u.email}:`, { 
+          demo_seeded_at: u.demo_seeded_at, 
+          demo_seed_version: u.demo_seed_version 
+        });
+        
+        // ALWAYS reset, even if markers don't exist (force clean state)
+        await base44.asServiceRole.entities.User.update(u.id, {
+          demo_seeded_at: null,
+          demo_seed_version: null
+        });
+        resetCount++;
+        console.log(`[resetDemoStatus] ✅ Reset demo status for user: ${u.email}`);
       } catch (error) {
         errors.push({ user: u.email, error: error.message });
-        console.error(`[resetDemoStatus] Failed to reset user ${u.email}:`, error);
+        console.error(`[resetDemoStatus] ❌ Failed to reset user ${u.email}:`, error);
       }
     }
 

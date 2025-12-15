@@ -32,22 +32,32 @@ Deno.serve(async (req) => {
     const force = body.force === true;
     console.log('[seedDemoData] Force mode:', force);
     
-    console.log('[seedDemoData] ⏳ Fetching user...');
+    console.log('[seedDemoData] ⏳ Fetching user via auth.me()...');
     const user = await base44.auth.me();
-    console.log('[seedDemoData] User fetched:', { id: user?.id, email: user?.email, demo_seeded_at: user?.demo_seeded_at });
+    console.log('[seedDemoData] User from auth.me():', { id: user?.id, email: user?.email, demo_seeded_at: user?.demo_seeded_at });
+    
+    // ALSO check User entity directly
+    console.log('[seedDemoData] ⏳ Fetching user entity from database...');
+    const userEntity = await base44.asServiceRole.entities.User.filter({ id: user.id });
+    console.log('[seedDemoData] User entity from DB:', userEntity?.[0]);
 
     if (!user) {
       console.log('[seedDemoData] ❌ No user found - unauthorized');
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Check BOTH auth.me() and entity for demo marker
+    const dbDemoMarker = userEntity?.[0]?.demo_seeded_at;
+    const authDemoMarker = user.demo_seeded_at;
+    console.log('[seedDemoData] Demo markers - DB:', dbDemoMarker, 'Auth:', authDemoMarker);
+    
     // Check if demo already seeded (skip if force=true)
-    if (user.demo_seeded_at && !force) {
+    if ((authDemoMarker || dbDemoMarker) && !force) {
       console.log('[seedDemoData] ℹ️ User already has demo data, skipping');
       return Response.json({ 
         status: 'already_seeded',
         message: 'Demo data already exists for this user',
-        seeded_at: user.demo_seeded_at
+        seeded_at: authDemoMarker || dbDemoMarker
       });
     }
 
@@ -100,12 +110,13 @@ Deno.serve(async (req) => {
 
     console.log('[seedDemoData] ✨ Starting demo seed for user:', user.email);
 
-    // Set marker immediately to prevent duplicate runs
-    console.log('[seedDemoData] ⏳ Setting demo_seeded_at marker...');
-    await base44.auth.updateMe({
-      demo_seeded_at: new Date().toISOString()
+    // Set marker immediately to prevent duplicate runs - use ENTITY UPDATE, not auth.updateMe
+    const timestamp = new Date().toISOString();
+    console.log('[seedDemoData] ⏳ Setting demo_seeded_at marker in User entity...');
+    await base44.asServiceRole.entities.User.update(user.id, {
+      demo_seeded_at: timestamp
     });
-    console.log('[seedDemoData] ✅ Marker set');
+    console.log('[seedDemoData] ✅ Marker set in DB at:', timestamp);
 
     // STEP 1: Create Personal AI Configuration
     console.log('[seedDemoData] ⏳ Step 1: Creating personal AI config...');
@@ -423,11 +434,14 @@ Provide constructive feedback with specific examples and alternative implementat
     console.error('[seedDemoData] Error stack:', error.stack);
     console.error('[seedDemoData] Full error:', JSON.stringify(error, null, 2));
     
-    // Rollback marker on failure
+    // Rollback marker on failure - use ENTITY UPDATE
     try {
-      console.log('[seedDemoData] ⏳ Rolling back demo_seeded_at marker...');
-      await base44.auth.updateMe({ demo_seeded_at: null });
-      console.log('[seedDemoData] ✅ Rollback successful');
+      console.log('[seedDemoData] ⏳ Rolling back demo_seeded_at marker in User entity...');
+      const user = await base44.auth.me();
+      if (user?.id) {
+        await base44.asServiceRole.entities.User.update(user.id, { demo_seeded_at: null });
+        console.log('[seedDemoData] ✅ Rollback successful');
+      }
     } catch (rollbackError) {
       console.error('[seedDemoData] ❌ Rollback failed:', rollbackError);
     }
