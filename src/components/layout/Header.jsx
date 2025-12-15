@@ -31,7 +31,15 @@ export default function Header() {
   
   const { data: user, isLoading: isUserLoading } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
+    queryFn: async () => {
+      try {
+        return await base44.auth.me();
+      } catch (error) {
+        // User not logged in
+        return null;
+      }
+    },
+    retry: false,
   });
 
   const { data: deletedCount = 0 } = useQuery({
@@ -177,6 +185,23 @@ export default function Header() {
           
           if (response.data?.status === 'success') {
             console.log('[Header] ✨ Demo data auto-seeded successfully');
+            
+            // Fetch updated user data to get demo preferences
+            const updatedUser = await base44.auth.me();
+            
+            // Set default project and templates in localStorage
+            if (updatedUser.demo_default_project_id) {
+              localStorage.setItem('lastSelectedProjectId', updatedUser.demo_default_project_id);
+            }
+            if (updatedUser.demo_start_template_id) {
+              localStorage.setItem('lastStartTemplateId', updatedUser.demo_start_template_id);
+            }
+            if (updatedUser.demo_end_template_id) {
+              localStorage.setItem('lastEndTemplateId', updatedUser.demo_end_template_id);
+            }
+            
+            console.log('[Header] ✅ Demo preferences set in localStorage');
+            
             // Reload once to show demo data
             setTimeout(() => {
               window.location.reload();
@@ -283,7 +308,7 @@ export default function Header() {
         <div className="flex items-center gap-1">
           <ThemeToggleButton />
           
-          {!isUserLoading && !user && (
+          {user === null && (
             <Button 
               onClick={() => setShowTrialModal(true)}
               className="ml-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"

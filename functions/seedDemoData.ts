@@ -395,6 +395,21 @@ Provide constructive feedback with specific examples and alternative implementat
     console.log('[seedDemoData] ✨✨✨ Demo seed COMPLETED ✨✨✨');
 
     // ============================================
+    // NEW: Set default project and templates for user
+    // ============================================
+    console.log('[seedDemoData] 🎯 Setting default project and templates...');
+
+    // Store preferences in user object for client to read
+    await base44.auth.updateMe({
+      demo_seeded_at: new Date().toISOString(),
+      demo_default_project_id: project1.id,
+      demo_start_template_id: t1.id,
+      demo_end_template_id: t3.id
+    });
+
+    console.log('[seedDemoData] ✅ Default preferences saved');
+
+    // ============================================
     // KRITIEKE FIX #3: Verify data was created FOR THIS USER
     // ============================================
     console.log('[seedDemoData] 🔍 Verifying created data for user:', user.email);
