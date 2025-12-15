@@ -27,6 +27,11 @@ Deno.serve(async (req) => {
   console.log('[seedDemoData] ✅ Base44 client created');
   
   try {
+    // Parse request body for force flag
+    const body = req.method === 'POST' ? await req.json() : {};
+    const force = body.force === true;
+    console.log('[seedDemoData] Force mode:', force);
+    
     console.log('[seedDemoData] ⏳ Fetching user...');
     const user = await base44.auth.me();
     console.log('[seedDemoData] User fetched:', { id: user?.id, email: user?.email, demo_seeded_at: user?.demo_seeded_at });
@@ -36,14 +41,61 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if demo already seeded (database-first approach)
-    if (user.demo_seeded_at) {
+    // Check if demo already seeded (skip if force=true)
+    if (user.demo_seeded_at && !force) {
       console.log('[seedDemoData] ℹ️ User already has demo data, skipping');
       return Response.json({ 
         status: 'already_seeded',
         message: 'Demo data already exists for this user',
         seeded_at: user.demo_seeded_at
       });
+    }
+
+    // FORCE MODE: Clean up existing demo data first
+    if (force) {
+      console.log('[seedDemoData] 🧹 FORCE MODE: Cleaning up existing demo data...');
+      
+      // Delete all DEMO projects
+      const demoProjects = await base44.asServiceRole.entities.Project.filter({ 
+        created_by: user.email 
+      });
+      const projectsToDelete = demoProjects.filter(p => p.name?.startsWith('DEMO:'));
+      for (const project of projectsToDelete) {
+        console.log('[seedDemoData] 🗑️ Deleting demo project:', project.id);
+        await base44.asServiceRole.entities.Project.delete(project.id);
+      }
+      
+      // Delete all DEMO templates
+      const demoTemplates = await base44.asServiceRole.entities.PromptTemplate.filter({ 
+        created_by: user.email 
+      });
+      const templatesToDelete = demoTemplates.filter(t => t.name?.startsWith('DEMO:'));
+      for (const template of templatesToDelete) {
+        console.log('[seedDemoData] 🗑️ Deleting demo template:', template.id);
+        await base44.asServiceRole.entities.PromptTemplate.delete(template.id);
+      }
+      
+      // Delete all DEMO thoughts
+      const demoThoughts = await base44.asServiceRole.entities.Thought.filter({ 
+        created_by: user.email 
+      });
+      const thoughtsToDelete = demoThoughts.filter(t => t.content?.startsWith('DEMO:'));
+      for (const thought of thoughtsToDelete) {
+        console.log('[seedDemoData] 🗑️ Deleting demo thought:', thought.id);
+        await base44.asServiceRole.entities.Thought.delete(thought.id);
+      }
+      
+      // Delete all DEMO items
+      const demoItems = await base44.asServiceRole.entities.Item.filter({ 
+        created_by: user.email 
+      });
+      const itemsToDelete = demoItems.filter(i => i.title?.startsWith('DEMO:'));
+      for (const item of itemsToDelete) {
+        console.log('[seedDemoData] 🗑️ Deleting demo item:', item.id);
+        await base44.asServiceRole.entities.Item.delete(item.id);
+      }
+      
+      console.log('[seedDemoData] ✅ Cleanup complete');
     }
 
     console.log('[seedDemoData] ✨ Starting demo seed for user:', user.email);

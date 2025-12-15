@@ -93,14 +93,14 @@ export default function Header() {
   };
 
   const handleSeedDemoData = async () => {
-    console.log('[Header] 🚀 Starting demo seed process...');
+    console.log('[Header] 🚀 Starting demo seed process (FORCE MODE)...');
     console.log('[Header] User:', user);
     
     try {
-      toast.info('Creating demo data...');
-      console.log('[Header] ⏳ Invoking seedDemoData function...');
+      toast.info('Creating demo data (force mode)...');
+      console.log('[Header] ⏳ Invoking seedDemoData function with force=true...');
       
-      const response = await base44.functions.invoke('seedDemoData', {});
+      const response = await base44.functions.invoke('seedDemoData', { force: true });
       
       console.log('[Header] ✅ Function response received:', response);
       console.log('[Header] Response status:', response.status);
