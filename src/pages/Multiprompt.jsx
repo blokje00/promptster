@@ -34,11 +34,13 @@ import TemplateSelector from "@/components/multiprompt/TemplateSelector";
 import PromptPreview from "@/components/multiprompt/PromptPreview";
 import SuccessBanner from "@/components/multiprompt/SuccessBanner";
 import { projectColors, projectBorderColors } from "@/components/lib/constants";
+import { useBootstrap } from "@/components/contexts/BootstrapContext";
 
 export default function Multiprompt() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const { status: bootstrapStatus } = useBootstrap();
 
   // --- Data Queries ---
   const { data: currentUser } = useQuery({
@@ -49,24 +51,25 @@ export default function Multiprompt() {
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
     queryFn: () => base44.entities.Project.list(),
-    enabled: !!currentUser
+    enabled: !!currentUser && bootstrapStatus === 'ready'
   });
 
   const { data: templates = [] } = useQuery({
     queryKey: ['templates'],
     queryFn: () => base44.entities.PromptTemplate.list(),
-    enabled: !!currentUser
+    enabled: !!currentUser && bootstrapStatus === 'ready'
   });
 
   const { data: aiSettings = [] } = useQuery({
     queryKey: ['aiSettings'],
     queryFn: async () => await base44.entities.AISettings.list(),
-    enabled: !!currentUser
+    enabled: !!currentUser && bootstrapStatus === 'ready'
   });
 
   const { data: subscriptionPlans = [] } = useQuery({
     queryKey: ['subscriptionPlans'],
     queryFn: () => base44.entities.SubscriptionPlan.list(),
+    enabled: bootstrapStatus === 'ready'
   });
 
   // --- Custom Hooks ---
