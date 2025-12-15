@@ -14,18 +14,7 @@ const PERSONAL_PREFERENCES = `# My Personal Development Preferences
 - Responsiveness: Mobile-first approach
 - Accessibility: WCAG 2.1 AA minimum`;
 
-const DEMO_SCREENSHOTS = {
-  saas_homepage: "d2181c8f8_Screenshot2025-12-15at153848.png",
-  dashboard: "d66e5cb4a_Screenshot2025-12-15at153848.png",
-  signup_form: "d2181c8f8_Screenshot2025-12-15at153848.png",
-  settings_panel: "d66e5cb4a_Screenshot2025-12-15at153848.png",
-  mobile_ui: "27e051bc8_Screenshot2025-12-15at153848.png",
-  text_editor: "d66e5cb4a_Screenshot2025-12-15at153848.png",
-  comparison: "d2181c8f8_Screenshot2025-12-15at153848.png",
-  highlighted_text: "59f339046_Screenshot2025-12-15at153848.png",
-  ai_response: "d66e5cb4a_Screenshot2025-12-15at153848.png",
-  prompt_config: "59f339046_Screenshot2025-12-15at153848.png"
-};
+// Screenshots removed - demo data works without them
 
 /**
  * Pre-built demo dataset - bulk insertable
@@ -132,7 +121,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
     return [
       {
         content: "Review the homepage layout and visual hierarchy",
-        screenshot_ids: [DEMO_SCREENSHOTS.saas_homepage],
+        screenshot_ids: [],
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -144,7 +133,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       },
       {
         content: "Identify usability issues in the admin dashboard",
-        screenshot_ids: [DEMO_SCREENSHOTS.dashboard],
+        screenshot_ids: [],
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -156,7 +145,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       },
       {
         content: "Analyze a reported issue in the signup flow",
-        screenshot_ids: [DEMO_SCREENSHOTS.signup_form],
+        screenshot_ids: [],
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -167,7 +156,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       },
       {
         content: "Propose improvements to the settings page code structure",
-        screenshot_ids: [DEMO_SCREENSHOTS.settings_panel],
+        screenshot_ids: [],
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -179,7 +168,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       },
       {
         content: "Review mobile layout issues and responsiveness",
-        screenshot_ids: [DEMO_SCREENSHOTS.mobile_ui],
+        screenshot_ids: [],
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -193,7 +182,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
     return [
       {
         content: "Rewrite a poorly defined AI prompt for clarity and precision",
-        screenshot_ids: [DEMO_SCREENSHOTS.text_editor],
+        screenshot_ids: [],
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -204,7 +193,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       },
       {
         content: "Analyze differences between concise and verbose prompt styles",
-        screenshot_ids: [DEMO_SCREENSHOTS.comparison],
+        screenshot_ids: [],
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -215,7 +204,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       },
       {
         content: "Identify hidden assumptions in a prompt",
-        screenshot_ids: [DEMO_SCREENSHOTS.highlighted_text],
+        screenshot_ids: [],
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -226,7 +215,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       },
       {
         content: "Score an AI response against clear evaluation criteria",
-        screenshot_ids: [DEMO_SCREENSHOTS.ai_response],
+        screenshot_ids: [],
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -237,7 +226,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       },
       {
         content: "Design a system prompt for consistent AI behavior across sessions",
-        screenshot_ids: [DEMO_SCREENSHOTS.prompt_config],
+        screenshot_ids: [],
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
