@@ -115,19 +115,13 @@ export function useOnboardingBootstrap() {
         return;
       }
 
-      // Gate 4: User already has current demo data
-      if (!needsSeeding(currentUser)) {
-        addDebugLog("User already has current demo data", { 
-          demo_seed_version: currentUser.demo_seed_version 
-        });
-        setStatus("success");
-        return;
-      }
+      // Gate 4 REMOVED: Don't trust demo_seed_version alone - let backend verify real data exists
+      // This fixes the "ghost marker" problem where user has version but no actual projects
 
-      // Start seeding
+      // Start seeding (backend will verify if data actually exists)
       markAttempted();
       setStatus("seeding");
-      addDebugLog("Starting demo data seeding", { 
+      addDebugLog("Calling backend to verify/seed demo data", { 
         user_id: currentUser.id, 
         email: currentUser.email,
         existing_version: currentUser.demo_seed_version
