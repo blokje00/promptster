@@ -164,8 +164,15 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       created_by: user.email
     });
     
+    // KRITIEK: Gedetailleerde logging van response
+    console.log('[seedDemoData] 🔍 Project 1 RAW RESPONSE:', JSON.stringify(project1, null, 2));
+    console.log('[seedDemoData] 🔍 Project 1 ID:', project1?.id);
+    console.log('[seedDemoData] 🔍 Project 1 created_by:', project1?.created_by);
+    console.log('[seedDemoData] 🔍 Project 1 data:', project1?.data);
+    
     // KRITIEK: Check of create succesvol was
     if (!project1 || !project1.id) {
+      console.error('[seedDemoData] ❌ FAILED: Project 1 create did not return a valid ID');
       throw new Error('Project 1 creation failed - no ID returned');
     }
     console.log('[seedDemoData] ✅ Project 1 created:', project1.id);
@@ -183,7 +190,11 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       project_id: project1.id,
       created_by: user.email
     });
-    if (!t1?.id) throw new Error('Template 1 failed');
+    console.log('[seedDemoData] 🔍 Template 1 RAW:', JSON.stringify(t1, null, 2));
+    if (!t1?.id) {
+      console.error('[seedDemoData] ❌ Template 1 FAILED - no ID');
+      throw new Error('Template 1 failed');
+    }
     console.log('[seedDemoData] ✅ Template 1:', t1.id);
     
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -231,7 +242,11 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
         is_deleted: false,
         created_by: user.email
       });
-      if (!task?.id) throw new Error(`Task ${idx + 1} failed`);
+      console.log(`[seedDemoData] 🔍 Task ${idx + 1} RAW:`, JSON.stringify(task, null, 2));
+      if (!task?.id) {
+        console.error(`[seedDemoData] ❌ Task ${idx + 1} FAILED - no ID`);
+        throw new Error(`Task ${idx + 1} failed`);
+      }
       console.log(`[seedDemoData] ✅ Task ${idx + 1}:`, task.id);
       await new Promise(resolve => setTimeout(resolve, 50));
     }
@@ -259,7 +274,11 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       created_by: user.email
     });
     
+    console.log('[seedDemoData] 🔍 Project 2 RAW RESPONSE:', JSON.stringify(project2, null, 2));
+    console.log('[seedDemoData] 🔍 Project 2 ID:', project2?.id);
+    
     if (!project2 || !project2.id) {
+      console.error('[seedDemoData] ❌ FAILED: Project 2 create did not return a valid ID');
       throw new Error('Project 2 creation failed');
     }
     console.log('[seedDemoData] ✅ Project 2 created:', project2.id);
@@ -355,7 +374,11 @@ Provide constructive feedback with specific examples and alternative implementat
       is_favorite: true,
       created_by: user.email
     });
-    if (!item1?.id) throw new Error('Vault item 1 failed');
+    console.log('[seedDemoData] 🔍 Vault Item 1 RAW:', JSON.stringify(item1, null, 2));
+    if (!item1?.id) {
+      console.error('[seedDemoData] ❌ Vault Item 1 FAILED - no ID');
+      throw new Error('Vault item 1 failed');
+    }
     console.log('[seedDemoData] ✅ Vault item 1:', item1.id);
     
     await new Promise(resolve => setTimeout(resolve, 100));
