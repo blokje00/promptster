@@ -112,7 +112,13 @@ export function useOnboardingBootstrap() {
         return;
       }
 
-      // Gate 3: Already attempted this browser session (SKIP FOR TESTER)
+      // FIX 2: Tester always gets fresh session
+      if (isTesterUser(currentUser)) {
+        sessionStorage.removeItem(DEMO_SEED_SESSION_KEY);
+        addDebugLog("Tester detected - session cleared for fresh seeding");
+      }
+
+      // Gate 3: Already attempted this browser session (NEVER SKIP FOR TESTER)
       if (hasAttemptedThisSession() && !isTesterUser(currentUser)) {
         addDebugLog("Already attempted this session, skipping", { 
           demo_seed_version: currentUser.demo_seed_version 
@@ -121,11 +127,28 @@ export function useOnboardingBootstrap() {
         return;
       }
 
-      // Gate 4: Check if seeding is needed
-      if (!needsSeeding(currentUser)) {
-        addDebugLog("User does not need seeding", { 
-          demo_seed_version: currentUser.demo_seed_version,
-          is_tester: isTesterUser(currentUser)
+      // FIX 1: Force fresh user data BEFORE seeding decision
+      addDebugLog("Force fetching fresh user data before seeding decision");
+      const freshUserResult = await refetchUser();
+      const freshUser = freshUserResult.data;
+      
+      if (!freshUser) {
+        addDebugLog("Failed to fetch fresh user data");
+        setStatus("error");
+        return;
+      }
+
+      addDebugLog("Fresh user data fetched", {
+        email: freshUser.email,
+        demo_seed_version: freshUser.demo_seed_version,
+        is_tester: isTesterUser(freshUser)
+      });
+
+      // Gate 4: Check if seeding is needed (with FRESH user data)
+      if (!needsSeeding(freshUser)) {
+        addDebugLog("User does not need seeding (fresh data check)", { 
+          demo_seed_version: freshUser.demo_seed_version,
+          is_tester: isTesterUser(freshUser)
         });
         setStatus("success");
         return;
@@ -135,9 +158,9 @@ export function useOnboardingBootstrap() {
       markAttempted();
       setStatus("seeding");
       addDebugLog("Calling backend to seed demo data", { 
-        user_id: currentUser.id, 
-        email: currentUser.email,
-        existing_version: currentUser.demo_seed_version
+        user_id: freshUser.id, 
+        email: freshUser.email,
+        existing_version: freshUser.demo_seed_version
       });
 
       try {
@@ -153,7 +176,7 @@ export function useOnboardingBootstrap() {
           setStatus("success");
 
           // Step 1: Invalidate all cached data
-          await invalidateAllDataQueries(currentUser.email);
+          await invalidateAllDataQueries(freshUser.email);
           
           // Step 2: Force refetch user to get updated demo_seed_version
           await refetchUser();
@@ -172,8 +195,9 @@ export function useOnboardingBootstrap() {
         } else if (response.data.status === 'already_seeded') {
           addDebugLog("User was already seeded (race condition handled)", response.data);
           setStatus("success");
-          // Just invalidate queries, no reload needed
-          await invalidateAllDataQueries(currentUser.email);
+          // Invalidate queries + refetch user to ensure cache is fresh
+          await invalidateAllDataQueries(freshUser.email);
+          await refetchUser();
 
         } else {
           throw new Error(response.data.message || "Unknown seeding error");
@@ -201,7 +225,7 @@ export function useOnboardingBootstrap() {
     status,
     lastError,
     isSeeding: status === "seeding",
-    canRetry: status === "error" && currentUser && needsSeeding(currentUser)
+    canRetry: status === "error"
   };
 }
 
