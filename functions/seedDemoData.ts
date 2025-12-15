@@ -19,8 +19,9 @@ const PERSONAL_PREFERENCES = `# Personal AI Preferences
 `;
 
 Deno.serve(async (req) => {
+  const base44 = createClientFromRequest(req);
+  
   try {
-    const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
     if (!user) {
