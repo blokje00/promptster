@@ -1,150 +1,194 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
 const DEMO_SEED_LOG_KEY = "demo_seed_debug_log";
+const DEMO_SEED_SESSION_KEY = "demo_seed_attempted_session";
 const MAX_LOG_ENTRIES = 20;
+const CURRENT_DEMO_VERSION = "v1_promptster_full_demo";
 
 /**
- * Global onboarding bootstrap hook
- * Handles demo data seeding for new users immediately after auth is ready
+ * Global onboarding bootstrap hook - FIXED VERSION
  * 
- * FEATURES:
- * - Idempotent: never seeds twice
- * - Robust: works regardless of cookie consent or page navigation
- * - Observable: logs to console + localStorage for debugging
- * - Safe: no race conditions, no duplicate calls
+ * Key fixes:
+ * 1. Uses sessionStorage to track attempts per browser session (not refs that reset)
+ * 2. Forces fresh user fetch before seeding decision
+ * 3. Proper async/await with error handling
+ * 4. Invalidates queries with exact keys matching Dashboard/Multiprompt
+ * 5. Waits for backend confirmation before reload
  */
 export function useOnboardingBootstrap() {
   const queryClient = useQueryClient();
-  const [status, setStatus] = useState("idle"); // idle | checking | seeding | success | error
+  const [status, setStatus] = useState("idle");
   const [lastError, setLastError] = useState(null);
-  const hasAttemptedRef = useRef(false);
-  const isRunningRef = useRef(false);
+  const mountedRef = useRef(true);
 
-  const { data: currentUser, isLoading: isUserLoading } = useQuery({
+  // Track if seeding was already attempted THIS SESSION
+  const hasAttemptedThisSession = useCallback(() => {
+    return sessionStorage.getItem(DEMO_SEED_SESSION_KEY) === 'true';
+  }, []);
+
+  const markAttempted = useCallback(() => {
+    sessionStorage.setItem(DEMO_SEED_SESSION_KEY, 'true');
+  }, []);
+
+  // Fetch user with NO CACHE to ensure fresh data
+  const { data: currentUser, isLoading: isUserLoading, refetch: refetchUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me().catch(() => null),
+    staleTime: 0,
+    cacheTime: 0,
+    refetchOnMount: 'always',
   });
 
-  // Helper: Add debug log entry
-  const addDebugLog = (message, data = {}) => {
+  const addDebugLog = useCallback((message, data = {}) => {
     const timestamp = new Date().toISOString();
     const entry = { timestamp, message, data };
-    
     console.info(`[DEMO_SEED] ${message}`, data);
     
     try {
       const logs = JSON.parse(localStorage.getItem(DEMO_SEED_LOG_KEY) || "[]");
       logs.push(entry);
-      // Keep only last N entries
-      if (logs.length > MAX_LOG_ENTRIES) {
-        logs.shift();
-      }
+      if (logs.length > MAX_LOG_ENTRIES) logs.shift();
       localStorage.setItem(DEMO_SEED_LOG_KEY, JSON.stringify(logs));
     } catch (e) {
       console.warn("[DEMO_SEED] Failed to write debug log", e);
     }
-  };
+  }, []);
 
-  // Helper: Check if user needs seeding
-  const needsSeeding = (user) => {
+  const needsSeeding = useCallback((user) => {
     if (!user) return false;
-    // Check if demo_seed_version is set AND matches current version
-    // If undefined or old version, needs seeding
-    return !user.demo_seed_version;
-  };
+    // User needs seeding if demo_seed_version is missing OR outdated
+    return !user.demo_seed_version || user.demo_seed_version !== CURRENT_DEMO_VERSION;
+  }, []);
 
-  // Main bootstrap effect
+  const invalidateAllDataQueries = useCallback(async (userEmail) => {
+    // Invalidate with EXACT keys matching how pages query data
+    const keysToInvalidate = [
+      ['currentUser'],
+      ['projects', userEmail],
+      ['projects'],
+      ['items', userEmail],
+      ['items'],
+      ['thoughts', userEmail],
+      ['thoughts'],
+      ['templates', userEmail],
+      ['templates'],
+      ['aiSettings', userEmail],
+      ['aiSettings'],
+    ];
+
+    await Promise.all(
+      keysToInvalidate.map(key => 
+        queryClient.invalidateQueries({ queryKey: key, exact: false })
+      )
+    );
+  }, [queryClient]);
+
   useEffect(() => {
-    // Wait for auth to be ready
-    if (isUserLoading) {
-      addDebugLog("Waiting for auth...");
-      return;
-    }
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
-    if (!currentUser) {
-      addDebugLog("No user logged in, skipping bootstrap");
-      setStatus("idle");
-      return;
-    }
+  useEffect(() => {
+    const runSeeding = async () => {
+      // Gate 1: Wait for auth
+      if (isUserLoading) {
+        addDebugLog("Waiting for auth...");
+        return;
+      }
 
-    // Prevent duplicate runs
-    if (hasAttemptedRef.current || isRunningRef.current) {
-      addDebugLog("Bootstrap already attempted/running, skipping");
-      return;
-    }
+      // Gate 2: No user
+      if (!currentUser) {
+        addDebugLog("No user logged in, skipping bootstrap");
+        setStatus("idle");
+        return;
+      }
 
-    // Check if seeding is needed
-    if (!needsSeeding(currentUser)) {
-      addDebugLog("User already has demo data", { 
-        demo_seed_version: currentUser.demo_seed_version 
+      // Gate 3: Already attempted this browser session
+      if (hasAttemptedThisSession()) {
+        addDebugLog("Already attempted this session, skipping", { 
+          demo_seed_version: currentUser.demo_seed_version 
+        });
+        setStatus(currentUser.demo_seed_version ? "success" : "skipped");
+        return;
+      }
+
+      // Gate 4: User already has current demo data
+      if (!needsSeeding(currentUser)) {
+        addDebugLog("User already has current demo data", { 
+          demo_seed_version: currentUser.demo_seed_version 
+        });
+        setStatus("success");
+        return;
+      }
+
+      // Start seeding
+      markAttempted();
+      setStatus("seeding");
+      addDebugLog("Starting demo data seeding", { 
+        user_id: currentUser.id, 
+        email: currentUser.email,
+        existing_version: currentUser.demo_seed_version
       });
-      setStatus("success");
-      return;
-    }
 
-    // Start seeding
-    hasAttemptedRef.current = true;
-    isRunningRef.current = true;
-    setStatus("seeding");
-    addDebugLog("Starting demo data seeding", { 
-      user_id: currentUser.id, 
-      email: currentUser.email 
-    });
-
-    // Call backend seeding function
-    base44.functions.invoke('seedDemoData', {})
-      .then(async (response) => {
-        isRunningRef.current = false;
+      try {
+        // Call backend
+        const response = await base44.functions.invoke('seedDemoData', {});
         
+        if (!mountedRef.current) return;
+
         addDebugLog("Backend response received", response.data);
-        
-        if (response.data.status === 'success' || response.data.status === 'already_seeded') {
+
+        if (response.data.status === 'success') {
           addDebugLog("Demo seeding completed successfully", response.data);
           setStatus("success");
+
+          // Step 1: Invalidate all cached data
+          await invalidateAllDataQueries(currentUser.email);
           
-          // Critical: Invalidate specific queries AND refetch currentUser
-          await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-          await queryClient.refetchQueries({ queryKey: ['currentUser'] });
-          await queryClient.invalidateQueries({ queryKey: ['projects'] });
-          await queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-          await queryClient.invalidateQueries({ queryKey: ['templates'] });
-          await queryClient.invalidateQueries({ queryKey: ['items'] });
-          
-          addDebugLog("Queries invalidated, triggering reload in 1 second");
-          
-          // Show success toast
-          if (response.data.status === 'success') {
-            toast.success("Welcome! Demo environment created", {
-              description: `${response.data.total_tasks || 0} tasks across ${response.data.projects?.length || 0} projects`
-            });
-            
-            // Force reload after 1 second to ensure all data is visible
-            setTimeout(() => {
-              addDebugLog("Reloading page to show demo data");
-              window.location.reload();
-            }, 1000);
-          }
+          // Step 2: Force refetch user to get updated demo_seed_version
+          await refetchUser();
+
+          // Step 3: Show success message
+          toast.success("Welcome! Demo environment created", {
+            description: `${response.data.total_tasks || 0} tasks across ${response.data.projects?.length || 0} projects`
+          });
+
+          // Step 4: Reload page AFTER cache is cleared
+          addDebugLog("Reloading page to show demo data");
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+
+        } else if (response.data.status === 'already_seeded') {
+          addDebugLog("User was already seeded (race condition handled)", response.data);
+          setStatus("success");
+          // Just invalidate queries, no reload needed
+          await invalidateAllDataQueries(currentUser.email);
+
         } else {
-          throw new Error(response.data.message || "Unknown error");
+          throw new Error(response.data.message || "Unknown seeding error");
         }
-      })
-      .catch((error) => {
-        isRunningRef.current = false;
+
+      } catch (error) {
+        if (!mountedRef.current) return;
+        
         const errorMsg = error.message || String(error);
         addDebugLog("Demo seeding failed", { error: errorMsg });
         setStatus("error");
         setLastError(errorMsg);
-        
-        // Show error toast
-        toast.error("Failed to set up demo environment", {
-          description: "You can still use the app. Contact support if this persists."
-        });
-      });
 
-  }, [currentUser, isUserLoading, queryClient]);
+        toast.error("Failed to set up demo environment", {
+          description: "You can still use the app. Try refreshing the page."
+        });
+      }
+    };
+
+    runSeeding();
+  }, [currentUser, isUserLoading, queryClient, addDebugLog, needsSeeding, 
+      hasAttemptedThisSession, markAttempted, invalidateAllDataQueries, refetchUser]);
 
   return {
     status,
@@ -154,9 +198,7 @@ export function useOnboardingBootstrap() {
   };
 }
 
-/**
- * Get debug logs from localStorage
- */
+// Export helper functions
 export function getDemoSeedLogs() {
   try {
     return JSON.parse(localStorage.getItem(DEMO_SEED_LOG_KEY) || "[]");
@@ -165,17 +207,13 @@ export function getDemoSeedLogs() {
   }
 }
 
-/**
- * Clear debug logs
- */
 export function clearDemoSeedLogs() {
   localStorage.removeItem(DEMO_SEED_LOG_KEY);
 }
 
-/**
- * Manual retry function for use in UI
- */
 export async function retryDemoSeed() {
+  // Clear session flag to allow retry
+  sessionStorage.removeItem(DEMO_SEED_SESSION_KEY);
   const response = await base44.functions.invoke('seedDemoData', {});
   return response.data;
 }
