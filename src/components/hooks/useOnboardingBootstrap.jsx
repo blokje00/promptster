@@ -19,21 +19,9 @@ export function useOnboardingBootstrap() {
     queryFn: () => base44.auth.me().catch(() => null),
   });
 
-  // Database check: Does demo data exist?
-  const { data: hasProjects } = useQuery({
-    queryKey: ['has-demo-data'],
-    queryFn: async () => {
-      const projects = await base44.entities.Project.list();
-      return projects && projects.length > 0;
-    },
-    enabled: !!currentUser,
-    staleTime: 30000, // 30 seconds
-    retry: 1
-  });
-
   useEffect(() => {
-    // Only seed if: user exists, not already triggered, and NO projects in DB
-    if (!currentUser || hasTriggered.current || hasProjects !== false) {
+    // Only seed if: user exists, not already triggered, and no demo_seeded_at flag
+    if (!currentUser || hasTriggered.current || currentUser.demo_seeded_at) {
       return;
     }
 
@@ -62,5 +50,5 @@ export function useOnboardingBootstrap() {
     }
 
     triggerSeed();
-  }, [currentUser, hasProjects, queryClient]);
+  }, [currentUser, queryClient]);
 }

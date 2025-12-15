@@ -261,8 +261,8 @@ Deno.serve(async (req) => {
 
     console.info('[SEED] Check for:', user.email);
 
-    // ✅ IDEMPOTENCY: Database is single source of truth
-    if (user.demo_seeded_at) {
+    // ✅ IDEMPOTENCY: Only check user flag (no DB queries to avoid 429)
+    if (user.demo_seeded_at && user.email !== 'patrickz@sunshower.nl') {
       console.info('[SEED] Already seeded at:', user.demo_seeded_at);
       return Response.json({ 
         status: 'already_seeded',
