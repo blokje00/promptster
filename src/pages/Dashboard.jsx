@@ -16,8 +16,10 @@ import AccessGuard from "../components/auth/AccessGuard";
 import TrialBanner from "../components/dashboard/TrialBanner";
 import VaultTableView from "../components/dashboard/VaultTableView";
 import { projectColors } from "@/components/lib/constants";
+import { useBootstrap } from "@/components/contexts/BootstrapContext";
 
 export default function Dashboard() {
+  const { status: bootstrapStatus } = useBootstrap();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -35,13 +37,13 @@ export default function Dashboard() {
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
     queryFn: () => base44.entities.Project.list(),
-    enabled: !!currentUser,
+    enabled: !!currentUser && bootstrapStatus === 'ready',
   });
 
   const { data: items, isLoading } = useQuery({
     queryKey: ['items'],
     queryFn: () => base44.entities.Item.list("-updated_date"),
-    enabled: !!currentUser,
+    enabled: !!currentUser && bootstrapStatus === 'ready',
   });
 
   const itemCounts = useMemo(() => ({
@@ -215,7 +217,7 @@ export default function Dashboard() {
           </Tabs>
         </div>
 
-        {isLoading ? (
+        {isLoading || bootstrapStatus === 'loading' || bootstrapStatus === 'seeding' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="h-64 bg-white dark:bg-slate-800 rounded-2xl animate-pulse" />
