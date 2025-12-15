@@ -32,28 +32,32 @@ export default function Header() {
   const { user, isReady } = useUser();
 
   const { data: deletedCount = 0 } = useQuery({
-    queryKey: ['deletedThoughtsCount'],
+    queryKey: ['thoughts', user?.email, { is_deleted: true }, 'count'],
     queryFn: async () => {
       const result = await base44.entities.Thought.filter({ 
         is_deleted: true 
       });
       return result?.length || 0;
     },
-    enabled: !!user,
-    refetchInterval: 1000,
+    enabled: !!user?.email,
+    refetchOnWindowFocus: false,
+    staleTime: 30000,
+    refetchInterval: false,
   });
 
   // Task 3: All thoughts count (across all projects - using RLS)
   const { data: allThoughtsCount = 0 } = useQuery({
-    queryKey: ['allThoughtsCount'],
+    queryKey: ['thoughts', user?.email, { is_deleted: false }, 'count'],
     queryFn: async () => {
       const thoughts = await base44.entities.Thought.filter({ 
         is_deleted: false
       });
       return thoughts?.length || 0;
     },
-    enabled: !!user,
-    refetchInterval: 1000,
+    enabled: !!user?.email,
+    refetchOnWindowFocus: false,
+    staleTime: 30000,
+    refetchInterval: false,
   });
 
   // Open Tasks Count (Checklist items - using RLS)
