@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
 const DEMO_VERSION = "v1_promptster_full_demo";
+const TESTER_EMAIL = "patrickz@sunshower.nl"; // Always reseed for this user
 
 const PERSONAL_PREFERENCES = `# Personal AI Preferences
 
@@ -42,8 +43,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if demo already seeded
-    if (user.demo_seed_version === DEMO_VERSION) {
+    const isTester = user.email === TESTER_EMAIL;
+
+    // Check if demo already seeded (skip for tester user)
+    if (user.demo_seed_version === DEMO_VERSION && !isTester) {
       console.log('[seedDemoData] User already has demo data, skipping');
       console.log('[seedDemoData] Version:', user.demo_seed_version);
       return Response.json({ 
@@ -53,15 +56,26 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (isTester) {
+      console.log('[seedDemoData] ⚠️ TESTER USER DETECTED - Force reseeding!');
+      // Delete ALL existing demo data for tester
+      const existingProjects = await base44.asServiceRole.entities.Project.filter({ created_by: user.email });
+      const existingThoughts = await base44.asServiceRole.entities.Thought.filter({ created_by: user.email });
+      const existingTemplates = await base44.asServiceRole.entities.PromptTemplate.filter({ created_by: user.email });
+      const existingItems = await base44.asServiceRole.entities.Item.filter({ created_by: user.email });
+      
+      await Promise.all([
+        ...existingProjects.map(p => base44.asServiceRole.entities.Project.delete(p.id)),
+        ...existingThoughts.map(t => base44.asServiceRole.entities.Thought.delete(t.id)),
+        ...existingTemplates.map(t => base44.asServiceRole.entities.PromptTemplate.delete(t.id)),
+        ...existingItems.map(i => base44.asServiceRole.entities.Item.delete(i.id))
+      ]);
+      console.log('[seedDemoData] ✓ Tester data cleared');
+    }
+
     console.log('[seedDemoData] Starting demo seed for user:', user.email);
     console.log('[seedDemoData] User ID:', user.id);
     console.log('[seedDemoData] Current version:', user.demo_seed_version || 'none');
-
-    // Set marker immediately to prevent duplicate runs
-    await base44.auth.updateMe({
-      demo_seed_version: DEMO_VERSION
-    });
-    console.log('[seedDemoData] Marker set to:', DEMO_VERSION);
 
     // STEP 1: Create Personal AI Configuration
     await base44.auth.updateMe({
@@ -284,6 +298,13 @@ This project explores prompt design, iteration, and evaluation for AI systems.
     });
 
     console.log('[seedDemoData] ✓ Project 2 created with 3 templates and 5 tasks');
+    
+    // CRITICAL: Only set marker AFTER successful seed
+    await base44.auth.updateMe({
+      demo_seed_version: DEMO_VERSION
+    });
+    console.log('[seedDemoData] ✓ Marker set to:', DEMO_VERSION);
+    
     console.log('[seedDemoData] ✓ Demo seed completed successfully');
     console.log('[seedDemoData] Final stats:', {
       projects: 2,

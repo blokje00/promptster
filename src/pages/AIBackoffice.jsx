@@ -15,6 +15,7 @@ import AIInstructionForm from "../components/settings/AIInstructionForm";
 import PersonalPreferencesForm from "../components/settings/PersonalPreferencesForm";
 import AIContextToggle from "../components/settings/AIContextToggle";
 import DemoSeedDebugPanel from "../components/settings/DemoSeedDebugPanel";
+import DemoDataOverview from "../components/settings/DemoDataOverview";
 import { toast } from "sonner";
 
 const getDefaultInstruction = () => `Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.`;
@@ -332,6 +333,7 @@ export default function AIBackoffice() {
             <TabsContent value="settings" className="space-y-6">
               <div className="max-w-3xl space-y-6">
                 <DemoSeedDebugPanel />
+                <DemoDataOverview />
                 <MaintenanceTools currentUser={currentUser} />
                 <PersonalPreferencesForm
                   personalPreferences={personalPrefsHook.draft}
