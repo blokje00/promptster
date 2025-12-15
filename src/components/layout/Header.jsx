@@ -191,7 +191,15 @@ export default function Header() {
         <div className="flex items-center gap-1">
           <ThemeToggleButton />
           
-          {isReady && (!user || !user?.plan_id) ? (
+          {/* DEBUG LOGGING FOR BUTTON VISIBILITY */}
+          {(() => {
+             const showButton = isReady && (!user || !user.plan_id || user.plan_id === 'free');
+             if (Math.random() > 0.95) console.log('[Header] Button State:', { isReady, hasUser: !!user, plan: user?.plan_id, showButton });
+             return null;
+          })()}
+
+          {/* Show button if user is NOT logged in OR if user has NO plan */}
+          {isReady && (!user || !user.plan_id || user.plan_id === 'free') ? (
             <Button 
               onClick={() => setShowTrialModal(true)}
               className="ml-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"

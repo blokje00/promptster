@@ -4,12 +4,10 @@ import { useUser } from "@/components/hooks/useUser";
 import { base44 } from "@/api/base44Client";
 
 /**
- * FIXED: Proper seeding with stable auth state
- * 
- * Key fixes:
- * 1. Uses central useUser hook (waits for isReady)
- * 2. Double-checks demo_seeded_at AFTER seed completes
- * 3. Uses session-based guard (not just ref) to prevent double-trigger
+ * ROBUST ONBOARDING BOOTSTRAP
+ * - Includes detailed logging
+ * - Handles auth flickers
+ * - Retries on failure
  */
 export function useOnboardingBootstrap() {
   const queryClient = useQueryClient();
@@ -18,87 +16,94 @@ export function useOnboardingBootstrap() {
   const [seedStatus, setSeedStatus] = useState('idle');
 
   useEffect(() => {
-    // Guard conditions - only proceed if:
-    // 1. Auth state is READY (not loading)
-    // 2. User exists (is authenticated)
-    // 3. Haven't triggered in this session
-    // 4. User doesn't have demo_seeded_at flag
+    const logPrefix = `[SEED ${new Date().toISOString().split('T')[1].slice(0,8)}]`;
+
+    // 1. AUTH CHECK
     if (!isReady) {
-      console.info('[SEED] Waiting for auth state...');
+      // console.debug(`${logPrefix} Waiting for auth...`);
       return;
     }
 
-    if (!user || !user.id) {
-      console.info('[SEED] No user or user ID - skipping seed');
+    // 2. USER CHECK
+    if (!user) {
+      console.info(`${logPrefix} No user found. Skipping.`);
       return;
     }
 
-    if (hasTriggered.current) {
-      console.info('[SEED] Already triggered in this session');
+    // 3. ID CHECK (Crucial for preventing race conditions with incomplete user objects)
+    if (!user.id) {
+      console.warn(`${logPrefix} User object missing ID! Waiting for complete user.`, user);
       return;
     }
 
+    // 4. ALREADY SEEDED CHECK (Database flag)
     if (user.demo_seeded_at) {
-      console.info('[SEED] User already seeded at:', user.demo_seeded_at);
+      // console.info(`${logPrefix} User already seeded at: ${user.demo_seeded_at}`);
       return;
     }
 
-    // Check sessionStorage to prevent cross-tab race conditions
-    const sessionKey = `seed_triggered_${user.id || user.email}`;
-    if (sessionStorage.getItem(sessionKey)) {
-      console.info('[SEED] Already triggered in this browser session');
-      hasTriggered.current = true;
+    // 5. SESSION LOCK CHECK
+    if (hasTriggered.current) {
+      // console.info(`${logPrefix} Blocked by local ref (already running)`);
       return;
     }
 
-    // Mark as triggered BEFORE async operation
+    const sessionKey = `seed_attempt_${user.id}`;
+    const lastAttempt = sessionStorage.getItem(sessionKey);
+    
+    // Allow retry after 10 seconds if it failed previously
+    if (lastAttempt && Date.now() - parseInt(lastAttempt) < 10000) {
+      console.info(`${logPrefix} Recently attempted (${Math.round((Date.now() - parseInt(lastAttempt))/1000)}s ago). Waiting.`);
+      return;
+    }
+
+    // --- START SEEDING ---
+    console.log(`${logPrefix} 🚀 STARTING SEED PROCESS for ${user.email} (${user.id})`);
     hasTriggered.current = true;
     sessionStorage.setItem(sessionKey, Date.now().toString());
-    
+    setSeedStatus('seeding');
+
     async function triggerSeed() {
-      console.info('[SEED] Starting seed for user:', user.email);
-      setSeedStatus('seeding');
-      
       try {
+        console.log(`${logPrefix} Invoking server function 'seedDemoData'...`);
         const result = await base44.functions.invoke('seedDemoData', {
-          // Pass user ID explicitly to backend for idempotent check
           userId: user.id,
           userEmail: user.email,
+          force: true
         });
         
-        if (result.status === 'success') {
-          console.info('[SEED] ✅ Success:', result.stats);
+        console.log(`${logPrefix} Server response:`, result);
+
+        if (result && result.status === 'success') {
+          console.log(`${logPrefix} ✅ SEED SUCCESS! Invalidating queries...`);
           setSeedStatus('success');
           
-          // Wait for database consistency, then invalidate
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Force wait to ensure DB consistency
+          await new Promise(resolve => setTimeout(resolve, 1500));
           
-          // Invalidate queries to show new data
-          queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-          queryClient.invalidateQueries({ queryKey: ['projects'] });
-          queryClient.invalidateQueries({ queryKey: ['items'] });
-          queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-          queryClient.invalidateQueries({ queryKey: ['aiSettings'] });
-        } else if (result.status === 'already_seeded') {
-          console.info('[SEED] Already seeded (backend confirmed)');
+          // Aggressively invalidate everything
+          await queryClient.invalidateQueries(); 
+          console.log(`${logPrefix} Queries invalidated. UI should update.`);
+
+        } else if (result && result.status === 'already_seeded') {
+          console.log(`${logPrefix} Backend says: Already seeded.`);
           setSeedStatus('already_done');
         } else {
-          console.warn('[SEED] Failed:', result.error);
-          setSeedStatus('failed');
-          // Clear session flag so retry is possible on next page load
-          sessionStorage.removeItem(sessionKey);
-          hasTriggered.current = false; // Allow retry in current session
+          throw new Error(result?.error || 'Unknown backend error');
         }
       } catch (error) {
-        console.error('[SEED] Error:', error);
+        console.error(`${logPrefix} ❌ SEED FAILED:`, error);
         setSeedStatus('error');
+        
+        // RESET LOCKS TO ALLOW RETRY
+        console.log(`${logPrefix} Resetting locks for retry...`);
+        hasTriggered.current = false;
         sessionStorage.removeItem(sessionKey);
-        hasTriggered.current = false; // Allow retry in current session
       }
     }
 
     triggerSeed();
   }, [isReady, user, queryClient]);
 
-  return { seedStatus };
+  return seedStatus;
 }
