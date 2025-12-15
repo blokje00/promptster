@@ -184,13 +184,13 @@ export default function AIBackoffice() {
 
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: async () => await base44.entities.Project.list(),
+    queryFn: () => base44.entities.Project.list(),
     enabled: !!currentUser,
   });
 
   const { data: projectStructures = [] } = useQuery({
     queryKey: ['projectStructures'],
-    queryFn: async () => await base44.entities.ProjectStructure.list(),
+    queryFn: () => base44.entities.ProjectStructure.list(),
     enabled: !!currentUser,
   });
 
