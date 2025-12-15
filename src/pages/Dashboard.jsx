@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -40,11 +40,22 @@ export default function Dashboard() {
     enabled: !!currentUser && bootstrapStatus === 'ready',
   });
 
-  const { data: items, isLoading } = useQuery({
+  const { data: items, isLoading, refetch } = useQuery({
     queryKey: ['items'],
     queryFn: () => base44.entities.Item.list("-updated_date"),
     enabled: !!currentUser && bootstrapStatus === 'ready',
   });
+
+  // Fallback: If bootstrap ready but no items found, retry after delay
+  useEffect(() => {
+    if (bootstrapStatus === 'ready' && !isLoading && items && items.length === 0) {
+      const timer = setTimeout(() => {
+        console.log('[Dashboard] No items found after bootstrap, forcing refetch...');
+        refetch();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [bootstrapStatus, items, isLoading, refetch]);
 
   const itemCounts = useMemo(() => ({
     all: items?.length || 0,

@@ -64,14 +64,49 @@ export function BootstrapProvider({ children }) {
         console.log(`${logPrefix} Response (${duration}ms):`, payload);
 
         if (payload.status === 'success' || payload.status === 'already_seeded') {
-          console.log(`${logPrefix} ✅ Seed complete. Invalidating queries...`);
+          console.log(`${logPrefix} ✅ Seed complete. Verifying data availability...`);
           
-          // Wait for DB consistency
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Invalidate queries first
+          await queryClient.invalidateQueries();
           
+          // VERIFICATION LOOP: Wait until data is actually visible
+          let itemsFound = false;
+          let attempts = 0;
+          const maxAttempts = 5;
+          
+          while (!itemsFound && attempts < maxAttempts && isMounted) {
+            attempts++;
+            // Wait with exponential backoff
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+            
+            if (!isMounted) return;
+            
+            try {
+              // Try to fetch projects to verify they exist
+              const projects = await base44.entities.Project.filter({ 
+                created_by: user.email,
+                is_demo: true 
+              });
+              
+              if (projects && projects.length > 0) {
+                console.log(`${logPrefix} ✅ Verified ${projects.length} demo projects found after ${attempts} attempts.`);
+                itemsFound = true;
+              } else {
+                console.log(`${logPrefix} ⏳ Attempt ${attempts}/${maxAttempts}: No demo projects found yet. Waiting...`);
+              }
+            } catch (checkErr) {
+              console.warn(`${logPrefix} ⚠️ Error checking projects:`, checkErr);
+            }
+          }
+          
+          if (!itemsFound) {
+            console.warn(`${logPrefix} ⚠️ Warning: Seed reported success but no demo projects found after verification.`);
+            // Still set to ready to avoid blocking, but dashboard may be empty
+          }
+
           if (!isMounted) return;
           
-          // Invalidate all data queries
+          // Invalidate again for safety
           await queryClient.invalidateQueries();
           
           // 🔥 CRITICAL: Set status to ready
