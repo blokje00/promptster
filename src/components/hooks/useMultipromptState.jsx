@@ -15,22 +15,17 @@ export const useMultipromptData = ({
   const queryClient = useQueryClient();
   const [selectedThoughtIds, setSelectedThoughtIds] = useState([]);
 
-  // 1. Fetch ALL Thoughts - Single Source of Truth
+  // 1. Fetch ALL Thoughts - Single Source of Truth (using RLS)
   const { data: allThoughts = [], isLoading } = useQuery({
-    queryKey: ['thoughts', { 
-      userEmail: currentUser?.email
-    }],
+    queryKey: ['thoughts'],
     queryFn: async () => {
-      if (!currentUser?.email) return [];
-
-      // Fetch ALL non-deleted thoughts for user (Client-side filtering for projects)
+      // Fetch ALL non-deleted thoughts (RLS filters by user automatically)
       return await base44.entities.Thought.filter({ 
-        created_by: currentUser.email,
         is_deleted: false 
       }, "-created_date");
     },
-    enabled: !!currentUser?.email,
-    staleTime: 0, // Always fetch fresh on mount/invalidate
+    enabled: !!currentUser,
+    staleTime: 0,
     refetchOnWindowFocus: true,
   });
 
@@ -72,9 +67,7 @@ export const useMultipromptData = ({
     onSuccess: async (newThought) => {
       // Optimistic update: direct toevoegen aan cache
       if (newThought) {
-        const queryKey = ['thoughts', { 
-          userEmail: currentUser?.email
-        }];
+        const queryKey = ['thoughts'];
         queryClient.setQueryData(queryKey, (old) => [newThought, ...(old || [])]);
       }
       

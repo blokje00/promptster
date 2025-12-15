@@ -34,42 +34,35 @@ export default function Header() {
   });
 
   const { data: deletedCount = 0 } = useQuery({
-    queryKey: ['deletedThoughtsCount', user?.email],
+    queryKey: ['deletedThoughtsCount'],
     queryFn: async () => {
-      if (!user?.email) return 0;
       const result = await base44.entities.Thought.filter({ 
-        created_by: user.email,
         is_deleted: true 
       });
       return result?.length || 0;
     },
-    enabled: !!user?.email,
+    enabled: !!user,
     refetchInterval: 1000,
   });
 
-  // Task 3: All thoughts count (across all projects)
+  // Task 3: All thoughts count (across all projects - using RLS)
   const { data: allThoughtsCount = 0 } = useQuery({
-    queryKey: ['allThoughtsCount', user?.email],
+    queryKey: ['allThoughtsCount'],
     queryFn: async () => {
-      if (!user?.email) return 0;
       const thoughts = await base44.entities.Thought.filter({ 
-        created_by: user.email,
         is_deleted: false
       });
       return thoughts?.length || 0;
     },
-    enabled: !!user?.email,
+    enabled: !!user,
     refetchInterval: 1000,
   });
 
-  // Open Tasks Count (Checklist items)
+  // Open Tasks Count (Checklist items - using RLS)
   const { data: openTasksCount = 0 } = useQuery({
-    queryKey: ['openTasksCount', user?.email],
+    queryKey: ['openTasksCount'],
     queryFn: async () => {
-      if (!user?.email) return 0;
-      const items = await base44.entities.Item.filter({ 
-        created_by: user.email
-      });
+      const items = await base44.entities.Item.list();
       
       let count = 0;
       items.forEach(item => {
@@ -83,7 +76,7 @@ export default function Header() {
       });
       return count;
     },
-    enabled: !!user?.email,
+    enabled: !!user,
     refetchInterval: 1000,
   });
 
