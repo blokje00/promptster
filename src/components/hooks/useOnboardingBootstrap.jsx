@@ -66,13 +66,29 @@ export function useOnboardingBootstrap() {
     async function triggerSeed() {
       try {
         console.log(`${logPrefix} Invoking server function 'seedDemoData'...`);
-        const result = await base44.functions.invoke('seedDemoData', {
-          userId: user.id,
-          userEmail: user.email,
-          force: true
-        });
+        
+        let result;
+        try {
+          result = await base44.functions.invoke('seedDemoData', {
+            userId: user.id,
+            userEmail: user.email,
+            force: true
+          });
+        } catch (invokeError) {
+          console.error(`${logPrefix} Invoke error:`, invokeError);
+          throw new Error(`Backend invoke failed: ${invokeError.message || 'Network error'}`);
+        }
         
         console.log(`${logPrefix} Server response:`, result);
+        
+        // Check if result is valid
+        if (!result) {
+          throw new Error('Backend returned empty response');
+        }
+        
+        if (typeof result !== 'object') {
+          throw new Error(`Backend returned invalid response type: ${typeof result}`);
+        }
 
         if (result && result.status === 'success') {
           console.log(`${logPrefix} ✅ SEED SUCCESS! Invalidating queries...`);
@@ -89,10 +105,16 @@ export function useOnboardingBootstrap() {
           console.log(`${logPrefix} Backend says: Already seeded.`);
           setSeedStatus('already_done');
         } else {
-          throw new Error(result?.error || 'Unknown backend error');
+          const errorMsg = result?.error || result?.details || 'Unknown backend error';
+          const errorType = result?.errorType || 'UnknownError';
+          throw new Error(`${errorType}: ${errorMsg}`);
         }
       } catch (error) {
-        console.error(`${logPrefix} ❌ SEED FAILED:`, error);
+        console.error(`${logPrefix} ❌ SEED FAILED:`, {
+          message: error.message,
+          stack: error.stack,
+          fullError: error
+        });
         setSeedStatus('error');
         
         // RESET LOCKS TO ALLOW RETRY

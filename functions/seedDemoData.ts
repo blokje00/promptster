@@ -251,15 +251,24 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
 }
 
 Deno.serve(async (req) => {
+  console.info('[SEED-BACKEND] Function invoked');
+  
   try {
     const base44 = createClientFromRequest(req);
+    console.info('[SEED-BACKEND] Client created, fetching user...');
+    
     const user = await base44.auth.me();
+    console.info('[SEED-BACKEND] User fetched:', user?.email || 'NO USER');
     
     if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      console.error('[SEED-BACKEND] No user found!');
+      return Response.json({ 
+        status: 'error',
+        error: 'Unauthorized - no user found' 
+      }, { status: 401 });
     }
 
-    console.info('[SEED] Check for:', user.email);
+    console.info('[SEED-BACKEND] Check for:', user.email);
 
     // ✅ IDEMPOTENCY: Check flag first (prevents race conditions)
     if (user.demo_seeded_at && user.email !== 'patrickz@sunshower.nl') {
@@ -365,10 +374,21 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('[SEED] ❌ ERROR:', error.message, error.stack);
+    console.error('[SEED-BACKEND] ❌ CRITICAL ERROR:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      cause: error.cause
+    });
+    
     return Response.json({ 
       status: 'error',
-      error: error.message 
-    }, { status: 500 });
+      error: error.message || 'Unknown error',
+      errorType: error.name || 'Error',
+      details: error.cause?.message || null
+    }, { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 });
