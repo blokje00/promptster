@@ -1,7 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
-const DEMO_VERSION = "v1_promptster_full_demo";
-
 const PERSONAL_PREFERENCES = `# Personal AI Preferences
 
 ## Tone & Style
@@ -20,19 +18,6 @@ const PERSONAL_PREFERENCES = `# Personal AI Preferences
 - Prefer actionable recommendations over abstract theory
 `;
 
-const DEMO_SCREENSHOTS = {
-  saas_homepage: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800",
-  dashboard: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800",
-  signup_form: "https://images.unsplash.com/photo-1555421689-d68471e189f2?w=800",
-  settings_panel: "https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=800",
-  mobile_ui: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800",
-  text_editor: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800",
-  comparison: "https://images.unsplash.com/photo-1551434678-e076c223a692?w=800",
-  highlighted_text: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800",
-  ai_response: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800",
-  prompt_config: "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=800"
-};
-
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -42,12 +27,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if demo already seeded
-    if (user.demo_seed_version === DEMO_VERSION) {
+    // Check if demo already seeded (database-first approach)
+    if (user.demo_seeded_at) {
       console.log('[seedDemoData] User already has demo data, skipping');
       return Response.json({ 
         status: 'already_seeded',
-        message: 'Demo data already exists for this user'
+        message: 'Demo data already exists for this user',
+        seeded_at: user.demo_seeded_at
       });
     }
 
@@ -55,7 +41,7 @@ Deno.serve(async (req) => {
 
     // Set marker immediately to prevent duplicate runs
     await base44.auth.updateMe({
-      demo_seed_version: DEMO_VERSION
+      demo_seeded_at: new Date().toISOString()
     });
 
     // STEP 1: Create Personal AI Configuration
@@ -63,7 +49,7 @@ Deno.serve(async (req) => {
       personal_preferences_markdown: PERSONAL_PREFERENCES
     });
 
-    const aiSettings = await base44.asServiceRole.entities.AISettings.create({
+    await base44.asServiceRole.entities.AISettings.create({
       improve_prompt_instruction: "Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.",
       model_preference: "default",
       enable_context_suggestions: true,
@@ -95,7 +81,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     });
 
     // Project 1 Templates
-    const p1_template1 = await base44.asServiceRole.entities.PromptTemplate.create({
+    await base44.asServiceRole.entities.PromptTemplate.create({
       name: "UI Review Template",
       type: "start",
       content: "Review the following UI for usability, accessibility, and visual consistency.\nProvide concrete improvement suggestions.",
@@ -103,7 +89,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       created_by: user.email
     });
 
-    const p1_template2 = await base44.asServiceRole.entities.PromptTemplate.create({
+    await base44.asServiceRole.entities.PromptTemplate.create({
       name: "Code Refactor Template",
       type: "start",
       content: "Analyze the provided code and propose a refactor.\nFocus on clarity, reusability, and long-term maintainability.",
@@ -111,7 +97,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       created_by: user.email
     });
 
-    const p1_template3 = await base44.asServiceRole.entities.PromptTemplate.create({
+    await base44.asServiceRole.entities.PromptTemplate.create({
       name: "Bug Analysis Template",
       type: "eind",
       content: "Investigate the described issue.\nIdentify root causes and suggest fixes.",
@@ -119,10 +105,9 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       created_by: user.email
     });
 
-    // Project 1 Tasks
+    // Project 1 Tasks (NO SCREENSHOTS)
     await base44.asServiceRole.entities.Thought.create({
       content: "Review the homepage layout and visual hierarchy",
-      screenshot_ids: [DEMO_SCREENSHOTS.saas_homepage],
       project_id: project1.id,
       is_selected: true,
       is_deleted: false,
@@ -134,7 +119,6 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
 
     await base44.asServiceRole.entities.Thought.create({
       content: "Identify usability issues in the admin dashboard",
-      screenshot_ids: [DEMO_SCREENSHOTS.dashboard],
       project_id: project1.id,
       is_selected: true,
       is_deleted: false,
@@ -146,7 +130,6 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
 
     await base44.asServiceRole.entities.Thought.create({
       content: "Analyze a reported issue in the signup flow",
-      screenshot_ids: [DEMO_SCREENSHOTS.signup_form],
       project_id: project1.id,
       is_selected: true,
       is_deleted: false,
@@ -157,7 +140,6 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
 
     await base44.asServiceRole.entities.Thought.create({
       content: "Propose improvements to the settings page code structure",
-      screenshot_ids: [DEMO_SCREENSHOTS.settings_panel],
       project_id: project1.id,
       is_selected: true,
       is_deleted: false,
@@ -169,7 +151,6 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
 
     await base44.asServiceRole.entities.Thought.create({
       content: "Review mobile layout issues and responsiveness",
-      screenshot_ids: [DEMO_SCREENSHOTS.mobile_ui],
       project_id: project1.id,
       is_selected: true,
       is_deleted: false,
@@ -198,7 +179,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
     });
 
     // Project 2 Templates
-    const p2_template1 = await base44.asServiceRole.entities.PromptTemplate.create({
+    await base44.asServiceRole.entities.PromptTemplate.create({
       name: "Prompt Critique Template",
       type: "start",
       content: "Critically evaluate the prompt.\nIdentify ambiguities and suggest improvements.",
@@ -206,7 +187,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       created_by: user.email
     });
 
-    const p2_template2 = await base44.asServiceRole.entities.PromptTemplate.create({
+    await base44.asServiceRole.entities.PromptTemplate.create({
       name: "Prompt Rewrite Template",
       type: "start",
       content: "Rewrite the prompt to be more precise, robust, and testable.",
@@ -214,7 +195,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       created_by: user.email
     });
 
-    const p2_template3 = await base44.asServiceRole.entities.PromptTemplate.create({
+    await base44.asServiceRole.entities.PromptTemplate.create({
       name: "Output Evaluation Template",
       type: "eind",
       content: "Evaluate the AI output against the original intent.\nScore clarity, correctness, and usefulness.",
@@ -222,10 +203,9 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       created_by: user.email
     });
 
-    // Project 2 Tasks
+    // Project 2 Tasks (NO SCREENSHOTS)
     await base44.asServiceRole.entities.Thought.create({
       content: "Rewrite a poorly defined AI prompt for clarity and precision",
-      screenshot_ids: [DEMO_SCREENSHOTS.text_editor],
       project_id: project2.id,
       is_selected: true,
       is_deleted: false,
@@ -236,7 +216,6 @@ This project explores prompt design, iteration, and evaluation for AI systems.
 
     await base44.asServiceRole.entities.Thought.create({
       content: "Analyze differences between concise and verbose prompt styles",
-      screenshot_ids: [DEMO_SCREENSHOTS.comparison],
       project_id: project2.id,
       is_selected: true,
       is_deleted: false,
@@ -247,7 +226,6 @@ This project explores prompt design, iteration, and evaluation for AI systems.
 
     await base44.asServiceRole.entities.Thought.create({
       content: "Identify hidden assumptions in a prompt",
-      screenshot_ids: [DEMO_SCREENSHOTS.highlighted_text],
       project_id: project2.id,
       is_selected: true,
       is_deleted: false,
@@ -258,7 +236,6 @@ This project explores prompt design, iteration, and evaluation for AI systems.
 
     await base44.asServiceRole.entities.Thought.create({
       content: "Score an AI response against clear evaluation criteria",
-      screenshot_ids: [DEMO_SCREENSHOTS.ai_response],
       project_id: project2.id,
       is_selected: true,
       is_deleted: false,
@@ -269,7 +246,6 @@ This project explores prompt design, iteration, and evaluation for AI systems.
 
     await base44.asServiceRole.entities.Thought.create({
       content: "Design a system prompt for consistent AI behavior across sessions",
-      screenshot_ids: [DEMO_SCREENSHOTS.prompt_config],
       project_id: project2.id,
       is_selected: true,
       is_deleted: false,
@@ -279,18 +255,79 @@ This project explores prompt design, iteration, and evaluation for AI systems.
     });
 
     console.log('[seedDemoData] ✓ Project 2 created with 3 templates and 5 tasks');
+
+    // STEP 4: Create 2 Vault Prompts (NO IMAGES)
+    await base44.asServiceRole.entities.Item.create({
+      title: "System Prompt - Code Review Assistant",
+      type: "prompt",
+      project_id: project1.id,
+      content: `You are an expert code reviewer focused on React and modern JavaScript/TypeScript.
+
+When reviewing code, always:
+1. Identify potential bugs or edge cases
+2. Suggest performance improvements
+3. Check for accessibility issues
+4. Verify error handling is robust
+5. Ensure code follows best practices
+
+Provide constructive feedback with specific examples and alternative implementations.`,
+      description: "A comprehensive system prompt for AI-assisted code reviews",
+      tags: ["code-review", "react", "best-practices"],
+      is_favorite: true,
+      created_by: user.email
+    });
+
+    await base44.asServiceRole.entities.Item.create({
+      title: "Prompt Engineering Best Practices",
+      type: "prompt",
+      project_id: project2.id,
+      content: `# Prompt Engineering Principles
+
+## Structure
+- Start with role definition
+- Provide clear context
+- Specify output format explicitly
+- Include constraints and boundaries
+
+## Optimization
+- Use examples when possible
+- Break complex tasks into steps
+- Request reasoning before conclusions
+- Test edge cases systematically
+
+## Evaluation
+- Verify consistency across runs
+- Check for hallucinations
+- Measure output against success criteria`,
+      description: "Core principles for writing effective AI prompts",
+      tags: ["prompt-engineering", "best-practices", "ai"],
+      is_favorite: false,
+      created_by: user.email
+    });
+
+    console.log('[seedDemoData] ✓ 2 Vault prompts created');
     console.log('[seedDemoData] ✓ Demo seed completed successfully');
 
     return Response.json({
       status: 'success',
       message: 'Demo environment created',
-      projects: [project1.id, project2.id],
-      total_tasks: 10,
-      total_templates: 6
+      projects: 2,
+      tasks: 10,
+      vault_prompts: 2,
+      templates: 6,
+      seeded_at: new Date().toISOString()
     });
 
   } catch (error) {
     console.error('[seedDemoData] Error:', error);
+    
+    // Rollback marker on failure
+    try {
+      await base44.auth.updateMe({ demo_seeded_at: null });
+    } catch (rollbackError) {
+      console.error('[seedDemoData] Rollback failed:', rollbackError);
+    }
+
     return Response.json({ 
       error: error.message,
       stack: error.stack
