@@ -4,8 +4,9 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
-import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText, TrendingUp, X } from "lucide-react";
+import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText, TrendingUp, X, Database } from "lucide-react";
 import ThemeToggleButton from "@/components/theme/ThemeToggleButton";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../i18n/LanguageContext";
 import StartTrialModal from "../auth/StartTrialModal";
@@ -90,6 +91,22 @@ export default function Header() {
   const handleLogout = async () => {
     await base44.auth.logout();
   };
+
+  const handleSeedDemoData = async () => {
+    try {
+      toast.info('Creating demo data...');
+      const response = await base44.functions.invoke('seedDemoData');
+      if (response.data.status === 'already_seeded') {
+        toast.info('Demo data already exists');
+      } else {
+        toast.success('Demo data created successfully!');
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch (error) {
+      toast.error('Failed to create demo data');
+      console.error(error);
+    }
+  };
   
   const currentPath = location.pathname.toLowerCase();
   const isVault = currentPath.includes("dashboard") || currentPath === "/" || currentPath === "";
@@ -114,21 +131,20 @@ export default function Header() {
 
   // Seed demo data for users who don't have it yet (fire-and-forget)
   useEffect(() => {
-    if (user && !user.demo_seed_version) {
+    if (user && !user.demo_seeded_at) {
       // Run in background without blocking UI
       setTimeout(() => {
         base44.functions.invoke('seedDemoData')
           .then(() => {
             console.log('[Header] Demo data seeded successfully');
-            // Refresh queries to show new data
-            window.location.reload();
+            // NO reload - just invalidate queries
           })
           .catch(err => {
             console.warn('[Header] Demo seed failed, user can still use app:', err);
           });
       }, 100);
     }
-  }, [user]);
+  }, [user?.id]); // Only trigger on user ID change, not on every user update
   
   const handleLogoClick = () => {
     window.location.href = createPageUrl("Multiprompt");
@@ -303,6 +319,10 @@ export default function Header() {
                         <MessageCircle className="mr-2 h-4 w-4" />
                         <span>Tickets</span>
                       </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleSeedDemoData} className="cursor-pointer text-green-600 dark:text-green-400 focus:text-green-600 dark:focus:text-green-400 bg-green-50/50 dark:bg-green-950/30">
+                      <Database className="mr-2 h-4 w-4" />
+                      <span>Seed Demo Data</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
                   </>
