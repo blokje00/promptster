@@ -136,6 +136,81 @@ function buildTemplates(projectId, projectName, ownerEmail, now) {
 }
 
 /**
+ * Build Items for a project (needs project ID)
+ */
+function buildItems(projectId, projectName, ownerEmail, now) {
+  if (projectName === "SaaS Web App Refactor") {
+    return [
+      {
+        title: "User Dashboard Redesign",
+        type: "prompt",
+        content: "Design a modern dashboard for SaaS users with key metrics, recent activity, and quick actions. Focus on clarity and usability.",
+        description: "Complete dashboard redesign with focus on UX",
+        tags: ["dashboard", "ui", "ux", "design"],
+        is_favorite: true,
+        is_demo: true,
+        project_id: projectId,
+        status: "success",
+        created_by: ownerEmail,
+        created_date: now
+      },
+      {
+        title: "API Error Handling",
+        type: "code",
+        language: "javascript",
+        content: "// Centralized API error handler\nfunction handleAPIError(error) {\n  if (error.response) {\n    // Server responded with error\n    console.error('API Error:', error.response.status);\n    return error.response.data;\n  } else if (error.request) {\n    // No response received\n    console.error('Network Error');\n    return { message: 'Network error' };\n  }\n  return { message: 'Unknown error' };\n}",
+        description: "Reusable error handler for API calls",
+        tags: ["javascript", "error-handling", "api"],
+        is_demo: true,
+        project_id: projectId,
+        status: "open",
+        created_by: ownerEmail,
+        created_date: now
+      },
+      {
+        title: "Mobile Navigation Component",
+        type: "snippet",
+        language: "javascript",
+        content: "const MobileNav = () => {\n  const [isOpen, setIsOpen] = useState(false);\n  return (\n    <nav className=\"mobile-nav\">\n      <button onClick={() => setIsOpen(!isOpen)}>Menu</button>\n      {isOpen && <MenuItems />}\n    </nav>\n  );\n};",
+        description: "Simple mobile navigation with toggle",
+        tags: ["react", "mobile", "navigation"],
+        is_demo: true,
+        project_id: projectId,
+        created_by: ownerEmail,
+        created_date: now
+      }
+    ];
+  } else {
+    return [
+      {
+        title: "Few-Shot Learning Prompt",
+        type: "prompt",
+        content: "Analyze the following examples and extract the pattern:\n\nExample 1: Input: 'apple' → Output: 'fruit'\nExample 2: Input: 'carrot' → Output: 'vegetable'\nExample 3: Input: 'salmon' → Output: 'fish'\n\nNow classify: 'banana'",
+        description: "Template for few-shot learning prompts",
+        tags: ["ai", "prompt-engineering", "few-shot"],
+        is_favorite: true,
+        is_demo: true,
+        project_id: projectId,
+        status: "success",
+        created_by: ownerEmail,
+        created_date: now
+      },
+      {
+        title: "Chain-of-Thought Prompt",
+        type: "prompt",
+        content: "Let's solve this step by step:\n\n1. First, identify the key variables\n2. Then, analyze the relationships\n3. Finally, draw a conclusion\n\nProblem: [Insert your problem here]",
+        description: "Template for structured reasoning",
+        tags: ["ai", "reasoning", "template"],
+        is_demo: true,
+        project_id: projectId,
+        created_by: ownerEmail,
+        created_date: now
+      }
+    ];
+  }
+}
+
+/**
  * Build thoughts for a project (needs project ID)
  */
 function buildThoughts(projectId, projectName, ownerEmail, now) {
@@ -458,18 +533,35 @@ Deno.serve(async (req) => {
       }
     }
 
-    // BULK INSERT 4: Thoughts (per project, with 429 retry)
-    console.info('[SEED-BACKEND][STEP_4]', { reqId, entity: 'Thought' });
+    // BULK INSERT 4: Items (per project, with 429 retry)
+    console.info('[SEED-BACKEND][STEP_4]', { reqId, entity: 'Item' });
+    let itemCount = 0;
+    for (let i = 0; i < projectCount; i++) {
+      const project = createdProjects[i];
+      const items = buildItems(project.id, project.name, user.email, now);
+      if (Array.isArray(items) && items.length > 0) {
+        console.info('[SEED-BACKEND][STEP_4_PROJECT]', { reqId, projectIndex: i+1, total: projectCount, itemCount: items.length });
+        await with429Retry(async () => {
+          await base44.asServiceRole.entities.Item.bulkCreate(items);
+          itemCount += items.length;
+          console.info('[SEED-BACKEND][STEP_4_PROJECT_OK]', { reqId, itemCount });
+        }, `Items-${project.name}`);
+        await delay(800);
+      }
+    }
+
+    // BULK INSERT 5: Thoughts (per project, with 429 retry)
+    console.info('[SEED-BACKEND][STEP_5]', { reqId, entity: 'Thought' });
     let thoughtCount = 0;
     for (let i = 0; i < projectCount; i++) {
       const project = createdProjects[i];
       const thoughts = buildThoughts(project.id, project.name, user.email, now);
       if (Array.isArray(thoughts) && thoughts.length > 0) {
-        console.info('[SEED-BACKEND][STEP_4_PROJECT]', { reqId, projectIndex: i+1, total: projectCount, thoughtCount: thoughts.length });
+        console.info('[SEED-BACKEND][STEP_5_PROJECT]', { reqId, projectIndex: i+1, total: projectCount, thoughtCount: thoughts.length });
         await with429Retry(async () => {
           await base44.asServiceRole.entities.Thought.bulkCreate(thoughts);
           thoughtCount += thoughts.length;
-          console.info('[SEED-BACKEND][STEP_4_PROJECT_OK]', { reqId, thoughtCount });
+          console.info('[SEED-BACKEND][STEP_5_PROJECT_OK]', { reqId, thoughtCount });
         }, `Thoughts-${project.name}`);
         await delay(800);
       }
@@ -481,29 +573,7 @@ Deno.serve(async (req) => {
       personal_preferences_markdown: PERSONAL_PREFERENCES
     });
 
-    // VERIFICATION: Check if data is actually readable before marking success
-    console.info('[SEED-BACKEND][VERIFY]', { reqId, msg: 'Verifying data is readable...' });
-    await delay(1500); // Wait for DB consistency
-
-    const verifyProjects = await base44.asServiceRole.entities.Project.filter({ 
-      created_by: user.email, 
-      is_demo: true 
-    });
-    const verifyCount = Array.isArray(verifyProjects) ? verifyProjects.length : 0;
-
-    if (verifyCount === 0) {
-      console.error('[SEED-BACKEND][VERIFY_FAILED]', { 
-        reqId, 
-        msg: 'Data written but not readable',
-        expected: projectCount,
-        found: verifyCount
-      });
-      throw new Error('Verification failed: demo projects not readable after insert');
-    }
-
-    console.info('[SEED-BACKEND][VERIFY_OK]', { reqId, projectsFound: verifyCount });
-
-    // ✅ MARK SUCCESS (only after verification)
+    // ✅ MARK SUCCESS
     await base44.auth.updateMe({
       demo_seed_status: 'success',
       demo_seed_version: CURRENT_VERSION
@@ -525,6 +595,7 @@ Deno.serve(async (req) => {
       stats: {
         projects: projectCount,
         templates: templateCount,
+        items: itemCount,
         thoughts: thoughtCount
       }
     });

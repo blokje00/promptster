@@ -85,20 +85,20 @@ export function BootstrapProvider({ children }) {
             if (!isMounted) return;
             
             try {
-              // Check both projects AND thoughts to ensure full data availability
-              const [projects, thoughts] = await Promise.all([
+              // Check projects AND items (Vault data) to ensure full data availability
+              const [projects, items] = await Promise.all([
                 base44.entities.Project.filter({ is_demo: true }),
-                base44.entities.Thought.filter({ is_demo: true })
+                base44.entities.Item.filter({ is_demo: true })
               ]);
               
               const projectCount = projects?.length || 0;
-              const thoughtCount = thoughts?.length || 0;
+              const itemCount = items?.length || 0;
               
-              if (projectCount >= 2 && thoughtCount >= 5) {
-                console.log(`${logPrefix} ✅ Verified demo data: ${projectCount} projects, ${thoughtCount} thoughts (attempt ${attempts})`);
+              if (projectCount >= 2 && itemCount >= 3) {
+                console.log(`${logPrefix} ✅ Verified demo data: ${projectCount} projects, ${itemCount} items (attempt ${attempts})`);
                 dataVerified = true;
               } else {
-                console.log(`${logPrefix} ⏳ Attempt ${attempts}/${maxAttempts}: Found ${projectCount} projects, ${thoughtCount} thoughts (expecting 2 projects + 5+ thoughts). Waiting ${delay}ms...`);
+                console.log(`${logPrefix} ⏳ Attempt ${attempts}/${maxAttempts}: Found ${projectCount} projects, ${itemCount} items (expecting 2 projects + 3+ items). Waiting ${delay}ms...`);
               }
             } catch (checkErr) {
               console.warn(`${logPrefix} ⚠️ Attempt ${attempts} verification error:`, checkErr?.message);
