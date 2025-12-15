@@ -1,13 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import PromptsterStory from "@/components/features/PromptsterStory.jsx";
 import FeatureInlineEditor from "@/components/admin/FeatureInlineEditor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Zap, Shield, Database, Code, Cpu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, Zap, Shield, Database, Code, Cpu, Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import AccessGuard from "../components/auth/AccessGuard";
+import StartTrialModal from "../components/auth/StartTrialModal";
 
 const iconMap = {
   Database: <Database className="w-6 h-6 text-indigo-500" />,
@@ -104,8 +107,30 @@ function FeaturesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
+      {/* Get Started CTA - Top Banner */}
+      {!currentUser && (
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-4 sticky top-0 z-50 shadow-lg">
+          <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-6 h-6 flex-shrink-0" />
+              <div>
+                <h3 className="font-bold text-lg">Start Your Free 14-Day Trial</h3>
+                <p className="text-sm text-indigo-100">No credit card required. Cancel anytime.</p>
+              </div>
+            </div>
+            <Button 
+              onClick={() => setShowTrialModal(true)}
+              size="lg"
+              className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold shadow-xl"
+            >
+              Get Started <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      <div className="max-w-6xl mx-auto p-8">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
             {isAdmin ? (
@@ -284,6 +309,13 @@ function FeaturesPage() {
           </div>
         </Link>
       </div>
+
+      {/* Trial Modal */}
+      <StartTrialModal 
+        isOpen={showTrialModal}
+        onClose={() => setShowTrialModal(false)}
+        onSuccess={() => window.location.href = createPageUrl('Multiprompt')}
+      />
     </div>
   );
 }
