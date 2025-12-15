@@ -312,31 +312,38 @@ Deno.serve(async (req) => {
     const dataset = buildDemoDataset(user.email);
     const now = new Date().toISOString();
 
+    // Helper: delay to avoid rate limits
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
     // BULK INSERT 1: AI Settings
     console.info('[SEED] Inserting AI settings...');
     await base44.asServiceRole.entities.AISettings.bulkCreate(dataset.aiSettings);
+    await delay(500); // Wait 500ms between inserts
 
     // BULK INSERT 2: Projects
     console.info('[SEED] Inserting projects...');
     const createdProjects = await base44.asServiceRole.entities.Project.bulkCreate(dataset.projects);
+    await delay(500);
 
-    // BULK INSERT 3: Templates (per project)
+    // BULK INSERT 3: Templates (per project, split to avoid rate limits)
     console.info('[SEED] Inserting templates...');
-    const allTemplates = [];
     for (const project of createdProjects) {
       const templates = buildTemplates(project.id, project.name, user.email, now);
-      allTemplates.push(...templates);
+      if (templates.length > 0) {
+        await base44.asServiceRole.entities.PromptTemplate.bulkCreate(templates);
+        await delay(300); // Delay between each project's templates
+      }
     }
-    await base44.asServiceRole.entities.PromptTemplate.bulkCreate(allTemplates);
 
-    // BULK INSERT 4: Thoughts (per project)
+    // BULK INSERT 4: Thoughts (per project, split to avoid rate limits)
     console.info('[SEED] Inserting thoughts...');
-    const allThoughts = [];
     for (const project of createdProjects) {
       const thoughts = buildThoughts(project.id, project.name, user.email, now);
-      allThoughts.push(...thoughts);
+      if (thoughts.length > 0) {
+        await base44.asServiceRole.entities.Thought.bulkCreate(thoughts);
+        await delay(300); // Delay between each project's thoughts
+      }
     }
-    await base44.asServiceRole.entities.Thought.bulkCreate(allThoughts);
 
     // UPDATE PERSONAL PREFERENCES
     console.info('[SEED] Updating user preferences...');
@@ -347,18 +354,14 @@ Deno.serve(async (req) => {
     console.info('[SEED] ✅ COMPLETE', {
       user: user.email,
       seeded_at: seedTimestamp,
-      projects: createdProjects.length,
-      templates: allTemplates.length,
-      thoughts: allThoughts.length
+      projects: createdProjects.length
     });
 
     return Response.json({
       status: 'success',
       seeded_at: seedTimestamp,
       stats: {
-        projects: createdProjects.length,
-        templates: allTemplates.length,
-        thoughts: allThoughts.length
+        projects: createdProjects.length
       }
     });
 

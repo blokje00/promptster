@@ -37,23 +37,25 @@ export function useOnboardingBootstrap() {
     }
 
     // 4. ALREADY SEEDED CHECK (Database flag)
+    // TRUE = already seeded, skip. FALSE/null = needs seeding, proceed.
     if (user.demo_seeded_at) {
-      // console.info(`${logPrefix} User already seeded at: ${user.demo_seeded_at}`);
+      // console.info(`${logPrefix} ✅ Already seeded at: ${user.demo_seeded_at}`);
       return;
     }
 
     // 5. SESSION LOCK CHECK
+    // TRUE = already running, skip. FALSE = not running, proceed.
     if (hasTriggered.current) {
-      // console.info(`${logPrefix} Blocked by local ref (already running)`);
+      // console.info(`${logPrefix} ⏸️ Blocked by local ref (already running)`);
       return;
     }
 
     const sessionKey = `seed_attempt_${user.id}`;
     const lastAttempt = sessionStorage.getItem(sessionKey);
     
-    // Allow retry after 10 seconds if it failed previously
-    if (lastAttempt && Date.now() - parseInt(lastAttempt) < 10000) {
-      console.info(`${logPrefix} Recently attempted (${Math.round((Date.now() - parseInt(lastAttempt))/1000)}s ago). Waiting.`);
+    // Allow retry after 15 seconds if it failed previously
+    if (lastAttempt && Date.now() - parseInt(lastAttempt) < 15000) {
+      console.info(`${logPrefix} ⏳ Cooldown active (${Math.round((Date.now() - parseInt(lastAttempt))/1000)}s ago). Waiting...`);
       return;
     }
 
