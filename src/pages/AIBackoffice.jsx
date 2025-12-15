@@ -183,21 +183,15 @@ export default function AIBackoffice() {
   });
 
   const { data: projects = [] } = useQuery({
-    queryKey: ['projects', currentUser?.email],
-    queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.Project.filter({ created_by: currentUser.email });
-    },
-    enabled: !!currentUser?.email,
+    queryKey: ['projects'],
+    queryFn: async () => await base44.entities.Project.list(),
+    enabled: !!currentUser,
   });
 
   const { data: projectStructures = [] } = useQuery({
-    queryKey: ['projectStructures', currentUser?.email],
-    queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.ProjectStructure.filter({ created_by: currentUser.email });
-    },
-    enabled: !!currentUser?.email,
+    queryKey: ['projectStructures'],
+    queryFn: async () => await base44.entities.ProjectStructure.list(),
+    enabled: !!currentUser,
   });
 
   const [selectedProjectId, setSelectedProjectId] = useState("");
