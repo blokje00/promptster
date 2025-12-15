@@ -20,123 +20,124 @@ const PERSONAL_PREFERENCES = `# Personal AI Preferences
 
 Deno.serve(async (req) => {
   console.log('[seedDemoData] 🚀 Function invoked');
-  console.log('[seedDemoData] Request method:', req.method);
-  console.log('[seedDemoData] Request URL:', req.url);
   
   const base44 = createClientFromRequest(req);
   console.log('[seedDemoData] ✅ Base44 client created');
   
   try {
-    // Parse request body for force flag
-    const body = req.method === 'POST' ? await req.json() : {};
+    // Parse request body
+    const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
     const force = body.force === true;
     console.log('[seedDemoData] Force mode:', force);
     
-    console.log('[seedDemoData] ⏳ Fetching user via auth.me()...');
+    // Get current user
+    console.log('[seedDemoData] ⏳ Fetching user...');
     const user = await base44.auth.me();
-    console.log('[seedDemoData] User from auth.me():', { id: user?.id, email: user?.email, demo_seeded_at: user?.demo_seeded_at });
-    
-    // ALSO check User entity directly
-    console.log('[seedDemoData] ⏳ Fetching user entity from database...');
-    const userEntity = await base44.asServiceRole.entities.User.filter({ id: user.id });
-    console.log('[seedDemoData] User entity from DB:', userEntity?.[0]);
+    console.log('[seedDemoData] User:', { id: user?.id, email: user?.email });
 
     if (!user) {
-      console.log('[seedDemoData] ❌ No user found - unauthorized');
+      console.log('[seedDemoData] ❌ No user found');
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check BOTH auth.me() and entity for demo marker
-    const dbDemoMarker = userEntity?.[0]?.demo_seeded_at;
-    const authDemoMarker = user.demo_seeded_at;
-    console.log('[seedDemoData] Demo markers - DB:', dbDemoMarker, 'Auth:', authDemoMarker);
+    // ============================================
+    // KRITIEKE FIX #1: Check data EXISTS, niet marker
+    // ============================================
+    console.log('[seedDemoData] 🔍 Checking if demo data already exists...');
+    const existingProjects = await base44.asServiceRole.entities.Project.filter({});
+    const demoProjects = existingProjects.filter(p => p.name?.startsWith('DEMO:'));
     
-    // Check if demo already seeded (skip if force=true)
-    if ((authDemoMarker || dbDemoMarker) && !force) {
-      console.log('[seedDemoData] ℹ️ User already has demo data, skipping');
+    console.log('[seedDemoData] Found existing demo projects:', demoProjects.length);
+    
+    if (demoProjects.length > 0 && !force) {
+      console.log('[seedDemoData] ℹ️ Demo data already exists, skipping');
       return Response.json({ 
         status: 'already_seeded',
-        message: 'Demo data already exists for this user',
-        seeded_at: authDemoMarker || dbDemoMarker
+        message: 'Demo data already exists',
+        projects: demoProjects.length
       });
     }
 
-    // FORCE MODE: Clean up existing demo data first
-    if (force) {
-      console.log('[seedDemoData] 🧹 FORCE MODE: Cleaning up existing demo data...');
+    // FORCE MODE: Clean up
+    if (force && demoProjects.length > 0) {
+      console.log('[seedDemoData] 🧹 FORCE MODE: Cleaning up...');
       
-      // Delete all DEMO projects
-      const demoProjects = await base44.asServiceRole.entities.Project.filter({ 
-        created_by: user.email 
-      });
-      const projectsToDelete = demoProjects.filter(p => p.name?.startsWith('DEMO:'));
-      for (const project of projectsToDelete) {
-        console.log('[seedDemoData] 🗑️ Deleting demo project:', project.id);
-        await base44.asServiceRole.entities.Project.delete(project.id);
-      }
-      
-      // Delete all DEMO templates
-      const demoTemplates = await base44.asServiceRole.entities.PromptTemplate.filter({ 
-        created_by: user.email 
-      });
-      const templatesToDelete = demoTemplates.filter(t => t.name?.startsWith('DEMO:'));
-      for (const template of templatesToDelete) {
-        console.log('[seedDemoData] 🗑️ Deleting demo template:', template.id);
-        await base44.asServiceRole.entities.PromptTemplate.delete(template.id);
-      }
-      
-      // Delete all DEMO thoughts
-      const demoThoughts = await base44.asServiceRole.entities.Thought.filter({ 
-        created_by: user.email 
-      });
-      const thoughtsToDelete = demoThoughts.filter(t => t.content?.startsWith('DEMO:'));
-      for (const thought of thoughtsToDelete) {
-        console.log('[seedDemoData] 🗑️ Deleting demo thought:', thought.id);
+      // Delete in correct order (respect foreign keys)
+      const allThoughts = await base44.asServiceRole.entities.Thought.filter({});
+      const demoThoughts = allThoughts.filter(t => 
+        demoProjects.some(p => p.id === t.project_id) || t.content?.startsWith('DEMO:')
+      );
+      for (const thought of demoThoughts) {
         await base44.asServiceRole.entities.Thought.delete(thought.id);
       }
+      console.log('[seedDemoData] Deleted', demoThoughts.length, 'thoughts');
       
-      // Delete all DEMO items
-      const demoItems = await base44.asServiceRole.entities.Item.filter({ 
-        created_by: user.email 
-      });
-      const itemsToDelete = demoItems.filter(i => i.title?.startsWith('DEMO:'));
-      for (const item of itemsToDelete) {
-        console.log('[seedDemoData] 🗑️ Deleting demo item:', item.id);
+      const allTemplates = await base44.asServiceRole.entities.PromptTemplate.filter({});
+      const demoTemplates = allTemplates.filter(t => 
+        demoProjects.some(p => p.id === t.project_id) || t.name?.startsWith('DEMO:')
+      );
+      for (const template of demoTemplates) {
+        await base44.asServiceRole.entities.PromptTemplate.delete(template.id);
+      }
+      console.log('[seedDemoData] Deleted', demoTemplates.length, 'templates');
+      
+      const allItems = await base44.asServiceRole.entities.Item.filter({});
+      const demoItems = allItems.filter(i => 
+        demoProjects.some(p => p.id === i.project_id) || i.title?.startsWith('DEMO:')
+      );
+      for (const item of demoItems) {
         await base44.asServiceRole.entities.Item.delete(item.id);
       }
+      console.log('[seedDemoData] Deleted', demoItems.length, 'items');
+      
+      for (const project of demoProjects) {
+        await base44.asServiceRole.entities.Project.delete(project.id);
+      }
+      console.log('[seedDemoData] Deleted', demoProjects.length, 'projects');
       
       console.log('[seedDemoData] ✅ Cleanup complete');
     }
 
-    console.log('[seedDemoData] ✨ Starting demo seed for user:', user.email);
+    console.log('[seedDemoData] ✨ Starting demo seed...');
 
-    // Set marker immediately to prevent duplicate runs - use ENTITY UPDATE, not auth.updateMe
-    const timestamp = new Date().toISOString();
-    console.log('[seedDemoData] ⏳ Setting demo_seeded_at marker in User entity...');
-    await base44.asServiceRole.entities.User.update(user.id, {
-      demo_seeded_at: timestamp
-    });
-    console.log('[seedDemoData] ✅ Marker set in DB at:', timestamp);
-
-    // STEP 1: Create Personal AI Configuration
-    console.log('[seedDemoData] ⏳ Step 1: Creating personal AI config...');
+    // ============================================
+    // STAP 1: Personal AI Config
+    // ============================================
+    console.log('[seedDemoData] 📝 Step 1: Personal AI config...');
+    
     await base44.auth.updateMe({
-      personal_preferences_markdown: PERSONAL_PREFERENCES
+      personal_preferences_markdown: PERSONAL_PREFERENCES,
+      demo_seeded_at: new Date().toISOString()
     });
-    console.log('[seedDemoData] ✅ Personal preferences set');
+    
+    // Check if AISettings already exists
+    const existingSettings = await base44.asServiceRole.entities.AISettings.filter({});
+    const userSettings = existingSettings.find(s => s.created_by === user.email);
+    
+    let aiSettings;
+    if (userSettings) {
+      console.log('[seedDemoData] AI Settings already exist, updating...');
+      aiSettings = await base44.asServiceRole.entities.AISettings.update(userSettings.id, {
+        improve_prompt_instruction: "Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.",
+        model_preference: "default",
+        enable_context_suggestions: true
+      });
+    } else {
+      aiSettings = await base44.asServiceRole.entities.AISettings.create({
+        improve_prompt_instruction: "Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.",
+        model_preference: "default",
+        enable_context_suggestions: true,
+        created_by: user.email
+      });
+    }
+    console.log('[seedDemoData] ✅ AI Settings:', aiSettings?.id);
 
-    const aiSettings = await base44.asServiceRole.entities.AISettings.create({
-      improve_prompt_instruction: "Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.",
-      model_preference: "default",
-      enable_context_suggestions: true,
-      created_by: user.email
-    });
-    console.log('[seedDemoData] ✅ AI Settings created:', aiSettings?.id);
-
-    console.log('[seedDemoData] ✓ Personal config created');
-
-    // STEP 2: Create Demo Project 1 - SaaS Web App Refactor
-    console.log('[seedDemoData] ⏳ Step 2: Creating Project 1...');
+    // ============================================
+    // KRITIEKE FIX #2: Wacht op elke create() response
+    // ============================================
+    
+    // STAP 2: Project 1
+    console.log('[seedDemoData] 📁 Step 2: Creating Project 1...');
     const project1 = await base44.asServiceRole.entities.Project.create({
       name: "DEMO: SaaS Web App Refactor",
       color: "blue",
@@ -157,10 +158,19 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
 - Increase confidence in production readiness`,
       created_by: user.email
     });
-    console.log('[seedDemoData] ✅ Project 1 created:', project1?.id);
+    
+    // KRITIEK: Check of create succesvol was
+    if (!project1 || !project1.id) {
+      throw new Error('Project 1 creation failed - no ID returned');
+    }
+    console.log('[seedDemoData] ✅ Project 1 created:', project1.id);
+    
+    // Korte delay voor database consistency
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Project 1 Templates
-    console.log('[seedDemoData] ⏳ Creating templates for Project 1...');
+    // Templates voor Project 1
+    console.log('[seedDemoData] 📋 Creating templates for Project 1...');
+    
     const t1 = await base44.asServiceRole.entities.PromptTemplate.create({
       name: "DEMO: UI Review Template",
       type: "start",
@@ -168,7 +178,10 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       project_id: project1.id,
       created_by: user.email
     });
-    console.log('[seedDemoData] ✅ Template 1 created:', t1?.id);
+    if (!t1?.id) throw new Error('Template 1 failed');
+    console.log('[seedDemoData] ✅ Template 1:', t1.id);
+    
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     const t2 = await base44.asServiceRole.entities.PromptTemplate.create({
       name: "DEMO: Code Refactor Template",
@@ -177,7 +190,10 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       project_id: project1.id,
       created_by: user.email
     });
-    console.log('[seedDemoData] ✅ Template 2 created:', t2?.id);
+    if (!t2?.id) throw new Error('Template 2 failed');
+    console.log('[seedDemoData] ✅ Template 2:', t2.id);
+    
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     const t3 = await base44.asServiceRole.entities.PromptTemplate.create({
       name: "DEMO: Bug Analysis Template",
@@ -186,73 +202,42 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       project_id: project1.id,
       created_by: user.email
     });
-    console.log('[seedDemoData] ✅ Template 3 created:', t3?.id);
+    if (!t3?.id) throw new Error('Template 3 failed');
+    console.log('[seedDemoData] ✅ Template 3:', t3.id);
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Project 1 Tasks (NO SCREENSHOTS)
-    console.log('[seedDemoData] ⏳ Creating tasks for Project 1...');
-    const task1 = await base44.asServiceRole.entities.Thought.create({
-      content: "DEMO: Review the homepage layout and visual hierarchy",
-      project_id: project1.id,
-      is_selected: true,
-      is_deleted: false,
-      focus_type: "design",
-      target_page: "Dashboard",
-      target_domain: "UI",
-      created_by: user.email
-    });
-    console.log('[seedDemoData] ✅ Task 1 created:', task1?.id);
+    // Tasks voor Project 1
+    console.log('[seedDemoData] ✏️ Creating tasks for Project 1...');
+    
+    const tasks1 = [
+      { content: "DEMO: Review the homepage layout and visual hierarchy", focus_type: "design", target_page: "Dashboard", target_domain: "UI" },
+      { content: "DEMO: Identify usability issues in the admin dashboard", focus_type: "both", target_page: "Dashboard", target_domain: "UI" },
+      { content: "DEMO: Analyze a reported issue in the signup flow", focus_type: "logic", target_domain: "UploadFlow" },
+      { content: "DEMO: Propose improvements to the settings page code structure", focus_type: "both", target_page: "Dashboard", target_domain: "UI" },
+      { content: "DEMO: Review mobile layout issues and responsiveness", focus_type: "design", target_domain: "Styling" }
+    ];
+    
+    for (const [idx, taskData] of tasks1.entries()) {
+      const task = await base44.asServiceRole.entities.Thought.create({
+        ...taskData,
+        project_id: project1.id,
+        is_selected: true,
+        is_deleted: false,
+        created_by: user.email
+      });
+      if (!task?.id) throw new Error(`Task ${idx + 1} failed`);
+      console.log(`[seedDemoData] ✅ Task ${idx + 1}:`, task.id);
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
 
-    const task2 = await base44.asServiceRole.entities.Thought.create({
-      content: "DEMO: Identify usability issues in the admin dashboard",
-      project_id: project1.id,
-      is_selected: true,
-      is_deleted: false,
-      focus_type: "both",
-      target_page: "Dashboard",
-      target_domain: "UI",
-      created_by: user.email
-    });
-    console.log('[seedDemoData] ✅ Task 2 created:', task2?.id);
+    console.log('[seedDemoData] ✅ Project 1 COMPLETE');
 
-    const task3 = await base44.asServiceRole.entities.Thought.create({
-      content: "DEMO: Analyze a reported issue in the signup flow",
-      project_id: project1.id,
-      is_selected: true,
-      is_deleted: false,
-      focus_type: "logic",
-      target_domain: "UploadFlow",
-      created_by: user.email
-    });
-    console.log('[seedDemoData] ✅ Task 3 created:', task3?.id);
-
-    const task4 = await base44.asServiceRole.entities.Thought.create({
-      content: "DEMO: Propose improvements to the settings page code structure",
-      project_id: project1.id,
-      is_selected: true,
-      is_deleted: false,
-      focus_type: "both",
-      target_page: "Dashboard",
-      target_domain: "UI",
-      created_by: user.email
-    });
-    console.log('[seedDemoData] ✅ Task 4 created:', task4?.id);
-
-    const task5 = await base44.asServiceRole.entities.Thought.create({
-      content: "DEMO: Review mobile layout issues and responsiveness",
-      project_id: project1.id,
-      is_selected: true,
-      is_deleted: false,
-      focus_type: "design",
-      target_domain: "Styling",
-      created_by: user.email
-    });
-    console.log('[seedDemoData] ✅ Task 5 created:', task5?.id);
-
-    console.log('[seedDemoData] ✅ All Project 1 tasks created');
-    console.log('[seedDemoData] ✓ Project 1 COMPLETE: 3 templates and 5 tasks');
-
-    // STEP 3: Create Demo Project 2 - AI Prompt Engineering Playground
-    console.log('[seedDemoData] ⏳ Step 3: Creating Project 2...');
+    // ============================================
+    // STAP 3: Project 2
+    // ============================================
+    console.log('[seedDemoData] 📁 Step 3: Creating Project 2...');
+    
     const project2 = await base44.asServiceRole.entities.Project.create({
       name: "DEMO: AI Prompt Engineering Playground",
       color: "purple",
@@ -268,10 +253,17 @@ This project explores prompt design, iteration, and evaluation for AI systems.
 - Improve reliability of AI responses`,
       created_by: user.email
     });
-    console.log('[seedDemoData] ✅ Project 2 created:', project2?.id);
+    
+    if (!project2 || !project2.id) {
+      throw new Error('Project 2 creation failed');
+    }
+    console.log('[seedDemoData] ✅ Project 2 created:', project2.id);
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Project 2 Templates
-    console.log('[seedDemoData] ⏳ Creating templates for Project 2...');
+    // Templates voor Project 2
+    console.log('[seedDemoData] 📋 Creating templates for Project 2...');
+    
     const t4 = await base44.asServiceRole.entities.PromptTemplate.create({
       name: "DEMO: Prompt Critique Template",
       type: "start",
@@ -279,7 +271,10 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       project_id: project2.id,
       created_by: user.email
     });
-    console.log('[seedDemoData] ✅ Template 4 created:', t4?.id);
+    if (!t4?.id) throw new Error('Template 4 failed');
+    console.log('[seedDemoData] ✅ Template 4:', t4.id);
+    
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     const t5 = await base44.asServiceRole.entities.PromptTemplate.create({
       name: "DEMO: Prompt Rewrite Template",
@@ -288,7 +283,10 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       project_id: project2.id,
       created_by: user.email
     });
-    console.log('[seedDemoData] ✅ Template 5 created:', t5?.id);
+    if (!t5?.id) throw new Error('Template 5 failed');
+    console.log('[seedDemoData] ✅ Template 5:', t5.id);
+    
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     const t6 = await base44.asServiceRole.entities.PromptTemplate.create({
       name: "DEMO: Output Evaluation Template",
@@ -297,70 +295,42 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       project_id: project2.id,
       created_by: user.email
     });
-    console.log('[seedDemoData] ✅ Template 6 created:', t6?.id);
+    if (!t6?.id) throw new Error('Template 6 failed');
+    console.log('[seedDemoData] ✅ Template 6:', t6.id);
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Project 2 Tasks (NO SCREENSHOTS)
-    console.log('[seedDemoData] ⏳ Creating tasks for Project 2...');
-    const task6 = await base44.asServiceRole.entities.Thought.create({
-      content: "DEMO: Rewrite a poorly defined AI prompt for clarity and precision",
-      project_id: project2.id,
-      is_selected: true,
-      is_deleted: false,
-      focus_type: "discuss",
-      target_domain: "PromptEngine",
-      created_by: user.email
-    });
-    console.log('[seedDemoData] ✅ Task 6 created:', task6?.id);
+    // Tasks voor Project 2
+    console.log('[seedDemoData] ✏️ Creating tasks for Project 2...');
+    
+    const tasks2 = [
+      { content: "DEMO: Rewrite a poorly defined AI prompt for clarity and precision", focus_type: "discuss", target_domain: "PromptEngine" },
+      { content: "DEMO: Analyze differences between concise and verbose prompt styles", focus_type: "discuss", target_domain: "PromptEngine" },
+      { content: "DEMO: Identify hidden assumptions in a prompt", focus_type: "logic", target_domain: "PromptEngine" },
+      { content: "DEMO: Score an AI response against clear evaluation criteria", focus_type: "both", target_domain: "PromptEngine" },
+      { content: "DEMO: Design a system prompt for consistent AI behavior across sessions", focus_type: "both", target_domain: "PromptEngine" }
+    ];
+    
+    for (const [idx, taskData] of tasks2.entries()) {
+      const task = await base44.asServiceRole.entities.Thought.create({
+        ...taskData,
+        project_id: project2.id,
+        is_selected: true,
+        is_deleted: false,
+        created_by: user.email
+      });
+      if (!task?.id) throw new Error(`Task ${idx + 6} failed`);
+      console.log(`[seedDemoData] ✅ Task ${idx + 6}:`, task.id);
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
 
-    const task7 = await base44.asServiceRole.entities.Thought.create({
-      content: "DEMO: Analyze differences between concise and verbose prompt styles",
-      project_id: project2.id,
-      is_selected: true,
-      is_deleted: false,
-      focus_type: "discuss",
-      target_domain: "PromptEngine",
-      created_by: user.email
-    });
-    console.log('[seedDemoData] ✅ Task 7 created:', task7?.id);
+    console.log('[seedDemoData] ✅ Project 2 COMPLETE');
 
-    const task8 = await base44.asServiceRole.entities.Thought.create({
-      content: "DEMO: Identify hidden assumptions in a prompt",
-      project_id: project2.id,
-      is_selected: true,
-      is_deleted: false,
-      focus_type: "logic",
-      target_domain: "PromptEngine",
-      created_by: user.email
-    });
-    console.log('[seedDemoData] ✅ Task 8 created:', task8?.id);
-
-    const task9 = await base44.asServiceRole.entities.Thought.create({
-      content: "DEMO: Score an AI response against clear evaluation criteria",
-      project_id: project2.id,
-      is_selected: true,
-      is_deleted: false,
-      focus_type: "both",
-      target_domain: "PromptEngine",
-      created_by: user.email
-    });
-    console.log('[seedDemoData] ✅ Task 9 created:', task9?.id);
-
-    const task10 = await base44.asServiceRole.entities.Thought.create({
-      content: "DEMO: Design a system prompt for consistent AI behavior across sessions",
-      project_id: project2.id,
-      is_selected: true,
-      is_deleted: false,
-      focus_type: "both",
-      target_domain: "PromptEngine",
-      created_by: user.email
-    });
-    console.log('[seedDemoData] ✅ Task 10 created:', task10?.id);
-
-    console.log('[seedDemoData] ✅ All Project 2 tasks created');
-    console.log('[seedDemoData] ✓ Project 2 COMPLETE: 3 templates and 5 tasks');
-
-    // STEP 4: Create 2 Vault Prompts (NO IMAGES)
-    console.log('[seedDemoData] ⏳ Step 4: Creating vault items...');
+    // ============================================
+    // STAP 4: Vault Items
+    // ============================================
+    console.log('[seedDemoData] 📦 Step 4: Creating vault items...');
+    
     const item1 = await base44.asServiceRole.entities.Item.create({
       title: "DEMO: System Prompt - Code Review Assistant",
       type: "prompt",
@@ -380,7 +350,10 @@ Provide constructive feedback with specific examples and alternative implementat
       is_favorite: true,
       created_by: user.email
     });
-    console.log('[seedDemoData] ✅ Vault Item 1 created:', item1?.id);
+    if (!item1?.id) throw new Error('Vault item 1 failed');
+    console.log('[seedDemoData] ✅ Vault item 1:', item1.id);
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     const item2 = await base44.asServiceRole.entities.Item.create({
       title: "DEMO: Prompt Engineering Best Practices",
@@ -409,47 +382,52 @@ Provide constructive feedback with specific examples and alternative implementat
       is_favorite: false,
       created_by: user.email
     });
-    console.log('[seedDemoData] ✅ Vault Item 2 created:', item2?.id);
+    if (!item2?.id) throw new Error('Vault item 2 failed');
+    console.log('[seedDemoData] ✅ Vault item 2:', item2.id);
 
-    console.log('[seedDemoData] ✓ 2 Vault prompts created');
-    console.log('[seedDemoData] ✨✨✨ Demo seed completed successfully ✨✨✨');
+    console.log('[seedDemoData] ✨✨✨ Demo seed COMPLETED ✨✨✨');
+
+    // ============================================
+    // KRITIEKE FIX #3: Verify data was created
+    // ============================================
+    console.log('[seedDemoData] 🔍 Verifying created data...');
+    const verifyProjects = await base44.asServiceRole.entities.Project.filter({});
+    const verifyDemoProjects = verifyProjects.filter(p => p.name?.startsWith('DEMO:'));
+    
+    if (verifyDemoProjects.length !== 2) {
+      throw new Error(`Verification failed: Expected 2 projects, found ${verifyDemoProjects.length}`);
+    }
 
     const result = {
       status: 'success',
-      message: 'Demo environment created',
+      message: 'Demo environment created successfully',
       projects: 2,
       tasks: 10,
       vault_prompts: 2,
       templates: 6,
-      seeded_at: new Date().toISOString()
+      seeded_at: new Date().toISOString(),
+      verified: true
     };
     
-    console.log('[seedDemoData] 📤 Returning result:', result);
+    console.log('[seedDemoData] 📤 Result:', result);
     return Response.json(result);
 
   } catch (error) {
     console.error('[seedDemoData] ❌❌❌ FATAL ERROR ❌❌❌');
-    console.error('[seedDemoData] Error name:', error.name);
-    console.error('[seedDemoData] Error message:', error.message);
-    console.error('[seedDemoData] Error stack:', error.stack);
-    console.error('[seedDemoData] Full error:', JSON.stringify(error, null, 2));
+    console.error('[seedDemoData] Error:', error.message);
+    console.error('[seedDemoData] Stack:', error.stack);
     
-    // Rollback marker on failure - use ENTITY UPDATE
+    // Rollback marker on failure
     try {
-      console.log('[seedDemoData] ⏳ Rolling back demo_seeded_at marker in User entity...');
-      const user = await base44.auth.me();
-      if (user?.id) {
-        await base44.asServiceRole.entities.User.update(user.id, { demo_seeded_at: null });
-        console.log('[seedDemoData] ✅ Rollback successful');
-      }
+      await base44.auth.updateMe({ demo_seeded_at: null });
+      console.log('[seedDemoData] ✅ Marker rolled back');
     } catch (rollbackError) {
       console.error('[seedDemoData] ❌ Rollback failed:', rollbackError);
     }
 
     return Response.json({ 
       error: error.message,
-      stack: error.stack,
-      name: error.name
+      stack: error.stack
     }, { status: 500 });
   }
 });
