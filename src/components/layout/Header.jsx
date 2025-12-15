@@ -45,7 +45,8 @@ export default function Header() {
       return result?.length || 0;
     },
     enabled: !!user?.email,
-    refetchInterval: 1000,
+    refetchInterval: 30000,
+    staleTime: 20000,
   });
 
   // Task 3: All thoughts count (across all projects)
@@ -60,7 +61,8 @@ export default function Header() {
       return thoughts?.length || 0;
     },
     enabled: !!user?.email,
-    refetchInterval: 1000,
+    refetchInterval: 30000,
+    staleTime: 20000,
   });
 
   // Open Tasks Count (Checklist items)
@@ -85,7 +87,8 @@ export default function Header() {
       return count;
     },
     enabled: !!user?.email,
-    refetchInterval: 1000,
+    refetchInterval: 30000,
+    staleTime: 20000,
   });
 
   const handleLogout = async () => {
