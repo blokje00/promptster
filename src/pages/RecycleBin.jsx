@@ -229,6 +229,6 @@ export default function RecycleBin() {
             </div>
           )}
         </div>
-    </div>
+      </div>
   );
 }
