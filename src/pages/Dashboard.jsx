@@ -33,23 +33,21 @@ export default function Dashboard() {
   });
 
   const { data: projects = [] } = useQuery({
-    queryKey: ['projects', currentUser?.email],
+    queryKey: ['projects'],
     queryFn: async () => {
-      if (!currentUser?.email) return [];
-      const result = await base44.entities.Project.filter({ created_by: currentUser.email });
+      const result = await base44.entities.Project.list();
       return result || [];
     },
-    enabled: !!currentUser?.email,
+    enabled: !!currentUser,
   });
 
   const { data: items, isLoading } = useQuery({
-    queryKey: ['items', currentUser?.email],
+    queryKey: ['items'],
     queryFn: async () => {
-      if (!currentUser?.email) return [];
-      const result = await base44.entities.Item.filter({ created_by: currentUser.email }, "-updated_date");
+      const result = await base44.entities.Item.list("-updated_date");
       return result || [];
     },
-    enabled: !!currentUser?.email,
+    enabled: !!currentUser,
     initialData: [],
   });
 

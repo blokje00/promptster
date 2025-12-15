@@ -69,20 +69,17 @@ export function useOnboardingBootstrap() {
     return !user.demo_seed_version || user.demo_seed_version !== CURRENT_DEMO_VERSION;
   }, [isTesterUser]);
 
-  const invalidateAllDataQueries = useCallback(async (userEmail) => {
-    // Invalidate with EXACT keys matching how pages query data
+  const invalidateAllDataQueries = useCallback(async () => {
+    // Invalidate all data queries (no email in keys - using RLS)
     const keysToInvalidate = [
       ['currentUser'],
-      ['projects', userEmail],
       ['projects'],
-      ['items', userEmail],
       ['items'],
-      ['thoughts', userEmail],
       ['thoughts'],
-      ['templates', userEmail],
       ['templates'],
-      ['aiSettings', userEmail],
       ['aiSettings'],
+      ['allThoughtsCount'],
+      ['openTasksCount'],
     ];
 
     await Promise.all(
@@ -176,7 +173,7 @@ export function useOnboardingBootstrap() {
           setStatus("success");
 
           // Step 1: Invalidate all cached data
-          await invalidateAllDataQueries(freshUser.email);
+          await invalidateAllDataQueries();
           
           // Step 2: Force refetch user to get updated demo_seed_version
           await refetchUser();
@@ -196,7 +193,7 @@ export function useOnboardingBootstrap() {
           addDebugLog("User was already seeded (race condition handled)", response.data);
           setStatus("success");
           // Invalidate queries + refetch user to ensure cache is fresh
-          await invalidateAllDataQueries(freshUser.email);
+          await invalidateAllDataQueries();
           await refetchUser();
 
         } else {
