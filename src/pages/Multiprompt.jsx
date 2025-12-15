@@ -47,20 +47,20 @@ export default function Multiprompt() {
   });
 
   const { data: projects = [] } = useQuery({
-    queryKey: ['projects', currentUser?.email],
-    queryFn: async () => currentUser ? await base44.entities.Project.filter({ created_by: currentUser.email }) : [],
+    queryKey: ['projects'],
+    queryFn: async () => await base44.entities.Project.list(),
     enabled: !!currentUser
   });
 
   const { data: templates = [] } = useQuery({
-    queryKey: ['templates', currentUser?.email],
-    queryFn: async () => currentUser ? await base44.entities.PromptTemplate.filter({ created_by: currentUser.email }) : [],
+    queryKey: ['templates'],
+    queryFn: async () => await base44.entities.PromptTemplate.list(),
     enabled: !!currentUser
   });
 
   const { data: aiSettings = [] } = useQuery({
-    queryKey: ['aiSettings', currentUser?.email],
-    queryFn: async () => currentUser ? await base44.entities.AISettings.filter({ created_by: currentUser.email }) : [],
+    queryKey: ['aiSettings'],
+    queryFn: async () => await base44.entities.AISettings.list(),
     enabled: !!currentUser
   });
 
