@@ -265,31 +265,6 @@ export default function Header() {
                 <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
                 {user.role === 'admin' && (
                   <>
-                    <DropdownMenuItem 
-                      onClick={async () => {
-                        try {
-                          const confirmed = confirm('⚠️ This will add demo data (2 projects, 6 templates, 5 items, 10 thoughts) to your account. Continue?');
-                          if (!confirmed) return;
-                          
-                          const result = await base44.functions.invoke('seedDemoData', { force: true });
-                          
-                          if (result?.data?.status === 'success' || result?.status === 'success') {
-                            alert('✅ Demo data added successfully! Reloading...');
-                            window.location.reload();
-                          } else {
-                            alert('⚠️ ' + (result?.data?.message || result?.message || 'Unknown response'));
-                          }
-                        } catch (error) {
-                          console.error('Demo seed error:', error);
-                          alert('❌ Failed to add demo data: ' + error.message);
-                        }
-                      }}
-                      className="cursor-pointer text-purple-600 dark:text-purple-400 focus:text-purple-600 dark:focus:text-purple-400 bg-purple-50/50 dark:bg-purple-950/30 font-bold"
-                    >
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      <span>🎁 DEMO DATA</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
                     <DropdownMenuItem asChild>
                       <Link to={createPageUrl("AdminStats")} className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 bg-red-50/50 dark:bg-red-950/30">
                         <BarChart className="mr-2 h-4 w-4" />
