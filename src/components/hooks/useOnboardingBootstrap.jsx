@@ -1,13 +1,17 @@
 import { useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 
 /**
- * Ultra-minimal seed trigger - fires once, backend does everything.
+ * FIXED: Database-driven seeding with proper idempotency
  * 
- * Pattern: Backend-driven seeding, not frontend-driven detection.
+ * Pattern:
+ * 1. Check database (not cache) for existing data
+ * 2. Backend uses bulk inserts (no N+1)
+ * 3. Frontend invalidates ALL queries after seed
  */
 export function useOnboardingBootstrap() {
+  const queryClient = useQueryClient();
   const hasTriggered = useRef(false);
 
   const { data: currentUser } = useQuery({
@@ -15,15 +19,48 @@ export function useOnboardingBootstrap() {
     queryFn: () => base44.auth.me().catch(() => null),
   });
 
+  // Database check: Does demo data exist?
+  const { data: hasProjects } = useQuery({
+    queryKey: ['has-demo-data'],
+    queryFn: async () => {
+      const projects = await base44.entities.Project.list();
+      return projects && projects.length > 0;
+    },
+    enabled: !!currentUser,
+    staleTime: 30000, // 30 seconds
+    retry: 1
+  });
+
   useEffect(() => {
-    if (!currentUser || hasTriggered.current) return;
-    if (currentUser.demo_seeded_at) return;
+    // Only seed if: user exists, not already triggered, and NO projects in DB
+    if (!currentUser || hasTriggered.current || hasProjects !== false) {
+      return;
+    }
 
     hasTriggered.current = true;
     
-    // Fire and forget - backend handles idempotency
-    base44.functions.invoke('seedDemoData', {})
-      .then(() => console.info('[SEED] Triggered'))
-      .catch(() => console.warn('[SEED] Failed (will retry on refresh)'));
-  }, [currentUser]);
+    async function triggerSeed() {
+      console.info('[SEED] Triggering backend seed...');
+      
+      try {
+        const result = await base44.functions.invoke('seedDemoData', {});
+        
+        if (result.status === 'success') {
+          console.info('[SEED] ✅ Success:', result.stats);
+          
+          // Invalidate ALL queries to force fresh data
+          queryClient.invalidateQueries();
+          
+          // Small delay for database consistency
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } else {
+          console.warn('[SEED] Failed:', result.error);
+        }
+      } catch (error) {
+        console.error('[SEED] Error:', error);
+      }
+    }
+
+    triggerSeed();
+  }, [currentUser, hasProjects, queryClient]);
 }
