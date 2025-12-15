@@ -176,9 +176,6 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       throw new Error('Project 1 creation failed - no ID returned');
     }
     console.log('[seedDemoData] ✅ Project 1 created:', project1.id);
-    
-    // Korte delay voor database consistency
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Templates voor Project 1
     console.log('[seedDemoData] 📋 Creating templates for Project 1...');
@@ -196,8 +193,6 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       throw new Error('Template 1 failed');
     }
     console.log('[seedDemoData] ✅ Template 1:', t1.id);
-    
-    await new Promise(resolve => setTimeout(resolve, 50));
 
     const t2 = await base44.entities.PromptTemplate.create({
       name: "DEMO: Code Refactor Template",
@@ -208,8 +203,6 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     });
     if (!t2?.id) throw new Error('Template 2 failed');
     console.log('[seedDemoData] ✅ Template 2:', t2.id);
-    
-    await new Promise(resolve => setTimeout(resolve, 50));
 
     const t3 = await base44.entities.PromptTemplate.create({
       name: "DEMO: Bug Analysis Template",
@@ -220,8 +213,6 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     });
     if (!t3?.id) throw new Error('Template 3 failed');
     console.log('[seedDemoData] ✅ Template 3:', t3.id);
-    
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Tasks voor Project 1
     console.log('[seedDemoData] ✏️ Creating tasks for Project 1...');
@@ -248,8 +239,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
         throw new Error(`Task ${idx + 1} failed`);
       }
       console.log(`[seedDemoData] ✅ Task ${idx + 1}:`, task.id);
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
+      }
 
     console.log('[seedDemoData] ✅ Project 1 COMPLETE');
 
@@ -282,8 +272,6 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       throw new Error('Project 2 creation failed');
     }
     console.log('[seedDemoData] ✅ Project 2 created:', project2.id);
-    
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Templates voor Project 2
     console.log('[seedDemoData] 📋 Creating templates for Project 2...');
@@ -297,8 +285,6 @@ This project explores prompt design, iteration, and evaluation for AI systems.
     });
     if (!t4?.id) throw new Error('Template 4 failed');
     console.log('[seedDemoData] ✅ Template 4:', t4.id);
-    
-    await new Promise(resolve => setTimeout(resolve, 50));
 
     const t5 = await base44.entities.PromptTemplate.create({
       name: "DEMO: Prompt Rewrite Template",
@@ -309,8 +295,6 @@ This project explores prompt design, iteration, and evaluation for AI systems.
     });
     if (!t5?.id) throw new Error('Template 5 failed');
     console.log('[seedDemoData] ✅ Template 5:', t5.id);
-    
-    await new Promise(resolve => setTimeout(resolve, 50));
 
     const t6 = await base44.entities.PromptTemplate.create({
       name: "DEMO: Output Evaluation Template",
@@ -321,8 +305,6 @@ This project explores prompt design, iteration, and evaluation for AI systems.
     });
     if (!t6?.id) throw new Error('Template 6 failed');
     console.log('[seedDemoData] ✅ Template 6:', t6.id);
-    
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     // Tasks voor Project 2
     console.log('[seedDemoData] ✏️ Creating tasks for Project 2...');
@@ -345,8 +327,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       });
       if (!task?.id) throw new Error(`Task ${idx + 6} failed`);
       console.log(`[seedDemoData] ✅ Task ${idx + 6}:`, task.id);
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
+      }
 
     console.log('[seedDemoData] ✅ Project 2 COMPLETE');
 
@@ -380,8 +361,6 @@ Provide constructive feedback with specific examples and alternative implementat
       throw new Error('Vault item 1 failed');
     }
     console.log('[seedDemoData] ✅ Vault item 1:', item1.id);
-    
-    await new Promise(resolve => setTimeout(resolve, 100));
 
     const item2 = await base44.entities.Item.create({
       title: "DEMO: Prompt Engineering Best Practices",

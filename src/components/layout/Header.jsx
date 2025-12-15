@@ -161,24 +161,34 @@ export default function Header() {
     const seedForNewUser = async () => {
       if (!user || !user.email) return;
       
+      // Check localStorage to prevent infinite loop
+      const seedKey = `demo_seeded_${user.id}`;
+      if (localStorage.getItem(seedKey)) {
+        return; // Already attempted seeding
+      }
+      
       // Check if demo_seeded_at is null (new user)
       if (user.demo_seeded_at === null || user.demo_seeded_at === undefined) {
         console.log('[Header] 🆕 New user detected, auto-seeding demo data...');
+        localStorage.setItem(seedKey, 'true'); // Mark as attempted
         
         try {
           const response = await base44.functions.invoke('seedDemoData', { force: false });
           
           if (response.data?.status === 'success') {
             console.log('[Header] ✨ Demo data auto-seeded successfully');
-            // Reload to show demo data
+            // Reload once to show demo data
             setTimeout(() => {
               window.location.reload();
-            }, 1000);
+            }, 800);
           }
         } catch (error) {
           console.error('[Header] ❌ Auto-seed failed:', error);
           // Silent fail - user can still use app
         }
+      } else {
+        // User already has demo data, mark as completed
+        localStorage.setItem(seedKey, 'true');
       }
     };
     
