@@ -67,17 +67,33 @@ export function useOnboardingBootstrap() {
 
     async function triggerSeed() {
       try {
-        console.log(`${logPrefix} Invoking server function 'seedDemoData'...`);
+        console.log(`${logPrefix} ⚡ Invoking server function 'seedDemoData'...`);
         
         let result;
+        const startTime = Date.now();
+        
         try {
           result = await base44.functions.invoke('seedDemoData', {
             userId: user.id,
             userEmail: user.email,
             force: true
           });
+          const duration = Date.now() - startTime;
+          console.log(`${logPrefix} 📬 Response received (took ${duration}ms)`);
         } catch (invokeError) {
-          console.error(`${logPrefix} Invoke error:`, invokeError);
+          const duration = Date.now() - startTime;
+          console.error(`${logPrefix} ❌ Invoke error (after ${duration}ms):`, {
+            message: invokeError.message,
+            status: invokeError.status,
+            statusText: invokeError.statusText,
+            is429: invokeError.status === 429,
+            fullError: invokeError
+          });
+          
+          if (invokeError.status === 429) {
+            throw new Error('Rate limit exceeded (429). Server is being throttled. Please wait and try again.');
+          }
+          
           throw new Error(`Backend invoke failed: ${invokeError.message || 'Network error'}`);
         }
         
@@ -112,17 +128,26 @@ export function useOnboardingBootstrap() {
           throw new Error(`${errorType}: ${errorMsg}`);
         }
       } catch (error) {
+        const is429 = error.message?.includes('429') || error.message?.includes('Rate limit');
+        
         console.error(`${logPrefix} ❌ SEED FAILED:`, {
           message: error.message,
-          stack: error.stack,
-          fullError: error
+          is429Error: is429,
+          stack: error.stack?.substring(0, 200),
+          timestamp: new Date().toISOString()
         });
+        
+        if (is429) {
+          console.warn(`${logPrefix} 🚫 RATE LIMIT HIT - Backend is throttled. Cooldown extended.`);
+        }
+        
         setSeedStatus('error');
         
-        // RESET LOCKS TO ALLOW RETRY
-        console.log(`${logPrefix} Resetting locks for retry...`);
+        // RESET LOCKS TO ALLOW RETRY (longer cooldown for 429)
+        const cooldown = is429 ? 30000 : 15000; // 30s for rate limit, 15s for other errors
+        console.log(`${logPrefix} 🔄 Resetting locks with ${cooldown/1000}s cooldown...`);
         hasTriggered.current = false;
-        sessionStorage.removeItem(sessionKey);
+        sessionStorage.setItem(sessionKey, Date.now().toString()); // Keep session lock with new timestamp
       }
     }
 

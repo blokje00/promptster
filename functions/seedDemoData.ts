@@ -316,32 +316,65 @@ Deno.serve(async (req) => {
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     // BULK INSERT 1: AI Settings
-    console.info('[SEED] Inserting AI settings...');
-    await base44.asServiceRole.entities.AISettings.bulkCreate(dataset.aiSettings);
-    await delay(500); // Wait 500ms between inserts
+    console.info('[SEED] 📝 Step 1/4: Inserting AI settings...', { count: dataset.aiSettings.length });
+    try {
+      await base44.asServiceRole.entities.AISettings.bulkCreate(dataset.aiSettings);
+      console.info('[SEED] ✅ AI Settings created successfully');
+    } catch (err) {
+      console.error('[SEED] ❌ AI Settings FAILED:', { status: err.status, message: err.message, is429: err.status === 429 });
+      throw err;
+    }
+    await delay(1000); // Increased delay
 
     // BULK INSERT 2: Projects
-    console.info('[SEED] Inserting projects...');
-    const createdProjects = await base44.asServiceRole.entities.Project.bulkCreate(dataset.projects);
-    await delay(500);
+    console.info('[SEED] 📁 Step 2/4: Inserting projects...', { count: dataset.projects.length });
+    let createdProjects;
+    try {
+      createdProjects = await base44.asServiceRole.entities.Project.bulkCreate(dataset.projects);
+      console.info('[SEED] ✅ Projects created successfully', { ids: createdProjects.map(p => p.id) });
+    } catch (err) {
+      console.error('[SEED] ❌ Projects FAILED:', { status: err.status, message: err.message, is429: err.status === 429 });
+      throw err;
+    }
+    await delay(1000);
 
     // BULK INSERT 3: Templates (per project, split to avoid rate limits)
-    console.info('[SEED] Inserting templates...');
-    for (const project of createdProjects) {
+    console.info('[SEED] 📋 Step 3/4: Inserting templates...');
+    let templateCount = 0;
+    for (let i = 0; i < createdProjects.length; i++) {
+      const project = createdProjects[i];
       const templates = buildTemplates(project.id, project.name, user.email, now);
       if (templates.length > 0) {
-        await base44.asServiceRole.entities.PromptTemplate.bulkCreate(templates);
-        await delay(300); // Delay between each project's templates
+        console.info(`[SEED] Creating ${templates.length} templates for project ${i+1}/${createdProjects.length}: ${project.name}`);
+        try {
+          await base44.asServiceRole.entities.PromptTemplate.bulkCreate(templates);
+          templateCount += templates.length;
+          console.info(`[SEED] ✅ Templates created (${templateCount} total)`);
+        } catch (err) {
+          console.error('[SEED] ❌ Templates FAILED:', { projectId: project.id, status: err.status, message: err.message, is429: err.status === 429 });
+          throw err;
+        }
+        await delay(800); // Increased delay
       }
     }
 
     // BULK INSERT 4: Thoughts (per project, split to avoid rate limits)
-    console.info('[SEED] Inserting thoughts...');
-    for (const project of createdProjects) {
+    console.info('[SEED] 💭 Step 4/4: Inserting thoughts...');
+    let thoughtCount = 0;
+    for (let i = 0; i < createdProjects.length; i++) {
+      const project = createdProjects[i];
       const thoughts = buildThoughts(project.id, project.name, user.email, now);
       if (thoughts.length > 0) {
-        await base44.asServiceRole.entities.Thought.bulkCreate(thoughts);
-        await delay(300); // Delay between each project's thoughts
+        console.info(`[SEED] Creating ${thoughts.length} thoughts for project ${i+1}/${createdProjects.length}: ${project.name}`);
+        try {
+          await base44.asServiceRole.entities.Thought.bulkCreate(thoughts);
+          thoughtCount += thoughts.length;
+          console.info(`[SEED] ✅ Thoughts created (${thoughtCount} total)`);
+        } catch (err) {
+          console.error('[SEED] ❌ Thoughts FAILED:', { projectId: project.id, status: err.status, message: err.message, is429: err.status === 429 });
+          throw err;
+        }
+        await delay(800); // Increased delay
       }
     }
 
