@@ -43,45 +43,71 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const isTester = user.email === TESTER_EMAIL;
+    // 1️⃣ OWNER BEPALING - exact één keer
+    const OWNER_EMAIL = user.email;
+    const isTester = OWNER_EMAIL === TESTER_EMAIL;
 
-    // FIX 3: Restructured flow - check reality FIRST for ALL users
+    console.info('[DEMO_SEED] Starting seed check', {
+      user_id: user.id,
+      owner_email: OWNER_EMAIL,
+      is_tester: isTester,
+      current_marker: user.demo_seed_version
+    });
+
+    // Reality check: verify actual data existence
     const [existingProjects, existingThoughts, existingTemplates, existingItems] = await Promise.all([
-      base44.asServiceRole.entities.Project.filter({ created_by: user.email }),
-      base44.asServiceRole.entities.Thought.filter({ created_by: user.email }),
-      base44.asServiceRole.entities.PromptTemplate.filter({ created_by: user.email }),
-      base44.asServiceRole.entities.Item.filter({ created_by: user.email })
+      base44.asServiceRole.entities.Project.filter({ created_by: OWNER_EMAIL }),
+      base44.asServiceRole.entities.Thought.filter({ created_by: OWNER_EMAIL }),
+      base44.asServiceRole.entities.PromptTemplate.filter({ created_by: OWNER_EMAIL }),
+      base44.asServiceRole.entities.Item.filter({ created_by: OWNER_EMAIL })
     ]);
     const hasRealData = existingProjects.length > 0;
 
-    console.log('[seedDemoData] Reality check:', {
-      email: user.email,
-      is_tester: isTester,
+    console.info('[DEMO_SEED] Reality check complete', {
+      owner_email: OWNER_EMAIL,
       marker: user.demo_seed_version,
       projects: existingProjects.length,
       thoughts: existingThoughts.length,
+      templates: existingTemplates.length,
+      items: existingItems.length,
       has_real_data: hasRealData
     });
 
+    // 3️⃣ TESTER MODE - altijd verse data
     if (isTester) {
-      console.log('[seedDemoData] ⚠️ TESTER MODE - Force reset');
+      console.info('[DEMO_SEED] 🧪 TESTER MODE - wiping ALL data for:', OWNER_EMAIL);
       
-      // Wipe EVERYTHING (data + marker) in atomic transaction
+      // Step 1: Clear marker
       await base44.auth.updateMe({ demo_seed_version: null });
+      console.info('[DEMO_SEED] Marker cleared');
       
-      if (hasRealData || existingThoughts.length > 0 || existingTemplates.length > 0 || existingItems.length > 0) {
+      // Step 2: Delete ALL entities for this owner
+      const totalToDelete = existingProjects.length + existingThoughts.length + existingTemplates.length + existingItems.length;
+      if (totalToDelete > 0) {
+        console.info('[DEMO_SEED] Deleting entities', {
+          projects: existingProjects.length,
+          thoughts: existingThoughts.length,
+          templates: existingTemplates.length,
+          items: existingItems.length,
+          owner: OWNER_EMAIL
+        });
+        
         await Promise.all([
           ...existingProjects.map(p => base44.asServiceRole.entities.Project.delete(p.id)),
           ...existingThoughts.map(t => base44.asServiceRole.entities.Thought.delete(t.id)),
           ...existingTemplates.map(t => base44.asServiceRole.entities.PromptTemplate.delete(t.id)),
           ...existingItems.map(i => base44.asServiceRole.entities.Item.delete(i.id))
         ]);
-        console.log('[seedDemoData] ✓ Tester data wiped');
+        console.info('[DEMO_SEED] ✅ Tester data wiped completely');
       }
     } else {
       // Normal user: idempotency check
       if (user.demo_seed_version === DEMO_VERSION && hasRealData) {
-        console.log('[seedDemoData] ✅ User already has valid demo data');
+        console.info('[DEMO_SEED] ✅ Already seeded - skipping', {
+          owner: OWNER_EMAIL,
+          version: user.demo_seed_version,
+          projects: existingProjects.length
+        });
         return Response.json({ 
           status: 'already_seeded',
           message: 'Demo data already exists',
@@ -90,16 +116,26 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Ghost marker fix
+      // Ghost marker fix: marker exists but no data
       if (user.demo_seed_version === DEMO_VERSION && !hasRealData) {
-        console.log('[seedDemoData] ⚠️ GHOST MARKER - clearing and reseeding');
+        console.warn('[DEMO_SEED] ⚠️ GHOST MARKER DETECTED', {
+          owner: OWNER_EMAIL,
+          marker: user.demo_seed_version,
+          projects: existingProjects.length
+        });
         await base44.auth.updateMe({ demo_seed_version: null });
+        console.info('[DEMO_SEED] Marker cleared, will reseed');
       }
     }
 
-    console.log('[seedDemoData] 🚀 Starting fresh seed for:', user.email);
+    console.info('[DEMO_SEED] 🚀 Starting fresh seed', {
+      owner: OWNER_EMAIL,
+      is_tester: isTester
+    });
 
     // STEP 1: Create Personal AI Configuration
+    console.info('[DEMO_SEED] Creating personal config', { owner: OWNER_EMAIL });
+    
     await base44.auth.updateMe({
       personal_preferences_markdown: PERSONAL_PREFERENCES
     });
@@ -108,12 +144,20 @@ Deno.serve(async (req) => {
       improve_prompt_instruction: "Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.",
       model_preference: "default",
       enable_context_suggestions: true,
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
-    console.log('[seedDemoData] ✓ Personal config created');
+    console.info('[DEMO_SEED] ✅ Personal config created', {
+      ai_settings_id: aiSettings.id,
+      owner: OWNER_EMAIL
+    });
 
     // STEP 2: Create Demo Project 1 - SaaS Web App Refactor
+    console.info('[DEMO_SEED] Creating Project 1', {
+      name: "SaaS Web App Refactor",
+      owner: OWNER_EMAIL
+    });
+    
     const project1 = await base44.asServiceRole.entities.Project.create({
       name: "SaaS Web App Refactor",
       color: "blue",
@@ -132,16 +176,23 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
 - Improve UX consistency
 - Reduce technical debt
 - Increase confidence in production readiness`,
-      created_by: user.email
+      created_by: OWNER_EMAIL
+    });
+    
+    console.info('[DEMO_SEED] ✅ Project 1 created', {
+      project_id: project1.id,
+      owner: OWNER_EMAIL
     });
 
     // Project 1 Templates
+    console.info('[DEMO_SEED] Creating templates for Project 1', { owner: OWNER_EMAIL });
+    
     const p1_template1 = await base44.asServiceRole.entities.PromptTemplate.create({
       name: "UI Review Template",
       type: "start",
       content: "Review the following UI for usability, accessibility, and visual consistency.\nProvide concrete improvement suggestions.",
       project_id: project1.id,
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
     const p1_template2 = await base44.asServiceRole.entities.PromptTemplate.create({
@@ -149,7 +200,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       type: "start",
       content: "Analyze the provided code and propose a refactor.\nFocus on clarity, reusability, and long-term maintainability.",
       project_id: project1.id,
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
     const p1_template3 = await base44.asServiceRole.entities.PromptTemplate.create({
@@ -157,10 +208,12 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       type: "eind",
       content: "Investigate the described issue.\nIdentify root causes and suggest fixes.",
       project_id: project1.id,
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
     // Project 1 Tasks
+    console.info('[DEMO_SEED] Creating 5 tasks for Project 1', { owner: OWNER_EMAIL });
+    
     await base44.asServiceRole.entities.Thought.create({
       content: "Review the homepage layout and visual hierarchy",
       screenshot_ids: [DEMO_SCREENSHOTS.saas_homepage],
@@ -170,7 +223,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       focus_type: "design",
       target_page: "Dashboard",
       target_domain: "UI",
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
     await base44.asServiceRole.entities.Thought.create({
@@ -182,7 +235,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       focus_type: "both",
       target_page: "Dashboard",
       target_domain: "UI",
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
     await base44.asServiceRole.entities.Thought.create({
@@ -193,7 +246,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       is_deleted: false,
       focus_type: "logic",
       target_domain: "UploadFlow",
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
     await base44.asServiceRole.entities.Thought.create({
@@ -205,7 +258,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       focus_type: "both",
       target_page: "Dashboard",
       target_domain: "UI",
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
     await base44.asServiceRole.entities.Thought.create({
@@ -216,12 +269,17 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       is_deleted: false,
       focus_type: "design",
       target_domain: "Styling",
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
-    console.log('[seedDemoData] ✓ Project 1 created with 3 templates and 5 tasks');
+    console.info('[DEMO_SEED] ✅ Project 1 complete: 3 templates + 5 tasks');
 
     // STEP 3: Create Demo Project 2 - AI Prompt Engineering Playground
+    console.info('[DEMO_SEED] Creating Project 2', {
+      name: "AI Prompt Engineering Playground",
+      owner: OWNER_EMAIL
+    });
+    
     const project2 = await base44.asServiceRole.entities.Project.create({
       name: "AI Prompt Engineering Playground",
       color: "purple",
@@ -235,16 +293,23 @@ This project explores prompt design, iteration, and evaluation for AI systems.
 - Learn how prompt structure affects output
 - Compare different instruction styles
 - Improve reliability of AI responses`,
-      created_by: user.email
+      created_by: OWNER_EMAIL
+    });
+    
+    console.info('[DEMO_SEED] ✅ Project 2 created', {
+      project_id: project2.id,
+      owner: OWNER_EMAIL
     });
 
     // Project 2 Templates
+    console.info('[DEMO_SEED] Creating templates for Project 2', { owner: OWNER_EMAIL });
+    
     const p2_template1 = await base44.asServiceRole.entities.PromptTemplate.create({
       name: "Prompt Critique Template",
       type: "start",
       content: "Critically evaluate the prompt.\nIdentify ambiguities and suggest improvements.",
       project_id: project2.id,
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
     const p2_template2 = await base44.asServiceRole.entities.PromptTemplate.create({
@@ -252,7 +317,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       type: "start",
       content: "Rewrite the prompt to be more precise, robust, and testable.",
       project_id: project2.id,
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
     const p2_template3 = await base44.asServiceRole.entities.PromptTemplate.create({
@@ -260,10 +325,12 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       type: "eind",
       content: "Evaluate the AI output against the original intent.\nScore clarity, correctness, and usefulness.",
       project_id: project2.id,
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
     // Project 2 Tasks
+    console.info('[DEMO_SEED] Creating 5 tasks for Project 2', { owner: OWNER_EMAIL });
+    
     await base44.asServiceRole.entities.Thought.create({
       content: "Rewrite a poorly defined AI prompt for clarity and precision",
       screenshot_ids: [DEMO_SCREENSHOTS.text_editor],
@@ -272,7 +339,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       is_deleted: false,
       focus_type: "discuss",
       target_domain: "PromptEngine",
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
     await base44.asServiceRole.entities.Thought.create({
@@ -283,7 +350,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       is_deleted: false,
       focus_type: "discuss",
       target_domain: "PromptEngine",
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
     await base44.asServiceRole.entities.Thought.create({
@@ -294,7 +361,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       is_deleted: false,
       focus_type: "logic",
       target_domain: "PromptEngine",
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
     await base44.asServiceRole.entities.Thought.create({
@@ -305,7 +372,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       is_deleted: false,
       focus_type: "both",
       target_domain: "PromptEngine",
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
     await base44.asServiceRole.entities.Thought.create({
@@ -316,28 +383,30 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       is_deleted: false,
       focus_type: "both",
       target_domain: "PromptEngine",
-      created_by: user.email
+      created_by: OWNER_EMAIL
     });
 
-    console.log('[seedDemoData] ✓ Project 2 created with 3 templates and 5 tasks');
+    console.info('[DEMO_SEED] ✅ Project 2 complete: 3 templates + 5 tasks');
     
-    // CRITICAL: Set marker AFTER successful seed (atomic operation)
+    // FINAL: Set marker AFTER successful seed
     await base44.auth.updateMe({
       demo_seed_version: DEMO_VERSION
     });
     
-    console.log('[seedDemoData] ✅ SEED COMPLETE', {
-      email: user.email,
+    console.info('[DEMO_SEED] ✅✅✅ SEED COMPLETE ✅✅✅', {
+      owner: OWNER_EMAIL,
       is_tester: isTester,
       marker_set: DEMO_VERSION,
-      projects: 2,
-      tasks: 10,
-      templates: 6
+      projects_created: 2,
+      tasks_created: 10,
+      templates_created: 6,
+      project_ids: [project1.id, project2.id]
     });
 
     return Response.json({
       status: 'success',
       message: 'Demo environment created',
+      owner: OWNER_EMAIL,
       projects: [project1.id, project2.id],
       total_tasks: 10,
       total_templates: 6,
@@ -345,17 +414,20 @@ This project explores prompt design, iteration, and evaluation for AI systems.
     });
 
   } catch (error) {
-    console.error('[seedDemoData] Error:', error);
-    console.error('[seedDemoData] Stack:', error.stack);
+    console.error('[DEMO_SEED] ❌ FATAL ERROR', {
+      error: error.message,
+      stack: error.stack
+    });
     
     // Try to clear the marker if seeding failed mid-way
     try {
-      await base44.auth.updateMe({
+      const base44Recovery = createClientFromRequest(req);
+      await base44Recovery.auth.updateMe({
         demo_seed_version: null
       });
-      console.log('[seedDemoData] Marker cleared after error');
+      console.info('[DEMO_SEED] Marker cleared after error');
     } catch (clearError) {
-      console.error('[seedDemoData] Failed to clear marker:', clearError);
+      console.error('[DEMO_SEED] Failed to clear marker:', clearError.message);
     }
     
     return Response.json({ 
