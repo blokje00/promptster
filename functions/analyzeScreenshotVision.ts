@@ -21,6 +21,26 @@ Deno.serve(async (req) => {
       }, { status: 401 });
     }
 
+    // ✅ TRIAL/SUBSCRIPTION CHECK
+    const subscriptionStatus = user.subscription_status;
+    const trialEnd = user.trial_end ? new Date(user.trial_end) : null;
+    const now = new Date();
+
+    const hasActiveSubscription = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
+    const hasActiveTrial = subscriptionStatus === 'trial' && trialEnd && trialEnd > now;
+
+    if (!hasActiveSubscription && !hasActiveTrial) {
+      console.log('[analyzeScreenshotVision] ❌ Access denied - no active trial/subscription');
+      return Response.json({ 
+        ok: false,
+        error: 'Vision analysis requires an active trial or subscription',
+        subscription_status: subscriptionStatus,
+        trial_expired: trialEnd ? trialEnd < now : false
+      }, { status: 403 });
+    }
+
+    console.log('[analyzeScreenshotVision] ✓ Access granted - trial/subscription active');
+
     const body = await req.json();
     console.log('[analyzeScreenshotVision] Request:', JSON.stringify(body, null, 2));
 

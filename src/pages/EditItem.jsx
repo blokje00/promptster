@@ -117,7 +117,6 @@ export default function EditItem() {
   }
 
   return (
-    <AccessGuard pageType="premium">
     <div className="p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
@@ -327,6 +326,5 @@ export default function EditItem() {
         </form>
       </div>
     </div>
-    </AccessGuard>
   );
 }

@@ -54,7 +54,7 @@ function CollapsibleTaskContent({ taskName, fullDescription, status }) {
   );
 }
 import { format } from "date-fns";
-import AccessGuard from "@/components/auth/AccessGuard";
+
 import { toast } from "sonner";
 import { projectColors } from "@/components/lib/constants";
 import RetryModal from "@/components/checks/RetryModal";
@@ -262,8 +262,7 @@ export default function Checks() {
 
 
   return (
-    <AccessGuard pageType="premium">
-      <div className="p-4 md:p-8 min-h-screen bg-slate-50/50 dark:bg-slate-900/50">
+    <div className="p-4 md:p-8 min-h-screen bg-slate-50/50 dark:bg-slate-900/50">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
@@ -481,6 +480,5 @@ export default function Checks() {
           projectId={selectedRetryTask?.projectId}
         />
       </div>
-    </AccessGuard>
   );
 }

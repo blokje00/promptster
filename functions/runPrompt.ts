@@ -1,16 +1,23 @@
-/**
- * Run Prompt Function
- * 
- * Executes a prompt with rate limiting protection.
- * Rate limit: 60 prompts per minute per user
- */
-
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
-import { checkRateLimit, RATE_LIMITS } from './utils/rateLimiter.js';
-import { logEvent, extractRequestMetadata, EVENT_TYPES } from './utils/logger.js';
+
+/**
+ * Run a prompt through InvokeLLM with rate limiting
+ * CREDIT-USING FEATURE: Checks trial/subscription status
+ */
 
 Deno.serve(async (req) => {
   try {
+    // CORS
+    if (req.method === "OPTIONS") {
+      return new Response(null, {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
+      });
+    }
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
@@ -18,79 +25,86 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Rate limiting check
-    const rateLimitResult = await checkRateLimit(
-      base44,
-      user.id,
-      RATE_LIMITS.RUN_PROMPT.key,
-      RATE_LIMITS.RUN_PROMPT.limit
-    );
+    // ✅ TRIAL/SUBSCRIPTION CHECK
+    const subscriptionStatus = user.subscription_status;
+    const trialEnd = user.trial_end ? new Date(user.trial_end) : null;
+    const now = new Date();
 
-    if (!rateLimitResult.allowed) {
-      // Log rate limit exceeded
-      const metadata = extractRequestMetadata(req);
-      await logEvent(base44, EVENT_TYPES.RATE_LIMIT_EXCEEDED, {
-        userId: user.id,
-        userEmail: user.email,
-        payload: { 
-          action: 'run_prompt',
-          resetAt: rateLimitResult.resetAt.toISOString()
-        },
-        ...metadata
-      });
+    const hasActiveSubscription = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
+    const hasActiveTrial = subscriptionStatus === 'trial' && trialEnd && trialEnd > now;
 
-      return Response.json({
-        error: 'Je voert nu wel erg veel prompts uit. Wacht een moment en probeer het opnieuw.',
-        resetAt: rateLimitResult.resetAt.toISOString(),
-        remaining: 0
-      }, { status: 429 });
+    if (!hasActiveSubscription && !hasActiveTrial) {
+      console.log('[runPrompt] ❌ Access denied - no active trial/subscription');
+      return Response.json({ 
+        error: 'This feature requires an active trial or subscription',
+        subscription_status: subscriptionStatus,
+        trial_expired: trialEnd ? trialEnd < now : false
+      }, { status: 403 });
     }
 
-    // Parse request body
-    const { prompt, file_urls, add_context_from_internet, response_json_schema } = await req.json();
+    console.log('[runPrompt] ✓ Access granted - trial/subscription active');
+
+    // Rate limiting check (optional - can be removed if not needed)
+    const limitKey = 'run_prompt';
+    const windowMs = 60 * 1000; // 1 minute
+    const maxRequests = 10;
+
+    const limits = await base44.entities.RateLimit.filter({
+      user_id: user.id,
+      limit_key: limitKey
+    });
+
+    if (limits && limits.length > 0) {
+      const limit = limits[0];
+      const windowStart = new Date(limit.window_start);
+      const elapsed = now - windowStart;
+
+      if (elapsed < windowMs) {
+        if (limit.count >= maxRequests) {
+          return Response.json({ 
+            error: `Rate limit exceeded. Max ${maxRequests} requests per minute.`,
+            retry_after: Math.ceil((windowMs - elapsed) / 1000)
+          }, { status: 429 });
+        }
+        
+        await base44.entities.RateLimit.update(limit.id, {
+          count: limit.count + 1
+        });
+      } else {
+        await base44.entities.RateLimit.update(limit.id, {
+          window_start: now.toISOString(),
+          count: 1
+        });
+      }
+    } else {
+      await base44.entities.RateLimit.create({
+        user_id: user.id,
+        limit_key: limitKey,
+        window_start: now.toISOString(),
+        count: 1
+      });
+    }
+
+    // Execute prompt
+    const body = await req.json();
+    const { prompt, file_urls } = body;
 
     if (!prompt) {
-      return Response.json({ error: 'Prompt is required' }, { status: 400 });
+      return Response.json({ error: 'Missing prompt' }, { status: 400 });
     }
 
-    // Execute the prompt via Core.InvokeLLM
-    try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        file_urls,
-        add_context_from_internet,
-        response_json_schema
-      });
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      file_urls: file_urls || undefined
+    });
 
-      return Response.json({
-        result,
-        rateLimit: {
-          remaining: rateLimitResult.remaining,
-          resetAt: rateLimitResult.resetAt.toISOString()
-        }
-      });
-    } catch (llmError) {
-      // Log critical error (without full prompt content)
-      const metadata = extractRequestMetadata(req);
-      await logEvent(base44, EVENT_TYPES.CRITICAL_ERROR, {
-        userId: user.id,
-        userEmail: user.email,
-        payload: {
-          error: llmError.message,
-          action: 'run_prompt',
-          promptLength: prompt?.length || 0
-        },
-        ...metadata
-      });
-
-      return Response.json({
-        error: 'Failed to execute prompt',
-        details: llmError.message
-      }, { status: 500 });
-    }
-  } catch (error) {
     return Response.json({
-      error: error.message
-    }, { status: 500 });
+      result,
+      credits_used: 1 // Placeholder - adjust based on actual token usage
+    });
+
+  } catch (error) {
+    console.error('[runPrompt] Error:', error);
+    return Response.json({ error: error.message }, { status: 500 });
   }
 });

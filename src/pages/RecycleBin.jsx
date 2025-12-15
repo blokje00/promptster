@@ -232,6 +232,5 @@ export default function RecycleBin() {
           )}
         </div>
       </div>
-    </AccessGuard>
   );
 }

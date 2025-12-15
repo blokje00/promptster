@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, Copy, CheckCircle, Cog } from "lucide-react";
 import { toast } from "sonner";
 import { createPageUrl } from "@/utils";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 
 export default function PromptPreview({
   generatedPrompt,
@@ -16,6 +18,20 @@ export default function PromptPreview({
 }) {
   const displayPrompt = improvedPrompt || generatedPrompt;
 
+  // Check if AI features are available (trial or subscription)
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+  });
+
+  const subscriptionStatus = currentUser?.subscription_status;
+  const trialEnd = currentUser?.trial_end ? new Date(currentUser.trial_end) : null;
+  const now = new Date();
+
+  const hasActiveSubscription = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
+  const hasActiveTrial = subscriptionStatus === 'trial' && trialEnd && trialEnd > now;
+  const canUseAI = hasActiveSubscription || hasActiveTrial;
+
   const handleCopyOnly = () => {
     navigator.clipboard.writeText(displayPrompt);
     toast.success("Copied to clipboard");
@@ -26,9 +42,15 @@ export default function PromptPreview({
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle>Preview</CardTitle>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={onImprove} disabled={!generatedPrompt}>
-            {isImproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />} Improve
-          </Button>
+          {canUseAI ? (
+            <Button size="sm" variant="outline" onClick={onImprove} disabled={!generatedPrompt}>
+              {isImproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />} Improve
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" disabled title="AI Improve requires active trial or subscription">
+              <Sparkles className="w-4 h-4 mr-1 opacity-50" /> Improve (Trial/Pro)
+            </Button>
+          )}
           <Button 
             size="sm" 
             className={`transition-all duration-300 ${saveSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}

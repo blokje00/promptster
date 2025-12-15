@@ -24,7 +24,7 @@ import { toast } from "sonner";
 import { Plus, Lightbulb, Layers, FileText, FolderOpen, CheckCircle2 } from "lucide-react";
 
 // Sub-components
-import AccessGuard from "@/components/auth/AccessGuard";
+
 import TemplatesManager from "@/components/multiprompt/TemplatesManager";
 import ProjectsManager from "@/components/multiprompt/ProjectsManager";
 import ProjectSelector from "@/components/multiprompt/ProjectSelector";
@@ -246,8 +246,7 @@ export default function Multiprompt() {
 
   // --- Render ---
   return (
-    <AccessGuard pageType="premium">
-      <div className="p-4 md:p-8">
+    <div className="p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
           <SuccessBanner show={showBanner} />
 
@@ -447,7 +446,6 @@ export default function Multiprompt() {
             screenshotUrl={ocrDebugUrl}
           />
         )}
-      </div>
-    </AccessGuard>
-  );
-}
+        </div>
+        );
+        }
