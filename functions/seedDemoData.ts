@@ -45,18 +45,23 @@ Deno.serve(async (req) => {
     // Check if demo already seeded
     if (user.demo_seed_version === DEMO_VERSION) {
       console.log('[seedDemoData] User already has demo data, skipping');
+      console.log('[seedDemoData] Version:', user.demo_seed_version);
       return Response.json({ 
         status: 'already_seeded',
-        message: 'Demo data already exists for this user'
+        message: 'Demo data already exists for this user',
+        version: user.demo_seed_version
       });
     }
 
     console.log('[seedDemoData] Starting demo seed for user:', user.email);
+    console.log('[seedDemoData] User ID:', user.id);
+    console.log('[seedDemoData] Current version:', user.demo_seed_version || 'none');
 
     // Set marker immediately to prevent duplicate runs
     await base44.auth.updateMe({
       demo_seed_version: DEMO_VERSION
     });
+    console.log('[seedDemoData] Marker set to:', DEMO_VERSION);
 
     // STEP 1: Create Personal AI Configuration
     await base44.auth.updateMe({
@@ -280,18 +285,38 @@ This project explores prompt design, iteration, and evaluation for AI systems.
 
     console.log('[seedDemoData] ✓ Project 2 created with 3 templates and 5 tasks');
     console.log('[seedDemoData] ✓ Demo seed completed successfully');
+    console.log('[seedDemoData] Final stats:', {
+      projects: 2,
+      tasks: 10,
+      templates: 6,
+      version: DEMO_VERSION
+    });
 
     return Response.json({
       status: 'success',
       message: 'Demo environment created',
       projects: [project1.id, project2.id],
       total_tasks: 10,
-      total_templates: 6
+      total_templates: 6,
+      seed_version: DEMO_VERSION
     });
 
   } catch (error) {
     console.error('[seedDemoData] Error:', error);
+    console.error('[seedDemoData] Stack:', error.stack);
+    
+    // Try to clear the marker if seeding failed mid-way
+    try {
+      await base44.auth.updateMe({
+        demo_seed_version: null
+      });
+      console.log('[seedDemoData] Marker cleared after error');
+    } catch (clearError) {
+      console.error('[seedDemoData] Failed to clear marker:', clearError);
+    }
+    
     return Response.json({ 
+      status: 'error',
       error: error.message,
       stack: error.stack
     }, { status: 500 });
