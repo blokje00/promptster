@@ -41,61 +41,66 @@ Deno.serve(async (req) => {
     }
 
     // ============================================
-    // KRITIEKE FIX #1: Check data EXISTS, niet marker
+    // KRITIEKE FIX #1: Check data EXISTS voor DEZE USER
     // ============================================
-    console.log('[seedDemoData] 🔍 Checking if demo data already exists...');
-    const existingProjects = await base44.asServiceRole.entities.Project.filter({});
+    console.log('[seedDemoData] 🔍 Checking if demo data already exists for THIS user...');
+    const existingProjects = await base44.asServiceRole.entities.Project.filter({ created_by: user.email });
     const demoProjects = existingProjects.filter(p => p.name?.startsWith('DEMO:'));
     
-    console.log('[seedDemoData] Found existing demo projects:', demoProjects.length);
+    console.log('[seedDemoData] Found demo projects for', user.email, ':', demoProjects.length);
+    console.log('[seedDemoData] Demo project IDs:', demoProjects.map(p => p.id));
     
     if (demoProjects.length > 0 && !force) {
-      console.log('[seedDemoData] ℹ️ Demo data already exists, skipping');
+      console.log('[seedDemoData] ℹ️ Demo data already exists for this user, skipping');
       return Response.json({ 
         status: 'already_seeded',
-        message: 'Demo data already exists',
+        message: 'Demo data already exists for this user',
         projects: demoProjects.length
       });
     }
 
-    // FORCE MODE: Clean up
+    // FORCE MODE: Clean up THIS USER's data only
     if (force && demoProjects.length > 0) {
-      console.log('[seedDemoData] 🧹 FORCE MODE: Cleaning up...');
+      console.log('[seedDemoData] 🧹 FORCE MODE: Cleaning up data for user:', user.email);
       
       // Delete in correct order (respect foreign keys)
-      const allThoughts = await base44.asServiceRole.entities.Thought.filter({});
+      const allThoughts = await base44.asServiceRole.entities.Thought.filter({ created_by: user.email });
       const demoThoughts = allThoughts.filter(t => 
         demoProjects.some(p => p.id === t.project_id) || t.content?.startsWith('DEMO:')
       );
+      console.log('[seedDemoData] Found', demoThoughts.length, 'demo thoughts to delete');
       for (const thought of demoThoughts) {
         await base44.asServiceRole.entities.Thought.delete(thought.id);
       }
-      console.log('[seedDemoData] Deleted', demoThoughts.length, 'thoughts');
+      console.log('[seedDemoData] ✅ Deleted', demoThoughts.length, 'thoughts');
       
-      const allTemplates = await base44.asServiceRole.entities.PromptTemplate.filter({});
+      const allTemplates = await base44.asServiceRole.entities.PromptTemplate.filter({ created_by: user.email });
       const demoTemplates = allTemplates.filter(t => 
         demoProjects.some(p => p.id === t.project_id) || t.name?.startsWith('DEMO:')
       );
+      console.log('[seedDemoData] Found', demoTemplates.length, 'demo templates to delete');
       for (const template of demoTemplates) {
         await base44.asServiceRole.entities.PromptTemplate.delete(template.id);
       }
-      console.log('[seedDemoData] Deleted', demoTemplates.length, 'templates');
+      console.log('[seedDemoData] ✅ Deleted', demoTemplates.length, 'templates');
       
-      const allItems = await base44.asServiceRole.entities.Item.filter({});
+      const allItems = await base44.asServiceRole.entities.Item.filter({ created_by: user.email });
       const demoItems = allItems.filter(i => 
         demoProjects.some(p => p.id === i.project_id) || i.title?.startsWith('DEMO:')
       );
+      console.log('[seedDemoData] Found', demoItems.length, 'demo items to delete');
       for (const item of demoItems) {
         await base44.asServiceRole.entities.Item.delete(item.id);
       }
-      console.log('[seedDemoData] Deleted', demoItems.length, 'items');
+      console.log('[seedDemoData] ✅ Deleted', demoItems.length, 'items');
       
+      console.log('[seedDemoData] Deleting', demoProjects.length, 'demo projects');
       for (const project of demoProjects) {
         await base44.asServiceRole.entities.Project.delete(project.id);
       }
-      console.log('[seedDemoData] Deleted', demoProjects.length, 'projects');
+      console.log('[seedDemoData] ✅ Deleted', demoProjects.length, 'projects');
       
-      console.log('[seedDemoData] ✅ Cleanup complete');
+      console.log('[seedDemoData] ✅ Cleanup complete for user:', user.email);
     }
 
     console.log('[seedDemoData] ✨ Starting demo seed...');
@@ -388,13 +393,17 @@ Provide constructive feedback with specific examples and alternative implementat
     console.log('[seedDemoData] ✨✨✨ Demo seed COMPLETED ✨✨✨');
 
     // ============================================
-    // KRITIEKE FIX #3: Verify data was created
+    // KRITIEKE FIX #3: Verify data was created FOR THIS USER
     // ============================================
-    console.log('[seedDemoData] 🔍 Verifying created data...');
-    const verifyProjects = await base44.asServiceRole.entities.Project.filter({});
+    console.log('[seedDemoData] 🔍 Verifying created data for user:', user.email);
+    const verifyProjects = await base44.asServiceRole.entities.Project.filter({ created_by: user.email });
     const verifyDemoProjects = verifyProjects.filter(p => p.name?.startsWith('DEMO:'));
     
+    console.log('[seedDemoData] Verification: found', verifyDemoProjects.length, 'DEMO projects');
+    console.log('[seedDemoData] Verification project IDs:', verifyDemoProjects.map(p => ({ id: p.id, name: p.name })));
+    
     if (verifyDemoProjects.length !== 2) {
+      console.error('[seedDemoData] ❌ Verification FAILED: Expected 2 projects, found', verifyDemoProjects.length);
       throw new Error(`Verification failed: Expected 2 projects, found ${verifyDemoProjects.length}`);
     }
 
