@@ -107,7 +107,7 @@ export default function Multiprompt() {
   // --- Derived State ---
   const currentPlan = subscriptionPlans.find(p => p.id === currentUser?.plan_id) || {};
   const maxThoughts = currentPlan.max_thoughts || 10;
-  const isLimitReached = currentUser?.role !== 'admin' && thoughts.length >= maxThoughts;
+  const isLimitReached = currentUser?.role !== 'admin' && (thoughts?.length || 0) >= maxThoughts;
   const enableContextSuggestions = aiSettings[0]?.enable_context_suggestions !== false;
 
   // --- Local UI State ---
@@ -224,7 +224,7 @@ export default function Multiprompt() {
   }, [updateThought]);
 
   const filteredThoughts = useMemo(() => {
-    let filtered = thoughts;
+    let filtered = thoughts || [];
     
     // Apply search filter
     if (taskSearchQuery.trim()) {

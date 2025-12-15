@@ -45,14 +45,14 @@ export default function Dashboard() {
   });
 
   const itemCounts = useMemo(() => ({
-    all: items.length,
-    prompt: items.filter(i => i.type === 'prompt').length,
-    multiprompt: items.filter(i => i.type === 'multiprompt').length,
-    code: items.filter(i => i.type === 'code').length,
-    snippet: items.filter(i => i.type === 'snippet').length,
+    all: items?.length || 0,
+    prompt: items?.filter(i => i.type === 'prompt').length || 0,
+    multiprompt: items?.filter(i => i.type === 'multiprompt').length || 0,
+    code: items?.filter(i => i.type === 'code').length || 0,
+    snippet: items?.filter(i => i.type === 'snippet').length || 0,
   }), [items]);
 
-  const filteredItems = useMemo(() => items.filter(item => {
+  const filteredItems = useMemo(() => (items || []).filter(item => {
     const matchesSearch = !searchQuery || 
       item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
