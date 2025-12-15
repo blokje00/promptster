@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     // KRITIEKE FIX #1: Check data EXISTS voor DEZE USER
     // ============================================
     console.log('[seedDemoData] 🔍 Checking if demo data already exists for THIS user...');
-    const existingProjects = await base44.asServiceRole.entities.Project.filter({ created_by: user.email });
+    const existingProjects = await base44.entities.Project.filter({ created_by: user.email });
     const demoProjects = existingProjects.filter(p => p.name?.startsWith('DEMO:'));
     
     console.log('[seedDemoData] Found demo projects for', user.email, ':', demoProjects.length);
@@ -64,39 +64,39 @@ Deno.serve(async (req) => {
       console.log('[seedDemoData] 🧹 FORCE MODE: Cleaning up data for user:', user.email);
       
       // Delete in correct order (respect foreign keys)
-      const allThoughts = await base44.asServiceRole.entities.Thought.filter({ created_by: user.email });
+      const allThoughts = await base44.entities.Thought.filter({ created_by: user.email });
       const demoThoughts = allThoughts.filter(t => 
         demoProjects.some(p => p.id === t.project_id) || t.content?.startsWith('DEMO:')
       );
       console.log('[seedDemoData] Found', demoThoughts.length, 'demo thoughts to delete');
       for (const thought of demoThoughts) {
-        await base44.asServiceRole.entities.Thought.delete(thought.id);
+        await base44.entities.Thought.delete(thought.id);
       }
       console.log('[seedDemoData] ✅ Deleted', demoThoughts.length, 'thoughts');
       
-      const allTemplates = await base44.asServiceRole.entities.PromptTemplate.filter({ created_by: user.email });
+      const allTemplates = await base44.entities.PromptTemplate.filter({ created_by: user.email });
       const demoTemplates = allTemplates.filter(t => 
         demoProjects.some(p => p.id === t.project_id) || t.name?.startsWith('DEMO:')
       );
       console.log('[seedDemoData] Found', demoTemplates.length, 'demo templates to delete');
       for (const template of demoTemplates) {
-        await base44.asServiceRole.entities.PromptTemplate.delete(template.id);
+        await base44.entities.PromptTemplate.delete(template.id);
       }
       console.log('[seedDemoData] ✅ Deleted', demoTemplates.length, 'templates');
       
-      const allItems = await base44.asServiceRole.entities.Item.filter({ created_by: user.email });
+      const allItems = await base44.entities.Item.filter({ created_by: user.email });
       const demoItems = allItems.filter(i => 
         demoProjects.some(p => p.id === i.project_id) || i.title?.startsWith('DEMO:')
       );
       console.log('[seedDemoData] Found', demoItems.length, 'demo items to delete');
       for (const item of demoItems) {
-        await base44.asServiceRole.entities.Item.delete(item.id);
+        await base44.entities.Item.delete(item.id);
       }
       console.log('[seedDemoData] ✅ Deleted', demoItems.length, 'items');
       
       console.log('[seedDemoData] Deleting', demoProjects.length, 'demo projects');
       for (const project of demoProjects) {
-        await base44.asServiceRole.entities.Project.delete(project.id);
+        await base44.entities.Project.delete(project.id);
       }
       console.log('[seedDemoData] ✅ Deleted', demoProjects.length, 'projects');
       
@@ -116,19 +116,19 @@ Deno.serve(async (req) => {
     });
     
     // Check if AISettings already exists
-    const existingSettings = await base44.asServiceRole.entities.AISettings.filter({});
+    const existingSettings = await base44.entities.AISettings.filter({});
     const userSettings = existingSettings.find(s => s.created_by === user.email);
     
     let aiSettings;
     if (userSettings) {
       console.log('[seedDemoData] AI Settings already exist, updating...');
-      aiSettings = await base44.asServiceRole.entities.AISettings.update(userSettings.id, {
+      aiSettings = await base44.entities.AISettings.update(userSettings.id, {
         improve_prompt_instruction: "Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.",
         model_preference: "default",
         enable_context_suggestions: true
       });
     } else {
-      aiSettings = await base44.asServiceRole.entities.AISettings.create({
+      aiSettings = await base44.entities.AISettings.create({
         improve_prompt_instruction: "Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.",
         model_preference: "default",
         enable_context_suggestions: true,
@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
     
     // STAP 2: Project 1
     console.log('[seedDemoData] 📁 Step 2: Creating Project 1...');
-    const project1 = await base44.asServiceRole.entities.Project.create({
+    const project1 = await base44.entities.Project.create({
       name: "DEMO: SaaS Web App Refactor",
       color: "blue",
       description: "Refactoring and improving a medium-sized SaaS web application",
@@ -183,7 +183,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     // Templates voor Project 1
     console.log('[seedDemoData] 📋 Creating templates for Project 1...');
     
-    const t1 = await base44.asServiceRole.entities.PromptTemplate.create({
+    const t1 = await base44.entities.PromptTemplate.create({
       name: "DEMO: UI Review Template",
       type: "start",
       content: "Review the following UI for usability, accessibility, and visual consistency.\nProvide concrete improvement suggestions.",
@@ -199,7 +199,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    const t2 = await base44.asServiceRole.entities.PromptTemplate.create({
+    const t2 = await base44.entities.PromptTemplate.create({
       name: "DEMO: Code Refactor Template",
       type: "start",
       content: "Analyze the provided code and propose a refactor.\nFocus on clarity, reusability, and long-term maintainability.",
@@ -211,7 +211,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    const t3 = await base44.asServiceRole.entities.PromptTemplate.create({
+    const t3 = await base44.entities.PromptTemplate.create({
       name: "DEMO: Bug Analysis Template",
       type: "eind",
       content: "Investigate the described issue.\nIdentify root causes and suggest fixes.",
@@ -235,7 +235,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     ];
     
     for (const [idx, taskData] of tasks1.entries()) {
-      const task = await base44.asServiceRole.entities.Thought.create({
+      const task = await base44.entities.Thought.create({
         ...taskData,
         project_id: project1.id,
         is_selected: true,
@@ -258,7 +258,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     // ============================================
     console.log('[seedDemoData] 📁 Step 3: Creating Project 2...');
     
-    const project2 = await base44.asServiceRole.entities.Project.create({
+    const project2 = await base44.entities.Project.create({
       name: "DEMO: AI Prompt Engineering Playground",
       color: "purple",
       description: "Exploring prompt design, iteration, and evaluation for AI systems",
@@ -288,7 +288,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
     // Templates voor Project 2
     console.log('[seedDemoData] 📋 Creating templates for Project 2...');
     
-    const t4 = await base44.asServiceRole.entities.PromptTemplate.create({
+    const t4 = await base44.entities.PromptTemplate.create({
       name: "DEMO: Prompt Critique Template",
       type: "start",
       content: "Critically evaluate the prompt.\nIdentify ambiguities and suggest improvements.",
@@ -300,7 +300,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
     
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    const t5 = await base44.asServiceRole.entities.PromptTemplate.create({
+    const t5 = await base44.entities.PromptTemplate.create({
       name: "DEMO: Prompt Rewrite Template",
       type: "start",
       content: "Rewrite the prompt to be more precise, robust, and testable.",
@@ -312,7 +312,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
     
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    const t6 = await base44.asServiceRole.entities.PromptTemplate.create({
+    const t6 = await base44.entities.PromptTemplate.create({
       name: "DEMO: Output Evaluation Template",
       type: "eind",
       content: "Evaluate the AI output against the original intent.\nScore clarity, correctness, and usefulness.",
@@ -336,7 +336,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
     ];
     
     for (const [idx, taskData] of tasks2.entries()) {
-      const task = await base44.asServiceRole.entities.Thought.create({
+      const task = await base44.entities.Thought.create({
         ...taskData,
         project_id: project2.id,
         is_selected: true,
@@ -355,7 +355,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
     // ============================================
     console.log('[seedDemoData] 📦 Step 4: Creating vault items...');
     
-    const item1 = await base44.asServiceRole.entities.Item.create({
+    const item1 = await base44.entities.Item.create({
       title: "DEMO: System Prompt - Code Review Assistant",
       type: "prompt",
       project_id: project1.id,
@@ -383,7 +383,7 @@ Provide constructive feedback with specific examples and alternative implementat
     
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    const item2 = await base44.asServiceRole.entities.Item.create({
+    const item2 = await base44.entities.Item.create({
       title: "DEMO: Prompt Engineering Best Practices",
       type: "prompt",
       project_id: project2.id,
@@ -419,7 +419,7 @@ Provide constructive feedback with specific examples and alternative implementat
     // KRITIEKE FIX #3: Verify data was created FOR THIS USER
     // ============================================
     console.log('[seedDemoData] 🔍 Verifying created data for user:', user.email);
-    const verifyProjects = await base44.asServiceRole.entities.Project.filter({ created_by: user.email });
+    const verifyProjects = await base44.entities.Project.filter({ created_by: user.email });
     const verifyDemoProjects = verifyProjects.filter(p => p.name?.startsWith('DEMO:'));
     
     console.log('[seedDemoData] Verification: found', verifyDemoProjects.length, 'DEMO projects');
