@@ -31,8 +31,12 @@ export function BootstrapProvider({ children }) {
     }
 
     // User logged in: ensure demo data seeded
+    let isMounted = true;
+    
     async function bootstrap() {
       const logPrefix = `[BOOTSTRAP ${new Date().toISOString().split('T')[1].slice(0,8)}]`;
+      
+      if (!isMounted) return;
       
       try {
         console.log(`${logPrefix} Starting for user ${user.email}`);
@@ -43,6 +47,8 @@ export function BootstrapProvider({ children }) {
           userId: user.id,
           userEmail: user.email
         });
+
+        if (!isMounted) return;
 
         const duration = Date.now() - startTime;
         const payload = res?.data ?? res;
@@ -55,26 +61,37 @@ export function BootstrapProvider({ children }) {
           // Wait for DB consistency
           await new Promise(resolve => setTimeout(resolve, 1000));
           
+          if (!isMounted) return;
+          
           // Invalidate all data queries
           await queryClient.invalidateQueries();
           
+          // 🔥 CRITICAL: Set status to ready
           setStatus('ready');
-          console.log(`${logPrefix} ✅ Bootstrap ready`);
+          console.log(`${logPrefix} ✅ Bootstrap READY - queries enabled`);
         } else if (payload.status === 'in_progress') {
           console.log(`${logPrefix} ⏳ Seed in progress, retrying...`);
           // Retry after delay
-          setTimeout(() => bootstrap(), 2000);
+          setTimeout(() => {
+            if (isMounted) bootstrap();
+          }, 2000);
         } else {
           throw new Error(payload.error || 'Unknown error');
         }
       } catch (err) {
         console.error(`${logPrefix} ❌ Bootstrap failed:`, err);
-        setError(err.message);
-        setStatus('error');
+        if (isMounted) {
+          setError(err.message);
+          setStatus('error');
+        }
       }
     }
 
     bootstrap();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [isReady, user, queryClient]);
 
   return (
