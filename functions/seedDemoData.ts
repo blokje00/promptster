@@ -19,18 +19,26 @@ const PERSONAL_PREFERENCES = `# Personal AI Preferences
 `;
 
 Deno.serve(async (req) => {
+  console.log('[seedDemoData] 🚀 Function invoked');
+  console.log('[seedDemoData] Request method:', req.method);
+  console.log('[seedDemoData] Request URL:', req.url);
+  
   const base44 = createClientFromRequest(req);
+  console.log('[seedDemoData] ✅ Base44 client created');
   
   try {
+    console.log('[seedDemoData] ⏳ Fetching user...');
     const user = await base44.auth.me();
+    console.log('[seedDemoData] User fetched:', { id: user?.id, email: user?.email, demo_seeded_at: user?.demo_seeded_at });
 
     if (!user) {
+      console.log('[seedDemoData] ❌ No user found - unauthorized');
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if demo already seeded (database-first approach)
     if (user.demo_seeded_at) {
-      console.log('[seedDemoData] User already has demo data, skipping');
+      console.log('[seedDemoData] ℹ️ User already has demo data, skipping');
       return Response.json({ 
         status: 'already_seeded',
         message: 'Demo data already exists for this user',
@@ -38,28 +46,34 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log('[seedDemoData] Starting demo seed for user:', user.email);
+    console.log('[seedDemoData] ✨ Starting demo seed for user:', user.email);
 
     // Set marker immediately to prevent duplicate runs
+    console.log('[seedDemoData] ⏳ Setting demo_seeded_at marker...');
     await base44.auth.updateMe({
       demo_seeded_at: new Date().toISOString()
     });
+    console.log('[seedDemoData] ✅ Marker set');
 
     // STEP 1: Create Personal AI Configuration
+    console.log('[seedDemoData] ⏳ Step 1: Creating personal AI config...');
     await base44.auth.updateMe({
       personal_preferences_markdown: PERSONAL_PREFERENCES
     });
+    console.log('[seedDemoData] ✅ Personal preferences set');
 
-    await base44.asServiceRole.entities.AISettings.create({
+    const aiSettings = await base44.asServiceRole.entities.AISettings.create({
       improve_prompt_instruction: "Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.",
       model_preference: "default",
       enable_context_suggestions: true,
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ AI Settings created:', aiSettings?.id);
 
     console.log('[seedDemoData] ✓ Personal config created');
 
     // STEP 2: Create Demo Project 1 - SaaS Web App Refactor
+    console.log('[seedDemoData] ⏳ Step 2: Creating Project 1...');
     const project1 = await base44.asServiceRole.entities.Project.create({
       name: "SaaS Web App Refactor",
       color: "blue",
@@ -80,34 +94,40 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
 - Increase confidence in production readiness`,
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Project 1 created:', project1?.id);
 
     // Project 1 Templates
-    await base44.asServiceRole.entities.PromptTemplate.create({
+    console.log('[seedDemoData] ⏳ Creating templates for Project 1...');
+    const t1 = await base44.asServiceRole.entities.PromptTemplate.create({
       name: "UI Review Template",
       type: "start",
       content: "Review the following UI for usability, accessibility, and visual consistency.\nProvide concrete improvement suggestions.",
       project_id: project1.id,
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Template 1 created:', t1?.id);
 
-    await base44.asServiceRole.entities.PromptTemplate.create({
+    const t2 = await base44.asServiceRole.entities.PromptTemplate.create({
       name: "Code Refactor Template",
       type: "start",
       content: "Analyze the provided code and propose a refactor.\nFocus on clarity, reusability, and long-term maintainability.",
       project_id: project1.id,
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Template 2 created:', t2?.id);
 
-    await base44.asServiceRole.entities.PromptTemplate.create({
+    const t3 = await base44.asServiceRole.entities.PromptTemplate.create({
       name: "Bug Analysis Template",
       type: "eind",
       content: "Investigate the described issue.\nIdentify root causes and suggest fixes.",
       project_id: project1.id,
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Template 3 created:', t3?.id);
 
     // Project 1 Tasks (NO SCREENSHOTS)
-    await base44.asServiceRole.entities.Thought.create({
+    console.log('[seedDemoData] ⏳ Creating tasks for Project 1...');
+    const task1 = await base44.asServiceRole.entities.Thought.create({
       content: "Review the homepage layout and visual hierarchy",
       project_id: project1.id,
       is_selected: true,
@@ -117,8 +137,9 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       target_domain: "UI",
       created_by: user.email
     });
+    console.log('[seedDemoData] ✅ Task 1 created:', task1?.id);
 
-    await base44.asServiceRole.entities.Thought.create({
+    const task2 = await base44.asServiceRole.entities.Thought.create({
       content: "Identify usability issues in the admin dashboard",
       project_id: project1.id,
       is_selected: true,
@@ -160,7 +181,8 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       created_by: user.email
     });
 
-    console.log('[seedDemoData] ✓ Project 1 created with 3 templates and 5 tasks');
+    console.log('[seedDemoData] ✅ All Project 1 tasks created');
+    console.log('[seedDemoData] ✓ Project 1 COMPLETE: 3 templates and 5 tasks');
 
     // STEP 3: Create Demo Project 2 - AI Prompt Engineering Playground
     const project2 = await base44.asServiceRole.entities.Project.create({
@@ -307,9 +329,9 @@ Provide constructive feedback with specific examples and alternative implementat
     });
 
     console.log('[seedDemoData] ✓ 2 Vault prompts created');
-    console.log('[seedDemoData] ✓ Demo seed completed successfully');
+    console.log('[seedDemoData] ✨✨✨ Demo seed completed successfully ✨✨✨');
 
-    return Response.json({
+    const result = {
       status: 'success',
       message: 'Demo environment created',
       projects: 2,
@@ -317,21 +339,31 @@ Provide constructive feedback with specific examples and alternative implementat
       vault_prompts: 2,
       templates: 6,
       seeded_at: new Date().toISOString()
-    });
+    };
+    
+    console.log('[seedDemoData] 📤 Returning result:', result);
+    return Response.json(result);
 
   } catch (error) {
-    console.error('[seedDemoData] Error:', error);
+    console.error('[seedDemoData] ❌❌❌ FATAL ERROR ❌❌❌');
+    console.error('[seedDemoData] Error name:', error.name);
+    console.error('[seedDemoData] Error message:', error.message);
+    console.error('[seedDemoData] Error stack:', error.stack);
+    console.error('[seedDemoData] Full error:', JSON.stringify(error, null, 2));
     
     // Rollback marker on failure
     try {
+      console.log('[seedDemoData] ⏳ Rolling back demo_seeded_at marker...');
       await base44.auth.updateMe({ demo_seeded_at: null });
+      console.log('[seedDemoData] ✅ Rollback successful');
     } catch (rollbackError) {
-      console.error('[seedDemoData] Rollback failed:', rollbackError);
+      console.error('[seedDemoData] ❌ Rollback failed:', rollbackError);
     }
 
     return Response.json({ 
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
+      name: error.name
     }, { status: 500 });
   }
 });

@@ -93,21 +93,39 @@ export default function Header() {
   };
 
   const handleSeedDemoData = async () => {
+    console.log('[Header] 🚀 Starting demo seed process...');
+    console.log('[Header] User:', user);
+    
     try {
       toast.info('Creating demo data...');
+      console.log('[Header] ⏳ Invoking seedDemoData function...');
+      
       const response = await base44.functions.invoke('seedDemoData', {});
       
+      console.log('[Header] ✅ Function response received:', response);
+      console.log('[Header] Response status:', response.status);
+      console.log('[Header] Response data:', response.data);
+      
       if (response.data?.status === 'already_seeded') {
+        console.log('[Header] ℹ️ Demo data already exists');
         toast.info('Demo data already exists');
       } else if (response.data?.status === 'success') {
+        console.log('[Header] ✨ Demo created successfully!', response.data);
         toast.success(`Demo created: ${response.data.projects} projects, ${response.data.tasks} tasks!`);
       } else {
+        console.log('[Header] ⚠️ Unexpected response format:', response);
         toast.success('Demo data created!');
       }
     } catch (error) {
-      console.error('[Header] Seed error:', error);
+      console.error('[Header] ❌ Seed error:', error);
+      console.error('[Header] Error name:', error.name);
+      console.error('[Header] Error message:', error.message);
+      console.error('[Header] Error stack:', error.stack);
+      console.error('[Header] Full error object:', JSON.stringify(error, null, 2));
       toast.error(`Failed: ${error.message || 'Unknown error'}`);
     }
+    
+    console.log('[Header] 🏁 Demo seed process completed');
   };
   
   const currentPath = location.pathname.toLowerCase();
