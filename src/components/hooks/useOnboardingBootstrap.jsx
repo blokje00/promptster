@@ -28,8 +28,8 @@ export function useOnboardingBootstrap() {
       return;
     }
 
-    if (!user) {
-      console.info('[SEED] No user - skipping seed');
+    if (!user || !user.id) {
+      console.info('[SEED] No user or user ID - skipping seed');
       return;
     }
 
@@ -87,11 +87,13 @@ export function useOnboardingBootstrap() {
           setSeedStatus('failed');
           // Clear session flag so retry is possible on next page load
           sessionStorage.removeItem(sessionKey);
+          hasTriggered.current = false; // Allow retry in current session
         }
       } catch (error) {
         console.error('[SEED] Error:', error);
         setSeedStatus('error');
         sessionStorage.removeItem(sessionKey);
+        hasTriggered.current = false; // Allow retry in current session
       }
     }
 
