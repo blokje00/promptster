@@ -261,7 +261,7 @@ Deno.serve(async (req) => {
 
     console.info('[SEED] Check for:', user.email);
 
-    // ✅ IDEMPOTENCY: Only check user flag (no DB queries to avoid 429)
+    // ✅ IDEMPOTENCY: Check flag first (prevents race conditions)
     if (user.demo_seeded_at && user.email !== 'patrickz@sunshower.nl') {
       console.info('[SEED] Already seeded at:', user.demo_seeded_at);
       return Response.json({ 
@@ -269,6 +269,13 @@ Deno.serve(async (req) => {
         seeded_at: user.demo_seeded_at
       });
     }
+
+    // ✅ MARK AS SEEDING FIRST (prevents concurrent seeds)
+    const seedTimestamp = new Date().toISOString();
+    await base44.auth.updateMe({
+      demo_seeded_at: seedTimestamp
+    });
+    console.info('[SEED] Marked user as seeding:', seedTimestamp);
 
     // TESTER RESET: Always wipe existing data for whitelisted users
     if (user.email === 'patrickz@sunshower.nl') {
@@ -339,15 +346,9 @@ Deno.serve(async (req) => {
       personal_preferences_markdown: PERSONAL_PREFERENCES
     });
 
-    // ✅ MARK AS COMPLETE
-    const seededAt = new Date().toISOString();
-    await base44.auth.updateMe({
-      demo_seeded_at: seededAt
-    });
-
     console.info('[SEED] ✅ COMPLETE', {
       user: user.email,
-      seeded_at: seededAt,
+      seeded_at: seedTimestamp,
       projects: createdProjects.length,
       templates: allTemplates.length,
       thoughts: allThoughts.length
@@ -355,7 +356,7 @@ Deno.serve(async (req) => {
 
     return Response.json({
       status: 'success',
-      seeded_at: seededAt,
+      seeded_at: seedTimestamp,
       stats: {
         projects: createdProjects.length,
         templates: allTemplates.length,

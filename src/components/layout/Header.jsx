@@ -4,6 +4,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
+import { useUser } from "@/components/hooks/useUser";
 import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText, TrendingUp, X } from "lucide-react";
 import ThemeToggleButton from "@/components/theme/ThemeToggleButton";
 import { Button } from "@/components/ui/button";
@@ -28,10 +29,7 @@ export default function Header() {
   const [showExport, setShowExport] = useState(false);
   const [showTrialModal, setShowTrialModal] = useState(false);
   
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
+  const { user, isReady } = useUser();
 
   const { data: deletedCount = 0 } = useQuery({
     queryKey: ['deletedThoughtsCount'],
@@ -193,7 +191,7 @@ export default function Header() {
         <div className="flex items-center gap-1">
           <ThemeToggleButton />
           
-          {!user ? (
+          {isReady && !user ? (
             <Button 
               onClick={() => setShowTrialModal(true)}
               className="ml-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
