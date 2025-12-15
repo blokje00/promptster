@@ -17,7 +17,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import ZipUploadZone from "../components/dashboard/ZipUploadZone";
 import ScreenshotUploader from "../components/media/ScreenshotUploader";
-import AccessGuard from "../components/auth/AccessGuard";
 
 export default function EditItem() {
   const navigate = useNavigate();

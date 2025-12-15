@@ -17,7 +17,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import AccessGuard from "../components/auth/AccessGuard";
 
 export default function RecycleBin() {
   const queryClient = useQueryClient();
@@ -109,8 +108,7 @@ export default function RecycleBin() {
   });
 
   return (
-    <AccessGuard>
-      <div className="p-4 md:p-8">
+    <div className="p-4 md:p-8">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -231,6 +229,6 @@ export default function RecycleBin() {
             </div>
           )}
         </div>
-      </div>
+    </div>
   );
 }

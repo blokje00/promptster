@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save, Star } from "lucide-react";
 import ScreenshotUploader from "../components/media/ScreenshotUploader";
 import ZipUploadZone from "../components/dashboard/ZipUploadZone";
-import AccessGuard from "../components/auth/AccessGuard";
 import ItemDetailsForm from "../components/items/ItemDetailsForm";
 import StatusSelector from "../components/items/StatusSelector";
 import ContentSection from "../components/items/ContentSection";
