@@ -29,7 +29,7 @@ export default function Header() {
   const [showExport, setShowExport] = useState(false);
   const [showTrialModal, setShowTrialModal] = useState(false);
   
-  const { data: user } = useQuery({
+  const { data: user, isLoading: isUserLoading } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me(),
   });
@@ -156,7 +156,34 @@ export default function Header() {
     }
   }, [currentPath, navigate]);
 
-  // Removed automatic demo seeding - only manual via admin button
+  // Auto-seed demo data for new users
+  useEffect(() => {
+    const seedForNewUser = async () => {
+      if (!user || !user.email) return;
+      
+      // Check if demo_seeded_at is null (new user)
+      if (user.demo_seeded_at === null || user.demo_seeded_at === undefined) {
+        console.log('[Header] 🆕 New user detected, auto-seeding demo data...');
+        
+        try {
+          const response = await base44.functions.invoke('seedDemoData', { force: false });
+          
+          if (response.data?.status === 'success') {
+            console.log('[Header] ✨ Demo data auto-seeded successfully');
+            // Reload to show demo data
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          }
+        } catch (error) {
+          console.error('[Header] ❌ Auto-seed failed:', error);
+          // Silent fail - user can still use app
+        }
+      }
+    };
+    
+    seedForNewUser();
+  }, [user]);
   
   const handleLogoClick = () => {
     window.location.href = createPageUrl("Multiprompt");
@@ -246,7 +273,7 @@ export default function Header() {
         <div className="flex items-center gap-1">
           <ThemeToggleButton />
           
-          {!user ? (
+          {!isUserLoading && !user && (
             <Button 
               onClick={() => setShowTrialModal(true)}
               className="ml-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
@@ -254,7 +281,7 @@ export default function Header() {
               <Sparkles className="w-4 h-4 mr-2" />
               Get Started
             </Button>
-          ) : null}
+          )}
           
           {/* Admin items moved to dropdown */}
           {false && user?.role === 'admin' && (
