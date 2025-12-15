@@ -51,6 +51,7 @@ function buildDemoDataset(ownerEmail) {
         color: "blue",
         description: "Refactoring and improving a medium-sized SaaS web application",
         technical_config_markdown: `# Project AI Configuration — SaaS Web App Refactor\n\n## Context\nThis project focuses on refactoring and improving a medium-sized SaaS web application.\n\n## Coding Standards\n- React + modern hooks\n- Clear separation of concerns\n- Emphasis on maintainability and readability\n\n## Goals\n- Improve UX consistency\n- Reduce technical debt\n- Increase confidence in production readiness`,
+        is_demo: true,
         created_by: ownerEmail,
         created_date: now
       },
@@ -59,6 +60,7 @@ function buildDemoDataset(ownerEmail) {
         color: "purple",
         description: "Exploring prompt design, iteration, and evaluation for AI systems",
         technical_config_markdown: `# Project AI Configuration — Prompt Engineering Playground\n\n## Context\nThis project explores prompt design, iteration, and evaluation for AI systems.\n\n## Goals\n- Learn how prompt structure affects output\n- Compare different instruction styles\n- Improve reliability of AI responses`,
+        is_demo: true,
         created_by: ownerEmail,
         created_date: now
       }
@@ -76,6 +78,7 @@ function buildTemplates(projectId, projectName, ownerEmail, now) {
         name: "UI Review Template",
         type: "start",
         content: "Review the following UI for usability, accessibility, and visual consistency.\nProvide concrete improvement suggestions.",
+        is_demo: true,
         project_id: projectId,
         created_by: ownerEmail,
         created_date: now
@@ -84,6 +87,7 @@ function buildTemplates(projectId, projectName, ownerEmail, now) {
         name: "Code Refactor Template",
         type: "start",
         content: "Analyze the provided code and propose a refactor.\nFocus on clarity, reusability, and long-term maintainability.",
+        is_demo: true,
         project_id: projectId,
         created_by: ownerEmail,
         created_date: now
@@ -92,6 +96,7 @@ function buildTemplates(projectId, projectName, ownerEmail, now) {
         name: "Bug Analysis Template",
         type: "eind",
         content: "Investigate the described issue.\nIdentify root causes and suggest fixes.",
+        is_demo: true,
         project_id: projectId,
         created_by: ownerEmail,
         created_date: now
@@ -103,6 +108,7 @@ function buildTemplates(projectId, projectName, ownerEmail, now) {
         name: "Prompt Critique Template",
         type: "start",
         content: "Critically evaluate the prompt.\nIdentify ambiguities and suggest improvements.",
+        is_demo: true,
         project_id: projectId,
         created_by: ownerEmail,
         created_date: now
@@ -111,6 +117,7 @@ function buildTemplates(projectId, projectName, ownerEmail, now) {
         name: "Prompt Rewrite Template",
         type: "start",
         content: "Rewrite the prompt to be more precise, robust, and testable.",
+        is_demo: true,
         project_id: projectId,
         created_by: ownerEmail,
         created_date: now
@@ -119,6 +126,7 @@ function buildTemplates(projectId, projectName, ownerEmail, now) {
         name: "Output Evaluation Template",
         type: "eind",
         content: "Evaluate the AI output against the original intent.\nScore clarity, correctness, and usefulness.",
+        is_demo: true,
         project_id: projectId,
         created_by: ownerEmail,
         created_date: now
@@ -136,6 +144,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       {
         content: "Review the homepage layout and visual hierarchy",
         screenshot_ids: [],
+        is_demo: true,
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -148,6 +157,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       {
         content: "Identify usability issues in the admin dashboard",
         screenshot_ids: [],
+        is_demo: true,
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -160,6 +170,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       {
         content: "Analyze a reported issue in the signup flow",
         screenshot_ids: [],
+        is_demo: true,
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -171,6 +182,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       {
         content: "Propose improvements to the settings page code structure",
         screenshot_ids: [],
+        is_demo: true,
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -183,6 +195,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       {
         content: "Review mobile layout issues and responsiveness",
         screenshot_ids: [],
+        is_demo: true,
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -197,6 +210,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       {
         content: "Rewrite a poorly defined AI prompt for clarity and precision",
         screenshot_ids: [],
+        is_demo: true,
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -208,6 +222,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       {
         content: "Analyze differences between concise and verbose prompt styles",
         screenshot_ids: [],
+        is_demo: true,
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -219,6 +234,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       {
         content: "Identify hidden assumptions in a prompt",
         screenshot_ids: [],
+        is_demo: true,
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -230,6 +246,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       {
         content: "Score an AI response against clear evaluation criteria",
         screenshot_ids: [],
+        is_demo: true,
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -241,6 +258,7 @@ function buildThoughts(projectId, projectName, ownerEmail, now) {
       {
         content: "Design a system prompt for consistent AI behavior across sessions",
         screenshot_ids: [],
+        is_demo: true,
         project_id: projectId,
         is_selected: true,
         is_deleted: false,
@@ -284,29 +302,69 @@ Deno.serve(async (req) => {
 
     console.info('[SEED-BACKEND][CHECK_FOR]', { reqId, email: user.email });
 
-    // ✅ IDEMPOTENCY: Check flag first (prevents race conditions)
-    if (user.demo_seeded_at && user.email !== 'patrickz@sunshower.nl') {
-      console.info('[SEED-BACKEND][ALREADY_SEEDED]', { reqId, seeded_at: user.demo_seeded_at });
-      return Response.json({ 
-        status: 'already_seeded',
-        reqId,
-        seeded_at: user.demo_seeded_at
+    // ✅ IDEMPOTENCY: Check status + reality check
+    const CURRENT_VERSION = "v1";
+    
+    if (user.demo_seed_status === 'success' && user.demo_seed_version === CURRENT_VERSION && user.email !== 'patrickz@sunshower.nl') {
+      // Reality check: verify actual data exists
+      const demoProjects = await base44.asServiceRole.entities.Project.filter({ 
+        created_by: user.email, 
+        is_demo: true 
       });
+      
+      const hasDemoData = Array.isArray(demoProjects) && demoProjects.length > 0;
+      
+      if (hasDemoData) {
+        console.info('[SEED-BACKEND][ALREADY_SEEDED]', { reqId, version: user.demo_seed_version, projectCount: demoProjects.length });
+        return Response.json({ 
+          status: 'already_seeded',
+          reqId,
+          seeded_at: user.demo_seeded_at,
+          version: user.demo_seed_version
+        });
+      } else {
+        console.warn('[SEED-BACKEND][GHOST_MARKER]', { reqId, msg: 'Marker says success but no data found. Reseeding.' });
+        await base44.auth.updateMe({ demo_seed_status: 'failed' });
+      }
+    }
+    
+    // Check for stale lock (in_progress for >5 min)
+    if (user.demo_seed_status === 'in_progress') {
+      const lockTime = user.demo_seeded_at ? new Date(user.demo_seeded_at).getTime() : 0;
+      const now = Date.now();
+      const isStale = (now - lockTime) > 300000; // 5 minutes
+      
+      if (isStale) {
+        console.warn('[SEED-BACKEND][STALE_LOCK]', { reqId, lockAge: now - lockTime });
+        await base44.auth.updateMe({ demo_seed_status: 'failed' });
+      } else {
+        console.info('[SEED-BACKEND][IN_PROGRESS]', { reqId, msg: 'Another seed is running' });
+        return Response.json({ 
+          status: 'in_progress',
+          reqId,
+          message: 'Seeding already in progress'
+        });
+      }
     }
 
-    // ✅ MARK AS SEEDING FIRST (prevents concurrent seeds)
+    // ✅ ACQUIRE LOCK: Mark as in_progress
     const seedTimestamp = new Date().toISOString();
     await base44.auth.updateMe({
-      demo_seeded_at: seedTimestamp
+      demo_seed_status: 'in_progress',
+      demo_seeded_at: seedTimestamp,
+      demo_seed_version: CURRENT_VERSION
     });
-    console.info('[SEED-BACKEND][MARKED_SEEDING]', { reqId, seedTimestamp });
+    console.info('[SEED-BACKEND][LOCK_ACQUIRED]', { reqId, seedTimestamp, version: CURRENT_VERSION });
 
     // TESTER RESET: Always wipe existing data for whitelisted users
     if (user.email === 'patrickz@sunshower.nl') {
       console.info('[SEED-BACKEND][TESTER_MODE]', { reqId, action: 'wiping' });
       
-      // Delete in correct order (respect foreign keys) - NULL-SAFE
-      const existingThoughts = await base44.asServiceRole.entities.Thought.filter({ created_by: user.email });
+      // Delete ONLY demo data - NULL-SAFE
+      const existingThoughts = await base44.asServiceRole.entities.Thought.filter({ 
+        created_by: user.email, 
+        is_demo: true 
+      });
       console.info('[SEED-BACKEND][WIPE_THOUGHTS]', { reqId, count: Array.isArray(existingThoughts) ? existingThoughts.length : 0 });
       if (Array.isArray(existingThoughts) && existingThoughts.length > 0) {
         for (const t of existingThoughts) {
@@ -314,7 +372,10 @@ Deno.serve(async (req) => {
         }
       }
       
-      const existingTemplates = await base44.asServiceRole.entities.PromptTemplate.filter({ created_by: user.email });
+      const existingTemplates = await base44.asServiceRole.entities.PromptTemplate.filter({ 
+        created_by: user.email, 
+        is_demo: true 
+      });
       console.info('[SEED-BACKEND][WIPE_TEMPLATES]', { reqId, count: Array.isArray(existingTemplates) ? existingTemplates.length : 0 });
       if (Array.isArray(existingTemplates) && existingTemplates.length > 0) {
         for (const t of existingTemplates) {
@@ -322,7 +383,10 @@ Deno.serve(async (req) => {
         }
       }
       
-      const existingProjects = await base44.asServiceRole.entities.Project.filter({ created_by: user.email });
+      const existingProjects = await base44.asServiceRole.entities.Project.filter({ 
+        created_by: user.email, 
+        is_demo: true 
+      });
       console.info('[SEED-BACKEND][WIPE_PROJECTS]', { reqId, count: Array.isArray(existingProjects) ? existingProjects.length : 0 });
       if (Array.isArray(existingProjects) && existingProjects.length > 0) {
         for (const p of existingProjects) {
@@ -330,7 +394,9 @@ Deno.serve(async (req) => {
         }
       }
       
-      const existingSettings = await base44.asServiceRole.entities.AISettings.filter({ created_by: user.email });
+      const existingSettings = await base44.asServiceRole.entities.AISettings.filter({ 
+        created_by: user.email 
+      });
       console.info('[SEED-BACKEND][WIPE_SETTINGS]', { reqId, count: Array.isArray(existingSettings) ? existingSettings.length : 0 });
       if (Array.isArray(existingSettings) && existingSettings.length > 0) {
         for (const s of existingSettings) {
@@ -338,8 +404,12 @@ Deno.serve(async (req) => {
         }
       }
       
-      // Reset marker
-      await base44.auth.updateMe({ demo_seeded_at: null });
+      // Reset markers
+      await base44.auth.updateMe({ 
+        demo_seeded_at: null,
+        demo_seed_status: null,
+        demo_seed_version: null
+      });
       
       console.info('[SEED-BACKEND][TESTER_WIPE_DONE]', { reqId });
     }
@@ -411,17 +481,25 @@ Deno.serve(async (req) => {
       personal_preferences_markdown: PERSONAL_PREFERENCES
     });
 
+    // ✅ MARK SUCCESS
+    await base44.auth.updateMe({
+      demo_seed_status: 'success',
+      demo_seed_version: CURRENT_VERSION
+    });
+
     console.info('[SEED-BACKEND][DONE]', {
       reqId,
       ms: Date.now() - startedAt,
       email: user.email,
-      projectCount
+      projectCount,
+      version: CURRENT_VERSION
     });
 
     return Response.json({
       status: 'success',
       reqId,
       seeded_at: seedTimestamp,
+      version: CURRENT_VERSION,
       stats: {
         projects: projectCount,
         templates: templateCount,
@@ -436,6 +514,15 @@ Deno.serve(async (req) => {
       ms: Date.now() - startedAt, 
       err 
     });
+
+    // MARK FAILED
+    try {
+      await base44.auth.updateMe({
+        demo_seed_status: 'failed'
+      });
+    } catch (updateErr) {
+      console.error('[SEED-BACKEND][FAILED_TO_MARK_FAILED]', safeErr(updateErr));
+    }
 
     // ALWAYS return JSON, never throw
     return Response.json({

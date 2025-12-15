@@ -5,11 +5,9 @@ import { ThemeProvider } from "./components/theme/ThemeProvider";
 import CookieConsent from "./components/auth/CookieConsent";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { useOnboardingBootstrap } from "@/components/hooks/useOnboardingBootstrap";
+import { BootstrapProvider } from "@/components/contexts/BootstrapContext";
 
 export default function Layout({ children }) {
-  // Global bootstrap: seed demo data for new users
-  useOnboardingBootstrap();
   useEffect(() => {
     const iconUrl = "https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/59f339046_Promptguardlogopurplebeta.png";
     
@@ -35,25 +33,27 @@ export default function Layout({ children }) {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors">
-          <style>{`
-            :root {
-              --primary: #6366f1;
-              --primary-dark: #4f46e5;
-            }
-          `}</style>
+        <BootstrapProvider>
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors">
+            <style>{`
+              :root {
+                --primary: #6366f1;
+                --primary-dark: #4f46e5;
+              }
+            `}</style>
 
-          <Header />
+            <Header />
 
-          <main>
-            <ErrorBoundary>
-              {children}
-            </ErrorBoundary>
-          </main>
+            <main>
+              <ErrorBoundary>
+                {children}
+              </ErrorBoundary>
+            </main>
 
-          <CookieConsent />
+            <CookieConsent />
           </div>
-          </LanguageProvider>
-          </ThemeProvider>
-          );
-          }
+        </BootstrapProvider>
+      </LanguageProvider>
+    </ThemeProvider>
+  );
+}
