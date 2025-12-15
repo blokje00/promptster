@@ -399,19 +399,28 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('[SEED-BACKEND] ❌ CRITICAL ERROR:', {
+    const errorInfo = {
       message: error.message,
       name: error.name,
-      stack: error.stack,
-      cause: error.cause
-    });
+      stack: error.stack?.substring(0, 500),
+      cause: error.cause,
+      timestamp: new Date().toISOString()
+    };
     
-    return Response.json({ 
+    console.error('[SEED-BACKEND] ❌ CRITICAL ERROR:', errorInfo);
+    console.error('[SEED-BACKEND] Full error object:', error);
+    
+    const errorResponse = { 
       status: 'error',
-      error: error.message || 'Unknown error',
+      error: error.message || 'Unknown server error',
       errorType: error.name || 'Error',
-      details: error.cause?.message || null
-    }, { 
+      details: error.cause?.message || error.stack?.split('\n')[0] || 'No details available',
+      timestamp: new Date().toISOString()
+    };
+    
+    console.error('[SEED-BACKEND] Sending error response:', errorResponse);
+    
+    return Response.json(errorResponse, { 
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });

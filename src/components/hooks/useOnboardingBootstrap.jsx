@@ -97,16 +97,29 @@ export function useOnboardingBootstrap() {
           throw new Error(`Backend invoke failed: ${invokeError.message || 'Network error'}`);
         }
         
-        console.log(`${logPrefix} Server response:`, result);
+        console.log(`${logPrefix} 📦 Server response (raw):`, JSON.stringify(result, null, 2));
         
         // Check if result is valid
         if (!result) {
+          console.error(`${logPrefix} ❌ Empty response from backend`);
           throw new Error('Backend returned empty response');
         }
         
         if (typeof result !== 'object') {
+          console.error(`${logPrefix} ❌ Invalid response type:`, typeof result, result);
           throw new Error(`Backend returned invalid response type: ${typeof result}`);
         }
+        
+        // Log the exact result structure
+        console.log(`${logPrefix} 🔍 Response analysis:`, {
+          hasStatus: 'status' in result,
+          status: result.status,
+          hasError: 'error' in result,
+          error: result.error,
+          hasDetails: 'details' in result,
+          details: result.details,
+          allKeys: Object.keys(result)
+        });
 
         if (result && result.status === 'success') {
           console.log(`${logPrefix} ✅ SEED SUCCESS! Invalidating queries...`);
@@ -123,9 +136,18 @@ export function useOnboardingBootstrap() {
           console.log(`${logPrefix} Backend says: Already seeded.`);
           setSeedStatus('already_done');
         } else {
-          const errorMsg = result?.error || result?.details || 'Unknown backend error';
-          const errorType = result?.errorType || 'UnknownError';
-          throw new Error(`${errorType}: ${errorMsg}`);
+          // Backend returned something unexpected
+          console.error(`${logPrefix} ❌ Unexpected backend response:`, {
+            fullResult: result,
+            stringified: JSON.stringify(result)
+          });
+          
+          const errorMsg = result?.error || result?.details || result?.message || 'Unknown backend error';
+          const errorType = result?.errorType || result?.name || 'UnknownError';
+          const fullError = `${errorType}: ${errorMsg}`;
+          
+          console.error(`${logPrefix} 🚨 Throwing error:`, fullError);
+          throw new Error(fullError);
         }
       } catch (error) {
         const is429 = error.message?.includes('429') || error.message?.includes('Rate limit');
