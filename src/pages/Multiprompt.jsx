@@ -48,13 +48,13 @@ export default function Multiprompt() {
 
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: async () => await base44.entities.Project.list(),
+    queryFn: () => base44.entities.Project.list(),
     enabled: !!currentUser
   });
 
   const { data: templates = [] } = useQuery({
     queryKey: ['templates'],
-    queryFn: async () => await base44.entities.PromptTemplate.list(),
+    queryFn: () => base44.entities.PromptTemplate.list(),
     enabled: !!currentUser
   });
 

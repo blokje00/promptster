@@ -34,13 +34,13 @@ export default function Dashboard() {
 
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: async () => await base44.entities.Project.list(),
+    queryFn: () => base44.entities.Project.list(),
     enabled: !!currentUser,
   });
 
   const { data: items, isLoading } = useQuery({
     queryKey: ['items'],
-    queryFn: async () => await base44.entities.Item.list("-updated_date"),
+    queryFn: () => base44.entities.Item.list("-updated_date"),
     enabled: !!currentUser,
   });
 
