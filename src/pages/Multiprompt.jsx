@@ -447,5 +447,6 @@ export default function Multiprompt() {
           />
         )}
         </div>
+        </AccessGuard>
         );
         }

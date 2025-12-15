@@ -13,6 +13,7 @@ import StatusSelector from "../components/items/StatusSelector";
 import ContentSection from "../components/items/ContentSection";
 import PublishVersionSection from "../components/items/PublishVersionSection";
 import { projectColors } from "@/components/lib/constants";
+import AccessGuard from "../components/auth/AccessGuard";
 
 export default function AddItem() {
   const navigate = useNavigate();
@@ -144,6 +145,7 @@ export default function AddItem() {
   };
 
   return (
+    <AccessGuard pageType="protected">
     <div className="p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-8">
@@ -254,7 +256,8 @@ export default function AddItem() {
               </Button>
             </div>
           </form>
-        </div>
-      </div>
-  );
-}
+          </div>
+          </div>
+          </AccessGuard>
+          );
+          }

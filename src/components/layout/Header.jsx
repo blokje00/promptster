@@ -157,12 +157,18 @@ export default function Header() {
     else if (isChecks) localStorage.setItem('lastMainPage', 'Checks');
   }, [isVault, isAddItem, isMultiprompt, isChecks]);
 
-  // Redirect on initial load - ALWAYS to Multiprompt for all users
+  // Redirect on initial load
   useEffect(() => {
     if (currentPath === "/" || currentPath === "") {
-      navigate(createPageUrl('Multiprompt'), { replace: true });
+      // If logged in, go to Multiprompt. If not, go to Features (landing page)
+      if (user) {
+        navigate(createPageUrl('Multiprompt'), { replace: true });
+      } else if (user === null) {
+        // Only redirect when we're sure there's no user (not still loading)
+        navigate(createPageUrl('Features'), { replace: true });
+      }
     }
-  }, [currentPath, navigate]);
+  }, [currentPath, navigate, user]);
 
   // Auto-seed demo data for new users
   useEffect(() => {
@@ -308,15 +314,7 @@ export default function Header() {
         <div className="flex items-center gap-1">
           <ThemeToggleButton />
           
-          {user === null && (
-            <Button 
-              onClick={() => setShowTrialModal(true)}
-              className="ml-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Get Started
-            </Button>
-          )}
+
           
           {/* Admin items moved to dropdown */}
           {false && user?.role === 'admin' && (

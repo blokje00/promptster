@@ -16,10 +16,19 @@ const iconMap = {
   Shield: <Shield className="w-6 h-6 text-green-500" />,
 };
 
-export default function Features() {
+function FeaturesPage() {
+  const [showTrialModal, setShowTrialModal] = useState(false);
+  
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
+    queryFn: async () => {
+      try {
+        return await base44.auth.me();
+      } catch (error) {
+        return null;
+      }
+    },
+    retry: false,
   });
 
   const { data: blocks = [] } = useQuery({
@@ -276,5 +285,13 @@ export default function Features() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function Features() {
+  return (
+    <AccessGuard pageType="public">
+      <FeaturesPage />
+    </AccessGuard>
   );
 }

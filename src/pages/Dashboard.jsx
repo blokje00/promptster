@@ -79,7 +79,7 @@ export default function Dashboard() {
   }), [items, searchQuery, filterType, showFavoritesOnly, showZipOnly, showPublishedOnly, showPendingCheckOnly, selectedProjectId]);
 
   return (
-    <AccessGuard>
+    <AccessGuard pageType="protected">
     <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <TrialBanner />
