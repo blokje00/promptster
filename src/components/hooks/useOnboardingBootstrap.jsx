@@ -174,20 +174,19 @@ export function useOnboardingBootstrap() {
 
           // Step 1: Invalidate all cached data
           await invalidateAllDataQueries();
-          
+
           // Step 2: Force refetch user to get updated demo_seed_version
           await refetchUser();
 
-          // Step 3: Show success message
+          // Step 3: Wait for queries to settle (no page reload!)
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Step 4: Show success message
           toast.success("Welcome! Demo environment created", {
             description: `${response.data.total_tasks || 0} tasks across ${response.data.projects?.length || 0} projects`
           });
 
-          // Step 4: Reload page AFTER cache is cleared
-          addDebugLog("Reloading page to show demo data");
-          setTimeout(() => {
-            window.location.reload();
-          }, 500);
+          addDebugLog("Demo data loaded - no reload needed");
 
         } else if (response.data.status === 'already_seeded') {
           addDebugLog("User was already seeded (race condition handled)", response.data);
