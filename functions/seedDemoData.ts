@@ -481,7 +481,29 @@ Deno.serve(async (req) => {
       personal_preferences_markdown: PERSONAL_PREFERENCES
     });
 
-    // ✅ MARK SUCCESS
+    // VERIFICATION: Check if data is actually readable before marking success
+    console.info('[SEED-BACKEND][VERIFY]', { reqId, msg: 'Verifying data is readable...' });
+    await delay(1500); // Wait for DB consistency
+
+    const verifyProjects = await base44.asServiceRole.entities.Project.filter({ 
+      created_by: user.email, 
+      is_demo: true 
+    });
+    const verifyCount = Array.isArray(verifyProjects) ? verifyProjects.length : 0;
+
+    if (verifyCount === 0) {
+      console.error('[SEED-BACKEND][VERIFY_FAILED]', { 
+        reqId, 
+        msg: 'Data written but not readable',
+        expected: projectCount,
+        found: verifyCount
+      });
+      throw new Error('Verification failed: demo projects not readable after insert');
+    }
+
+    console.info('[SEED-BACKEND][VERIFY_OK]', { reqId, projectsFound: verifyCount });
+
+    // ✅ MARK SUCCESS (only after verification)
     await base44.auth.updateMe({
       demo_seed_status: 'success',
       demo_seed_version: CURRENT_VERSION

@@ -19,11 +19,13 @@ export function BootstrapProvider({ children }) {
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState(null);
 
-  // Subscribe to query cache for debugging
+  // Subscribe to query cache for debugging (only in dev)
   useEffect(() => {
-    const unsubscribe = subscribeToQueryCache(queryClient);
-    return unsubscribe;
-  }, [queryClient]);
+    if (user?.email === 'patrickz@sunshower.nl') {
+      const unsubscribe = subscribeToQueryCache(queryClient);
+      return unsubscribe;
+    }
+  }, [queryClient, user?.email]);
 
   useEffect(() => {
     if (!isReady) {
@@ -70,38 +72,44 @@ export function BootstrapProvider({ children }) {
           await queryClient.invalidateQueries();
           
           // VERIFICATION LOOP: Wait until data is actually visible
-          let itemsFound = false;
+          let dataVerified = false;
           let attempts = 0;
-          const maxAttempts = 5;
+          const maxAttempts = 8;
           
-          while (!itemsFound && attempts < maxAttempts && isMounted) {
+          while (!dataVerified && attempts < maxAttempts && isMounted) {
             attempts++;
-            // Wait with exponential backoff
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+            // Wait with progressive backoff (2s, 2s, 3s, 3s, 4s, 4s, 5s, 5s)
+            const delay = Math.min(2000 + Math.floor(attempts / 2) * 1000, 5000);
+            await new Promise(resolve => setTimeout(resolve, delay));
             
             if (!isMounted) return;
             
             try {
-              // Try to fetch projects to verify they exist
-              const projects = await base44.entities.Project.filter({ 
-                created_by: user.email,
-                is_demo: true 
-              });
+              // Check both projects AND thoughts to ensure full data availability
+              const [projects, thoughts] = await Promise.all([
+                base44.entities.Project.filter({ is_demo: true }),
+                base44.entities.Thought.filter({ is_demo: true })
+              ]);
               
-              if (projects && projects.length > 0) {
-                console.log(`${logPrefix} ✅ Verified ${projects.length} demo projects found after ${attempts} attempts.`);
-                itemsFound = true;
+              const projectCount = projects?.length || 0;
+              const thoughtCount = thoughts?.length || 0;
+              
+              if (projectCount >= 2 && thoughtCount >= 5) {
+                console.log(`${logPrefix} ✅ Verified demo data: ${projectCount} projects, ${thoughtCount} thoughts (attempt ${attempts})`);
+                dataVerified = true;
               } else {
-                console.log(`${logPrefix} ⏳ Attempt ${attempts}/${maxAttempts}: No demo projects found yet. Waiting...`);
+                console.log(`${logPrefix} ⏳ Attempt ${attempts}/${maxAttempts}: Found ${projectCount} projects, ${thoughtCount} thoughts (expecting 2 projects + 5+ thoughts). Waiting ${delay}ms...`);
               }
             } catch (checkErr) {
-              console.warn(`${logPrefix} ⚠️ Error checking projects:`, checkErr);
+              console.warn(`${logPrefix} ⚠️ Attempt ${attempts} verification error:`, checkErr?.message);
             }
           }
           
-          if (!itemsFound) {
-            console.warn(`${logPrefix} ⚠️ Warning: Seed reported success but no demo projects found after verification.`);
-            // Still set to ready to avoid blocking, but dashboard may be empty
+          if (!dataVerified) {
+            console.error(`${logPrefix} ❌ CRITICAL: Seed reported success but data verification failed after ${maxAttempts} attempts`);
+            setError('Demo data seeding timed out. Please refresh the page.');
+            setStatus('error');
+            return;
           }
 
           if (!isMounted) return;

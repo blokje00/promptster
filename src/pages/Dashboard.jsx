@@ -46,16 +46,7 @@ export default function Dashboard() {
     enabled: !!currentUser && bootstrapStatus === 'ready',
   });
 
-  // Fallback: If bootstrap ready but no items found, retry after delay
-  useEffect(() => {
-    if (bootstrapStatus === 'ready' && !isLoading && items && items.length === 0) {
-      const timer = setTimeout(() => {
-        console.log('[Dashboard] No items found after bootstrap, forcing refetch...');
-        refetch();
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [bootstrapStatus, items, isLoading, refetch]);
+  // Removed fallback - bootstrap now guarantees data availability
 
   const itemCounts = useMemo(() => ({
     all: items?.length || 0,
