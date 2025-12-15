@@ -96,21 +96,36 @@ export function useOnboardingBootstrap() {
 
     // Call backend seeding function
     base44.functions.invoke('seedDemoData', {})
-      .then((response) => {
+      .then(async (response) => {
         isRunningRef.current = false;
+        
+        addDebugLog("Backend response received", response.data);
         
         if (response.data.status === 'success' || response.data.status === 'already_seeded') {
           addDebugLog("Demo seeding completed successfully", response.data);
           setStatus("success");
           
-          // Invalidate all queries to refresh UI with new data
-          queryClient.invalidateQueries();
+          // Critical: Invalidate specific queries AND refetch currentUser
+          await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+          await queryClient.refetchQueries({ queryKey: ['currentUser'] });
+          await queryClient.invalidateQueries({ queryKey: ['projects'] });
+          await queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+          await queryClient.invalidateQueries({ queryKey: ['templates'] });
+          await queryClient.invalidateQueries({ queryKey: ['items'] });
+          
+          addDebugLog("Queries invalidated, triggering reload in 1 second");
           
           // Show success toast
           if (response.data.status === 'success') {
             toast.success("Welcome! Demo environment created", {
               description: `${response.data.total_tasks || 0} tasks across ${response.data.projects?.length || 0} projects`
             });
+            
+            // Force reload after 1 second to ensure all data is visible
+            setTimeout(() => {
+              addDebugLog("Reloading page to show demo data");
+              window.location.reload();
+            }, 1000);
           }
         } else {
           throw new Error(response.data.message || "Unknown error");

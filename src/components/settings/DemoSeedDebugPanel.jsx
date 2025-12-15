@@ -48,9 +48,12 @@ export default function DemoSeedDebugPanel() {
       const response = await base44.functions.invoke('seedDemoData', {});
       
       if (response.data.status === 'success' || response.data.status === 'already_seeded') {
-        toast.success("Demo data seeded successfully!");
+        toast.success("Demo data seeded successfully! Reloading...");
         queryClient.invalidateQueries();
         refreshLogs();
+        
+        // Reload to show new data
+        setTimeout(() => window.location.reload(), 1000);
       } else {
         toast.error(response.data.message || "Seeding failed");
       }
