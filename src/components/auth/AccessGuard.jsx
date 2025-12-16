@@ -54,7 +54,7 @@ export default function AccessGuard({ children, pageType = "protected" }) {
   // Protected pages - require auth AND valid trial/subscription
   if (!currentUser) {
     // Not logged in - redirect to Features page
-    navigate('/Features');
+    navigate(createPageUrl('Features'));
     return renderWithModal(
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -68,7 +68,7 @@ export default function AccessGuard({ children, pageType = "protected" }) {
 
   if (!hasValidTrial && !hasActiveSubscription) {
     // Trial expired and no subscription - show paywall
-    navigate('/Subscription');
+    navigate(createPageUrl('Subscription'));
     return renderWithModal(
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>

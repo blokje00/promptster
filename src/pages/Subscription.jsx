@@ -37,7 +37,7 @@ export default function SubscriptionPage() {
       const result = await base44.functions.invoke("createStripeCheckoutSession", {
         planId: plan.id,
         priceId: plan.monthly_price_id,
-        billingCycle: 'monthly',
+        mode: 'subscription',
         successUrl: window.location.origin + "/Subscription?success=true&session_id={CHECKOUT_SESSION_ID}",
         cancelUrl: window.location.origin + "/Subscription?canceled=true"
       });
