@@ -120,18 +120,12 @@ function FeaturesPage() {
             </div>
             <Button 
               onClick={() => {
-                if (!currentUser) {
-                  // Not logged in - redirect to login
-                  base44.auth.redirectToLogin(window.location.origin + '/Dashboard');
-                } else {
-                  // Already logged in - go to dashboard (AccessGuard handles trial check)
-                  navigate('/Dashboard');
-                }
+                base44.auth.redirectToLogin(window.location.origin + '/Dashboard');
               }}
               size="lg"
               className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold shadow-xl"
             >
-              Get Started <ArrowRight className="w-5 h-5 ml-2" />
+              Start Prompting <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </div>
         </div>
@@ -330,6 +324,7 @@ export default function Features() {
   
   const navigate = useNavigate();
 
+  // Redirect logged-in users to Dashboard
   React.useEffect(() => {
     if (currentUser) {
       navigate('/Dashboard');
