@@ -15,6 +15,10 @@ export const createStripeCheckoutSession = async (req) => {
   }
 
   try {
+    // Parse request body first before auth check
+    const body = await req.json();
+    const { priceId, planId, mode = 'subscription', successUrl, cancelUrl } = body;
+
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
@@ -52,8 +56,6 @@ export const createStripeCheckoutSession = async (req) => {
     } catch (rateLimitError) {
       console.warn('Rate limiting check failed:', rateLimitError.message);
     }
-
-    const { priceId, planId, mode = 'subscription', successUrl, cancelUrl } = await req.json();
 
     if (!priceId) {
       return Response.json({ error: 'Price ID is required' }, { status: 400 });
@@ -146,7 +148,11 @@ export const createStripeCheckoutSession = async (req) => {
 
     return Response.json({ url: session.url });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('Stripe checkout error:', error);
+    return Response.json({ 
+      error: error.message || 'Failed to create checkout session',
+      details: error.toString()
+    }, { status: 500 });
   }
 };
 
