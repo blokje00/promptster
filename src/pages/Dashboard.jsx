@@ -83,7 +83,7 @@ export default function Dashboard() {
   // Auto-activate trial for new users
   useEffect(() => {
     const checkAndActivateTrial = async () => {
-      if (currentUser && !currentUser.trial_end && !currentUser.plan_id) {
+      if (currentUser && !currentUser.trial_ends_at && !currentUser.plan_id) {
         try {
           await base44.functions.invoke('activateTrial', {});
           queryClient.invalidateQueries({ queryKey: ['currentUser'] });

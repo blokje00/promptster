@@ -63,7 +63,7 @@ export default function AccessGuard({ children, pageType = "protected" }) {
   }
 
   // Check if user has valid trial or active subscription
-  const hasValidTrial = currentUser.trial_end && new Date(currentUser.trial_end) > new Date();
+  const hasValidTrial = currentUser.trial_ends_at && new Date(currentUser.trial_ends_at) > new Date();
   const hasActiveSubscription = currentUser.subscription_status === 'active' && currentUser.plan_id;
 
   if (!hasValidTrial && !hasActiveSubscription) {

@@ -20,7 +20,7 @@ const iconMap = {
 };
 
 function FeaturesPage() {
-  const [showTrialModal, setShowTrialModal] = useState(false);
+  const navigate = useNavigate();
   
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
@@ -125,14 +125,14 @@ function FeaturesPage() {
                   // Not logged in - redirect to login
                   base44.auth.redirectToLogin(window.location.origin + '/Dashboard');
                 } else {
-                  // Already logged in - show trial modal
-                  setShowTrialModal(true);
+                  // Already logged in - go to dashboard (AccessGuard handles trial check)
+                  navigate('/Dashboard');
                 }
               }}
               size="lg"
               className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold shadow-xl"
             >
-              {currentUser ? 'Start Free Trial' : 'Get Started'} <ArrowRight className="w-5 h-5 ml-2" />
+              Get Started <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </div>
         </div>

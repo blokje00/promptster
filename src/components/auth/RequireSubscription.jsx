@@ -20,7 +20,7 @@ export default function RequireSubscription({ children }) {
          base44.auth.redirectToLogin(location.pathname);
       } else {
          // Check trial or subscription
-         const hasValidTrial = user.trial_end && new Date(user.trial_end) > new Date();
+         const hasValidTrial = user.trial_ends_at && new Date(user.trial_ends_at) > new Date();
          const hasActivePlan = user.plan_id === 'starter' || 
                                user.plan_id === 'pro' || 
                                (user.subscription_status === 'active' && !!user.plan_id) ||
@@ -41,7 +41,7 @@ export default function RequireSubscription({ children }) {
     );
   }
 
-  const hasValidTrial = user.trial_end && new Date(user.trial_end) > new Date();
+  const hasValidTrial = user.trial_ends_at && new Date(user.trial_ends_at) > new Date();
   const hasActivePlan = user.plan_id === 'starter' || 
                         user.plan_id === 'pro' || 
                         (user.subscription_status === 'active' && !!user.plan_id) ||
