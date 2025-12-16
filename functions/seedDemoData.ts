@@ -229,7 +229,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
       const task = await base44.entities.Thought.create({
         ...taskData,
         project_id: project1.id,
-        is_selected: true,
+        is_selected: true, // Auto-select all demo tasks
         is_deleted: false,
         created_by: user.email
       });
@@ -321,7 +321,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       const task = await base44.entities.Thought.create({
         ...taskData,
         project_id: project2.id,
-        is_selected: true,
+        is_selected: true, // Auto-select all demo tasks
         is_deleted: false,
         created_by: user.email
       });
@@ -342,17 +342,22 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       project_id: project1.id,
       content: `You are an expert code reviewer focused on React and modern JavaScript/TypeScript.
 
-When reviewing code, always:
-1. Identify potential bugs or edge cases
-2. Suggest performance improvements
-3. Check for accessibility issues
-4. Verify error handling is robust
-5. Ensure code follows best practices
+    When reviewing code, always:
+    1. Identify potential bugs or edge cases
+    2. Suggest performance improvements
+    3. Check for accessibility issues
+    4. Verify error handling is robust
+    5. Ensure code follows best practices
 
-Provide constructive feedback with specific examples and alternative implementations.`,
+    Provide constructive feedback with specific examples and alternative implementations.`,
       description: "A comprehensive system prompt for AI-assisted code reviews",
       tags: ["code-review", "react", "best-practices"],
       is_favorite: true,
+      task_checks: [
+        { task_name: "Review button component accessibility", full_description: "Check if all button components have proper ARIA labels and keyboard navigation", status: 'open', is_checked: false },
+        { task_name: "Validate error boundary coverage", full_description: "Ensure ErrorBoundary wraps all critical UI sections", status: 'open', is_checked: false },
+        { task_name: "Check loading state handling", full_description: "Verify all async operations show proper loading indicators", status: 'open', is_checked: false }
+      ],
       created_by: user.email
     });
     console.log('[seedDemoData] 🔍 Vault Item 1 RAW:', JSON.stringify(item1, null, 2));
@@ -368,25 +373,29 @@ Provide constructive feedback with specific examples and alternative implementat
       project_id: project2.id,
       content: `# Prompt Engineering Principles
 
-## Structure
-- Start with role definition
-- Provide clear context
-- Specify output format explicitly
-- Include constraints and boundaries
+    ## Structure
+    - Start with role definition
+    - Provide clear context
+    - Specify output format explicitly
+    - Include constraints and boundaries
 
-## Optimization
-- Use examples when possible
-- Break complex tasks into steps
-- Request reasoning before conclusions
-- Test edge cases systematically
+    ## Optimization
+    - Use examples when possible
+    - Break complex tasks into steps
+    - Request reasoning before conclusions
+    - Test edge cases systematically
 
-## Evaluation
-- Verify consistency across runs
-- Check for hallucinations
-- Measure output against success criteria`,
+    ## Evaluation
+    - Verify consistency across runs
+    - Check for hallucinations
+    - Measure output against success criteria`,
       description: "Core principles for writing effective AI prompts",
       tags: ["prompt-engineering", "best-practices", "ai"],
       is_favorite: false,
+      task_checks: [
+        { task_name: "Test prompt with edge cases", full_description: "Run the prompt with unusual inputs to verify robustness", status: 'open', is_checked: false },
+        { task_name: "Validate output format consistency", full_description: "Ensure the AI consistently returns the expected format across multiple runs", status: 'open', is_checked: false }
+      ],
       created_by: user.email
     });
     if (!item2?.id) throw new Error('Vault item 2 failed');

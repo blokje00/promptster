@@ -178,6 +178,13 @@ export default function ItemCard({ item, project }) {
                 {item.description && (
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{item.description}</p>
                 )}
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                  {new Date(item.created_date).toLocaleDateString('nl-NL', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                  })}
+                </p>
               </div>
             </div>
             <Button

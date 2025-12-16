@@ -124,7 +124,7 @@ function FeaturesPage() {
               size="lg"
               className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold shadow-xl"
             >
-              Get Started <ArrowRight className="w-5 h-5 ml-2" />
+              Try For Free <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </div>
         </div>

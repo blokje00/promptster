@@ -55,7 +55,8 @@ export default function ProjectSelector({
 
   return (
     <>
-    <div className="mb-6">
+    <Card className="mb-6 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+      <CardContent className="pt-6">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold text-slate-700 dark:text-slate-300">My Projects</h3>
         <Button
@@ -95,7 +96,8 @@ export default function ProjectSelector({
           </Button>
         ))}
       </div>
-    </div>
+      </CardContent>
+    </Card>
 
     {/* Create Project Dialog */}
     <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
