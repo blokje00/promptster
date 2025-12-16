@@ -5,10 +5,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 
 export default function SubscriptionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [trialActivated, setTrialActivated] = useState(false);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: user } = useQuery({
     queryKey: ['currentUser'],
@@ -74,6 +78,31 @@ export default function SubscriptionPage() {
       setIsProcessing(false);
     }
   };
+
+  // Auto-activate trial for new users (centralized here)
+  useEffect(() => {
+    const checkAndActivateTrial = async () => {
+      if (user && !user.trial_ends_at && !user.plan_id && !trialActivated) {
+        try {
+          setIsProcessing(true);
+          await base44.functions.invoke('activateTrial', {});
+          await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+          setTrialActivated(true);
+          toast.success("14-day free trial activated!");
+          // Redirect to Dashboard after trial activation
+          setTimeout(() => {
+            navigate(createPageUrl('Dashboard'));
+          }, 1500);
+        } catch (error) {
+          console.error('Failed to activate trial:', error);
+          toast.error("Failed to activate trial. Please try again.");
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+    };
+    checkAndActivateTrial();
+  }, [user, trialActivated, queryClient, navigate]);
 
   // Check URL params voor succes/cancel en verify session
   useEffect(() => {

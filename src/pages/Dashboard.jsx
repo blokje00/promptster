@@ -80,20 +80,7 @@ export default function Dashboard() {
     return matchesSearch && matchesType && matchesFavorites && matchesZip && matchesPublished && matchesPendingCheck && matchesProject;
   }), [items, searchQuery, filterType, showFavoritesOnly, showZipOnly, showPublishedOnly, showPendingCheckOnly, selectedProjectId]);
 
-  // Auto-activate trial for new users
-  useEffect(() => {
-    const checkAndActivateTrial = async () => {
-      if (currentUser && !currentUser.trial_ends_at && !currentUser.plan_id) {
-        try {
-          await base44.functions.invoke('activateTrial', {});
-          queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-        } catch (error) {
-          console.error('Failed to activate trial:', error);
-        }
-      }
-    };
-    checkAndActivateTrial();
-  }, [currentUser, queryClient]);
+  // Auto-activate trial moved to AccessGuard - removed from here to prevent duplicate activations
 
   return (
     <AccessGuard pageType="protected">

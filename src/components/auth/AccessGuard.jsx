@@ -49,6 +49,7 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     const hasValidTrial = currentUser.trial_ends_at && new Date(currentUser.trial_ends_at) > new Date();
     const hasActiveSubscription = currentUser.subscription_status === 'active' && currentUser.plan_id;
 
+    // Redirect to subscription page if no valid access - this happens BEFORE auto-activation
     if (!hasValidTrial && !hasActiveSubscription) {
       navigate(createPageUrl('Subscription'));
     }
