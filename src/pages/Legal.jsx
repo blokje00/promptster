@@ -414,6 +414,22 @@ export default function Legal() {
                       </ul>
                     </div>
                     
+                    <div className="p-4 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/30">
+                      <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3">💰 Third-Party Platform Pricing Disclaimer</h3>
+                      <p className="text-slate-700 dark:text-slate-300 mb-2">
+                        Promptster may provide cost-savings estimates based on third-party AI platform pricing models (such as OpenAI, Anthropic, Bubble, FlutterFlow, or other no-code platforms).
+                      </p>
+                      <p className="text-slate-700 dark:text-slate-300 mb-2">
+                        <strong>Important:</strong> If such platforms modify their pricing structures, credit allocations, billing methods, or terms of service, the actual savings achieved through Promptster may vary significantly.
+                      </p>
+                      <p className="text-slate-700 dark:text-slate-300 font-medium">
+                        ⚠ Promptster is <strong>not liable</strong> for changes in third-party pricing policies or any reduction in cost savings resulting from such changes.
+                      </p>
+                      <p className="text-slate-600 dark:text-slate-400 text-sm mt-3">
+                        Users are advised to independently monitor their usage, costs, and the pricing terms of any third-party platforms they integrate with Promptster.
+                      </p>
+                    </div>
+                    
                     <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-700">
                       <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3">👤 Your Responsibility</h3>
                       <p className="text-slate-700 dark:text-slate-300 mb-2">Users are responsible for:</p>
