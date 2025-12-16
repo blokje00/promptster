@@ -322,6 +322,20 @@ function FeaturesPage() {
 }
 
 export default function Features() {
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me().catch(() => null),
+    retry: false
+  });
+  
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (currentUser) {
+      navigate('/Dashboard');
+    }
+  }, [currentUser, navigate]);
+
   return (
     <AccessGuard pageType="public">
       <FeaturesPage />
