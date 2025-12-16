@@ -312,6 +312,16 @@ export default function Header() {
 
         {/* Right side: Settings */}
         <div className="flex items-center gap-1">
+          {/* Get Started Button for Guests */}
+          {!user && (
+            <Button
+              onClick={() => base44.auth.redirectToLogin(window.location.origin + '/Dashboard')}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg mr-2"
+            >
+              Get Started
+            </Button>
+          )}
+          
           <ThemeToggleButton />
           
 
