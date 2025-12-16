@@ -58,6 +58,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { projectColors } from "@/components/lib/constants";
 import RetryModal from "@/components/checks/RetryModal";
+import AccessGuard from "../components/auth/AccessGuard";
 
 
 export default function Checks() {
@@ -262,6 +263,7 @@ export default function Checks() {
 
 
   return (
+    <AccessGuard pageType="protected">
     <div className="p-4 md:p-8 min-h-screen bg-slate-50/50 dark:bg-slate-900/50">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
@@ -480,5 +482,6 @@ export default function Checks() {
           projectId={selectedRetryTask?.projectId}
         />
       </div>
+    </AccessGuard>
   );
 }
