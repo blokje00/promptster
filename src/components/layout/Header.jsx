@@ -313,7 +313,7 @@ export default function Header() {
           {/* Start Prompting Button for Guests */}
           {!user && (
             <Button
-              onClick={() => base44.auth.redirectToLogin(window.location.origin + '/Dashboard')}
+              onClick={() => base44.auth.redirectToLogin(createPageUrl('Dashboard'))}
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-lg mr-2"
             >
               Start Prompting

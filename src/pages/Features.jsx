@@ -120,7 +120,7 @@ function FeaturesPage() {
             </div>
             <Button 
               onClick={() => {
-                base44.auth.redirectToLogin(window.location.origin + '/Dashboard');
+                base44.auth.redirectToLogin(createPageUrl('Dashboard'));
               }}
               size="lg"
               className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold shadow-xl"
