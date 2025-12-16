@@ -160,12 +160,10 @@ export default function Header() {
   // Redirect on initial load
   useEffect(() => {
     if (currentPath === "/" || currentPath === "") {
-      // If logged in, go to Dashboard. If not, go to Features (landing page)
+      // If logged in, go to Dashboard.
+      // If not logged in, stay on root (which now renders Features)
       if (user) {
         navigate(createPageUrl('Dashboard'), { replace: true });
-      } else if (user === null) {
-        // Only redirect when we're sure there's no user (not still loading)
-        navigate(createPageUrl('Features'), { replace: true });
       }
     }
   }, [currentPath, navigate, user]);
