@@ -78,6 +78,21 @@ export default function Dashboard() {
     return matchesSearch && matchesType && matchesFavorites && matchesZip && matchesPublished && matchesPendingCheck && matchesProject;
   }), [items, searchQuery, filterType, showFavoritesOnly, showZipOnly, showPublishedOnly, showPendingCheckOnly, selectedProjectId]);
 
+  // Auto-activate trial for new users
+  useEffect(() => {
+    const checkAndActivateTrial = async () => {
+      if (currentUser && !currentUser.trial_end && !currentUser.plan_id) {
+        try {
+          await base44.functions.invoke('activateTrial', {});
+          queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        } catch (error) {
+          console.error('Failed to activate trial:', error);
+        }
+      }
+    };
+    checkAndActivateTrial();
+  }, [currentUser, queryClient]);
+
   return (
     <AccessGuard pageType="protected">
     <div className="p-4 md:p-8">

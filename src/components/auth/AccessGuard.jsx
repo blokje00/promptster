@@ -9,10 +9,10 @@ import StartTrialModal from "./StartTrialModal";
 
 /**
  * AccessGuard - Protects pages based on subscription status
- * - pageType="free": accessible to everyone
- * - pageType="premium": requires active trial or subscription
+ * - pageType="public": accessible to everyone (Features, Legal, Support)
+ * - pageType="protected": requires auth AND valid trial/subscription
  */
-export default function AccessGuard({ children, pageType = "free" }) {
+export default function AccessGuard({ children, pageType = "protected" }) {
   const navigate = useNavigate();
   const [showTrialModal, setShowTrialModal] = useState(false);
 
@@ -46,8 +46,36 @@ export default function AccessGuard({ children, pageType = "free" }) {
     return children;
   }
 
-  // UPDATED: ALL PAGES ARE NOW FREE - AccessGuard REMOVED
-  // Trial activation happens automatically on first visit (handled by StartTrialModal)
-  // Credit-using features are blocked via backend checks, not page-level guards
+  // Public pages accessible without login
+  if (pageType === "public") {
+    return children;
+  }
+
+  // Protected pages - require auth AND valid trial/subscription
+  if (!currentUser) {
+    // Not logged in - redirect to Features page
+    navigate('/Features');
+    return renderWithModal(
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  // Check if user has valid trial or active subscription
+  const hasValidTrial = currentUser.trial_end && new Date(currentUser.trial_end) > new Date();
+  const hasActiveSubscription = currentUser.subscription_status === 'active' && currentUser.plan_id;
+
+  if (!hasValidTrial && !hasActiveSubscription) {
+    // Trial expired and no subscription - show paywall
+    navigate('/Subscription');
+    return renderWithModal(
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  // User has valid access
   return children;
 }

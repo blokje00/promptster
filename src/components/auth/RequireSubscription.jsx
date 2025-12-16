@@ -19,14 +19,15 @@ export default function RequireSubscription({ children }) {
       if (!user) {
          base44.auth.redirectToLogin(location.pathname);
       } else {
-         // Check subscription
+         // Check trial or subscription
+         const hasValidTrial = user.trial_end && new Date(user.trial_end) > new Date();
          const hasActivePlan = user.plan_id === 'starter' || 
                                user.plan_id === 'pro' || 
                                (user.subscription_status === 'active' && !!user.plan_id) ||
-                               user.plan_id === 'prod_TVmxD3pUgsBYrn'; // Check for specific stripe ID if used as plan_id
+                               user.plan_id === 'prod_TVmxD3pUgsBYrn';
 
-         if (!hasActivePlan) {
-            navigate('/Features');
+         if (!hasValidTrial && !hasActivePlan) {
+            navigate('/Subscription');
          }
       }
     }
@@ -40,12 +41,13 @@ export default function RequireSubscription({ children }) {
     );
   }
 
+  const hasValidTrial = user.trial_end && new Date(user.trial_end) > new Date();
   const hasActivePlan = user.plan_id === 'starter' || 
                         user.plan_id === 'pro' || 
                         (user.subscription_status === 'active' && !!user.plan_id) ||
                         user.plan_id === 'prod_TVmxD3pUgsBYrn';
 
-  if (!hasActivePlan) {
+  if (!hasValidTrial && !hasActivePlan) {
     return null; // Will redirect
   }
 

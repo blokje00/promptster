@@ -120,11 +120,19 @@ function FeaturesPage() {
               </div>
             </div>
             <Button 
-              onClick={() => setShowTrialModal(true)}
+              onClick={() => {
+                if (!currentUser) {
+                  // Not logged in - redirect to login
+                  base44.auth.redirectToLogin(window.location.origin + '/Dashboard');
+                } else {
+                  // Already logged in - show trial modal
+                  setShowTrialModal(true);
+                }
+              }}
               size="lg"
               className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold shadow-xl"
             >
-              Try For Free <ArrowRight className="w-5 h-5 ml-2" />
+              {currentUser ? 'Start Free Trial' : 'Get Started'} <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </div>
         </div>

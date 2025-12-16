@@ -4,12 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText, Shield, Cookie, AlertCircle, CreditCard, Users, Lock, Mail } from "lucide-react";
 
+import AccessGuard from "../components/auth/AccessGuard";
+
 export default function Legal() {
   const lastUpdated = "January 29, 2025";
   const companyName = "Promptster.app";
   const supportEmail = "support@promptster.app";
 
   return (
+    <AccessGuard pageType="public">
     <div className="min-h-screen bg-white dark:bg-slate-900 p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
@@ -630,5 +633,6 @@ export default function Legal() {
         </Tabs>
       </div>
     </div>
+    </AccessGuard>
   );
 }
