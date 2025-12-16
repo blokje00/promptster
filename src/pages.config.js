@@ -15,6 +15,7 @@ import Checks from './pages/Checks';
 import Legal from './pages/Legal';
 import AdminAnalytics from './pages/AdminAnalytics';
 import AdminFeatures from './pages/AdminFeatures';
+import NoCodeRanking from './pages/NoCodeRanking';
 import __Layout from './Layout.jsx';
 
 
@@ -36,6 +37,7 @@ export const PAGES = {
     "Legal": Legal,
     "AdminAnalytics": AdminAnalytics,
     "AdminFeatures": AdminFeatures,
+    "NoCodeRanking": NoCodeRanking,
 }
 
 export const pagesConfig = {
