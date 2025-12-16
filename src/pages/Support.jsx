@@ -81,7 +81,7 @@ export default function Support() {
   };
 
   return (
-    <AccessGuard>
+    <AccessGuard pageType="public">
       <div className="p-4 md:p-8">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
