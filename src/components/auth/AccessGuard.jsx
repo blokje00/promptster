@@ -1,10 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Button } from "@/components/ui/button";
-import { Crown, Lock, Sparkles } from "lucide-react";
 import StartTrialModal from "./StartTrialModal";
 
 /**
@@ -33,7 +31,31 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     </>
   );
 
-  // Early returns AFTER all hooks
+  // Effect for handling redirects to avoid side-effects during render
+  useEffect(() => {
+    // Do nothing while loading
+    if (isLoading) return;
+
+    // Public/Free pages don't need checks
+    if (pageType === "free" || pageType === "public") return;
+
+    // Check 1: Not logged in
+    if (!currentUser) {
+      navigate(createPageUrl('Features'));
+      return;
+    }
+
+    // Check 2: Subscription status
+    const hasValidTrial = currentUser.trial_ends_at && new Date(currentUser.trial_ends_at) > new Date();
+    const hasActiveSubscription = currentUser.subscription_status === 'active' && currentUser.plan_id;
+
+    if (!hasValidTrial && !hasActiveSubscription) {
+      navigate(createPageUrl('Subscription'));
+    }
+  }, [currentUser, isLoading, pageType, navigate]);
+
+  // --- Render Logic ---
+
   if (isLoading) {
     return renderWithModal(
       <div className="flex items-center justify-center min-h-screen">
@@ -42,19 +64,15 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     );
   }
 
-  if (pageType === "free") {
+  if (pageType === "free" || pageType === "public") {
     return children;
   }
 
-  // Public pages accessible without login
-  if (pageType === "public") {
-    return children;
-  }
+  // If we are here, we are in a protected route and not loading.
+  // The useEffect will handle the redirect if access is denied.
+  // While waiting for the redirect, we show the spinner to prevent flashing protected content.
 
-  // Protected pages - require auth AND valid trial/subscription
   if (!currentUser) {
-    // Not logged in - redirect to Features page
-    navigate(createPageUrl('Features'));
     return renderWithModal(
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -62,13 +80,10 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     );
   }
 
-  // Check if user has valid trial or active subscription
   const hasValidTrial = currentUser.trial_ends_at && new Date(currentUser.trial_ends_at) > new Date();
   const hasActiveSubscription = currentUser.subscription_status === 'active' && currentUser.plan_id;
 
   if (!hasValidTrial && !hasActiveSubscription) {
-    // Trial expired and no subscription - show paywall
-    navigate(createPageUrl('Subscription'));
     return renderWithModal(
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
