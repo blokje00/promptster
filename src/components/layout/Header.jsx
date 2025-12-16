@@ -160,9 +160,9 @@ export default function Header() {
   // Redirect on initial load
   useEffect(() => {
     if (currentPath === "/" || currentPath === "") {
-      // If logged in, go to Multiprompt. If not, go to Features (landing page)
+      // If logged in, go to Dashboard. If not, go to Features (landing page)
       if (user) {
-        navigate(createPageUrl('Multiprompt'), { replace: true });
+        navigate(createPageUrl('Dashboard'), { replace: true });
       } else if (user === null) {
         // Only redirect when we're sure there's no user (not still loading)
         navigate(createPageUrl('Features'), { replace: true });
