@@ -155,56 +155,7 @@ function FeaturesPage() {
           </p>
         </div>
 
-        <Link to={createPageUrl("Subscription")} className="block mb-16 group">
-          <div className="bg-indigo-900 dark:bg-indigo-950 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 dark:group-hover:bg-indigo-900 transition-colors cursor-pointer">
-            <h2 className="text-2xl font-bold mb-4">
-              {isAdmin ? (
-                <FeatureInlineEditor 
-                  blockKey="cta_title" 
-                  currentContent={getBlockContent('cta_title', 'Ready to start?')}
-                  className="text-white"
-                />
-              ) : (
-                getBlockContent('cta_title', 'Ready to start?')
-              )}
-            </h2>
-            <p className="mb-6 text-indigo-200 dark:text-indigo-300">
-              {isAdmin ? (
-                <FeatureInlineEditor 
-                  blockKey="cta_subtitle" 
-                  currentContent={getBlockContent('cta_subtitle', 'Try all features for free for 14 days.')}
-                  className="text-indigo-200 dark:text-indigo-300"
-                />
-              ) : (
-                getBlockContent('cta_subtitle', 'Try all features for free for 14 days.')
-              )}
-            </p>
-            <div className="flex justify-center gap-4">
-              <Badge variant="outline" className="text-white border-white px-4 py-1">
-                {isAdmin ? (
-                  <FeatureInlineEditor 
-                    blockKey="badge_version" 
-                    currentContent={getBlockContent('badge_version', 'v0.4')}
-                    className="text-white"
-                  />
-                ) : (
-                  getBlockContent('badge_version', 'v0.4')
-                )}
-              </Badge>
-              <Badge variant="outline" className="text-white border-white px-4 py-1">
-                {isAdmin ? (
-                  <FeatureInlineEditor 
-                    blockKey="badge_uptime" 
-                    currentContent={getBlockContent('badge_uptime', 'Uptime 99.9%')}
-                    className="text-white"
-                  />
-                ) : (
-                  getBlockContent('badge_uptime', 'Uptime 99.9%')
-                )}
-              </Badge>
-            </div>
-          </div>
-        </Link>
+
 
         <PromptsterStory isAdmin={isAdmin} />
 
@@ -259,56 +210,7 @@ function FeaturesPage() {
           ))}
         </div>
 
-        <Link to={createPageUrl("Subscription")} className="block mt-16 group">
-          <div className="bg-indigo-900 dark:bg-indigo-950 rounded-2xl p-8 text-center text-white group-hover:bg-indigo-800 dark:group-hover:bg-indigo-900 transition-colors cursor-pointer">
-            <h2 className="text-2xl font-bold mb-4">
-              {isAdmin ? (
-                <FeatureInlineEditor 
-                  blockKey="cta_title" 
-                  currentContent={getBlockContent('cta_title', 'Ready to start?')}
-                  className="text-white"
-                />
-              ) : (
-                getBlockContent('cta_title', 'Ready to start?')
-              )}
-            </h2>
-            <p className="mb-6 text-indigo-200">
-              {isAdmin ? (
-                <FeatureInlineEditor 
-                  blockKey="cta_subtitle" 
-                  currentContent={getBlockContent('cta_subtitle', 'Try all features for free for 14 days.')}
-                  className="text-indigo-200"
-                />
-              ) : (
-                getBlockContent('cta_subtitle', 'Try all features for free for 14 days.')
-              )}
-            </p>
-            <div className="flex justify-center gap-4">
-              <Badge variant="outline" className="text-white border-white px-4 py-1">
-                {isAdmin ? (
-                  <FeatureInlineEditor 
-                    blockKey="badge_version" 
-                    currentContent={getBlockContent('badge_version', 'v0.4')}
-                    className="text-white"
-                  />
-                ) : (
-                  getBlockContent('badge_version', 'v0.4')
-                )}
-              </Badge>
-              <Badge variant="outline" className="text-white border-white px-4 py-1">
-                {isAdmin ? (
-                  <FeatureInlineEditor 
-                    blockKey="badge_uptime" 
-                    currentContent={getBlockContent('badge_uptime', 'Uptime 99.9%')}
-                    className="text-white"
-                  />
-                ) : (
-                  getBlockContent('badge_uptime', 'Uptime 99.9%')
-                )}
-              </Badge>
-            </div>
-          </div>
-        </Link>
+
       </div>
 
     </div>
