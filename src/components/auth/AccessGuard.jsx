@@ -46,27 +46,13 @@ export default function AccessGuard({ children, pageType = "protected" }) {
       return;
     }
 
-    // Check 2: Subscription status - both 'trialing' and 'active' grant access
-    const hasValidTrial = currentUser.trial_ends_at && new Date(currentUser.trial_ends_at) > new Date();
+    // Check 2: Subscription status - 'trialing' and 'active' grant access
     const hasActiveSubscription = 
-      (currentUser.subscription_status === 'active' || currentUser.subscription_status === 'trialing') 
-      && currentUser.plan_id;
+      (currentUser.subscription_status === 'active' || currentUser.subscription_status === 'trialing');
 
-    // Auto-activate trial ONLY on protected pages (like Dashboard), not on Subscription page
-    if (!hasValidTrial && !hasActiveSubscription) {
-      // If user has never had a trial and is trying to access protected content (not subscription page)
-      if (!currentUser.trial_ends_at && !currentUser.plan_id && !location.pathname.includes('subscription')) {
-        // Auto-activate trial and continue
-        base44.functions.invoke('activateTrial', {}).then(() => {
-          window.location.reload();
-        }).catch(err => {
-          console.error('Auto-trial activation failed:', err);
-          navigate(createPageUrl('Subscription'));
-        });
-        return;
-      }
-      
-      // Otherwise redirect to subscription page
+    // REMOVED: Auto-trial activation - Stripe Payment Links handle trials
+    // Users must complete Stripe checkout to activate subscription/trial
+    if (!hasActiveSubscription) {
       navigate(createPageUrl('Subscription'));
     }
   }, [currentUser, isLoading, pageType, navigate]);
@@ -97,12 +83,10 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     );
   }
 
-  const hasValidTrial = currentUser.trial_ends_at && new Date(currentUser.trial_ends_at) > new Date();
   const hasActiveSubscription = 
-    (currentUser.subscription_status === 'active' || currentUser.subscription_status === 'trialing') 
-    && currentUser.plan_id;
+    (currentUser.subscription_status === 'active' || currentUser.subscription_status === 'trialing');
 
-  if (!hasValidTrial && !hasActiveSubscription) {
+  if (!hasActiveSubscription) {
     return renderWithModal(
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
