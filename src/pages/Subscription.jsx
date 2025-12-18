@@ -31,10 +31,14 @@ export default function SubscriptionPage() {
   const displayPlans = user?.subscription_status === 'active' ? [] : plans;
 
   const handleSubscribe = async (plan) => {
+    // Prevent multiple clicks
+    if (isProcessing) return;
+    
     setIsProcessing(true);
     try {
       if (!plan.monthly_price_id) {
         toast.info("Contact us for this plan.");
+        setIsProcessing(false);
         return;
       }
 
@@ -50,11 +54,11 @@ export default function SubscriptionPage() {
         window.location.href = result.data.url;
       } else {
         toast.error("Could not generate checkout URL.");
+        setIsProcessing(false);
       }
     } catch (error) {
       console.error("Subscription error:", error);
       toast.error("Something went wrong starting the payment.");
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -79,30 +83,7 @@ export default function SubscriptionPage() {
     }
   };
 
-  // Auto-activate trial for new users (centralized here)
-  useEffect(() => {
-    const checkAndActivateTrial = async () => {
-      if (user && !user.trial_ends_at && !user.plan_id && !trialActivated) {
-        try {
-          setIsProcessing(true);
-          await base44.functions.invoke('activateTrial', {});
-          await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-          setTrialActivated(true);
-          toast.success("14-day free trial activated!");
-          // Redirect to Dashboard after trial activation
-          setTimeout(() => {
-            navigate(createPageUrl('Dashboard'));
-          }, 1500);
-        } catch (error) {
-          console.error('Failed to activate trial:', error);
-          toast.error("Failed to activate trial. Please try again.");
-        } finally {
-          setIsProcessing(false);
-        }
-      }
-    };
-    checkAndActivateTrial();
-  }, [user, trialActivated, queryClient, navigate]);
+  // REMOVED: Auto-activation moved to AccessGuard to prevent activating trial when user wants to subscribe first
 
   // Check URL params voor succes/cancel en verify session
   useEffect(() => {

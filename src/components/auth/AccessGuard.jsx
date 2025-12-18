@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import StartTrialModal from "./StartTrialModal";
 
@@ -12,6 +12,7 @@ import StartTrialModal from "./StartTrialModal";
  */
 export default function AccessGuard({ children, pageType = "protected" }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showTrialModal, setShowTrialModal] = useState(false);
 
   const { data: currentUser, isLoading } = useQuery({
@@ -31,7 +32,7 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     </>
   );
 
-  // Effect for handling redirects to avoid side-effects during render
+  // Effect for handling redirects and trial activation
   useEffect(() => {
     // Do nothing while loading
     if (isLoading) return;
@@ -49,8 +50,21 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     const hasValidTrial = currentUser.trial_ends_at && new Date(currentUser.trial_ends_at) > new Date();
     const hasActiveSubscription = currentUser.subscription_status === 'active' && currentUser.plan_id;
 
-    // Redirect to subscription page if no valid access - this happens BEFORE auto-activation
+    // Auto-activate trial ONLY on protected pages (like Dashboard), not on Subscription page
     if (!hasValidTrial && !hasActiveSubscription) {
+      // If user has never had a trial and is trying to access protected content (not subscription page)
+      if (!currentUser.trial_ends_at && !currentUser.plan_id && !location.pathname.includes('subscription')) {
+        // Auto-activate trial and continue
+        base44.functions.invoke('activateTrial', {}).then(() => {
+          window.location.reload();
+        }).catch(err => {
+          console.error('Auto-trial activation failed:', err);
+          navigate(createPageUrl('Subscription'));
+        });
+        return;
+      }
+      
+      // Otherwise redirect to subscription page
       navigate(createPageUrl('Subscription'));
     }
   }, [currentUser, isLoading, pageType, navigate]);

@@ -129,6 +129,7 @@ export const createStripeCheckoutSession = async (req) => {
       success_url: finalSuccessUrl,
       cancel_url: finalCancelUrl,
       customer_email: user.email,
+      locale: 'en',
       metadata: {
         userId: user.id,
         appId: Deno.env.get('BASE44_APP_ID'),
