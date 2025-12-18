@@ -112,7 +112,9 @@ export default function ThoughtCard({
         }
         
         if (uploadedUrls.length > 0) {
-          onUpdateScreenshots(thought.id, [...currentScreenshots, ...uploadedUrls]);
+          // BUGFIX: Use functional update pattern for screenshot state
+          const newScreenshots = [...currentScreenshots, ...uploadedUrls];
+          onUpdateScreenshots(thought.id, newScreenshots);
           toast.success(`${uploadedUrls.length} image(s) pasted`);
           
           // TASK-7: Trigger OCR vision analysis immediately after paste
