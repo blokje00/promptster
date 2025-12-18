@@ -69,7 +69,9 @@ export default function AdminSubscription() {
     max_thoughts: 10,
     features: [],
     is_active: true,
-    order: 0
+    order: 0,
+    trial_days: 0,
+    is_credit_card_required_for_trial: true
   });
 
   const resetForm = () => {
@@ -83,7 +85,9 @@ export default function AdminSubscription() {
       max_thoughts: 10,
       features: [],
       is_active: true,
-      order: 0
+      order: 0,
+      trial_days: 0,
+      is_credit_card_required_for_trial: true
     });
     setIsEditing(false);
     setCurrentPlan(null);
@@ -100,7 +104,9 @@ export default function AdminSubscription() {
       max_thoughts: plan.max_thoughts || 10,
       features: plan.features || [],
       is_active: plan.is_active,
-      order: plan.order
+      order: plan.order,
+      trial_days: plan.trial_days || 0,
+      is_credit_card_required_for_trial: plan.is_credit_card_required_for_trial !== undefined ? plan.is_credit_card_required_for_trial : true
     });
     setCurrentPlan(plan);
     setIsEditing(true);
@@ -194,6 +200,24 @@ export default function AdminSubscription() {
                   onChange={(e) => setFormData({...formData, max_thoughts: parseInt(e.target.value)})} 
                 />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Trial Days</Label>
+                  <Input 
+                    type="number" 
+                    value={formData.trial_days} 
+                    onChange={(e) => setFormData({...formData, trial_days: parseInt(e.target.value)})} 
+                    placeholder="0 = geen trial"
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-6">
+                  <Switch 
+                    checked={formData.is_credit_card_required_for_trial} 
+                    onCheckedChange={(checked) => setFormData({...formData, is_credit_card_required_for_trial: checked})} 
+                  />
+                  <Label>Creditcard Required</Label>
+                </div>
+              </div>
               <div>
                 <Label>Features (one per line)</Label>
                 <Textarea 
@@ -240,10 +264,15 @@ export default function AdminSubscription() {
                   {!plan.is_active && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Inactive</span>}
                 </div>
                 <p className="text-slate-600 mb-2">{plan.description}</p>
-                <div className="flex gap-4 text-sm text-slate-500">
+                <div className="flex gap-4 text-sm text-slate-500 flex-wrap">
                   <span>Month: €{plan.monthly_price_amount}</span>
                   <span>Year: €{plan.annual_price_amount}</span>
                   <span className="font-medium text-indigo-600">Max Tasks: {plan.max_thoughts || 10}</span>
+                  {plan.trial_days > 0 && (
+                    <span className="font-medium text-green-600">
+                      Trial: {plan.trial_days} dagen {plan.is_credit_card_required_for_trial ? '(CC vereist)' : '(CC-free)'}
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">

@@ -66,9 +66,10 @@ export const createStripeCheckoutSession = async (req) => {
     }
 
     // T-10: Price validation - check if priceId exists in SubscriptionPlan entity
+    let validPlan = null;
     try {
       const plans = await base44.asServiceRole.entities.SubscriptionPlan.filter({});
-      const validPlan = plans.find(
+      validPlan = plans.find(
         p => p.monthly_price_id === priceId || p.annual_price_id === priceId
       );
       
@@ -133,8 +134,22 @@ export const createStripeCheckoutSession = async (req) => {
         appId: Deno.env.get('BASE44_APP_ID'),
         planId: planId
       },
-      // If subscription, we can add subscription_data if needed (e.g. trial)
     };
+
+    // Handle trial configuration from SubscriptionPlan
+    if (validPlan && validPlan.trial_days > 0 && mode === 'subscription') {
+      sessionConfig.subscription_data = {
+        trial_period_days: validPlan.trial_days,
+        metadata: {
+          planId: planId
+        }
+      };
+
+      // If credit card is NOT required for trial, configure accordingly
+      if (!validPlan.is_credit_card_required_for_trial) {
+        sessionConfig.payment_method_collection = 'if_required';
+      }
+    }
 
     // If the user already has a stripe customer ID stored in base44 user entity, use it?
     // For now, we pass email and let Stripe create/match or we could search.

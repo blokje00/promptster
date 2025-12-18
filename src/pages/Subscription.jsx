@@ -181,6 +181,16 @@ export default function SubscriptionPage() {
               <div className="flex items-center gap-3 mb-1">
                 <h3 className="text-xl font-semibold">{plan.name}</h3>
                 {!plan.is_active && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Inactive</span>}
+                {plan.trial_days > 0 && !plan.is_credit_card_required_for_trial && (
+                  <span className="text-xs bg-green-100 px-2 py-1 rounded text-green-700 font-medium">
+                    {plan.trial_days} dagen gratis (geen CC)
+                  </span>
+                )}
+                {plan.trial_days > 0 && plan.is_credit_card_required_for_trial && (
+                  <span className="text-xs bg-blue-100 px-2 py-1 rounded text-blue-700 font-medium">
+                    {plan.trial_days} dagen trial
+                  </span>
+                )}
               </div>
               <p className="text-slate-600 mb-2">{plan.description}</p>
               <div className="flex gap-4 text-sm text-slate-500">
