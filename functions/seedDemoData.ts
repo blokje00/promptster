@@ -180,7 +180,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     // Templates voor Project 1
     console.log('[seedDemoData] 📋 Creating templates for Project 1...');
     
-    // TASK-2: Updated start template with correct instruction
+    // TASK-1: Corrected start template with exact user instruction (translated to English)
     const t1 = await base44.entities.PromptTemplate.create({
       name: "DEMO: Expert Analysis Start",
       type: "start",
@@ -205,7 +205,7 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     if (!t2?.id) throw new Error('Template 2 failed');
     console.log('[seedDemoData] ✅ Template 2:', t2.id);
 
-    // TASK-2: Updated end template with correct instruction
+    // TASK-1: Corrected end template with exact user instruction (translated to English)
     const t3 = await base44.entities.PromptTemplate.create({
       name: "DEMO: Execute & Report End",
       type: "eind",
