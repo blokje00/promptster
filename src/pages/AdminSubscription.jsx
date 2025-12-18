@@ -66,6 +66,7 @@ export default function AdminSubscription() {
     monthly_price_id: "",
     annual_price_amount: 0,
     annual_price_id: "",
+    payment_link: "",
     max_thoughts: 10,
     features: [],
     is_active: true,
@@ -82,6 +83,7 @@ export default function AdminSubscription() {
       monthly_price_id: "",
       annual_price_amount: 0,
       annual_price_id: "",
+      payment_link: "",
       max_thoughts: 10,
       features: [],
       is_active: true,
@@ -101,6 +103,7 @@ export default function AdminSubscription() {
       monthly_price_id: plan.monthly_price_id,
       annual_price_amount: plan.annual_price_amount,
       annual_price_id: plan.annual_price_id,
+      payment_link: plan.payment_link || "",
       max_thoughts: plan.max_thoughts || 10,
       features: plan.features || [],
       is_active: plan.is_active,
@@ -193,6 +196,14 @@ export default function AdminSubscription() {
                 </div>
               </div>
               <div>
+                <Label>Stripe Payment Link</Label>
+                <Input 
+                  value={formData.payment_link} 
+                  onChange={(e) => setFormData({...formData, payment_link: e.target.value})} 
+                  placeholder="https://buy.stripe.com/..."
+                />
+              </div>
+              <div>
                 <Label>Max Tasks Limit</Label>
                 <Input 
                   type="number" 
@@ -266,7 +277,9 @@ export default function AdminSubscription() {
                 <p className="text-slate-600 mb-2">{plan.description}</p>
                 <div className="flex gap-4 text-sm text-slate-500 flex-wrap">
                   <span>Month: €{plan.monthly_price_amount}</span>
+                  {plan.monthly_price_id && <span className="text-xs text-slate-400">({plan.monthly_price_id})</span>}
                   <span>Year: €{plan.annual_price_amount}</span>
+                  {plan.annual_price_id && <span className="text-xs text-slate-400">({plan.annual_price_id})</span>}
                   <span className="font-medium text-indigo-600">Max Tasks: {plan.max_thoughts || 10}</span>
                   {plan.trial_days > 0 && (
                     <span className="font-medium text-green-600">
@@ -274,6 +287,13 @@ export default function AdminSubscription() {
                     </span>
                   )}
                 </div>
+                {plan.payment_link && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <a href={plan.payment_link} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 hover:underline">
+                      Stripe Payment Link →
+                    </a>
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="icon" onClick={() => handleEdit(plan)}>
