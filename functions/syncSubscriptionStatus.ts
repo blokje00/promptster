@@ -23,33 +23,78 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const currentUser = await base44.auth.me();
 
-    if (!currentUser || currentUser.role !== 'admin') {
-      return Response.json({ error: 'Admin access required' }, { status: 403 });
+    if (!currentUser) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { userId, stripe_subscription_id } = await req.json();
+    // Allow user to sync their own subscription OR admin to sync any
+    const body = await req.json();
+    const { userId, stripe_subscription_id } = body || {};
 
     let targetUser;
 
-    if (userId) {
-      const users = await base44.asServiceRole.entities.User.filter({ id: userId });
-      if (!users || users.length === 0) {
-        return Response.json({ error: 'User not found' }, { status: 404 });
+    // If admin is syncing another user
+    if ((userId || stripe_subscription_id) && currentUser.role === 'admin') {
+      if (userId) {
+        const users = await base44.asServiceRole.entities.User.filter({ id: userId });
+        if (!users || users.length === 0) {
+          return Response.json({ error: 'User not found' }, { status: 404 });
+        }
+        targetUser = users[0];
+      } else if (stripe_subscription_id) {
+        const users = await base44.asServiceRole.entities.User.filter({ stripe_subscription_id });
+        if (!users || users.length === 0) {
+          return Response.json({ error: 'User not found for subscription' }, { status: 404 });
+        }
+        targetUser = users[0];
       }
-      targetUser = users[0];
-    } else if (stripe_subscription_id) {
-      const users = await base44.asServiceRole.entities.User.filter({ stripe_subscription_id });
-      if (!users || users.length === 0) {
-        return Response.json({ error: 'User not found for subscription' }, { status: 404 });
-      }
-      targetUser = users[0];
     } else {
-      return Response.json({ error: 'userId or stripe_subscription_id required' }, { status: 400 });
+      // User syncing their own subscription
+      targetUser = currentUser;
     }
 
-    if (!targetUser.stripe_subscription_id) {
+    if (!targetUser.stripe_subscription_id && !targetUser.stripe_customer_id) {
+      // Try to find customer by email in Stripe
+      try {
+        const customers = await stripe.customers.list({
+          email: targetUser.email,
+          limit: 1
+        });
+
+        if (customers.data.length > 0) {
+          const customer = customers.data[0];
+          
+          // Get active subscriptions for this customer
+          const subscriptions = await stripe.subscriptions.list({
+            customer: customer.id,
+            status: 'all',
+            limit: 1
+          });
+
+          if (subscriptions.data.length > 0) {
+            const subscription = subscriptions.data[0];
+            
+            // Update user with found Stripe data
+            await base44.asServiceRole.entities.User.update(targetUser.id, {
+              stripe_customer_id: customer.id,
+              stripe_subscription_id: subscription.id,
+              subscription_status: subscription.status
+            });
+
+            return Response.json({
+              success: true,
+              user_id: targetUser.id,
+              subscription_status: subscription.status,
+              message: 'Subscription linked and synced'
+            });
+          }
+        }
+      } catch (stripeError) {
+        console.error('[syncSubscriptionStatus] Stripe lookup failed:', stripeError);
+      }
+
       return Response.json({ 
-        error: 'User has no subscription ID to sync',
+        error: 'No subscription found. Please complete payment via Stripe first.',
         user_id: targetUser.id 
       }, { status: 400 });
     }

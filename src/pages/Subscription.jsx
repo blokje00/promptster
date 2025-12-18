@@ -38,39 +38,22 @@ export default function SubscriptionPage() {
     : plans.filter(plan => plan.is_active === true);
 
   const handleSubscribe = async (plan) => {
-    // Prevent multiple clicks
-    if (isProcessing) return;
-    
-    setIsProcessing(true);
-    try {
-      if (!plan.monthly_price_id) {
-        toast.info("Contact us for this plan.");
-        setIsProcessing(false);
-        return;
-      }
-
-      const result = await base44.functions.invoke("createStripeCheckoutSession", {
-        planId: plan.id,
-        priceId: plan.monthly_price_id,
-        mode: 'subscription',
-        successUrl: window.location.origin + "/Subscription?success=true&session_id={CHECKOUT_SESSION_ID}",
-        cancelUrl: window.location.origin + "/Subscription?canceled=true"
-      });
-
-      if (result.data?.url) {
-        window.location.href = result.data.url;
-      } else {
-        toast.error("Could not generate checkout URL.");
-        setIsProcessing(false);
-      }
-    } catch (error) {
-      console.error("Subscription error:", error);
-      toast.error("Something went wrong starting the payment.");
-      setIsProcessing(false);
+    // Redirect to Stripe Payment Link (configured with trial in Stripe Dashboard)
+    if (!plan.payment_link) {
+      toast.info("Contact us for this plan.");
+      return;
     }
+
+    // Redirect directly to Stripe Payment Link
+    window.location.href = plan.payment_link;
   };
 
   const handleManageSubscription = async () => {
+    if (!user?.stripe_customer_id) {
+      toast.error("We're still syncing your subscription. Please click 'Sync Status' first.");
+      return;
+    }
+
     setIsProcessing(true);
     try {
       const result = await base44.functions.invoke("createStripePortalSession", {
@@ -85,6 +68,25 @@ export default function SubscriptionPage() {
     } catch (error) {
       console.error("Portal error:", error);
       toast.error("Something went wrong opening the management portal.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSyncStatus = async () => {
+    setIsProcessing(true);
+    try {
+      const result = await base44.functions.invoke("syncSubscriptionStatus", {});
+      
+      if (result.data?.success) {
+        toast.success("Subscription status synchronized!");
+        await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      } else {
+        toast.error(result.data?.error || "Could not sync subscription.");
+      }
+    } catch (error) {
+      console.error("Sync error:", error);
+      toast.error("Failed to sync subscription status.");
     } finally {
       setIsProcessing(false);
     }
@@ -190,16 +192,8 @@ export default function SubscriptionPage() {
             <p className="text-sm text-indigo-700">You can manage your invoices and payment method in the customer portal.</p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={async () => {
-              setIsProcessing(true);
-              try {
-                await base44.functions.invoke("syncSubscriptionStatus");
-                toast.success("Status synchronized");
-                queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-              } catch(e) { toast.error("Sync failed"); }
-              setIsProcessing(false);
-            }} disabled={isProcessing} variant="outline" className="border-slate-200 hover:bg-slate-100 text-slate-700">
-              Sync Status
+            <Button onClick={handleSyncStatus} disabled={isProcessing} variant="outline" className="border-slate-200 hover:bg-slate-100 text-slate-700">
+              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sync Status"}
             </Button>
             <Button onClick={handleManageSubscription} disabled={isProcessing} variant="outline" className="border-indigo-200 hover:bg-indigo-100 text-indigo-700">
               {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Manage Subscription"}
@@ -207,6 +201,18 @@ export default function SubscriptionPage() {
           </div>
         </div>
       )}
+
+      {!user?.subscription_status || user?.subscription_status === 'none' ? (
+        <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h3 className="font-semibold text-yellow-900">No active subscription found</h3>
+            <p className="text-sm text-yellow-700">If you just completed payment via Stripe, click 'Sync Status' to update.</p>
+          </div>
+          <Button onClick={handleSyncStatus} disabled={isProcessing} className="bg-yellow-600 hover:bg-yellow-700">
+            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sync Status"}
+          </Button>
+        </div>
+      ) : null}
 
       <div className="grid gap-6">
         {displayPlans.map((plan) => (
@@ -242,21 +248,21 @@ export default function SubscriptionPage() {
               ) : null}
             </div>
             <div className="flex gap-2">
-              {user?.plan_id === plan.id ? (
-                <Button disabled className="bg-slate-400">
-                  Current Plan
+              {user?.plan_id === plan.id && (user?.subscription_status === 'active' || user?.subscription_status === 'trialing') ? (
+                <Button disabled className="bg-green-500 hover:bg-green-600 text-white">
+                  Active
                 </Button>
               ) : !plan.is_active ? (
                 <Button disabled variant="outline" className="text-slate-400">
                   Not Available
                 </Button>
-              ) : plan.monthly_price_id ? (
+              ) : plan.payment_link ? (
                 <Button 
                   onClick={() => handleSubscribe(plan)} 
                   disabled={isProcessing}
                   className="bg-indigo-600 hover:bg-indigo-700"
                 >
-                  {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Activate"}
+                  Start Trial
                 </Button>
               ) : (
                 <Button disabled variant="outline">
