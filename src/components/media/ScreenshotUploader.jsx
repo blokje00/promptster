@@ -74,7 +74,12 @@ export default function ScreenshotUploader({
     }
 
     if (successfulUrls.length > 0) {
-      onChange([...screenshotIds, ...successfulUrls]);
+      // BUGFIX: Use functional update to ensure we always work with the latest state
+      // and avoid race conditions where screenshotIds might be stale
+      onChange((prevIds) => {
+        const currentIds = Array.isArray(prevIds) ? prevIds : screenshotIds;
+        return [...currentIds, ...successfulUrls];
+      });
       
       // Start OCR analysis in background if feedback is enabled
       if (showOCRFeedback) {
