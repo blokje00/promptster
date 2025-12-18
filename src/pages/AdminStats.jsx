@@ -350,17 +350,18 @@ export default function AdminStats() {
                       const trialEnd = user.trial_end ? new Date(user.trial_end) : null;
                       const now = new Date();
                       
-                      // Status labels matching Base44 Dashboard
+                      // Status labels matching Stripe subscription status
                       const statusConfig = {
                         'none': { label: 'No Trial', color: 'bg-slate-100 text-slate-700', icon: null },
-                        'trial': { 
+                        'trialing': { 
                           label: trialEnd && trialEnd > now ? 'Trial Active' : 'Trial Expired', 
                           color: trialEnd && trialEnd > now ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700',
                           icon: Clock
                         },
                         'active': { label: 'Active', color: 'bg-green-100 text-green-700', icon: CreditCard },
-                        'expired': { label: 'Expired', color: 'bg-red-100 text-red-700', icon: null },
-                        'cancelled': { label: 'Cancelled', color: 'bg-orange-100 text-orange-700', icon: null }
+                        'past_due': { label: 'Past Due', color: 'bg-orange-100 text-orange-700', icon: null },
+                        'cancelled': { label: 'Cancelled', color: 'bg-red-100 text-red-700', icon: null },
+                        'incomplete': { label: 'Incomplete', color: 'bg-yellow-100 text-yellow-700', icon: null }
                       };
                       
                       const currentStatus = statusConfig[user.subscription_status] || statusConfig['none'];
