@@ -73,6 +73,18 @@ export default function Multiprompt() {
   // --- Custom Hooks ---
   const { selectedProjectId, setSelectedProjectId, selectedProject } = useProjectSelection(projects);
 
+  // TASK-1: Auto-select first demo project on initial load
+  useEffect(() => {
+    if (!selectedProjectId && projects.length > 0) {
+      // Check if user has demo projects (name starts with "DEMO:")
+      const demoProjects = projects.filter(p => p.name?.startsWith('DEMO:'));
+      if (demoProjects.length > 0) {
+        // Select the first demo project
+        setSelectedProjectId(demoProjects[0].id);
+      }
+    }
+  }, [projects, selectedProjectId, setSelectedProjectId]);
+
   const {
     thoughts, allThoughts, isLoading, selectedThoughtIds, setSelectedThoughtIds,
     createThought, updateThought, deleteThought, toggleSelection, selectAll, deselectAll, triggerVisionAnalysis
