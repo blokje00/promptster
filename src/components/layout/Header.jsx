@@ -4,7 +4,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { createPageUrl } from "@/utils";
-import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText, TrendingUp, X, Database } from "lucide-react";
+import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText, TrendingUp, X, Database, CreditCard } from "lucide-react";
 import ThemeToggleButton from "@/components/theme/ThemeToggleButton";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -419,6 +419,12 @@ export default function Header() {
                   <Link to={createPageUrl("Legal")} className="cursor-pointer text-slate-700 dark:text-slate-300">
                     <FileText className="mr-2 h-4 w-4" />
                     <span>Legal & Privacy</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="hover:bg-slate-100 dark:hover:bg-slate-800">
+                  <Link to={createPageUrl("Subscription")} className="cursor-pointer text-slate-700 dark:text-slate-300">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    <span>Manage Subscription</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
