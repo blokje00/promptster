@@ -40,9 +40,9 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     // Public/Free pages don't need checks
     if (pageType === "free" || pageType === "public") return;
 
-    // Check 1: Not logged in
+    // Check 1: Not logged in - use Base44 auth redirect
     if (!currentUser) {
-      navigate(createPageUrl('Features'));
+      base44.auth.redirectToLogin(window.location.href);
       return;
     }
 

@@ -97,7 +97,9 @@ export default function Header() {
   });
 
   const handleLogout = async () => {
-    await base44.auth.logout();
+    // TASK-2: Use Base44 auth redirect after logout
+    const returnUrl = window.location.origin + createPageUrl('Features');
+    await base44.auth.logout(returnUrl);
   };
 
   const handleSeedDemoData = async () => {
