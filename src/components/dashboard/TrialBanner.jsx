@@ -24,8 +24,8 @@ export default function TrialBanner() {
     enabled: !!user,
   });
 
-  // Only show banner if user is on active trial
-  if (!trialStatus?.isTrialActive || trialStatus?.subscription_status !== 'trial') {
+  // Only show banner if user is on active trial (subscription_status can be 'trial' or 'trialing')
+  if (!trialStatus?.isTrialActive || (trialStatus?.subscription_status !== 'trial' && trialStatus?.subscription_status !== 'trialing')) {
     return null;
   }
 
