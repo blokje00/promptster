@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     });
 
     // Check if user already has trial or subscription
-    if (user.subscription_status === 'trial') {
+    if (user.subscription_status === 'trialing') {
       const trialEnd = user.trial_end ? new Date(user.trial_end) : null;
       const now = new Date();
       
@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       console.log('[activateTrial] WARNING: Re-activating expired trial for testing');
     }
 
-    if (user.subscription_status === 'active' || user.subscription_status === 'trialing') {
+    if (user.subscription_status === 'active') {
       return Response.json({ 
         error: 'Already subscribed',
         plan_id: user.plan_id 
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // 14 days from now
 
     await base44.auth.updateMe({
-      subscription_status: 'trial',
+      subscription_status: 'trialing',
       trial_start: now.toISOString(),
       trial_end: trialEnd.toISOString()
     });
