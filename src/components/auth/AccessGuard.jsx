@@ -46,9 +46,11 @@ export default function AccessGuard({ children, pageType = "protected" }) {
       return;
     }
 
-    // Check 2: Subscription status
+    // Check 2: Subscription status - both 'trialing' and 'active' grant access
     const hasValidTrial = currentUser.trial_ends_at && new Date(currentUser.trial_ends_at) > new Date();
-    const hasActiveSubscription = currentUser.subscription_status === 'active' && currentUser.plan_id;
+    const hasActiveSubscription = 
+      (currentUser.subscription_status === 'active' || currentUser.subscription_status === 'trialing') 
+      && currentUser.plan_id;
 
     // Auto-activate trial ONLY on protected pages (like Dashboard), not on Subscription page
     if (!hasValidTrial && !hasActiveSubscription) {
@@ -96,7 +98,9 @@ export default function AccessGuard({ children, pageType = "protected" }) {
   }
 
   const hasValidTrial = currentUser.trial_ends_at && new Date(currentUser.trial_ends_at) > new Date();
-  const hasActiveSubscription = currentUser.subscription_status === 'active' && currentUser.plan_id;
+  const hasActiveSubscription = 
+    (currentUser.subscription_status === 'active' || currentUser.subscription_status === 'trialing') 
+    && currentUser.plan_id;
 
   if (!hasValidTrial && !hasActiveSubscription) {
     return renderWithModal(

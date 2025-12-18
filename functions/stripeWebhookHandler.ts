@@ -43,9 +43,22 @@ Deno.serve(async (req) => {
         const customerId = session.customer;
 
         if (userId) {
+            // Retrieve subscription to get actual status (trialing or active)
+            let subscriptionStatus = 'active';
+            let trialEnd = null;
+            let currentPeriodEnd = null;
+
+            if (session.subscription) {
+                const subscription = await stripe.subscriptions.retrieve(session.subscription);
+                subscriptionStatus = subscription.status;
+                trialEnd = subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null;
+                currentPeriodEnd = subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null;
+            }
+
             const updateData = {
                 stripe_customer_id: customerId,
-                subscription_status: 'active'
+                subscription_status: subscriptionStatus,
+                current_period_end: currentPeriodEnd
             };
             
             if (planId) {
@@ -56,8 +69,13 @@ Deno.serve(async (req) => {
                 updateData.stripe_subscription_id = session.subscription;
             }
 
+            if (trialEnd) {
+                updateData.trial_end = trialEnd;
+                updateData.trial_start = new Date().toISOString();
+            }
+
             await client.entities.User.update(userId, updateData);
-            console.log(`User ${userId} subscription activated for plan ${planId}.`);
+            console.log(`User ${userId} subscription ${subscriptionStatus} for plan ${planId}.`);
 
             // T-6: Log activity
             try {

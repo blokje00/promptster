@@ -27,8 +27,10 @@ export default function SubscriptionPage() {
     },
   });
 
-  // Filter plans based on subscription status - prevents hook count changes
-  const displayPlans = user?.subscription_status === 'active' ? [] : plans;
+  // Filter plans based on subscription status AND only show active plans
+  const displayPlans = (user?.subscription_status === 'active' || user?.subscription_status === 'trialing') 
+    ? [] 
+    : plans.filter(plan => plan.is_active === true);
 
   const handleSubscribe = async (plan) => {
     // Prevent multiple clicks
@@ -96,12 +98,20 @@ export default function SubscriptionPage() {
         try {
           const result = await base44.functions.invoke("verifyStripeSession", { sessionId });
           if (result.data?.success) {
-             toast.success("Payment verified! Your subscription is active.");
-             // Refresh user data
+             const status = result.data.status;
+             const message = status === 'trialing' 
+               ? "✅ Free trial activated! Enjoy 14 days free. Redirecting..."
+               : "✅ Subscription activated! Redirecting...";
+             
+             toast.success(message, { duration: 1500 });
+             
+             // Refresh user data immediately
              await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+             
              // Clean URL
              window.history.replaceState({}, document.title, window.location.pathname);
-             // Redirect to Multiprompt after 1.5 seconds
+             
+             // Wait 1500ms before redirect to show banner
              setTimeout(() => {
                navigate(createPageUrl('Multiprompt'));
              }, 1500);
@@ -111,12 +121,12 @@ export default function SubscriptionPage() {
           }
         } catch (error) {
           console.error("Verification error:", error);
-          toast.error("Error verifying payment.");
+          toast.error("Error verifying payment. Please contact support.");
           setIsProcessing(false);
         }
       } else if (params.get("success")) {
         // Fallback for old flow or if session_id is missing
-        toast.success("Subscription successfully activated! Thank you.");
+        toast.success("Subscription successfully activated! Redirecting...", { duration: 1500 });
         setTimeout(() => {
           navigate(createPageUrl('Multiprompt'));
         }, 1500);
@@ -138,7 +148,7 @@ export default function SubscriptionPage() {
         <h1 className="text-3xl font-bold text-slate-900">Subscriptions</h1>
       </div>
 
-      {user?.subscription_status === 'active' && (
+      {(user?.subscription_status === 'active' || user?.subscription_status === 'trialing') && (
         <div className="mb-8 p-4 bg-indigo-50 border border-indigo-100 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-indigo-900">Your subscription is active!</h3>
@@ -222,8 +232,8 @@ export default function SubscriptionPage() {
           </CardContent>
         </Card>
         ))}
-        {displayPlans.length === 0 && !isLoading && user?.subscription_status !== 'active' && (
-          <p className="text-center text-slate-500 py-12">No subscription plans configured yet.</p>
+        {displayPlans.length === 0 && !isLoading && user?.subscription_status !== 'active' && user?.subscription_status !== 'trialing' && (
+          <p className="text-center text-slate-500 py-12">No subscription plans available at this time.</p>
         )}
       </div>
     </div>
