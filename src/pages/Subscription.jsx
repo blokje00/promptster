@@ -98,30 +98,39 @@ export default function SubscriptionPage() {
           if (result.data?.success) {
              toast.success("Payment verified! Your subscription is active.");
              // Refresh user data
-             queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+             await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
              // Clean URL
              window.history.replaceState({}, document.title, window.location.pathname);
+             // Redirect to Multiprompt after 1.5 seconds
+             setTimeout(() => {
+               navigate(createPageUrl('Multiprompt'));
+             }, 1500);
           } else {
              toast.error("Could not verify payment. Please contact support.");
+             setIsProcessing(false);
           }
         } catch (error) {
           console.error("Verification error:", error);
           toast.error("Error verifying payment.");
-        } finally {
           setIsProcessing(false);
         }
       } else if (params.get("success")) {
         // Fallback for old flow or if session_id is missing
         toast.success("Subscription successfully activated! Thank you.");
+        setTimeout(() => {
+          navigate(createPageUrl('Multiprompt'));
+        }, 1500);
       }
       
       if (params.get("canceled")) {
         toast.info("Payment canceled.");
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
     };
 
     verifySubscription();
-  }, [queryClient]);
+  }, [queryClient, navigate]);
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
