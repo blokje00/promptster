@@ -47,8 +47,13 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     }
 
     // Check 2: Subscription status - 'trialing' and 'active' grant access
+    // CRITICAL: Also check if trial has expired
+    const isTrialActive = currentUser.subscription_status === 'trialing' && 
+      currentUser.trial_end && 
+      new Date(currentUser.trial_end) > new Date();
+    
     const hasActiveSubscription = 
-      (currentUser.subscription_status === 'active' || currentUser.subscription_status === 'trialing');
+      (currentUser.subscription_status === 'active' || isTrialActive);
 
     // REMOVED: Auto-trial activation - Stripe Payment Links handle trials
     // Users must complete Stripe checkout to activate subscription/trial
@@ -83,8 +88,12 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     );
   }
 
+  const isTrialActive = currentUser.subscription_status === 'trialing' && 
+    currentUser.trial_end && 
+    new Date(currentUser.trial_end) > new Date();
+  
   const hasActiveSubscription = 
-    (currentUser.subscription_status === 'active' || currentUser.subscription_status === 'trialing');
+    (currentUser.subscription_status === 'active' || isTrialActive);
 
   if (!hasActiveSubscription) {
     return renderWithModal(

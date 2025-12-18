@@ -59,14 +59,31 @@ Deno.serve(async (req) => {
     // Note: Removed 'expired' check to allow re-testing
     // In production, you may want to keep this check
 
-    // Activate trial
+    // Parse request body to get planId
+    const body = await req.json().catch(() => ({}));
+    const planId = body.planId;
+
+    if (!planId) {
+      return Response.json({ error: 'planId is required' }, { status: 400 });
+    }
+
+    // Verify plan exists
+    const plan = await base44.asServiceRole.entities.SubscriptionPlan.list();
+    const selectedPlan = plan.find(p => p.id === planId);
+    
+    if (!selectedPlan) {
+      return Response.json({ error: 'Invalid plan ID' }, { status: 400 });
+    }
+
+    // Activate trial with plan_id
     const now = new Date();
     const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // 14 days from now
 
     await base44.auth.updateMe({
       subscription_status: 'trialing',
       trial_start: now.toISOString(),
-      trial_end: trialEnd.toISOString()
+      trial_end: trialEnd.toISOString(),
+      plan_id: planId
     });
 
     console.log(`[activateTrial] Trial activated for ${user.email} until ${trialEnd.toISOString()}`);
