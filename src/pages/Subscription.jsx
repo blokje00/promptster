@@ -12,10 +12,6 @@ export default function SubscriptionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [trialActivated, setTrialActivated] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [verifying, setVerifying] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.has('session_id') || params.has('success');
-  });
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -38,14 +34,29 @@ export default function SubscriptionPage() {
     : plans.filter(plan => plan.is_active === true);
 
   const handleSubscribe = async (plan) => {
-    // Redirect to Stripe Payment Link (configured with trial in Stripe Dashboard)
-    if (!plan.payment_link) {
-      toast.info("Contact us for this plan.");
-      return;
-    }
+    setIsProcessing(true);
+    
+    try {
+      // Use dynamic checkout session with pre-filled email
+      const result = await base44.functions.invoke("createStripeCheckoutSession", {
+        planId: plan.id,
+        priceId: plan.monthly_price_id,
+        mode: 'subscription',
+        successUrl: window.location.origin + "/Multiprompt?session_id={CHECKOUT_SESSION_ID}",
+        cancelUrl: window.location.origin + "/Subscription?canceled=true"
+      });
 
-    // Redirect directly to Stripe Payment Link
-    window.location.href = plan.payment_link;
+      if (result.data?.url) {
+        window.location.href = result.data.url;
+      } else {
+        toast.error("Could not generate checkout URL.");
+        setIsProcessing(false);
+      }
+    } catch (error) {
+      console.error("Subscription error:", error);
+      toast.error("Something went wrong starting the payment.");
+      setIsProcessing(false);
+    }
   };
 
   const handleManageSubscription = async () => {
@@ -94,90 +105,18 @@ export default function SubscriptionPage() {
 
   // REMOVED: Auto-activation moved to AccessGuard to prevent activating trial when user wants to subscribe first
 
-  // Check URL params voor succes/cancel en verify session
+  // Handle Multiprompt redirect with session verification
   useEffect(() => {
-    const verifySubscription = async () => {
-      const params = new URLSearchParams(window.location.search);
-      const sessionId = params.get("session_id");
-      
-      if (sessionId) {
-        setIsProcessing(true);
-        try {
-          const result = await base44.functions.invoke("verifyStripeSession", { sessionId });
-          if (result.data?.success) {
-             const status = result.data.status;
-             const message = status === 'trialing' 
-               ? "✅ Free trial activated! Enjoy 14 days free."
-               : "✅ Subscription activated!";
-             
-             setShowSuccess(true);
-             setVerifying(false);
-             toast.success(message, { duration: 1500 });
-             
-             // Refresh user data immediately
-             await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-             
-             // Clean URL
-             window.history.replaceState({}, document.title, window.location.pathname);
-             
-             // Wait 1500ms before redirect to show success screen
-             setTimeout(() => {
-               navigate(createPageUrl('Multiprompt'));
-             }, 1500);
-          } else {
-             toast.error("Could not verify payment. Please contact support.");
-             setIsProcessing(false);
-             setVerifying(false);
-          }
-        } catch (error) {
-          console.error("Verification error:", error);
-          toast.error("Error verifying payment. Please contact support.");
-          setIsProcessing(false);
-          setVerifying(false);
-        }
-      } else if (params.get("success")) {
-        // Fallback for old flow or if session_id is missing
-        setShowSuccess(true);
-        setVerifying(false);
-        toast.success("Subscription successfully activated!", { duration: 1500 });
-        setTimeout(() => {
-          navigate(createPageUrl('Multiprompt'));
-        }, 1500);
-      } else {
-        setVerifying(false);
-      }
-      
-      if (params.get("canceled")) {
-        toast.info("Payment canceled.");
-        setVerifying(false);
-        // Clean URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
-    };
+    const params = new URLSearchParams(window.location.search);
+    
+    // Handle canceled payment
+    if (params.get("canceled")) {
+      toast.info("Payment canceled.");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
-    verifySubscription();
-  }, [queryClient, navigate]);
 
-  if (verifying) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
-        <Loader2 className="w-16 h-16 text-indigo-600 animate-spin mb-4" />
-        <h2 className="text-2xl font-semibold text-slate-900">Verifying subscription...</h2>
-        <p className="text-slate-600 mt-2">Please wait a moment...</p>
-      </div>
-    );
-  }
-
-  if (showSuccess) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
-        <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Success!</h1>
-        <p className="text-lg text-slate-600">Your subscription has been activated.</p>
-        <p className="text-sm text-slate-500 mt-4">Redirecting you to the app...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="p-8 max-w-6xl mx-auto">

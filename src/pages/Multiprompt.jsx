@@ -85,6 +85,38 @@ export default function Multiprompt() {
     }
   }, [projects, selectedProjectId, setSelectedProjectId]);
 
+  // Handle Stripe checkout success and verify session
+  useEffect(() => {
+    const verifyStripeCheckout = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get("session_id");
+      
+      if (sessionId) {
+        try {
+          const result = await base44.functions.invoke("verifyStripeSession", { sessionId });
+          if (result.data?.success) {
+            const status = result.data.status;
+            const message = status === 'trialing' 
+              ? "✅ Free trial activated! Welcome to Promptster."
+              : "✅ Subscription activated! Welcome to Promptster.";
+            
+            toast.success(message);
+            
+            // Refresh user data
+            await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+            
+            // Clean URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch (error) {
+          console.error("Stripe verification error:", error);
+        }
+      }
+    };
+
+    verifyStripeCheckout();
+  }, [queryClient]);
+
   const {
     thoughts, allThoughts, isLoading, selectedThoughtIds, setSelectedThoughtIds,
     createThought, updateThought, deleteThought, toggleSelection, selectAll, deselectAll, triggerVisionAnalysis
