@@ -183,12 +183,12 @@ export default function SubscriptionPage() {
                 {!plan.is_active && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Inactive</span>}
                 {plan.trial_days > 0 && !plan.is_credit_card_required_for_trial && (
                   <span className="text-xs bg-green-100 px-2 py-1 rounded text-green-700 font-medium">
-                    {plan.trial_days} dagen gratis (geen CC)
+                    {plan.trial_days} days free (no CC)
                   </span>
                 )}
                 {plan.trial_days > 0 && plan.is_credit_card_required_for_trial && (
                   <span className="text-xs bg-blue-100 px-2 py-1 rounded text-blue-700 font-medium">
-                    {plan.trial_days} dagen trial
+                    {plan.trial_days} days trial
                   </span>
                 )}
               </div>
