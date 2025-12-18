@@ -114,11 +114,12 @@ export const createStripeCheckoutSession = async (req) => {
     const origin = req.headers.get('origin') || 'https://base44.app'; 
     // Fallback might be tricky if origin is missing in some envs, but usually present.
 
-    const finalSuccessUrl = successUrl || `${origin}/subscription?success=true`;
-    const finalCancelUrl = cancelUrl || `${origin}/subscription?canceled=true`;
+    // Default to Multiprompt after successful checkout
+    const finalSuccessUrl = successUrl || `${origin}/Multiprompt?session_id={CHECKOUT_SESSION_ID}`;
+    const finalCancelUrl = cancelUrl || `${origin}/Subscription?canceled=true`;
 
     const sessionConfig = {
-      payment_method_types: ['card'],
+      payment_method_types: ['card', 'ideal'], // Support iDEAL for NL users
       line_items: [
         {
           price: priceId,
@@ -128,8 +129,8 @@ export const createStripeCheckoutSession = async (req) => {
       mode: mode, // 'payment' or 'subscription'
       success_url: finalSuccessUrl,
       cancel_url: finalCancelUrl,
-      customer_email: user.email,
-      locale: 'en',
+      customer_email: user.email, // Pre-fill email from OAuth
+      locale: 'auto', // Auto-detect user language
       metadata: {
         userId: user.id,
         appId: Deno.env.get('BASE44_APP_ID'),
