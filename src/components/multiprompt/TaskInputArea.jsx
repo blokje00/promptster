@@ -62,7 +62,11 @@ export default function TaskInputArea({
         }
         
         if (uploadedUrls.length > 0) {
-          onScreenshotsChange([...newThoughtScreenshots, ...uploadedUrls]);
+          // BUGFIX: Use functional update to prevent race conditions with stale state
+          onScreenshotsChange((prevScreenshots) => {
+            const current = Array.isArray(prevScreenshots) ? prevScreenshots : newThoughtScreenshots;
+            return [...current, ...uploadedUrls];
+          });
           toast.success(`✓ ${uploadedUrls.length} image(s) pasted successfully`);
           
           // TASK-7: Trigger OCR vision analysis immediately after paste
