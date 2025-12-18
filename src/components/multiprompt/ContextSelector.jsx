@@ -23,11 +23,39 @@ export default function ContextSelector({
   const [prediction, setPrediction] = useState(null);
   const [showPrediction, setShowPrediction] = useState(false);
   
-  // Custom items state
-  const [customPages, setCustomPages] = useState([]);
-  const [customComponents, setCustomComponents] = useState([]);
+  // Custom items state - persist to localStorage per project
+  const storageKey = `context_custom_${selectedProject?.id || 'default'}`;
+  const [customPages, setCustomPages] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`${storageKey}_pages`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [customComponents, setCustomComponents] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`${storageKey}_components`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isAddingItem, setIsAddingItem] = useState(null); // 'page' or 'component'
   const [newItemName, setNewItemName] = useState("");
+
+  // Save custom items to localStorage when they change
+  useEffect(() => {
+    if (customPages.length > 0) {
+      localStorage.setItem(`${storageKey}_pages`, JSON.stringify(customPages));
+    }
+  }, [customPages, storageKey]);
+
+  useEffect(() => {
+    if (customComponents.length > 0) {
+      localStorage.setItem(`${storageKey}_components`, JSON.stringify(customComponents));
+    }
+  }, [customComponents, storageKey]);
 
   const { target_page, target_component, target_domain } = value;
 
