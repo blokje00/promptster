@@ -34,6 +34,11 @@ export default function AddItem() {
   });
 
   const [selectedProjectId, setSelectedProjectId] = useState(() => localStorage.getItem('lastSelectedProjectId') || "");
+  
+  // Find selected project for styling
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
+  const borderColorClass = selectedProject ? `border-${selectedProject.color}-500` : 'border-slate-200';
+  
   const [formData, setFormData] = useState({
     title: "",
     type: "prompt",
@@ -192,8 +197,8 @@ export default function AddItem() {
           </div>
 
           <form onSubmit={handleSubmit}>
-            <Card className="shadow-lg border-slate-200">
-              <CardHeader className="border-b border-slate-100">
+            <Card className={`shadow-lg border-2 ${selectedProject ? projectColors[selectedProject.color].replace('bg-', 'border-') : 'border-slate-200'}`}>
+              <CardHeader className={`border-b ${selectedProject ? projectColors[selectedProject.color].replace('bg-', 'border-').replace('hover:', '') + ' bg-opacity-5' : 'border-slate-100'}`}>
                 <CardTitle>Item Details</CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
