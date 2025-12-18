@@ -58,6 +58,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { projectColors } from "@/components/lib/constants";
 import RetryModal from "@/components/checks/RetryModal";
+import TrialBanner from "@/components/dashboard/TrialBanner";
 import AccessGuard from "../components/auth/AccessGuard";
 
 
