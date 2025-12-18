@@ -62,27 +62,27 @@ export default function SubscriptionPage() {
   // Handler for no-CC trials (uses activateTrial backend, not Stripe)
   const handleStartFreeTrial = async (plan) => {
     setIsProcessing(true);
-    
+
     try {
       // Activate trial via backend (no Stripe needed)
       const response = await base44.functions.invoke('activateTrial', {
         planId: plan.id
       });
-      
+
       if (response.data?.success) {
         // Seed demo data for new users
         await base44.functions.invoke('seedDemoData', {});
-        
+
         toast.success('🎉 Free trial activated!', {
           description: `${plan.trial_days} days of full access to all features`
         });
-        
-        // Invalidate user query and redirect
+
+        // Wait for user query to refresh before redirect
         await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-        
-        setTimeout(() => {
-          navigate(createPageUrl('Multiprompt'));
-        }, 500);
+        await queryClient.refetchQueries({ queryKey: ['currentUser'] });
+
+        // Navigate immediately after data refresh
+        navigate(createPageUrl('Multiprompt'));
       } else {
         toast.error(response.data?.error || 'Failed to activate trial');
         setIsProcessing(false);

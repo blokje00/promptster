@@ -33,6 +33,7 @@ import TasksList from "@/components/multiprompt/TasksList";
 import TemplateSelector from "@/components/multiprompt/TemplateSelector";
 import PromptPreview from "@/components/multiprompt/PromptPreview";
 import SuccessBanner from "@/components/multiprompt/SuccessBanner";
+import TrialBanner from "@/components/dashboard/TrialBanner";
 import { projectColors, projectBorderColors } from "@/components/lib/constants";
 import AccessGuard from "../components/auth/AccessGuard";
 
@@ -294,6 +295,7 @@ export default function Multiprompt() {
     <AccessGuard pageType="protected">
     <div className="p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
+          <TrialBanner />
           <SuccessBanner show={showBanner} />
 
           <div className="mb-8">
