@@ -160,10 +160,16 @@ export default function Header() {
   // Redirect on initial load
   useEffect(() => {
     if (currentPath === "/" || currentPath === "") {
-      // If logged in, go to Dashboard.
-      // If not logged in, stay on root (which now renders Features)
       if (user) {
-        navigate(createPageUrl('Dashboard'), { replace: true });
+        // If user has active trial or subscription, go to Multiprompt
+        // Otherwise stay on Features/Subscription flow
+        const hasAccess = 
+          (user.subscription_status === 'active' || user.subscription_status === 'trialing') ||
+          (user.trial_ends_at && new Date(user.trial_ends_at) > new Date());
+        
+        if (hasAccess) {
+          navigate(createPageUrl('Multiprompt'), { replace: true });
+        }
       }
     }
   }, [currentPath, navigate, user]);
