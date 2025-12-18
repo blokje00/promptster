@@ -180,11 +180,10 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     // Templates voor Project 1
     console.log('[seedDemoData] 📋 Creating templates for Project 1...');
     
-    // TASK-1: Corrected start template with exact user instruction (translated to English)
     const t1 = await base44.entities.PromptTemplate.create({
-      name: "DEMO: Expert Analysis Start",
+      name: "DEMO: Start Template",
       type: "start",
-      content: "You are an expert in Deno serverless with JavaScript and first analyze which tasks belong together and whether you can execute them in parallel or sequentially. You only stop when you have completed all tasks, even if they are very large.",
+      content: "You are an expert in Deno serverless with JavaScript and you first analyze which tasks belong together and whether they can be executed in parallel or sequentially. You only stop once all tasks have been completed, even if the task set is very large.",
       project_id: project1.id,
       created_by: user.email
     });
@@ -195,21 +194,10 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     }
     console.log('[seedDemoData] ✅ Template 1:', t1.id);
 
-    const t2 = await base44.entities.PromptTemplate.create({
-      name: "DEMO: Code Refactor Template",
-      type: "start",
-      content: "Analyze the provided code and propose a refactor.\nFocus on clarity, reusability, and long-term maintainability.",
-      project_id: project1.id,
-      created_by: user.email
-    });
-    if (!t2?.id) throw new Error('Template 2 failed');
-    console.log('[seedDemoData] ✅ Template 2:', t2.id);
-
-    // TASK-1: Corrected end template with exact user instruction (translated to English)
     const t3 = await base44.entities.PromptTemplate.create({
-      name: "DEMO: Execute & Report End",
+      name: "DEMO: End Template",
       type: "eind",
-      content: "Analyze these tasks thoroughly, understand what they are about, and find the right files. Execute these tasks step by step, and report back neatly, clearly indicating for each task which exact filenames (and file path) have been edited and which page these files belong to or are used by.\n\nEXECUTE NOW:\n- Run subtask Tn completely.\n- Show file diffs (unified diff) for each modified file.\n- Provide a single commit message per subtask.\n- Provide a 3-line manual test to verify (copy/pasteable).\n- If any change fails tests, revert that subtask and return error with fix.",
+      content: "Analyze these tasks thoroughly, understand what they're about, and locate the correct files. Execute these tasks step by step, and report back clearly: for each task, specify exactly which files (including the full file path) were edited, and which page(s) those files belong to and/or are used by.",
       project_id: project1.id,
       created_by: user.email
     });
@@ -275,38 +263,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
     }
     console.log('[seedDemoData] ✅ Project 2 created:', project2.id);
 
-    // Templates voor Project 2
-    console.log('[seedDemoData] 📋 Creating templates for Project 2...');
-    
-    const t4 = await base44.entities.PromptTemplate.create({
-      name: "DEMO: Prompt Critique Template",
-      type: "start",
-      content: "Critically evaluate the prompt.\nIdentify ambiguities and suggest improvements.",
-      project_id: project2.id,
-      created_by: user.email
-    });
-    if (!t4?.id) throw new Error('Template 4 failed');
-    console.log('[seedDemoData] ✅ Template 4:', t4.id);
-
-    const t5 = await base44.entities.PromptTemplate.create({
-      name: "DEMO: Prompt Rewrite Template",
-      type: "start",
-      content: "Rewrite the prompt to be more precise, robust, and testable.",
-      project_id: project2.id,
-      created_by: user.email
-    });
-    if (!t5?.id) throw new Error('Template 5 failed');
-    console.log('[seedDemoData] ✅ Template 5:', t5.id);
-
-    const t6 = await base44.entities.PromptTemplate.create({
-      name: "DEMO: Output Evaluation Template",
-      type: "eind",
-      content: "Evaluate the AI output against the original intent.\nScore clarity, correctness, and usefulness.",
-      project_id: project2.id,
-      created_by: user.email
-    });
-    if (!t6?.id) throw new Error('Template 6 failed');
-    console.log('[seedDemoData] ✅ Template 6:', t6.id);
+    // No additional templates for Project 2
 
     // Tasks voor Project 2
     console.log('[seedDemoData] ✏️ Creating tasks for Project 2...');
@@ -441,7 +398,7 @@ This project explores prompt design, iteration, and evaluation for AI systems.
       projects: 2,
       tasks: 10,
       vault_prompts: 2,
-      templates: 6,
+      templates: 2,
       seeded_at: new Date().toISOString(),
       verified: true
     };
