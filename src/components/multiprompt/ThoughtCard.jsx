@@ -206,7 +206,9 @@ export default function ThoughtCard({
       }
 
       if (successUrls.length > 0) {
-        onUpdateScreenshots(thought.id, [...currentScreenshots, ...successUrls]);
+        // BUGFIX: Use functional update pattern for screenshot state
+        const newScreenshots = [...currentScreenshots, ...successUrls];
+        onUpdateScreenshots(thought.id, newScreenshots);
         toast.success(`${successUrls.length} afbeelding(en) toegevoegd`);
         
         // TASK-7: Trigger OCR vision analysis immediately after drop
