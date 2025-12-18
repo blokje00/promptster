@@ -27,7 +27,7 @@ export default function AccessGuard({ children, pageType = "protected" }) {
       <StartTrialModal 
         isOpen={showTrialModal}
         onClose={() => setShowTrialModal(false)}
-        onSuccess={() => window.location.reload()}
+        redirectTo="Multiprompt"
       />
     </>
   );

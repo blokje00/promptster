@@ -466,7 +466,7 @@ export default function Header() {
           <StartTrialModal 
             isOpen={showTrialModal}
             onClose={() => setShowTrialModal(false)}
-            onSuccess={() => window.location.reload()}
+            redirectTo="Multiprompt"
           />
         </div>
       </div>

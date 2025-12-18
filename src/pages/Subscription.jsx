@@ -59,6 +59,41 @@ export default function SubscriptionPage() {
     }
   };
 
+  // Handler for no-CC trials (uses activateTrial backend, not Stripe)
+  const handleStartFreeTrial = async (plan) => {
+    setIsProcessing(true);
+    
+    try {
+      // Activate trial via backend (no Stripe needed)
+      const response = await base44.functions.invoke('activateTrial', {
+        planId: plan.id
+      });
+      
+      if (response.data?.success) {
+        // Seed demo data for new users
+        await base44.functions.invoke('seedDemoData', {});
+        
+        toast.success('🎉 Free trial activated!', {
+          description: `${plan.trial_days} days of full access to all features`
+        });
+        
+        // Invalidate user query and redirect
+        await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        
+        setTimeout(() => {
+          navigate(createPageUrl('Multiprompt'));
+        }, 500);
+      } else {
+        toast.error(response.data?.error || 'Failed to activate trial');
+        setIsProcessing(false);
+      }
+    } catch (error) {
+      console.error("Trial activation error:", error);
+      toast.error("Something went wrong starting the trial.");
+      setIsProcessing(false);
+    }
+  };
+
   const handleManageSubscription = async () => {
     if (!user?.stripe_customer_id) {
       toast.error("We're still syncing your subscription. Please click 'Sync Status' first.");
@@ -92,6 +127,15 @@ export default function SubscriptionPage() {
       if (result.data?.success) {
         toast.success("Subscription status synchronized!");
         await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        
+        // Redirect to Multiprompt if subscription/trial is now active
+        const status = result.data.subscription_status;
+        if (status === 'active' || status === 'trialing') {
+          toast.success("🎉 Subscription active! Redirecting...");
+          setTimeout(() => {
+            navigate(createPageUrl('Multiprompt'));
+          }, 1000);
+        }
       } else {
         toast.error(result.data?.error || "Could not sync subscription.");
       }
@@ -195,13 +239,23 @@ export default function SubscriptionPage() {
                 <Button disabled variant="outline" className="text-slate-400">
                   Not Available
                 </Button>
+              ) : plan.trial_days > 0 && !plan.is_credit_card_required_for_trial ? (
+                <Button 
+                  onClick={() => handleStartFreeTrial(plan)} 
+                  disabled={isProcessing}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Start Free Trial
+                </Button>
               ) : plan.payment_link ? (
                 <Button 
                   onClick={() => handleSubscribe(plan)} 
                   disabled={isProcessing}
                   className="bg-indigo-600 hover:bg-indigo-700"
                 >
-                  Start Trial
+                  {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  {plan.trial_days > 0 ? 'Start Trial' : 'Subscribe'}
                 </Button>
               ) : (
                 <Button disabled variant="outline">

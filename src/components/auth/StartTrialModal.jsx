@@ -4,13 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, CheckCircle2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 
 /**
  * Modal to prompt user to start their free 14-day trial
  * Shows when user tries to perform premium actions without a trial
  */
-export default function StartTrialModal({ isOpen, onClose, onSuccess }) {
+export default function StartTrialModal({ isOpen, onClose, onSuccess, redirectTo = "Multiprompt" }) {
   const [isActivating, setIsActivating] = useState(false);
+  const navigate = useNavigate();
 
   const handleStartTrial = async () => {
     setIsActivating(true);
@@ -27,10 +30,12 @@ export default function StartTrialModal({ isOpen, onClose, onSuccess }) {
           description: '14 days of full access to all features'
         });
         
-        if (onSuccess) {
-          onSuccess();
-        }
         onClose();
+        
+        // Navigate to redirectTo page (default: Multiprompt)
+        setTimeout(() => {
+          navigate(createPageUrl(redirectTo));
+        }, 500);
       } else {
         toast.error(response.data.error || 'Failed to activate trial');
         setIsActivating(false);
