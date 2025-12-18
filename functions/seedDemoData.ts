@@ -180,10 +180,11 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     // Templates voor Project 1
     console.log('[seedDemoData] 📋 Creating templates for Project 1...');
     
+    // TASK-2: Updated start template with correct instruction
     const t1 = await base44.entities.PromptTemplate.create({
-      name: "DEMO: UI Review Template",
+      name: "DEMO: Expert Analysis Start",
       type: "start",
-      content: "Review the following UI for usability, accessibility, and visual consistency.\nProvide concrete improvement suggestions.",
+      content: "You are an expert in Deno serverless with JavaScript and first analyze which tasks belong together and whether you can execute them in parallel or sequentially. You only stop when you have completed all tasks, even if they are very large.",
       project_id: project1.id,
       created_by: user.email
     });
@@ -204,10 +205,11 @@ This project focuses on refactoring and improving a medium-sized SaaS web applic
     if (!t2?.id) throw new Error('Template 2 failed');
     console.log('[seedDemoData] ✅ Template 2:', t2.id);
 
+    // TASK-2: Updated end template with correct instruction
     const t3 = await base44.entities.PromptTemplate.create({
-      name: "DEMO: Bug Analysis Template",
+      name: "DEMO: Execute & Report End",
       type: "eind",
-      content: "Investigate the described issue.\nIdentify root causes and suggest fixes.",
+      content: "Analyze these tasks thoroughly, understand what they are about, and find the right files. Execute these tasks step by step, and report back neatly, clearly indicating for each task which exact filenames (and file path) have been edited and which page these files belong to or are used by.\n\nEXECUTE NOW:\n- Run subtask Tn completely.\n- Show file diffs (unified diff) for each modified file.\n- Provide a single commit message per subtask.\n- Provide a 3-line manual test to verify (copy/pasteable).\n- If any change fails tests, revert that subtask and return error with fix.",
       project_id: project1.id,
       created_by: user.email
     });
