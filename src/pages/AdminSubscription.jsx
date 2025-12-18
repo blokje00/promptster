@@ -117,10 +117,14 @@ export default function AdminSubscription() {
   };
 
   const handleSubmit = () => {
+    const cleanedData = {
+      ...formData,
+      features: formData.features.filter(f => f.trim())
+    };
     if (isEditing && currentPlan) {
-      updatePlanMutation.mutate({ id: currentPlan.id, data: formData });
+      updatePlanMutation.mutate({ id: currentPlan.id, data: cleanedData });
     } else {
-      createPlanMutation.mutate(formData);
+      createPlanMutation.mutate(cleanedData);
     }
   };
 
@@ -233,9 +237,10 @@ export default function AdminSubscription() {
                 <Label>Features (one per line)</Label>
                 <Textarea 
                   value={formData.features.join('\n')} 
-                  onChange={(e) => setFormData({...formData, features: e.target.value.split('\n').filter(f => f.trim())})} 
+                  onChange={(e) => setFormData({...formData, features: e.target.value.split('\n')})} 
                   placeholder="Feature 1&#10;Feature 2"
                   className="min-h-[100px]"
+                  rows={6}
                 />
               </div>
               <div className="flex items-center gap-4">
