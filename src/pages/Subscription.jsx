@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -11,6 +11,11 @@ import { createPageUrl } from "@/utils";
 export default function SubscriptionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [trialActivated, setTrialActivated] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [verifying, setVerifying] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.has('session_id') || params.has('success');
+  });
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -100,9 +105,11 @@ export default function SubscriptionPage() {
           if (result.data?.success) {
              const status = result.data.status;
              const message = status === 'trialing' 
-               ? "✅ Free trial activated! Enjoy 14 days free. Redirecting..."
-               : "✅ Subscription activated! Redirecting...";
+               ? "✅ Free trial activated! Enjoy 14 days free."
+               : "✅ Subscription activated!";
              
+             setShowSuccess(true);
+             setVerifying(false);
              toast.success(message, { duration: 1500 });
              
              // Refresh user data immediately
@@ -111,29 +118,36 @@ export default function SubscriptionPage() {
              // Clean URL
              window.history.replaceState({}, document.title, window.location.pathname);
              
-             // Wait 1500ms before redirect to show banner
+             // Wait 1500ms before redirect to show success screen
              setTimeout(() => {
                navigate(createPageUrl('Multiprompt'));
              }, 1500);
           } else {
              toast.error("Could not verify payment. Please contact support.");
              setIsProcessing(false);
+             setVerifying(false);
           }
         } catch (error) {
           console.error("Verification error:", error);
           toast.error("Error verifying payment. Please contact support.");
           setIsProcessing(false);
+          setVerifying(false);
         }
       } else if (params.get("success")) {
         // Fallback for old flow or if session_id is missing
-        toast.success("Subscription successfully activated! Redirecting...", { duration: 1500 });
+        setShowSuccess(true);
+        setVerifying(false);
+        toast.success("Subscription successfully activated!", { duration: 1500 });
         setTimeout(() => {
           navigate(createPageUrl('Multiprompt'));
         }, 1500);
+      } else {
+        setVerifying(false);
       }
       
       if (params.get("canceled")) {
         toast.info("Payment canceled.");
+        setVerifying(false);
         // Clean URL
         window.history.replaceState({}, document.title, window.location.pathname);
       }
@@ -141,6 +155,27 @@ export default function SubscriptionPage() {
 
     verifySubscription();
   }, [queryClient, navigate]);
+
+  if (verifying) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
+        <Loader2 className="w-16 h-16 text-indigo-600 animate-spin mb-4" />
+        <h2 className="text-2xl font-semibold text-slate-900">Verifying subscription...</h2>
+        <p className="text-slate-600 mt-2">Please wait a moment...</p>
+      </div>
+    );
+  }
+
+  if (showSuccess) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
+        <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
+        <h1 className="text-3xl font-bold text-slate-900 mb-2">Success!</h1>
+        <p className="text-lg text-slate-600">Your subscription has been activated.</p>
+        <p className="text-sm text-slate-500 mt-4">Redirecting you to the app...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
