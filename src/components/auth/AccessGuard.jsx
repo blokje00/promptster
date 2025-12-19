@@ -38,25 +38,48 @@ export default function AccessGuard({ children, pageType = "protected" }) {
 
   // Effect for handling redirects and trial activation
   useEffect(() => {
+    console.log('🛡️ [AccessGuard] useEffect triggered:', {
+      isLoading,
+      pageType,
+      pathname: location.pathname,
+      user: currentUser ? {
+        email: currentUser.email,
+        subscription_status: currentUser.subscription_status,
+        trial_end: currentUser.trial_end,
+        plan_id: currentUser.plan_id
+      } : null
+    });
+
     // Do nothing while loading
-    if (isLoading) return;
+    if (isLoading) {
+      console.log('⏳ [AccessGuard] Still loading...');
+      return;
+    }
 
     // Public/Free pages don't need checks
-    if (pageType === "free" || pageType === "public") return;
+    if (pageType === "free" || pageType === "public") {
+      console.log('🌐 [AccessGuard] Public page - access allowed');
+      return;
+    }
 
     // Check 1: Not logged in - use Base44 auth redirect
     if (!currentUser) {
+      console.log('❌ [AccessGuard] No user - redirecting to login');
       base44.auth.redirectToLogin(window.location.href);
       return;
     }
 
     // Check 2: Subscription status using centralized utility
     const hasActiveSubscription = hasValidAccess(currentUser);
+    console.log('🔐 [AccessGuard] Access check result:', { hasActiveSubscription });
 
     // REMOVED: Auto-trial activation - Stripe Payment Links handle trials
     // Users must complete Stripe checkout to activate subscription/trial
     if (!hasActiveSubscription && location.pathname !== createPageUrl('Subscription').replace(window.location.origin, '')) {
+      console.log('⚠️ [AccessGuard] No active subscription - redirecting to Subscription page');
       navigate(createPageUrl('Subscription'));
+    } else if (hasActiveSubscription) {
+      console.log('✅ [AccessGuard] User has valid access - rendering protected content');
     }
   }, [currentUser, isLoading, pageType, navigate, location]);
 

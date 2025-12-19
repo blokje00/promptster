@@ -100,7 +100,17 @@ Deno.serve(async (req) => {
     }
 
     // Fetch subscription from Stripe
+    console.log('[syncSubscriptionStatus] Fetching Stripe subscription:', targetUser.stripe_subscription_id);
     const subscription = await stripe.subscriptions.retrieve(targetUser.stripe_subscription_id);
+    
+    console.log('[syncSubscriptionStatus] Stripe subscription data:', {
+      id: subscription.id,
+      status: subscription.status,
+      customer: subscription.customer,
+      current_period_end: subscription.current_period_end,
+      trial_end: subscription.trial_end,
+      items: subscription.items?.data?.map(i => ({ price_id: i.price.id }))
+    });
 
     const updateData = {
       stripe_customer_id: subscription.customer,
@@ -123,7 +133,10 @@ Deno.serve(async (req) => {
       }
     }
 
+    console.log('[syncSubscriptionStatus] Updating user with data:', updateData);
     await base44.asServiceRole.entities.User.update(targetUser.id, updateData);
+    
+    console.log('[syncSubscriptionStatus] User updated successfully');
 
     // Log activity
     try {

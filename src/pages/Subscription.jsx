@@ -121,16 +121,22 @@ export default function SubscriptionPage() {
   };
 
   const handleSyncStatus = async () => {
+    console.log('🔄 [Subscription] Starting sync...');
     setIsProcessing(true);
     try {
+      console.log('📡 [Subscription] Calling syncSubscriptionStatus function...');
       const result = await base44.functions.invoke("syncSubscriptionStatus", {});
+      
+      console.log('📥 [Subscription] Sync result:', result.data);
       
       if (result.data?.success) {
         toast.success("Subscription status synchronized!");
         
+        console.log('🔄 [Subscription] Invalidating user cache...');
         // Invalidate cache en wacht op VOLLEDIGE refetch
         await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
         
+        console.log('🔄 [Subscription] Fetching fresh user data...');
         // Forceer verse data fetch
         const freshUser = await queryClient.fetchQuery({
           queryKey: ['currentUser'],
@@ -138,17 +144,34 @@ export default function SubscriptionPage() {
           staleTime: 0,
         });
         
+        console.log('👤 [Subscription] Fresh user data:', {
+          email: freshUser.email,
+          subscription_status: freshUser.subscription_status,
+          trial_end: freshUser.trial_end,
+          plan_id: freshUser.plan_id,
+          stripe_subscription_id: freshUser.stripe_subscription_id
+        });
+        
         // Check met VERSE user data
-        if (hasValidAccess(freshUser)) {
+        console.log('🔍 [Subscription] Checking access with fresh data...');
+        const hasAccess = hasValidAccess(freshUser);
+        console.log('🔐 [Subscription] Access check result:', hasAccess);
+        
+        if (hasAccess) {
+          console.log('✅ [Subscription] Access granted - redirecting to Multiprompt');
           toast.success("🎉 Subscription active! Redirecting...");
           // Full page navigation om alle components te refreshen
           window.location.href = createPageUrl('Multiprompt');
+        } else {
+          console.log('❌ [Subscription] Access denied even after sync!');
+          toast.error("Subscription synced but access still denied. Please check your subscription status.");
         }
       } else {
+        console.error('❌ [Subscription] Sync failed:', result.data?.error);
         toast.error(result.data?.error || "Could not sync subscription.");
       }
     } catch (error) {
-      console.error("Sync error:", error);
+      console.error("❌ [Subscription] Sync error:", error);
       toast.error("Failed to sync subscription status.");
     } finally {
       setIsProcessing(false);
