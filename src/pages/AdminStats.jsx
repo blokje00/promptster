@@ -339,11 +339,20 @@ export default function AdminStats() {
                   <thead className="border-b border-slate-200">
                     <tr className="text-left">
                       <SortableHeader field="full_name" label="Naam" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
-                      <SortableHeader field="email" label="Email" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      <th className="pb-2 font-semibold text-slate-700 cursor-pointer hover:text-indigo-600 transition-colors select-none w-48" onClick={() => handleSort('email')}>
+                        <div className="flex items-center gap-1">
+                          Email
+                          {sortField === 'email' ? (
+                            sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 text-indigo-600" /> : <ArrowDown className="w-3 h-3 text-indigo-600" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                          )}
+                        </div>
+                      </th>
                       <SortableHeader field="created_date" label="Lid sinds" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
-                      <SortableHeader field="plan_id" label="Plan" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
-                      <SortableHeader field="subscription_status" label="Subscription Status" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
-                      <th className="pb-2 font-semibold text-slate-700">Trial Dates</th>
+                      <th className="pb-2 font-semibold text-slate-700 w-20">Plan</th>
+                      <th className="pb-2 font-semibold text-slate-700 w-40">Subscription Status</th>
+                      <th className="pb-2 font-semibold text-slate-700 w-36">Trial Dates</th>
                       <SortableHeader field="items" label="Items" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       <SortableHeader field="projects" label="Projecten" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       <th className="pb-2 font-semibold text-slate-700">Groei %</th>
@@ -438,7 +447,7 @@ export default function AdminStats() {
                       return (
                         <tr key={user.id} className="hover:bg-slate-50">
                           <td className="py-3">{user.full_name || "—"}</td>
-                          <td className="py-3 text-slate-600">{user.email}</td>
+                          <td className="py-3 text-slate-600 text-xs truncate max-w-[12rem]">{user.email}</td>
                           <td className="py-3">
                             {createdDate ? (
                               <div className="flex items-center gap-1 text-xs">
@@ -448,12 +457,12 @@ export default function AdminStats() {
                             ) : "—"}
                           </td>
                           <td className="py-3">
-                            <Badge variant={planId ? "default" : "secondary"}>
+                            <Badge variant={planId ? "default" : "secondary"} className="px-2 text-xs whitespace-nowrap">
                               {planId || "Free"}
                             </Badge>
                           </td>
                           <td className="py-3">
-                            <Badge className={currentStatus.color}>
+                            <Badge className={`${currentStatus.color} px-2 text-xs whitespace-nowrap`}>
                               {StatusIcon && <StatusIcon className="w-3 h-3 mr-1" />}
                               {currentStatus.label}
                             </Badge>
