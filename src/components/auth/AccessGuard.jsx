@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -41,6 +41,46 @@ export default function AccessGuard({ children, pageType = "protected" }) {
   });
 
   const isLoading = isUserLoading;
+
+  // Check local access latch (fallback when auth.me() doesn't have subscription fields)
+  const hasValidLatch = useCallback(() => {
+    // Debug logging helper - only in dev or with flag
+    const debugLog = (...args) => {
+      if (import.meta.env.DEV || (typeof localStorage !== 'undefined' && localStorage.getItem('debugAccess') === '1')) {
+        console.log(...args);
+      }
+    };
+
+    try {
+      const latchString = localStorage.getItem("promptster_access_latch");
+      if (!latchString) return false;
+
+      const latch = JSON.parse(latchString);
+      const now = Date.now();
+      const setAt = new Date(latch.set_at).getTime();
+      const trialEnd = new Date(latch.trial_ends_at).getTime();
+      
+      // Latch is valid for a short period (10 minutes) AND trial is not expired
+      const latchTTL = 10 * 60 * 1000; // 10 minutes
+      const isFresh = (now - setAt) < latchTTL;
+      const isTrialActive = trialEnd > now;
+
+      if (latch.status === "trialing" && isFresh && isTrialActive) {
+        debugLog('[AccessGuard] GRANTED: Valid local access latch found');
+        return true;
+      }
+      
+      // Clean up expired latch
+      if (!isFresh || !isTrialActive) {
+        debugLog('[AccessGuard] Removing expired access latch');
+        localStorage.removeItem("promptster_access_latch");
+      }
+    } catch (e) {
+      console.error('[AccessGuard] Error parsing access latch:', e);
+      localStorage.removeItem("promptster_access_latch"); // Clear invalid latch
+    }
+    return false;
+  }, []);
 
   // Render StartTrialModal consistently at the bottom
   const renderWithModal = (content) => (
@@ -107,13 +147,14 @@ export default function AccessGuard({ children, pageType = "protected" }) {
       return;
     }
 
-    // Rule 4: Check subscription access (pure function, no async)
-    const hasActiveSubscription = hasValidAccess(currentUser);
+    // Rule 4: Check subscription access (pure function, no async) OR local latch
+    const hasActiveSubscription = hasValidAccess(currentUser) || hasValidLatch();
     debugLog('[AccessGuard] Subscription check:', {
       hasAccess: hasActiveSubscription,
       isAdmin: currentUser?.role === 'admin',
       status: currentUser?.subscription_status,
-      trialValid: currentUser?.trial_ends_at ? new Date(currentUser.trial_ends_at) > new Date() : false
+      trialValid: currentUser?.trial_ends_at ? new Date(currentUser.trial_ends_at) > new Date() : false,
+      hasLatch: hasValidLatch()
     });
 
     // Rule 5: No subscription → redirect to Subscription page
@@ -175,8 +216,8 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     return children;
   }
 
-  // Check subscription using ONLY auth.me() data (pure, sync)
-  const hasActiveSubscription = hasValidAccess(currentUser);
+  // Check subscription using ONLY auth.me() data (pure, sync) OR local latch
+  const hasActiveSubscription = hasValidAccess(currentUser) || hasValidLatch();
 
   if (!hasActiveSubscription) {
     // No valid subscription - show spinner while redirect happens

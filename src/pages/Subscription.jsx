@@ -78,40 +78,37 @@ export default function SubscriptionPage() {
       console.log('[Subscription] 📥 activateTrial response:', response.data);
 
       if (response.data?.success) {
-        console.log('[Subscription] ✅ Trial activation successful, fetching fresh user data...');
+        console.log('[Subscription] ✅ Trial activation successful, setting access latch...');
         
         // Seed demo data for new users
         await base44.functions.invoke('seedDemoData', {});
 
-        // CRITICAL: Invalidate currentUser cache and fetch fresh auth data
+        // CRITICAL: Set local access latch for immediate access
+        const trialEndsAt = response.data.trial_ends_at;
+        const accessLatch = {
+          status: "trialing",
+          trial_ends_at: trialEndsAt,
+          set_at: Date.now(),
+        };
+        localStorage.setItem("promptster_access_latch", JSON.stringify(accessLatch));
+        console.log('[Subscription] 🔐 Access latch set:', accessLatch);
+
+        // Invalidate cache for future refreshes
         await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-        
-        // Force fresh auth.me() call (bypasses React Query cache)
-        const freshUser = await base44.auth.me();
-        console.log('[Subscription] 👤 Fresh user data:', {
-          email: freshUser.email,
-          subscription_status: freshUser.subscription_status,
-          trial_ends_at: freshUser.trial_ends_at,
-          plan_id: freshUser.plan_id
+
+        toast.success('🎉 Trial succesvol geactiveerd! Doorsturen...', {
+          description: `${plan.trial_days} dagen volledige toegang`
         });
 
-        // Verify trial is actually active
-        const hasAccess = hasValidAccess(freshUser);
-        console.log('[Subscription] 🔐 Access check result:', hasAccess);
+        console.log('[Subscription] 🚀 Hard redirect to Multiprompt');
+        
+        // Optionally sync in background (non-blocking)
+        base44.functions.invoke('syncSubscriptionStatus', {}).catch(err => 
+          console.warn('[Subscription] Background sync failed:', err)
+        );
 
-        if (freshUser.subscription_status === 'trialing' && hasAccess) {
-          toast.success('🎉 Trial succesvol geactiveerd! Doorsturen...', {
-            description: `${plan.trial_days} dagen volledige toegang`
-          });
-
-          console.log('[Subscription] 🚀 Hard redirect to Multiprompt');
-          // Hard redirect to ensure full app state reset
-          window.location.href = createPageUrl('Multiprompt');
-        } else {
-          console.error('[Subscription] ❌ Trial niet correct geactiveerd:', freshUser);
-          toast.error('Trial activatie is mislukt of heeft de gebruiker niet correct bijgewerkt. Synchronisatie vereist.');
-          setIsProcessing(false);
-        }
+        // Hard redirect to ensure full app state reset
+        window.location.href = createPageUrl('Multiprompt');
       } else {
         console.error('[Subscription] ❌ activateTrial failed:', response.data?.error);
         toast.error(response.data?.error || 'Failed to activate trial');
