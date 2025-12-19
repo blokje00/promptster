@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../i18n/LanguageContext";
 import StartTrialModal from "../auth/StartTrialModal";
+import { hasValidAccess } from "@/components/lib/subscriptionUtils";
 import {
   DropdownMenu,
   DropdownMenuContent,
