@@ -89,9 +89,12 @@ export default function AccessGuard({ children, pageType = "protected" }) {
       return;
     }
 
-    // Check 3: Subscription status via UserProfile
-    const hasActiveSubscription = hasValidAccess(userProfile);
-    console.log('🔐 [AccessGuard] Access check result:', { hasActiveSubscription });
+    // Check 3: Subscription status via UserProfile (met admin bypass)
+    const hasActiveSubscription = hasValidAccess(userProfile, currentUser);
+    console.log('🔐 [AccessGuard] Access check result:', { 
+      hasActiveSubscription,
+      isAdmin: currentUser?.role === 'admin' 
+    });
 
     if (!hasActiveSubscription && location.pathname !== createPageUrl('Subscription').replace(window.location.origin, '')) {
       console.log('⚠️ [AccessGuard] No active subscription - redirecting to Subscription page');
@@ -119,7 +122,7 @@ export default function AccessGuard({ children, pageType = "protected" }) {
   // The useEffect will handle the redirect if access is denied.
   // While waiting for the redirect, we show the spinner to prevent flashing protected content.
 
-  if (!currentUser || !userProfile) {
+  if (!currentUser) {
     return renderWithModal(
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -127,7 +130,21 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     );
   }
 
-  const hasActiveSubscription = hasValidAccess(userProfile);
+  // Admin bypass - admins hoeven niet te wachten op profile
+  if (currentUser.role === 'admin') {
+    return children;
+  }
+
+  // Reguliere users moeten profile hebben
+  if (!userProfile) {
+    return renderWithModal(
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  const hasActiveSubscription = hasValidAccess(userProfile, currentUser);
 
   if (!hasActiveSubscription) {
     return renderWithModal(

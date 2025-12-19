@@ -1,4 +1,5 @@
 import React from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
@@ -25,9 +26,20 @@ export default function TrialBanner() {
     enabled: !!user,
   });
 
+  // Fetch UserProfile voor trial check
+  const { data: userProfile } = useQuery({
+    queryKey: ['userProfile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const profiles = await base44.entities.UserProfile.filter({ user_id: user.id });
+      return profiles?.[0] || null;
+    },
+    enabled: !!user && user.role !== 'admin',
+  });
+
   // Check trial using centralized utility
-  const trialEndDate = getTrialEndDate(user);
-  const isTrialing = user?.subscription_status === 'trialing' && trialEndDate && new Date(trialEndDate) > new Date();
+  const trialEndDate = getTrialEndDate(userProfile);
+  const isTrialing = userProfile?.subscription_status === 'trialing' && trialEndDate && new Date(trialEndDate) > new Date();
 
   // Only show banner if user is on active trial
   if (!isTrialing) {

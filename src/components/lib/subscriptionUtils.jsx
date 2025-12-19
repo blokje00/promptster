@@ -3,16 +3,20 @@
  * BELANGRIJK: Gebruikt nu UserProfile als source of truth (niet auth user)
  */
 
-export function hasValidAccess(userProfile) {
-  console.log('🔍 [subscriptionUtils] hasValidAccess called with profile:', {
-    id: userProfile?.id,
-    user_id: userProfile?.user_id,
-    email: userProfile?.email,
+export function hasValidAccess(userProfile, authUser = null) {
+  console.log('🔍 [subscriptionUtils] hasValidAccess called:', {
+    profile_id: userProfile?.id,
+    profile_email: userProfile?.email,
     subscription_status: userProfile?.subscription_status,
     trial_ends_at: userProfile?.trial_ends_at,
-    plan_id: userProfile?.plan_id,
-    stripe_subscription_id: userProfile?.stripe_subscription_id
+    auth_user_role: authUser?.role
   });
+
+  // ADMIN BYPASS - admins hebben ALTIJD toegang
+  if (authUser?.role === 'admin') {
+    console.log('✅ [subscriptionUtils] ADMIN - GRANTED');
+    return true;
+  }
 
   if (!userProfile) {
     console.log('❌ [subscriptionUtils] No profile - DENIED');

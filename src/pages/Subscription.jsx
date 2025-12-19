@@ -41,7 +41,7 @@ export default function SubscriptionPage() {
   });
 
   // Filter plans based on subscription status AND only show active plans
-  const displayPlans = hasValidAccess(userProfile) 
+  const displayPlans = hasValidAccess(userProfile, user) 
     ? [] 
     : plans.filter(plan => plan.is_active === true);
 
@@ -166,7 +166,7 @@ export default function SubscriptionPage() {
         
         // Check met VERSE profile data
         console.log('🔍 [Subscription] Checking access with fresh data...');
-        const hasAccess = hasValidAccess(freshProfile);
+        const hasAccess = hasValidAccess(freshProfile, user);
         console.log('🔐 [Subscription] Access check result:', hasAccess);
         
         if (hasAccess) {
@@ -211,7 +211,7 @@ export default function SubscriptionPage() {
         <h1 className="text-3xl font-bold text-slate-900">Subscriptions</h1>
       </div>
 
-      {hasValidAccess(userProfile) && (
+      {hasValidAccess(userProfile, user) && (
         <div className="mb-8 p-4 bg-indigo-50 border border-indigo-100 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-indigo-900">Your subscription is active!</h3>
@@ -228,7 +228,7 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {!hasValidAccess(userProfile) && (!userProfile?.subscription_status || userProfile?.subscription_status === 'none') ? (
+      {!hasValidAccess(userProfile, user) && (!userProfile?.subscription_status || userProfile?.subscription_status === 'none') ? (
         <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-yellow-900">No active subscription found</h3>
