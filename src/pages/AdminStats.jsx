@@ -346,25 +346,34 @@ export default function AdminStats() {
                       
                       // Calculate membership info using subscription_status field
                       const createdDate = user.created_date ? new Date(user.created_date) : null;
-                      const trialStart = user.trial_start ? new Date(user.trial_start) : null;
-                      const trialEnd = user.trial_end ? new Date(user.trial_end) : null;
+                      const trialEnd = user.trial_ends_at ? new Date(user.trial_ends_at) : null;
                       const now = new Date();
+                      
+                      // Calculate trial start (14 days before end if trialing)
+                      const trialStart = trialEnd && user.subscription_status === 'trialing' 
+                        ? new Date(trialEnd.getTime() - (14 * 24 * 60 * 60 * 1000)) 
+                        : null;
+                      
+                      // Days remaining in trial
+                      const daysRemaining = trialEnd && trialEnd > now 
+                        ? Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24))
+                        : 0;
                       
                       // Status labels matching Stripe subscription status
                       const statusConfig = {
-                        'none': { label: 'No Trial', color: 'bg-slate-100 text-slate-700', icon: null },
+                        'none': { label: 'Free', color: 'bg-slate-100 text-slate-700', icon: null },
                         'trialing': { 
-                          label: trialEnd && trialEnd > now ? 'Trial Active' : 'Trial Expired', 
+                          label: trialEnd && trialEnd > now ? `Trial (${daysRemaining}d left)` : 'Trial Expired', 
                           color: trialEnd && trialEnd > now ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700',
                           icon: Clock
                         },
-                        'active': { label: 'Active', color: 'bg-green-100 text-green-700', icon: CreditCard },
+                        'active': { label: 'Active Paid', color: 'bg-green-100 text-green-700', icon: CreditCard },
                         'past_due': { label: 'Past Due', color: 'bg-orange-100 text-orange-700', icon: null },
-                        'cancelled': { label: 'Cancelled', color: 'bg-red-100 text-red-700', icon: null },
+                        'canceled': { label: 'Canceled', color: 'bg-red-100 text-red-700', icon: null },
                         'incomplete': { label: 'Incomplete', color: 'bg-yellow-100 text-yellow-700', icon: null }
                       };
                       
-                      const currentStatus = statusConfig[user.subscription_status] || statusConfig['none'];
+                      const currentStatus = statusConfig[user.subscription_status || 'none'] || statusConfig['none'];
                       const StatusIcon = currentStatus.icon;
 
                       // CALCULATE GROWTH AND ACTIONS
@@ -435,10 +444,17 @@ export default function AdminStats() {
                             </Badge>
                           </td>
                           <td className="py-3 text-sm text-slate-600">
-                            {trialStart && trialEnd ? (
+                            {trialEnd ? (
                               <div className="space-y-0.5">
-                                <div className="text-xs">Start: {format(trialStart, 'dd-MM-yyyy')}</div>
-                                <div className="text-xs">End: {format(trialEnd, 'dd-MM-yyyy')}</div>
+                                {trialStart && <div className="text-xs">Start: {format(trialStart, 'dd-MM-yyyy')}</div>}
+                                <div className="text-xs font-medium">
+                                  End: {format(trialEnd, 'dd-MM-yyyy')}
+                                </div>
+                                {user.subscription_status === 'trialing' && trialEnd > now && (
+                                  <div className="text-xs text-blue-600 font-semibold">
+                                    {daysRemaining} dagen over
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <span className="text-slate-400">-</span>
