@@ -43,58 +43,77 @@ export default function Header() {
     retry: false,
   });
 
+  // HARDENED: Badge counts can fail without affecting navigation
   const { data: deletedCount = 0 } = useQuery({
     queryKey: ['deletedThoughtsCount', user?.email],
     queryFn: async () => {
-      if (!user?.email) return 0;
-      const result = await base44.entities.Thought.filter({ 
-        created_by: user.email,
-        is_deleted: true 
-      });
-      return result?.length || 0;
+      try {
+        if (!user?.email) return 0;
+        const result = await base44.entities.Thought.filter({ 
+          created_by: user.email,
+          is_deleted: true 
+        });
+        return result?.length || 0;
+      } catch (error) {
+        console.warn('[Header] Deleted count fetch failed (non-blocking):', error.message);
+        return 0; // Hide badge on error
+      }
     },
     enabled: !!user?.email,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
+    retry: false, // Don't retry badge queries
   });
 
-  // Task 3: All thoughts count (across all projects)
+  // HARDENED: Badge counts are UI-only, failures don't affect access
   const { data: allThoughtsCount = 0 } = useQuery({
     queryKey: ['allThoughtsCount', user?.email],
     queryFn: async () => {
-      if (!user?.email) return 0;
-      const thoughts = await base44.entities.Thought.filter({ 
-        created_by: user.email,
-        is_deleted: false
-      });
-      return thoughts?.length || 0;
+      try {
+        if (!user?.email) return 0;
+        const thoughts = await base44.entities.Thought.filter({ 
+          created_by: user.email,
+          is_deleted: false
+        });
+        return thoughts?.length || 0;
+      } catch (error) {
+        console.warn('[Header] All thoughts count failed (non-blocking):', error.message);
+        return 0;
+      }
     },
     enabled: !!user?.email,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
+    retry: false,
   });
 
-  // Open Tasks Count (Checklist items)
+  // HARDENED: Open tasks badge is non-critical UI feature
   const { data: openTasksCount = 0 } = useQuery({
     queryKey: ['openTasksCount', user?.email],
     queryFn: async () => {
-      if (!user?.email) return 0;
-      const items = await base44.entities.Item.filter({ 
-        created_by: user.email
-      });
-      
-      let count = 0;
-      items.forEach(item => {
-        if (item.task_checks && Array.isArray(item.task_checks)) {
-          item.task_checks.forEach(check => {
-            if (!check.status || check.status === 'open') {
-              count++;
-            }
-          });
-        }
-      });
-      return count;
+      try {
+        if (!user?.email) return 0;
+        const items = await base44.entities.Item.filter({ 
+          created_by: user.email
+        });
+        
+        let count = 0;
+        items.forEach(item => {
+          if (item.task_checks && Array.isArray(item.task_checks)) {
+            item.task_checks.forEach(check => {
+              if (!check.status || check.status === 'open') {
+                count++;
+              }
+            });
+          }
+        });
+        return count;
+      } catch (error) {
+        console.warn('[Header] Open tasks count failed (non-blocking):', error.message);
+        return 0;
+      }
     },
     enabled: !!user?.email,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
+    retry: false,
   });
 
   const handleLogout = async () => {

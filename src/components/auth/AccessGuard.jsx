@@ -7,8 +7,16 @@ import StartTrialModal from "./StartTrialModal";
 import { hasValidAccess } from "@/components/lib/subscriptionUtils";
 
 /**
- * AccessGuard - Protects pages based on subscription status
- * CRITICAL: Only uses base44.auth.me() - NO entity fetches
+ * AccessGuard - HARDENED subscription gate
+ * 
+ * CRITICAL RULES:
+ * 1. ONLY depends on base44.auth.me() - ZERO entity dependencies
+ * 2. Entity/query errors can NEVER block access
+ * 3. Only subscription_status + trial_ends_at control access
+ * 4. Admins ALWAYS bypass all checks
+ * 5. Data unavailable ≠ access denied
+ * 
+ * ALLOWED MODES:
  * - pageType="public" or "free": accessible to everyone
  * - pageType="protected": requires auth AND valid subscription/trial
  */
@@ -17,10 +25,19 @@ export default function AccessGuard({ children, pageType = "protected" }) {
   const location = useLocation();
   const [showTrialModal, setShowTrialModal] = useState(false);
 
-  // ONLY auth.me() - no entity dependencies
-  const { data: currentUser, isLoading: isUserLoading } = useQuery({
+  // ONLY auth.me() - NO entity queries allowed
+  const { data: currentUser, isLoading: isUserLoading, error: authError } = useQuery({
     queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me().catch(() => null),
+    queryFn: async () => {
+      try {
+        return await base44.auth.me();
+      } catch (error) {
+        console.warn('[AccessGuard] Auth failed:', error.message);
+        return null;
+      }
+    },
+    retry: false,
+    staleTime: 30000, // 30s cache to prevent flicker
   });
 
   const isLoading = isUserLoading;
@@ -37,49 +54,64 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     </>
   );
 
-  // Effect for handling redirects - ONLY uses auth.me() data
+  // Effect for handling redirects - HARDENED: only auth.me() data matters
   useEffect(() => {
-    console.log('🛡️ [AccessGuard] Check:', {
-      isLoading,
-      pageType,
-      pathname: location.pathname,
-      user: currentUser?.email,
-      subscription_status: currentUser?.subscription_status,
-      trial_ends_at: currentUser?.trial_ends_at,
-      role: currentUser?.role
-    });
+    // Structured debug logging (non-blocking)
+    console.log('[AccessGuard] ==== ACCESS CHECK START ====');
+    console.log('[AccessGuard] Loading:', isLoading);
+    console.log('[AccessGuard] PageType:', pageType);
+    console.log('[AccessGuard] Path:', location.pathname);
+    console.log('[AccessGuard] User:', currentUser?.email || 'none');
+    console.log('[AccessGuard] Role:', currentUser?.role || 'none');
+    console.log('[AccessGuard] Subscription:', currentUser?.subscription_status || 'none');
+    console.log('[AccessGuard] Trial ends:', currentUser?.trial_ends_at || 'none');
 
-    // Do nothing while loading
+    // Rule 1: Do nothing while loading auth
     if (isLoading) {
-      console.log('⏳ [AccessGuard] Still loading...');
+      console.log('[AccessGuard] Status: WAITING (auth loading)');
+      console.log('[AccessGuard] ==== ACCESS CHECK END ====\n');
       return;
     }
 
-    // Public/Free pages don't need checks
+    // Rule 2: Public pages = always allow
     if (pageType === "free" || pageType === "public") {
-      console.log('🌐 [AccessGuard] Public page - access allowed');
+      console.log('[AccessGuard] Status: GRANTED (public page)');
+      console.log('[AccessGuard] ==== ACCESS CHECK END ====\n');
       return;
     }
 
-    // Check 1: Not logged in - use Base44 auth redirect
+    // Rule 3: Not logged in → redirect to Base44 login
     if (!currentUser) {
-      console.log('❌ [AccessGuard] No user - redirecting to login');
+      console.log('[AccessGuard] Status: DENIED (no auth)');
+      console.log('[AccessGuard] Action: Redirect to login');
+      console.log('[AccessGuard] ==== ACCESS CHECK END ====\n');
       base44.auth.redirectToLogin(window.location.href);
       return;
     }
 
-    // Check 2: Subscription status from auth.me() (met admin bypass)
-    const hasActiveSubscription = hasValidAccess(currentUser, currentUser);
-    console.log('🔐 [AccessGuard] Access check result:', { 
-      hasActiveSubscription,
-      isAdmin: currentUser?.role === 'admin' 
+    // Rule 4: Check subscription access (pure function, no async)
+    const hasActiveSubscription = hasValidAccess(currentUser);
+    console.log('[AccessGuard] Subscription check:', {
+      hasAccess: hasActiveSubscription,
+      isAdmin: currentUser?.role === 'admin',
+      status: currentUser?.subscription_status,
+      trialValid: currentUser?.trial_ends_at ? new Date(currentUser.trial_ends_at) > new Date() : false
     });
 
-    if (!hasActiveSubscription && location.pathname !== createPageUrl('Subscription').replace(window.location.origin, '')) {
-      console.log('⚠️ [AccessGuard] No active subscription - redirecting to Subscription page');
+    // Rule 5: No subscription → redirect to Subscription page
+    const subscriptionPath = createPageUrl('Subscription').replace(window.location.origin, '');
+    if (!hasActiveSubscription && location.pathname !== subscriptionPath) {
+      console.log('[AccessGuard] Status: DENIED (invalid subscription)');
+      console.log('[AccessGuard] Action: Redirect to Subscription');
+      console.log('[AccessGuard] ==== ACCESS CHECK END ====\n');
       navigate(createPageUrl('Subscription'));
-    } else if (hasActiveSubscription) {
-      console.log('✅ [AccessGuard] User has valid access - rendering protected content');
+      return;
+    }
+
+    // Rule 6: Valid access → render children
+    if (hasActiveSubscription) {
+      console.log('[AccessGuard] Status: GRANTED (valid subscription)');
+      console.log('[AccessGuard] ==== ACCESS CHECK END ====\n');
     }
   }, [currentUser, isLoading, pageType, navigate, location]);
 
@@ -101,7 +133,10 @@ export default function AccessGuard({ children, pageType = "protected" }) {
   // The useEffect will handle the redirect if access is denied.
   // While waiting for the redirect, we show the spinner to prevent flashing protected content.
 
+  // HARDENED RENDER LOGIC - deterministic, no data dependencies
+  
   if (!currentUser) {
+    // Auth pending or failed - show spinner while redirect happens
     return renderWithModal(
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -109,15 +144,18 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     );
   }
 
-  // Admin bypass - admins hebben altijd toegang
+  // Admin bypass - admins ALWAYS have access regardless of subscription
   if (currentUser.role === 'admin') {
+    console.log('[AccessGuard] Rendering: ADMIN BYPASS');
     return children;
   }
 
-  // Check subscription using ONLY auth.me() data
-  const hasActiveSubscription = hasValidAccess(currentUser, currentUser);
+  // Check subscription using ONLY auth.me() data (pure, sync)
+  const hasActiveSubscription = hasValidAccess(currentUser);
 
   if (!hasActiveSubscription) {
+    // No valid subscription - show spinner while redirect happens
+    console.log('[AccessGuard] Rendering: REDIRECT PENDING');
     return renderWithModal(
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -125,6 +163,7 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     );
   }
 
-  // User has valid access
+  // Valid access granted - render protected content
+  console.log('[AccessGuard] Rendering: PROTECTED CONTENT');
   return children;
 }

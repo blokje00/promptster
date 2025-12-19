@@ -1,59 +1,87 @@
 /**
- * Centrale utility functies voor subscription/trial access checks
- * CRITICAL: Uses ONLY auth.me() data - NO entity dependencies
+ * HARDENED subscription access checker
+ * 
+ * CRITICAL RULES:
+ * 1. Pure function - NO async calls
+ * 2. ONLY reads auth.me() data (user object)
+ * 3. NO entity dependencies
+ * 4. NO side effects
+ * 5. Deterministic - same input = same output
+ * 
+ * @param {Object} user - User object from base44.auth.me()
+ * @returns {boolean} - true if user has valid access
  */
-
-export function hasValidAccess(user, authUser = null) {
-  console.log('🔍 [subscriptionUtils] hasValidAccess called:', {
-    user_email: user?.email,
-    subscription_status: user?.subscription_status,
-    trial_ends_at: user?.trial_ends_at,
-    plan_id: user?.plan_id,
-    role: user?.role
-  });
-
-  // ADMIN BYPASS - admins hebben ALTIJD toegang
-  if (user?.role === 'admin') {
-    console.log('✅ [subscriptionUtils] ADMIN - GRANTED');
-    return true;
-  }
-
+export function hasValidAccess(user) {
+  // Defensive: null/undefined check
   if (!user) {
-    console.log('❌ [subscriptionUtils] No user - DENIED');
+    console.log('[subscriptionUtils] DENIED: No user object');
     return false;
   }
-  
-  // Check active subscription
-  if (user.subscription_status === 'active') {
-    console.log('✅ [subscriptionUtils] Active subscription - GRANTED');
+
+  // Rule 1: ADMIN BYPASS - admins always have access
+  if (user.role === 'admin') {
+    console.log('[subscriptionUtils] GRANTED: Admin bypass');
     return true;
   }
   
-  // Check valid trial
-  if (user.subscription_status === 'trialing' && user.trial_ends_at) {
-    const isValid = new Date(user.trial_ends_at) > new Date();
-    console.log('🔍 [subscriptionUtils] Trial check:', {
-      trial_ends_at: user.trial_ends_at,
-      now: new Date().toISOString(),
-      isValid
-    });
-    if (isValid) {
-      console.log('✅ [subscriptionUtils] Valid trial - GRANTED');
-      return true;
-    } else {
-      console.log('❌ [subscriptionUtils] Expired trial - DENIED');
+  // Rule 2: Active subscription = access
+  if (user.subscription_status === 'active') {
+    console.log('[subscriptionUtils] GRANTED: Active subscription');
+    return true;
+  }
+  
+  // Rule 3: Valid trial = access
+  if (user.subscription_status === 'trialing') {
+    // Support both trial_ends_at and trial_end
+    const trialEnd = user.trial_ends_at || user.trial_end;
+    
+    if (!trialEnd) {
+      console.log('[subscriptionUtils] DENIED: Trialing but no end date');
+      return false;
+    }
+    
+    try {
+      const endDate = new Date(trialEnd);
+      const now = new Date();
+      const isValid = endDate > now;
+      
+      console.log('[subscriptionUtils] Trial check:', {
+        endDate: endDate.toISOString(),
+        now: now.toISOString(),
+        isValid,
+        status: isValid ? 'GRANTED' : 'DENIED (expired)'
+      });
+      
+      return isValid;
+    } catch (error) {
+      console.warn('[subscriptionUtils] Invalid trial date format:', trialEnd);
       return false;
     }
   }
   
-  console.log('❌ [subscriptionUtils] No valid access - DENIED');
+  // Rule 4: No valid subscription = no access
+  console.log('[subscriptionUtils] DENIED: No valid subscription', {
+    status: user.subscription_status || 'none',
+    email: user.email
+  });
   return false;
 }
 
+/**
+ * Get trial end date (supports both field names)
+ * @param {Object} user - User object from base44.auth.me()
+ * @returns {string|null} - ISO date string or null
+ */
 export function getTrialEndDate(user) {
-  return user?.trial_ends_at || null;
+  if (!user) return null;
+  return user.trial_ends_at || user.trial_end || null;
 }
 
+/**
+ * Get human-readable access denied reason
+ * @param {Object} user - User object from base44.auth.me()
+ * @returns {string} - Reason code
+ */
 export function getAccessDeniedReason(user) {
   if (!user) return 'not_logged_in';
   if (!user.subscription_status || user.subscription_status === 'none') return 'no_subscription';

@@ -48,16 +48,36 @@ export default function Multiprompt() {
     queryFn: () => base44.auth.me(),
   });
 
+  // HARDENED: Entity queries can fail without affecting access
   const { data: projects = [] } = useQuery({
     queryKey: ['projects', currentUser?.email],
-    queryFn: async () => currentUser ? await base44.entities.Project.filter({ created_by: currentUser.email }) : [],
-    enabled: !!currentUser
+    queryFn: async () => {
+      try {
+        if (!currentUser?.email) return [];
+        return await base44.entities.Project.filter({ created_by: currentUser.email });
+      } catch (error) {
+        console.warn('[Multiprompt] Project fetch failed (non-blocking):', error.message);
+        return []; // Graceful fallback
+      }
+    },
+    enabled: !!currentUser,
+    retry: 1, // Single retry
   });
 
+  // HARDENED: Template fetch failures don't block UI
   const { data: templates = [] } = useQuery({
     queryKey: ['templates', currentUser?.email],
-    queryFn: async () => currentUser ? await base44.entities.PromptTemplate.filter({ created_by: currentUser.email }) : [],
-    enabled: !!currentUser
+    queryFn: async () => {
+      try {
+        if (!currentUser?.email) return [];
+        return await base44.entities.PromptTemplate.filter({ created_by: currentUser.email });
+      } catch (error) {
+        console.warn('[Multiprompt] Template fetch failed (non-blocking):', error.message);
+        return [];
+      }
+    },
+    enabled: !!currentUser,
+    retry: 1,
   });
 
   const { data: aiSettings = [] } = useQuery({

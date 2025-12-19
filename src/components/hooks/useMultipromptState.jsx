@@ -15,23 +15,29 @@ export const useMultipromptData = ({
   const queryClient = useQueryClient();
   const [selectedThoughtIds, setSelectedThoughtIds] = useState([]);
 
-  // 1. Fetch ALL Thoughts - Single Source of Truth
+  // HARDENED: Thought fetch can fail without blocking access
   const { data: allThoughts = [], isLoading } = useQuery({
     queryKey: ['thoughts', { 
       userEmail: currentUser?.email
     }],
     queryFn: async () => {
-      if (!currentUser?.email) return [];
-
-      // Fetch ALL non-deleted thoughts for user (Client-side filtering for projects)
-      return await base44.entities.Thought.filter({ 
-        created_by: currentUser.email,
-        is_deleted: false 
-      }, "-created_date");
+      try {
+        if (!currentUser?.email) return [];
+        
+        // Fetch ALL non-deleted thoughts for user (Client-side filtering for projects)
+        return await base44.entities.Thought.filter({ 
+          created_by: currentUser.email,
+          is_deleted: false 
+        }, "-created_date");
+      } catch (error) {
+        console.warn('[useMultipromptState] Thought fetch failed (non-blocking):', error.message);
+        return []; // Graceful fallback - empty list, not error state
+      }
     },
     enabled: !!currentUser?.email,
-    staleTime: 0, // Always fetch fresh on mount/invalidate
+    staleTime: 0,
     refetchOnWindowFocus: true,
+    retry: 1, // Single retry before fallback
   });
 
   // Client-side filtering for view
