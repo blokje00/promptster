@@ -165,9 +165,7 @@ export default function Header() {
       if (user) {
         // If user has active trial or subscription, go to Multiprompt
         // Otherwise stay on Features/Subscription flow
-        const hasAccess = 
-          (user.subscription_status === 'active' || user.subscription_status === 'trialing') ||
-          (user.trial_ends_at && new Date(user.trial_ends_at) > new Date());
+        const hasAccess = hasValidAccess(user);
         
         if (hasAccess) {
           navigate(createPageUrl('Multiprompt'), { replace: true });

@@ -4,6 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useNavigate, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import StartTrialModal from "./StartTrialModal";
+import { hasValidAccess } from "@/components/lib/subscriptionUtils";
 
 /**
  * AccessGuard - Protects pages based on subscription status
@@ -46,14 +47,8 @@ export default function AccessGuard({ children, pageType = "protected" }) {
       return;
     }
 
-    // Check 2: Subscription status - 'trialing' and 'active' grant access
-    // CRITICAL: Also check if trial has expired
-    const isTrialActive = currentUser.subscription_status === 'trialing' && 
-      currentUser.trial_end && 
-      new Date(currentUser.trial_end) > new Date();
-    
-    const hasActiveSubscription = 
-      (currentUser.subscription_status === 'active' || isTrialActive);
+    // Check 2: Subscription status using centralized utility
+    const hasActiveSubscription = hasValidAccess(currentUser);
 
     // REMOVED: Auto-trial activation - Stripe Payment Links handle trials
     // Users must complete Stripe checkout to activate subscription/trial
@@ -88,12 +83,7 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     );
   }
 
-  const isTrialActive = currentUser.subscription_status === 'trialing' && 
-    currentUser.trial_end && 
-    new Date(currentUser.trial_end) > new Date();
-  
-  const hasActiveSubscription = 
-    (currentUser.subscription_status === 'active' || isTrialActive);
+  const hasActiveSubscription = hasValidAccess(currentUser);
 
   if (!hasActiveSubscription) {
     return renderWithModal(

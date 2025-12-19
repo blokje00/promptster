@@ -7,6 +7,7 @@ import { Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { hasValidAccess } from "@/components/lib/subscriptionUtils";
 
 export default function SubscriptionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -29,7 +30,7 @@ export default function SubscriptionPage() {
   });
 
   // Filter plans based on subscription status AND only show active plans
-  const displayPlans = (user?.subscription_status === 'active' || user?.subscription_status === 'trialing') 
+  const displayPlans = hasValidAccess(user) 
     ? [] 
     : plans.filter(plan => plan.is_active === true);
 
@@ -127,17 +128,19 @@ export default function SubscriptionPage() {
       if (result.data?.success) {
         toast.success("Subscription status synchronized!");
         
-        // Invalidate and wait for refetch before redirecting
+        // Invalidate cache en wacht op VOLLEDIGE refetch
         await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-        await queryClient.refetchQueries({ queryKey: ['currentUser'] });
         
-        // Redirect to Multiprompt if subscription/trial is now active
-        const status = result.data.subscription_status;
-        if (status === 'active' || status === 'trialing') {
+        // Wacht expliciet op verse data
+        const freshUser = await queryClient.fetchQuery({
+          queryKey: ['currentUser'],
+          queryFn: () => base44.auth.me(),
+        });
+        
+        // Check met VERSE user data, niet sync response
+        if (hasValidAccess(freshUser)) {
           toast.success("🎉 Subscription active! Redirecting...");
-          setTimeout(() => {
-            navigate(createPageUrl('Multiprompt'));
-          }, 500);
+          navigate(createPageUrl('Multiprompt'));
         }
       } else {
         toast.error(result.data?.error || "Could not sync subscription.");
@@ -171,7 +174,7 @@ export default function SubscriptionPage() {
         <h1 className="text-3xl font-bold text-slate-900">Subscriptions</h1>
       </div>
 
-      {(user?.subscription_status === 'active' || user?.subscription_status === 'trialing') && (
+      {hasValidAccess(user) && (
         <div className="mb-8 p-4 bg-indigo-50 border border-indigo-100 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-indigo-900">Your subscription is active!</h3>
