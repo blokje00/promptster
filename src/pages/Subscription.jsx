@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, CheckCircle } from "lucide-react";
+import { Loader2, CheckCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -13,6 +13,7 @@ export default function SubscriptionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [trialActivated, setTrialActivated] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -45,7 +46,7 @@ export default function SubscriptionPage() {
         planId: plan.id,
         priceId: plan.monthly_price_id,
         mode: 'subscription',
-        successUrl: window.location.origin + "/Multiprompt?session_id={CHECKOUT_SESSION_ID}",
+        successUrl: window.location.origin + "/Subscription?session_id={CHECKOUT_SESSION_ID}",
         cancelUrl: window.location.origin + "/Subscription?canceled=true"
       });
 
@@ -123,14 +124,14 @@ export default function SubscriptionPage() {
 
   const handleManageSubscription = async () => {
     if (!user?.stripe_customer_id) {
-      toast.error("We're still syncing your subscription. Please click 'Sync Status' first.");
+      toast.error("We're still syncing your subscription. Please wait a moment.");
       return;
     }
 
     setIsProcessing(true);
     try {
       const result = await base44.functions.invoke("createStripePortalSession", {
-        returnUrl: window.location.href
+        returnUrl: window.location.href + "?from=stripe_portal"
       });
       
       if (result.data?.url) {
@@ -146,9 +147,10 @@ export default function SubscriptionPage() {
     }
   };
 
-  const handleSyncStatus = async () => {
-    console.log('🔄 [Subscription] Starting sync...');
-    setIsProcessing(true);
+  // OPTIE 1: Automatische sync (geen UI knop meer)
+  const autoSyncStatus = async () => {
+    console.log('🔄 [Subscription] Starting automatic sync...');
+    setIsSyncing(true);
     try {
       console.log('📡 [Subscription] Calling syncSubscriptionStatus function...');
       const result = await base44.functions.invoke("syncSubscriptionStatus", {});
@@ -156,59 +158,32 @@ export default function SubscriptionPage() {
       console.log('📥 [Subscription] Sync result:', result.data);
       
       if (result.data?.success) {
-        toast.success("Subscription status synchronized!");
+        console.log('✅ [Subscription] Automatic sync successful');
         
-        console.log('🔄 [Subscription] Invalidating UserProfile cache...');
-        // Invalidate cache en wacht op VOLLEDIGE refetch
-        await queryClient.invalidateQueries({ queryKey: ['userProfile'] });
-        
-        console.log('🔄 [Subscription] Fetching fresh UserProfile...');
-        // Forceer verse data fetch
-        const freshProfile = await queryClient.fetchQuery({
-          queryKey: ['userProfile', user.id],
-          queryFn: () => getOrCreateUserProfile(user),
-          staleTime: 0,
-        });
-        
-        console.log('👤 [Subscription] Fresh profile data:', {
-          id: freshProfile.id,
-          email: freshProfile.email,
-          subscription_status: freshProfile.subscription_status,
-          trial_ends_at: freshProfile.trial_ends_at,
-          plan_id: freshProfile.plan_id,
-          stripe_subscription_id: freshProfile.stripe_subscription_id
-        });
+        // Invalidate cache
+        await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
         
         // Refresh auth.me() for latest subscription data
-        console.log('🔍 [Subscription] Fetching fresh user data...');
         const freshUser = await base44.auth.me();
-        const hasAccess = hasValidAccess(freshUser, freshUser);
+        const hasAccess = hasValidAccess(freshUser);
         console.log('🔐 [Subscription] Access check result:', hasAccess);
         
         if (hasAccess) {
           console.log('✅ [Subscription] Access granted - redirecting to Multiprompt');
-          toast.success("🎉 Subscription active! Redirecting...");
-          // Full page navigation om alle components te refreshen
+          // Full page navigation to refresh all components
           window.location.href = createPageUrl('Multiprompt');
-        } else {
-          console.log('❌ [Subscription] Access denied even after sync!');
-          toast.error("Subscription synced but access still denied. Please check your subscription status.");
         }
       } else {
         console.error('❌ [Subscription] Sync failed:', result.data?.error);
-        toast.error(result.data?.error || "Could not sync subscription.");
       }
     } catch (error) {
-      console.error("❌ [Subscription] Sync error:", error);
-      toast.error("Failed to sync subscription status.");
+      console.error("❌ [Subscription] Auto-sync error:", error);
     } finally {
-      setIsProcessing(false);
+      setIsSyncing(false);
     }
   };
 
-  // REMOVED: Auto-activation moved to AccessGuard to prevent activating trial when user wants to subscribe first
-
-  // Handle Multiprompt redirect with session verification
+  // OPTIE 1: Automatische sync op page load met cooldown
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     
@@ -216,8 +191,36 @@ export default function SubscriptionPage() {
     if (params.get("canceled")) {
       toast.info("Payment canceled.");
       window.history.replaceState({}, document.title, window.location.pathname);
+      return;
     }
-  }, []);
+    
+    // Check if we should auto-sync (e.g., after Stripe return or initial load)
+    const shouldSync = params.get("session_id") || params.get("from=stripe_portal") || !hasValidAccess(user);
+    
+    if (shouldSync && user?.email) {
+      // Cooldown check: don't sync more than once per minute
+      const lastSyncKey = `last_sync_${user.id}`;
+      const lastSync = localStorage.getItem(lastSyncKey);
+      const now = Date.now();
+      
+      if (!lastSync || (now - parseInt(lastSync)) > 60000) {
+        console.log('[Subscription] 🔄 Triggering automatic sync...');
+        localStorage.setItem(lastSyncKey, now.toString());
+        
+        // Small delay to show UI first
+        setTimeout(() => {
+          autoSyncStatus();
+        }, 500);
+      } else {
+        console.log('[Subscription] ⏸️ Sync cooldown active, skipping');
+      }
+    }
+    
+    // Clean URL after processing
+    if (params.get("session_id") || params.get("from=stripe_portal")) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [user]);
 
 
 
@@ -227,34 +230,36 @@ export default function SubscriptionPage() {
         <h1 className="text-3xl font-bold text-slate-900">Subscriptions</h1>
       </div>
 
-      {hasValidAccess(user, user) && (
+      {isSyncing && (
+        <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
+          <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
+          <div>
+            <h3 className="font-semibold text-blue-900">Updating subscription status...</h3>
+            <p className="text-sm text-blue-700">This will only take a moment.</p>
+          </div>
+        </div>
+      )}
+
+      {hasValidAccess(user, user) && !isSyncing && (
         <div className="mb-8 p-4 bg-indigo-50 border border-indigo-100 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-indigo-900">Your subscription is active!</h3>
             <p className="text-sm text-indigo-700">You can manage your invoices and payment method in the customer portal.</p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={handleSyncStatus} disabled={isProcessing} variant="outline" className="border-slate-200 hover:bg-slate-100 text-slate-700">
-              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sync Status"}
-            </Button>
-            <Button onClick={handleManageSubscription} disabled={isProcessing} variant="outline" className="border-indigo-200 hover:bg-indigo-100 text-indigo-700">
-              {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Manage Subscription"}
-            </Button>
-          </div>
+          <Button onClick={handleManageSubscription} disabled={isProcessing} variant="outline" className="border-indigo-200 hover:bg-indigo-100 text-indigo-700">
+            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Manage Subscription"}
+          </Button>
         </div>
       )}
 
-      {!hasValidAccess(user, user) && (!user?.subscription_status || user?.subscription_status === 'none') ? (
-        <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+      {!hasValidAccess(user, user) && !isSyncing && (!user?.subscription_status || user?.subscription_status === 'none') && (
+        <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <div>
             <h3 className="font-semibold text-yellow-900">No active subscription found</h3>
-            <p className="text-sm text-yellow-700">If you just completed payment via Stripe, click 'Sync Status' to update.</p>
+            <p className="text-sm text-yellow-700">Choose a plan below to get started, or wait a moment if you just completed payment.</p>
           </div>
-          <Button onClick={handleSyncStatus} disabled={isProcessing} className="bg-yellow-600 hover:bg-yellow-700">
-            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sync Status"}
-          </Button>
         </div>
-      ) : null}
+      )}
 
       <div className="grid gap-6">
         {displayPlans.map((plan) => (
