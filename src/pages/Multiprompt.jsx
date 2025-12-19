@@ -60,8 +60,9 @@ export default function Multiprompt() {
         return []; // Graceful fallback
       }
     },
-    enabled: !!currentUser,
-    retry: 1, // Single retry
+    enabled: !!currentUser?.email,
+    retry: false,
+    staleTime: 5 * 60 * 1000, // Cache 5min to prevent slow reloads
   });
 
   // HARDENED: Template fetch failures don't block UI
@@ -76,8 +77,9 @@ export default function Multiprompt() {
         return [];
       }
     },
-    enabled: !!currentUser,
-    retry: 1,
+    enabled: !!currentUser?.email,
+    retry: false,
+    staleTime: 5 * 60 * 1000, // Cache 5min
   });
 
   // HARDENED: AISettings can fail without blocking page
@@ -98,7 +100,16 @@ export default function Multiprompt() {
 
   const { data: subscriptionPlans = [] } = useQuery({
     queryKey: ['subscriptionPlans'],
-    queryFn: () => base44.entities.SubscriptionPlan.list(),
+    queryFn: async () => {
+      try {
+        return await base44.entities.SubscriptionPlan.list();
+      } catch (error) {
+        console.warn('[Multiprompt] SubscriptionPlan fetch failed (non-blocking):', error.message);
+        return [];
+      }
+    },
+    retry: false,
+    staleTime: 10 * 60 * 1000, // Cache 10min (rarely changes)
   });
 
   // --- Custom Hooks ---

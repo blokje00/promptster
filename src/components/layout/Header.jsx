@@ -179,18 +179,22 @@ export default function Header() {
     else if (isChecks) localStorage.setItem('lastMainPage', 'Checks');
   }, [isVault, isAddItem, isMultiprompt, isChecks]);
 
-  // Redirect on initial load
+  // Redirect on initial load - HARDENED: no auth = Features, auth + access = Multiprompt
   useEffect(() => {
     if (currentPath === "/" || currentPath === "") {
-      if (user) {
-        // If user has active trial or subscription, go to Multiprompt
-        // Otherwise stay on Features/Subscription flow
-        const hasAccess = hasValidAccess(user, user);
-        
+      if (user === null) {
+        // Not loading anymore, definitely no user → Features
+        navigate(createPageUrl('Features'), { replace: true });
+      } else if (user) {
+        // User loaded, check access
+        const hasAccess = hasValidAccess(user);
         if (hasAccess) {
           navigate(createPageUrl('Multiprompt'), { replace: true });
+        } else {
+          navigate(createPageUrl('Subscription'), { replace: true });
         }
       }
+      // else: user still loading, wait
     }
   }, [currentPath, navigate, user]);
 

@@ -83,14 +83,20 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     // Rule 3: SOFT GATE - Not logged in → redirect to Features with ?next=
     if (!currentUser) {
       const featuresPath = createPageUrl('Features').replace(window.location.origin, '');
-      if (location.pathname !== featuresPath) {
-        console.log('[AccessGuard] Status: DENIED (no auth)');
-        console.log('[AccessGuard] Action: Soft redirect to Features (save intended route)');
+      const subscriptionPath = createPageUrl('Subscription').replace(window.location.origin, '');
+      
+      // Allow Features and Subscription pages without auth
+      if (location.pathname === featuresPath || location.pathname === subscriptionPath) {
+        console.log('[AccessGuard] Status: GRANTED (public page, no auth needed)');
         console.log('[AccessGuard] ==== ACCESS CHECK END ====\n');
-        // Save intended destination
-        navigate(`${createPageUrl('Features')}?next=${encodeURIComponent(location.pathname)}`);
         return;
       }
+      
+      // Protected page without auth → soft redirect to Features
+      console.log('[AccessGuard] Status: DENIED (no auth)');
+      console.log('[AccessGuard] Action: Soft redirect to Features (save intended route)');
+      console.log('[AccessGuard] ==== ACCESS CHECK END ====\n');
+      navigate(`${createPageUrl('Features')}?next=${encodeURIComponent(location.pathname)}`, { replace: true });
       return;
     }
 
