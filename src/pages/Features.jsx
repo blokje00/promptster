@@ -129,7 +129,10 @@ function FeaturesPage() {
             </div>
             <Button 
               onClick={() => {
-                base44.auth.redirectToLogin(createPageUrl('Dashboard'));
+                // Check if there's a ?next= parameter for intended route
+                const params = new URLSearchParams(window.location.search);
+                const nextRoute = params.get('next') || createPageUrl('Multiprompt');
+                base44.auth.redirectToLogin(nextRoute);
               }}
               size="lg"
               className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold shadow-xl"

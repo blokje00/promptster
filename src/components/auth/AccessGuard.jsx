@@ -80,12 +80,17 @@ export default function AccessGuard({ children, pageType = "protected" }) {
       return;
     }
 
-    // Rule 3: Not logged in → redirect to Base44 login
+    // Rule 3: SOFT GATE - Not logged in → redirect to Features with ?next=
     if (!currentUser) {
-      console.log('[AccessGuard] Status: DENIED (no auth)');
-      console.log('[AccessGuard] Action: Redirect to login');
-      console.log('[AccessGuard] ==== ACCESS CHECK END ====\n');
-      base44.auth.redirectToLogin(window.location.href);
+      const featuresPath = createPageUrl('Features').replace(window.location.origin, '');
+      if (location.pathname !== featuresPath) {
+        console.log('[AccessGuard] Status: DENIED (no auth)');
+        console.log('[AccessGuard] Action: Soft redirect to Features (save intended route)');
+        console.log('[AccessGuard] ==== ACCESS CHECK END ====\n');
+        // Save intended destination
+        navigate(`${createPageUrl('Features')}?next=${encodeURIComponent(location.pathname)}`);
+        return;
+      }
       return;
     }
 
