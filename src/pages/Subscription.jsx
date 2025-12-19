@@ -64,34 +64,61 @@ export default function SubscriptionPage() {
 
   // Handler for no-CC trials (uses activateTrial backend, not Stripe)
   const handleStartFreeTrial = async (plan) => {
+    console.log('[Subscription] 🎯 Start Free Trial clicked');
+    toast.info('Trial activatie gestart...');
     setIsProcessing(true);
 
     try {
+      console.log('[Subscription] ⏳ Invoking activateTrial function...');
       // Activate trial via backend (no Stripe needed)
       const response = await base44.functions.invoke('activateTrial', {
         planId: plan.id
       });
 
+      console.log('[Subscription] 📥 activateTrial response:', response.data);
+
       if (response.data?.success) {
+        console.log('[Subscription] ✅ Trial activation successful, fetching fresh user data...');
+        
         // Seed demo data for new users
         await base44.functions.invoke('seedDemoData', {});
 
-        toast.success('🎉 Free trial activated!', {
-          description: `${plan.trial_days} days of full access to all features`
+        // CRITICAL: Invalidate currentUser cache and fetch fresh auth data
+        await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        
+        // Force fresh auth.me() call (bypasses React Query cache)
+        const freshUser = await base44.auth.me();
+        console.log('[Subscription] 👤 Fresh user data:', {
+          email: freshUser.email,
+          subscription_status: freshUser.subscription_status,
+          trial_ends_at: freshUser.trial_ends_at,
+          plan_id: freshUser.plan_id
         });
 
-        // Refresh UserProfile
-        await queryClient.invalidateQueries({ queryKey: ['userProfile'] });
-        await queryClient.refetchQueries({ queryKey: ['userProfile'] });
+        // Verify trial is actually active
+        const hasAccess = hasValidAccess(freshUser);
+        console.log('[Subscription] 🔐 Access check result:', hasAccess);
 
-        // Navigate immediately after data refresh
-        navigate(createPageUrl('Multiprompt'));
+        if (freshUser.subscription_status === 'trialing' && hasAccess) {
+          toast.success('🎉 Trial succesvol geactiveerd! Doorsturen...', {
+            description: `${plan.trial_days} dagen volledige toegang`
+          });
+
+          console.log('[Subscription] 🚀 Hard redirect to Multiprompt');
+          // Hard redirect to ensure full app state reset
+          window.location.href = createPageUrl('Multiprompt');
+        } else {
+          console.error('[Subscription] ❌ Trial niet correct geactiveerd:', freshUser);
+          toast.error('Trial activatie is mislukt of heeft de gebruiker niet correct bijgewerkt. Synchronisatie vereist.');
+          setIsProcessing(false);
+        }
       } else {
+        console.error('[Subscription] ❌ activateTrial failed:', response.data?.error);
         toast.error(response.data?.error || 'Failed to activate trial');
         setIsProcessing(false);
       }
     } catch (error) {
-      console.error("Trial activation error:", error);
+      console.error('[Subscription] ❌ Trial activation error:', error);
       toast.error("Something went wrong starting the trial.");
       setIsProcessing(false);
     }
