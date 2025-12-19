@@ -83,6 +83,15 @@ export default function AdminStats() {
     enabled: currentUser?.role === 'admin',
   });
 
+  const { data: allUserProfiles = [], isLoading: loadingProfiles } = useQuery({
+    queryKey: ['allUserProfiles'],
+    queryFn: async () => {
+      const profiles = await base44.entities.UserProfile.list();
+      return profiles || [];
+    },
+    enabled: currentUser?.role === 'admin',
+  });
+
   const { data: pageViews = [], isLoading: loadingViews } = useQuery({
     queryKey: ['pageViews'],
     queryFn: async () => {
@@ -132,15 +141,17 @@ export default function AdminStats() {
     return filteredUsers.map(user => {
       const userItems = filteredItems.filter(i => i.created_by === user.email);
       const userProjects = filteredProjects.filter(p => p.created_by === user.email);
+      const userProfile = allUserProfiles.find(p => p.email === user.email);
       return {
         ...user,
         itemsCount: userItems.length,
         projectsCount: userProjects.length,
         userItems,
-        userProjects
+        userProjects,
+        profile: userProfile
       };
     });
-  }, [filteredUsers, filteredItems, filteredProjects]);
+  }, [filteredUsers, filteredItems, filteredProjects, allUserProfiles]);
 
   // Analytics stats
   const analyticsStats = useMemo(() => {
@@ -212,7 +223,7 @@ export default function AdminStats() {
     );
   }
 
-  const isLoading = loadingUsers || loadingItems || loadingProjects || loadingThoughts || loadingViews;
+  const isLoading = loadingUsers || loadingItems || loadingProjects || loadingThoughts || loadingViews || loadingProfiles;
 
   if (isLoading) {
     return (
@@ -344,13 +355,17 @@ export default function AdminStats() {
                       const userItems = user.userItems;
                       const userProjects = user.userProjects;
                       
-                      // Calculate membership info using subscription_status field
+                      // Get subscription data from UserProfile
+                      const profile = user.profile;
+                      const subscriptionStatus = profile?.subscription_status || 'none';
+                      const trialEnd = profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null;
+                      const planId = profile?.plan_id;
+                      
                       const createdDate = user.created_date ? new Date(user.created_date) : null;
-                      const trialEnd = user.trial_ends_at ? new Date(user.trial_ends_at) : null;
                       const now = new Date();
                       
                       // Calculate trial start (14 days before end if trialing)
-                      const trialStart = trialEnd && user.subscription_status === 'trialing' 
+                      const trialStart = trialEnd && subscriptionStatus === 'trialing' 
                         ? new Date(trialEnd.getTime() - (14 * 24 * 60 * 60 * 1000)) 
                         : null;
                       
@@ -373,7 +388,7 @@ export default function AdminStats() {
                         'incomplete': { label: 'Incomplete', color: 'bg-yellow-100 text-yellow-700', icon: null }
                       };
                       
-                      const currentStatus = statusConfig[user.subscription_status || 'none'] || statusConfig['none'];
+                      const currentStatus = statusConfig[subscriptionStatus] || statusConfig['none'];
                       const StatusIcon = currentStatus.icon;
 
                       // CALCULATE GROWTH AND ACTIONS
@@ -433,8 +448,8 @@ export default function AdminStats() {
                             ) : "—"}
                           </td>
                           <td className="py-3">
-                            <Badge variant={user.plan_id ? "default" : "secondary"}>
-                              {user.plan_id || "Free"}
+                            <Badge variant={planId ? "default" : "secondary"}>
+                              {planId || "Free"}
                             </Badge>
                           </td>
                           <td className="py-3">
@@ -450,7 +465,7 @@ export default function AdminStats() {
                                 <div className="text-xs font-medium">
                                   End: {format(trialEnd, 'dd-MM-yyyy')}
                                 </div>
-                                {user.subscription_status === 'trialing' && trialEnd > now && (
+                                {subscriptionStatus === 'trialing' && trialEnd > now && (
                                   <div className="text-xs text-blue-600 font-semibold">
                                     {daysRemaining} dagen over
                                   </div>
