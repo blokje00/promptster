@@ -1,4 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import Stripe from 'npm:stripe@17.5.0';
+
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'), {
+  apiVersion: '2024-12-18.acacia',
+});
 
 // Helper: Get or create UserProfile
 async function getOrCreateProfile(base44Client, authUser) {
@@ -94,14 +99,60 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invalid plan ID' }, { status: 400 });
     }
 
-    // Activate trial with plan_id in UserProfile
-    const now = new Date();
-    const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // 14 days from now
+    if (!selectedPlan.monthly_price_id) {
+      return Response.json({ error: 'Plan has no Stripe price ID configured' }, { status: 400 });
+    }
 
+    // Step 1: Create or retrieve Stripe Customer
+    let stripeCustomerId = userProfile.stripe_customer_id;
+    
+    if (!stripeCustomerId) {
+      console.log('[activateTrial] Creating Stripe Customer...');
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: user.full_name || user.email,
+        metadata: {
+          user_id: user.id,
+          plan_id: planId
+        }
+      });
+      stripeCustomerId = customer.id;
+      console.log('[activateTrial] Stripe Customer created:', stripeCustomerId);
+    } else {
+      console.log('[activateTrial] Using existing Stripe Customer:', stripeCustomerId);
+    }
+
+    // Step 2: Calculate trial end (14 days from now)
+    const now = new Date();
+    const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const trialEndUnix = Math.floor(trialEnd.getTime() / 1000);
+
+    // Step 3: Create Stripe Subscription in trialing status
+    console.log('[activateTrial] Creating Stripe Subscription...');
+    const subscription = await stripe.subscriptions.create({
+      customer: stripeCustomerId,
+      items: [{ price: selectedPlan.monthly_price_id }],
+      trial_end: trialEndUnix,
+      payment_behavior: 'default_incomplete',
+      payment_settings: {
+        save_default_payment_method: 'on_subscription'
+      },
+      metadata: {
+        user_id: user.id,
+        plan_id: planId,
+        trial_type: 'no_cc_required'
+      }
+    });
+
+    console.log('[activateTrial] Stripe Subscription created:', subscription.id, 'Status:', subscription.status);
+
+    // Step 4: Update UserProfile with Stripe data
     await base44.asServiceRole.entities.UserProfile.update(userProfile.id, {
       subscription_status: 'trialing',
       trial_ends_at: trialEnd.toISOString(),
-      plan_id: planId
+      plan_id: planId,
+      stripe_customer_id: stripeCustomerId,
+      stripe_subscription_id: subscription.id
     });
 
     console.log(`[activateTrial] Trial activated for ${user.email} until ${trialEnd.toISOString()}`);
@@ -110,7 +161,9 @@ Deno.serve(async (req) => {
       success: true,
       profile_id: userProfile.id,
       trial_ends_at: trialEnd.toISOString(),
-      days_remaining: 14
+      days_remaining: 14,
+      stripe_customer_id: stripeCustomerId,
+      stripe_subscription_id: subscription.id
     });
 
   } catch (error) {
