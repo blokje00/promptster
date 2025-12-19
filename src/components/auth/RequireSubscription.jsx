@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
+import { hasValidAccess } from '@/components/lib/subscriptionUtils';
 
 export default function RequireSubscription({ children }) {
   const navigate = useNavigate();
@@ -19,14 +20,8 @@ export default function RequireSubscription({ children }) {
       if (!user) {
          base44.auth.redirectToLogin(location.pathname);
       } else {
-         // Check trial or subscription
-         const hasValidTrial = user.trial_ends_at && new Date(user.trial_ends_at) > new Date();
-         const hasActivePlan = user.plan_id === 'starter' || 
-                               user.plan_id === 'pro' || 
-                               (user.subscription_status === 'active' && !!user.plan_id) ||
-                               user.plan_id === 'prod_TVmxD3pUgsBYrn';
-
-         if (!hasValidTrial && !hasActivePlan) {
+         // Check trial or subscription using centralized utility
+         if (!hasValidAccess(user)) {
             navigate('/Subscription');
          }
       }
@@ -41,13 +36,7 @@ export default function RequireSubscription({ children }) {
     );
   }
 
-  const hasValidTrial = user.trial_ends_at && new Date(user.trial_ends_at) > new Date();
-  const hasActivePlan = user.plan_id === 'starter' || 
-                        user.plan_id === 'pro' || 
-                        (user.subscription_status === 'active' && !!user.plan_id) ||
-                        user.plan_id === 'prod_TVmxD3pUgsBYrn';
-
-  if (!hasValidTrial && !hasActivePlan) {
+  if (!hasValidAccess(user)) {
     return null; // Will redirect
   }
 
