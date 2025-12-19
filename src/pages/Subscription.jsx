@@ -131,16 +131,18 @@ export default function SubscriptionPage() {
         // Invalidate cache en wacht op VOLLEDIGE refetch
         await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
         
-        // Wacht expliciet op verse data
+        // Forceer verse data fetch
         const freshUser = await queryClient.fetchQuery({
           queryKey: ['currentUser'],
           queryFn: () => base44.auth.me(),
+          staleTime: 0,
         });
         
-        // Check met VERSE user data, niet sync response
+        // Check met VERSE user data
         if (hasValidAccess(freshUser)) {
           toast.success("🎉 Subscription active! Redirecting...");
-          navigate(createPageUrl('Multiprompt'));
+          // Full page navigation om alle components te refreshen
+          window.location.href = createPageUrl('Multiprompt');
         }
       } else {
         toast.error(result.data?.error || "Could not sync subscription.");
@@ -191,7 +193,7 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {!user?.subscription_status || user?.subscription_status === 'none' ? (
+      {!hasValidAccess(user) && (!user?.subscription_status || user?.subscription_status === 'none') ? (
         <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-yellow-900">No active subscription found</h3>
