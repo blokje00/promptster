@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Sparkles, Clock } from 'lucide-react';
+import { getTrialEndDate } from '@/components/lib/subscriptionUtils';
 
 export default function TrialBanner() {
   const navigate = useNavigate();
@@ -24,12 +25,16 @@ export default function TrialBanner() {
     enabled: !!user,
   });
 
-  // Only show banner if user is on active trial (subscription_status can be 'trial' or 'trialing')
-  if (!trialStatus?.isTrialActive || (trialStatus?.subscription_status !== 'trial' && trialStatus?.subscription_status !== 'trialing')) {
+  // Check trial using centralized utility
+  const trialEndDate = getTrialEndDate(user);
+  const isTrialing = user?.subscription_status === 'trialing' && trialEndDate && new Date(trialEndDate) > new Date();
+
+  // Only show banner if user is on active trial
+  if (!isTrialing) {
     return null;
   }
 
-  const daysRemaining = trialStatus.daysRemaining || 0;
+  const daysRemaining = trialStatus?.daysRemaining || Math.ceil((new Date(trialEndDate) - new Date()) / (1000 * 60 * 60 * 24));
 
   return (
     <div className="mb-6 rounded-xl border-2 border-indigo-200 dark:border-indigo-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 p-4 shadow-sm">
