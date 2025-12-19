@@ -57,10 +57,10 @@ export default function AccessGuard({ children, pageType = "protected" }) {
 
     // REMOVED: Auto-trial activation - Stripe Payment Links handle trials
     // Users must complete Stripe checkout to activate subscription/trial
-    if (!hasActiveSubscription) {
+    if (!hasActiveSubscription && location.pathname !== createPageUrl('Subscription').replace(window.location.origin, '')) {
       navigate(createPageUrl('Subscription'));
     }
-  }, [currentUser, isLoading, pageType, navigate]);
+  }, [currentUser, isLoading, pageType, navigate, location]);
 
   // --- Render Logic ---
 

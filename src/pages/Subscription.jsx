@@ -126,7 +126,10 @@ export default function SubscriptionPage() {
       
       if (result.data?.success) {
         toast.success("Subscription status synchronized!");
+        
+        // Invalidate and wait for refetch before redirecting
         await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        await queryClient.refetchQueries({ queryKey: ['currentUser'] });
         
         // Redirect to Multiprompt if subscription/trial is now active
         const status = result.data.subscription_status;
@@ -134,7 +137,7 @@ export default function SubscriptionPage() {
           toast.success("🎉 Subscription active! Redirecting...");
           setTimeout(() => {
             navigate(createPageUrl('Multiprompt'));
-          }, 1000);
+          }, 500);
         }
       } else {
         toast.error(result.data?.error || "Could not sync subscription.");
