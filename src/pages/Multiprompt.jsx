@@ -80,10 +80,20 @@ export default function Multiprompt() {
     retry: 1,
   });
 
+  // HARDENED: AISettings can fail without blocking page
   const { data: aiSettings = [] } = useQuery({
     queryKey: ['aiSettings', currentUser?.email],
-    queryFn: async () => currentUser ? await base44.entities.AISettings.filter({ created_by: currentUser.email }) : [],
-    enabled: !!currentUser
+    queryFn: async () => {
+      try {
+        if (!currentUser?.email) return [];
+        return await base44.entities.AISettings.filter({ created_by: currentUser.email });
+      } catch (error) {
+        console.warn('[Multiprompt] AISettings fetch failed (non-blocking):', error.message);
+        return []; // Graceful fallback - use defaults
+      }
+    },
+    enabled: !!currentUser?.email,
+    retry: false,
   });
 
   const { data: subscriptionPlans = [] } = useQuery({

@@ -171,9 +171,20 @@ export default function AIBackoffice() {
   const [settingsId, setSettingsId] = useState(null);
   const [exampleIndex, setExampleIndex] = useState(0);
 
+  // HARDENED: AISettings can fail without blocking page
   const { data: settings = [] } = useQuery({
-    queryKey: ['aiSettings'],
-    queryFn: async () => await base44.entities.AISettings.list() || [],
+    queryKey: ['aiSettings', currentUser?.email],
+    queryFn: async () => {
+      try {
+        if (!currentUser?.email) return [];
+        return await base44.entities.AISettings.filter({ created_by: currentUser.email }) || [];
+      } catch (error) {
+        console.warn('[AIBackoffice] AISettings fetch failed (non-blocking):', error.message);
+        return []; // Graceful fallback - use defaults
+      }
+    },
+    enabled: !!currentUser?.email,
+    retry: false,
   });
 
   const { data: currentUser } = useQuery({

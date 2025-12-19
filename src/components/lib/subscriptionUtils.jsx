@@ -92,3 +92,44 @@ export function getAccessDeniedReason(user) {
   if (user.subscription_status === 'canceled') return 'subscription_canceled';
   return 'unknown';
 }
+
+/**
+ * Get subscription state with fallback behavior
+ * CRITICAL: Missing status = treat as Free (not denied)
+ * 
+ * @param {Object} user - User object from base44.auth.me()
+ * @returns {Object} - { tier: "free"|"trial"|"active", isValidAccess: boolean, trialEnd?: Date|null }
+ */
+export function getSubscriptionState(user) {
+  if (!user) {
+    return { tier: 'free', isValidAccess: false, trialEnd: null };
+  }
+
+  // Admin always has access
+  if (user.role === 'admin') {
+    return { tier: 'active', isValidAccess: true, trialEnd: null };
+  }
+
+  // Active subscription
+  if (user.subscription_status === 'active') {
+    return { tier: 'active', isValidAccess: true, trialEnd: null };
+  }
+
+  // Valid trial
+  if (user.subscription_status === 'trialing') {
+    const trialEnd = getTrialEndDate(user);
+    if (trialEnd) {
+      const endDate = new Date(trialEnd);
+      const isValid = endDate > new Date();
+      return { 
+        tier: 'trial', 
+        isValidAccess: isValid, 
+        trialEnd: endDate 
+      };
+    }
+  }
+
+  // Unknown/missing status = treat as Free (allows navigation, no premium features)
+  // CRITICAL: This prevents Stripe sync timing issues from blocking the app
+  return { tier: 'free', isValidAccess: false, trialEnd: null };
+}

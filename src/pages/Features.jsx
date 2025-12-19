@@ -33,9 +33,18 @@ function FeaturesPage() {
     retry: false,
   });
 
+  // HARDENED: FeatureBlock can fail without crashing page
   const { data: blocks = [] } = useQuery({
     queryKey: ['featureBlocks'],
-    queryFn: () => base44.entities.FeatureBlock.list("order"),
+    queryFn: async () => {
+      try {
+        return await base44.entities.FeatureBlock.list("order");
+      } catch (error) {
+        console.warn('[Features] FeatureBlock fetch failed (non-blocking):', error.message);
+        return []; // Graceful fallback - use hardcoded features
+      }
+    },
+    retry: false,
   });
 
   const isAdmin = currentUser?.role === 'admin';
