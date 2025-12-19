@@ -1,5 +1,20 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
+// Helper: Get or create UserProfile
+async function getOrCreateProfile(base44Client, authUser) {
+  if (!authUser?.id) throw new Error('User required');
+  
+  const existing = await base44Client.asServiceRole.entities.UserProfile.filter({ user_id: authUser.id });
+  if (existing && existing.length > 0) return existing[0];
+  
+  return await base44Client.asServiceRole.entities.UserProfile.create({
+    user_id: authUser.id,
+    email: authUser.email,
+    subscription_status: 'none',
+    created_by: authUser.email
+  });
+}
+
 /**
  * Activates a 14-day free trial for the user
  * Only works if user has no active trial or subscription
@@ -25,34 +40,38 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('[activateTrial] User status check:', {
+    // Get UserProfile (source of truth)
+    let userProfile = await getOrCreateProfile(base44, user);
+    console.log('[activateTrial] UserProfile found/created:', userProfile.id);
+
+    console.log('[activateTrial] Status check:', {
       email: user.email,
-      subscription_status: user.subscription_status,
-      trial_end: user.trial_end,
-      trial_start: user.trial_start
+      profile_id: userProfile.id,
+      subscription_status: userProfile.subscription_status,
+      trial_ends_at: userProfile.trial_ends_at
     });
 
     // Check if user already has trial or subscription
-    if (user.subscription_status === 'trialing') {
-      const trialEnd = user.trial_end ? new Date(user.trial_end) : null;
+    if (userProfile.subscription_status === 'trialing') {
+      const trialEnd = userProfile.trial_ends_at ? new Date(userProfile.trial_ends_at) : null;
       const now = new Date();
       
-      // If trial_end is in the future, it's still active
+      // If trial_ends_at is in the future, it's still active
       if (trialEnd && trialEnd > now) {
         return Response.json({ 
           error: 'Trial already active',
-          trial_end: user.trial_end 
+          trial_ends_at: userProfile.trial_ends_at 
         }, { status: 400 });
       }
       
-      // If trial_end is in the past, allow re-activation for testing
+      // If trial_ends_at is in the past, allow re-activation for testing
       console.log('[activateTrial] WARNING: Re-activating expired trial for testing');
     }
 
-    if (user.subscription_status === 'active') {
+    if (userProfile.subscription_status === 'active') {
       return Response.json({ 
         error: 'Already subscribed',
-        plan_id: user.plan_id 
+        plan_id: userProfile.plan_id 
       }, { status: 400 });
     }
 
@@ -75,14 +94,13 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invalid plan ID' }, { status: 400 });
     }
 
-    // Activate trial with plan_id
+    // Activate trial with plan_id in UserProfile
     const now = new Date();
     const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000); // 14 days from now
 
-    await base44.auth.updateMe({
+    await base44.asServiceRole.entities.UserProfile.update(userProfile.id, {
       subscription_status: 'trialing',
-      trial_start: now.toISOString(),
-      trial_end: trialEnd.toISOString(),
+      trial_ends_at: trialEnd.toISOString(),
       plan_id: planId
     });
 
@@ -90,8 +108,8 @@ Deno.serve(async (req) => {
 
     return Response.json({
       success: true,
-      trial_start: now.toISOString(),
-      trial_end: trialEnd.toISOString(),
+      profile_id: userProfile.id,
+      trial_ends_at: trialEnd.toISOString(),
       days_remaining: 14
     });
 

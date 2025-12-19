@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import StartTrialModal from "./StartTrialModal";
 import { hasValidAccess } from "@/components/lib/subscriptionUtils";
+import { getOrCreateUserProfile } from "@/components/lib/userProfileHelper";
 
 /**
  * AccessGuard - Protects pages based on subscription status
@@ -19,10 +20,22 @@ export default function AccessGuard({ children, pageType = "protected" }) {
   const location = useLocation();
   const [showTrialModal, setShowTrialModal] = useState(false);
 
-  const { data: currentUser, isLoading } = useQuery({
+  const { data: currentUser, isLoading: isUserLoading } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me().catch(() => null),
   });
+
+  // Fetch UserProfile (source of truth voor subscription)
+  const { data: userProfile, isLoading: isProfileLoading } = useQuery({
+    queryKey: ['userProfile', currentUser?.id],
+    queryFn: async () => {
+      if (!currentUser) return null;
+      return await getOrCreateUserProfile(currentUser);
+    },
+    enabled: !!currentUser,
+  });
+
+  const isLoading = isUserLoading || (currentUser && isProfileLoading);
 
   // Render StartTrialModal consistently at the bottom
   const renderWithModal = (content) => (
@@ -42,11 +55,12 @@ export default function AccessGuard({ children, pageType = "protected" }) {
       isLoading,
       pageType,
       pathname: location.pathname,
-      user: currentUser ? {
-        email: currentUser.email,
-        subscription_status: currentUser.subscription_status,
-        trial_end: currentUser.trial_end,
-        plan_id: currentUser.plan_id
+      user: currentUser?.email,
+      profile: userProfile ? {
+        id: userProfile.id,
+        subscription_status: userProfile.subscription_status,
+        trial_ends_at: userProfile.trial_ends_at,
+        plan_id: userProfile.plan_id
       } : null
     });
 
@@ -69,19 +83,23 @@ export default function AccessGuard({ children, pageType = "protected" }) {
       return;
     }
 
-    // Check 2: Subscription status using centralized utility
-    const hasActiveSubscription = hasValidAccess(currentUser);
+    // Check 2: No profile yet (wordt aangemaakt via query)
+    if (!userProfile) {
+      console.log('⏳ [AccessGuard] Waiting for profile...');
+      return;
+    }
+
+    // Check 3: Subscription status via UserProfile
+    const hasActiveSubscription = hasValidAccess(userProfile);
     console.log('🔐 [AccessGuard] Access check result:', { hasActiveSubscription });
 
-    // REMOVED: Auto-trial activation - Stripe Payment Links handle trials
-    // Users must complete Stripe checkout to activate subscription/trial
     if (!hasActiveSubscription && location.pathname !== createPageUrl('Subscription').replace(window.location.origin, '')) {
       console.log('⚠️ [AccessGuard] No active subscription - redirecting to Subscription page');
       navigate(createPageUrl('Subscription'));
     } else if (hasActiveSubscription) {
       console.log('✅ [AccessGuard] User has valid access - rendering protected content');
     }
-  }, [currentUser, isLoading, pageType, navigate, location]);
+  }, [currentUser, userProfile, isLoading, pageType, navigate, location]);
 
   // --- Render Logic ---
 
@@ -101,7 +119,7 @@ export default function AccessGuard({ children, pageType = "protected" }) {
   // The useEffect will handle the redirect if access is denied.
   // While waiting for the redirect, we show the spinner to prevent flashing protected content.
 
-  if (!currentUser) {
+  if (!currentUser || !userProfile) {
     return renderWithModal(
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -109,7 +127,7 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     );
   }
 
-  const hasActiveSubscription = hasValidAccess(currentUser);
+  const hasActiveSubscription = hasValidAccess(userProfile);
 
   if (!hasActiveSubscription) {
     return renderWithModal(

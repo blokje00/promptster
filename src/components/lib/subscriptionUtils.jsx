@@ -1,36 +1,35 @@
 /**
  * Centrale utility functies voor subscription/trial access checks
- * Gebruikt door AccessGuard, Header, RequireSubscription, etc.
+ * BELANGRIJK: Gebruikt nu UserProfile als source of truth (niet auth user)
  */
 
-export function hasValidAccess(user) {
-  console.log('🔍 [subscriptionUtils] hasValidAccess called with user:', {
-    email: user?.email,
-    subscription_status: user?.subscription_status,
-    trial_end: user?.trial_end,
-    trial_ends_at: user?.trial_ends_at,
-    plan_id: user?.plan_id,
-    stripe_subscription_id: user?.stripe_subscription_id,
-    stripe_customer_id: user?.stripe_customer_id
+export function hasValidAccess(userProfile) {
+  console.log('🔍 [subscriptionUtils] hasValidAccess called with profile:', {
+    id: userProfile?.id,
+    user_id: userProfile?.user_id,
+    email: userProfile?.email,
+    subscription_status: userProfile?.subscription_status,
+    trial_ends_at: userProfile?.trial_ends_at,
+    plan_id: userProfile?.plan_id,
+    stripe_subscription_id: userProfile?.stripe_subscription_id
   });
 
-  if (!user) {
-    console.log('❌ [subscriptionUtils] No user - DENIED');
+  if (!userProfile) {
+    console.log('❌ [subscriptionUtils] No profile - DENIED');
     return false;
   }
   
   // Check active subscription
-  if (user.subscription_status === 'active') {
+  if (userProfile.subscription_status === 'active') {
     console.log('✅ [subscriptionUtils] Active subscription - GRANTED');
     return true;
   }
   
-  // Check valid trial - support BEIDE veldnamen voor backwards compatibility
-  const trialEnd = user.trial_end || user.trial_ends_at;
-  if (user.subscription_status === 'trialing' && trialEnd) {
-    const isValid = new Date(trialEnd) > new Date();
+  // Check valid trial
+  if (userProfile.subscription_status === 'trialing' && userProfile.trial_ends_at) {
+    const isValid = new Date(userProfile.trial_ends_at) > new Date();
     console.log('🔍 [subscriptionUtils] Trial check:', {
-      trialEnd,
+      trial_ends_at: userProfile.trial_ends_at,
       now: new Date().toISOString(),
       isValid
     });
@@ -47,17 +46,17 @@ export function hasValidAccess(user) {
   return false;
 }
 
-export function getTrialEndDate(user) {
-  return user?.trial_end || user?.trial_ends_at || null;
+export function getTrialEndDate(userProfile) {
+  return userProfile?.trial_ends_at || null;
 }
 
-export function getAccessDeniedReason(user) {
-  if (!user) return 'not_logged_in';
-  if (!user.subscription_status || user.subscription_status === 'none') return 'no_subscription';
-  if (user.subscription_status === 'trialing') {
-    const trialEnd = getTrialEndDate(user);
+export function getAccessDeniedReason(userProfile) {
+  if (!userProfile) return 'not_logged_in';
+  if (!userProfile.subscription_status || userProfile.subscription_status === 'none') return 'no_subscription';
+  if (userProfile.subscription_status === 'trialing') {
+    const trialEnd = getTrialEndDate(userProfile);
     if (!trialEnd || new Date(trialEnd) <= new Date()) return 'trial_expired';
   }
-  if (user.subscription_status === 'canceled') return 'subscription_canceled';
+  if (userProfile.subscription_status === 'canceled') return 'subscription_canceled';
   return 'unknown';
 }

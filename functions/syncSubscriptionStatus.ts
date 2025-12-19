@@ -3,6 +3,21 @@ import Stripe from 'npm:stripe@14.5.0';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
 
+// Helper: Get or create UserProfile
+async function getOrCreateProfile(base44Client, authUser) {
+  if (!authUser?.id) throw new Error('User required');
+  
+  const existing = await base44Client.asServiceRole.entities.UserProfile.filter({ user_id: authUser.id });
+  if (existing && existing.length > 0) return existing[0];
+  
+  return await base44Client.asServiceRole.entities.UserProfile.create({
+    user_id: authUser.id,
+    email: authUser.email,
+    subscription_status: 'none',
+    created_by: authUser.email
+  });
+}
+
 /**
  * T-5: Syncs subscription status from Stripe to Base44 User entity
  * @param {Request} req - Expects { userId?, stripe_subscription_id? } in body
@@ -27,44 +42,24 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Allow user to sync their own subscription OR admin to sync any
-    const body = await req.json();
-    const { userId, stripe_subscription_id } = body || {};
+    // Get UserProfile (source of truth)
+    let userProfile = await getOrCreateProfile(base44, currentUser);
+    console.log('[syncSubscriptionStatus] UserProfile found/created:', userProfile.id);
 
-    let targetUser;
-
-    // If admin is syncing another user
-    if ((userId || stripe_subscription_id) && currentUser.role === 'admin') {
-      if (userId) {
-        const users = await base44.asServiceRole.entities.User.filter({ id: userId });
-        if (!users || users.length === 0) {
-          return Response.json({ error: 'User not found' }, { status: 404 });
-        }
-        targetUser = users[0];
-      } else if (stripe_subscription_id) {
-        const users = await base44.asServiceRole.entities.User.filter({ stripe_subscription_id });
-        if (!users || users.length === 0) {
-          return Response.json({ error: 'User not found for subscription' }, { status: 404 });
-        }
-        targetUser = users[0];
-      }
-    } else {
-      // User syncing their own subscription
-      targetUser = currentUser;
-    }
-
-    if (!targetUser.stripe_subscription_id && !targetUser.stripe_customer_id) {
+    if (!userProfile.stripe_subscription_id && !userProfile.stripe_customer_id) {
       // Try to find customer by email in Stripe
       try {
+        console.log('[syncSubscriptionStatus] Searching Stripe for email:', currentUser.email);
         const customers = await stripe.customers.list({
-          email: targetUser.email,
+          email: currentUser.email,
           limit: 1
         });
 
         if (customers.data.length > 0) {
           const customer = customers.data[0];
+          console.log('[syncSubscriptionStatus] Found Stripe customer:', customer.id);
           
-          // Get active subscriptions for this customer
+          // Get subscriptions for this customer
           const subscriptions = await stripe.subscriptions.list({
             customer: customer.id,
             status: 'all',
@@ -73,9 +68,10 @@ Deno.serve(async (req) => {
 
           if (subscriptions.data.length > 0) {
             const subscription = subscriptions.data[0];
+            console.log('[syncSubscriptionStatus] Found subscription:', subscription.id, subscription.status);
             
-            // Update user with found Stripe data
-            await base44.asServiceRole.entities.User.update(targetUser.id, {
+            // Update UserProfile with found Stripe data
+            await base44.asServiceRole.entities.UserProfile.update(userProfile.id, {
               stripe_customer_id: customer.id,
               stripe_subscription_id: subscription.id,
               subscription_status: subscription.status
@@ -83,7 +79,7 @@ Deno.serve(async (req) => {
 
             return Response.json({
               success: true,
-              user_id: targetUser.id,
+              profile_id: userProfile.id,
               subscription_status: subscription.status,
               message: 'Subscription linked and synced'
             });
@@ -95,13 +91,13 @@ Deno.serve(async (req) => {
 
       return Response.json({ 
         error: 'No subscription found. Please complete payment via Stripe first.',
-        user_id: targetUser.id 
+        profile_id: userProfile.id 
       }, { status: 400 });
     }
 
     // Fetch subscription from Stripe
-    console.log('[syncSubscriptionStatus] Fetching Stripe subscription:', targetUser.stripe_subscription_id);
-    const subscription = await stripe.subscriptions.retrieve(targetUser.stripe_subscription_id);
+    console.log('[syncSubscriptionStatus] Fetching Stripe subscription:', userProfile.stripe_subscription_id);
+    const subscription = await stripe.subscriptions.retrieve(userProfile.stripe_subscription_id);
     
     console.log('[syncSubscriptionStatus] Stripe subscription data:', {
       id: subscription.id,
@@ -133,18 +129,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log('[syncSubscriptionStatus] Updating user with data:', updateData);
-    await base44.asServiceRole.entities.User.update(targetUser.id, updateData);
+    console.log('[syncSubscriptionStatus] Updating UserProfile with data:', updateData);
+    await base44.asServiceRole.entities.UserProfile.update(userProfile.id, updateData);
     
-    console.log('[syncSubscriptionStatus] User updated successfully');
+    console.log('[syncSubscriptionStatus] UserProfile updated successfully');
 
     // Log activity
     try {
       await base44.asServiceRole.entities.ActivityLog.create({
-        user_id: targetUser.id,
-        user_email: targetUser.email,
+        user_id: currentUser.id,
+        user_email: currentUser.email,
         event_type: 'subscription_synced',
         payload: {
+          profile_id: userProfile.id,
           subscription_id: subscription.id,
           status: subscription.status,
           plan_id: updateData.plan_id
@@ -156,7 +153,7 @@ Deno.serve(async (req) => {
 
     return Response.json({
       success: true,
-      user_id: targetUser.id,
+      profile_id: userProfile.id,
       subscription_status: subscription.status,
       plan_id: updateData.plan_id
     });

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { hasValidAccess } from "@/components/lib/subscriptionUtils";
+import { getOrCreateUserProfile } from "@/components/lib/userProfileHelper";
 
 export default function SubscriptionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -21,6 +22,16 @@ export default function SubscriptionPage() {
     queryFn: async () => base44.auth.me(),
   });
 
+  // Fetch UserProfile (source of truth)
+  const { data: userProfile } = useQuery({
+    queryKey: ['userProfile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      return await getOrCreateUserProfile(user);
+    },
+    enabled: !!user,
+  });
+
   const { data: plans = [], isLoading } = useQuery({
     queryKey: ['subscriptionPlans'],
     queryFn: async () => {
@@ -30,7 +41,7 @@ export default function SubscriptionPage() {
   });
 
   // Filter plans based on subscription status AND only show active plans
-  const displayPlans = hasValidAccess(user) 
+  const displayPlans = hasValidAccess(userProfile) 
     ? [] 
     : plans.filter(plan => plan.is_active === true);
 
@@ -78,9 +89,9 @@ export default function SubscriptionPage() {
           description: `${plan.trial_days} days of full access to all features`
         });
 
-        // Wait for user query to refresh before redirect
-        await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-        await queryClient.refetchQueries({ queryKey: ['currentUser'] });
+        // Refresh UserProfile
+        await queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+        await queryClient.refetchQueries({ queryKey: ['userProfile'] });
 
         // Navigate immediately after data refresh
         navigate(createPageUrl('Multiprompt'));
@@ -96,7 +107,7 @@ export default function SubscriptionPage() {
   };
 
   const handleManageSubscription = async () => {
-    if (!user?.stripe_customer_id) {
+    if (!userProfile?.stripe_customer_id) {
       toast.error("We're still syncing your subscription. Please click 'Sync Status' first.");
       return;
     }
@@ -132,29 +143,30 @@ export default function SubscriptionPage() {
       if (result.data?.success) {
         toast.success("Subscription status synchronized!");
         
-        console.log('🔄 [Subscription] Invalidating user cache...');
+        console.log('🔄 [Subscription] Invalidating UserProfile cache...');
         // Invalidate cache en wacht op VOLLEDIGE refetch
-        await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        await queryClient.invalidateQueries({ queryKey: ['userProfile'] });
         
-        console.log('🔄 [Subscription] Fetching fresh user data...');
+        console.log('🔄 [Subscription] Fetching fresh UserProfile...');
         // Forceer verse data fetch
-        const freshUser = await queryClient.fetchQuery({
-          queryKey: ['currentUser'],
-          queryFn: () => base44.auth.me(),
+        const freshProfile = await queryClient.fetchQuery({
+          queryKey: ['userProfile', user.id],
+          queryFn: () => getOrCreateUserProfile(user),
           staleTime: 0,
         });
         
-        console.log('👤 [Subscription] Fresh user data:', {
-          email: freshUser.email,
-          subscription_status: freshUser.subscription_status,
-          trial_end: freshUser.trial_end,
-          plan_id: freshUser.plan_id,
-          stripe_subscription_id: freshUser.stripe_subscription_id
+        console.log('👤 [Subscription] Fresh profile data:', {
+          id: freshProfile.id,
+          email: freshProfile.email,
+          subscription_status: freshProfile.subscription_status,
+          trial_ends_at: freshProfile.trial_ends_at,
+          plan_id: freshProfile.plan_id,
+          stripe_subscription_id: freshProfile.stripe_subscription_id
         });
         
-        // Check met VERSE user data
+        // Check met VERSE profile data
         console.log('🔍 [Subscription] Checking access with fresh data...');
-        const hasAccess = hasValidAccess(freshUser);
+        const hasAccess = hasValidAccess(freshProfile);
         console.log('🔐 [Subscription] Access check result:', hasAccess);
         
         if (hasAccess) {
@@ -199,7 +211,7 @@ export default function SubscriptionPage() {
         <h1 className="text-3xl font-bold text-slate-900">Subscriptions</h1>
       </div>
 
-      {hasValidAccess(user) && (
+      {hasValidAccess(userProfile) && (
         <div className="mb-8 p-4 bg-indigo-50 border border-indigo-100 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-indigo-900">Your subscription is active!</h3>
@@ -216,7 +228,7 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {!hasValidAccess(user) && (!user?.subscription_status || user?.subscription_status === 'none') ? (
+      {!hasValidAccess(userProfile) && (!userProfile?.subscription_status || userProfile?.subscription_status === 'none') ? (
         <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-yellow-900">No active subscription found</h3>
@@ -262,7 +274,7 @@ export default function SubscriptionPage() {
               ) : null}
             </div>
             <div className="flex gap-2">
-              {user?.plan_id === plan.id && (user?.subscription_status === 'active' || user?.subscription_status === 'trialing') ? (
+              {userProfile?.plan_id === plan.id && (userProfile?.subscription_status === 'active' || userProfile?.subscription_status === 'trialing') ? (
                 <Button disabled className="bg-green-500 hover:bg-green-600 text-white">
                   Active
                 </Button>
@@ -297,7 +309,7 @@ export default function SubscriptionPage() {
           </CardContent>
         </Card>
         ))}
-        {displayPlans.length === 0 && !isLoading && user?.subscription_status !== 'active' && user?.subscription_status !== 'trialing' && (
+        {displayPlans.length === 0 && !isLoading && userProfile?.subscription_status !== 'active' && userProfile?.subscription_status !== 'trialing' && (
           <p className="text-center text-slate-500 py-12">No subscription plans available at this time.</p>
         )}
       </div>
