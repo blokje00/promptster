@@ -5,37 +5,25 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import StartTrialModal from "./StartTrialModal";
 import { hasValidAccess } from "@/components/lib/subscriptionUtils";
-import { getOrCreateUserProfile } from "@/components/lib/userProfileHelper";
 
 /**
  * AccessGuard - Protects pages based on subscription status
- * - pageType="public" or "free": accessible to everyone (Features, Legal, Support)
- * - pageType="protected" or "premium": requires auth AND valid trial/subscription
- * 
- * Note: Subscription.jsx heeft GEEN AccessGuard nodig - die pagina moet altijd
- * toegankelijk zijn zodat gebruikers hun subscription kunnen beheren.
+ * CRITICAL: Only uses base44.auth.me() - NO entity fetches
+ * - pageType="public" or "free": accessible to everyone
+ * - pageType="protected": requires auth AND valid subscription/trial
  */
 export default function AccessGuard({ children, pageType = "protected" }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [showTrialModal, setShowTrialModal] = useState(false);
 
+  // ONLY auth.me() - no entity dependencies
   const { data: currentUser, isLoading: isUserLoading } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me().catch(() => null),
   });
 
-  // Fetch UserProfile (source of truth voor subscription)
-  const { data: userProfile, isLoading: isProfileLoading } = useQuery({
-    queryKey: ['userProfile', currentUser?.id],
-    queryFn: async () => {
-      if (!currentUser) return null;
-      return await getOrCreateUserProfile(currentUser);
-    },
-    enabled: !!currentUser,
-  });
-
-  const isLoading = isUserLoading || (currentUser && isProfileLoading);
+  const isLoading = isUserLoading;
 
   // Render StartTrialModal consistently at the bottom
   const renderWithModal = (content) => (
@@ -49,19 +37,16 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     </>
   );
 
-  // Effect for handling redirects and trial activation
+  // Effect for handling redirects - ONLY uses auth.me() data
   useEffect(() => {
-    console.log('🛡️ [AccessGuard] useEffect triggered:', {
+    console.log('🛡️ [AccessGuard] Check:', {
       isLoading,
       pageType,
       pathname: location.pathname,
       user: currentUser?.email,
-      profile: userProfile ? {
-        id: userProfile.id,
-        subscription_status: userProfile.subscription_status,
-        trial_ends_at: userProfile.trial_ends_at,
-        plan_id: userProfile.plan_id
-      } : null
+      subscription_status: currentUser?.subscription_status,
+      trial_ends_at: currentUser?.trial_ends_at,
+      role: currentUser?.role
     });
 
     // Do nothing while loading
@@ -83,14 +68,8 @@ export default function AccessGuard({ children, pageType = "protected" }) {
       return;
     }
 
-    // Check 2: No profile yet (wordt aangemaakt via query)
-    if (!userProfile) {
-      console.log('⏳ [AccessGuard] Waiting for profile...');
-      return;
-    }
-
-    // Check 3: Subscription status via UserProfile (met admin bypass)
-    const hasActiveSubscription = hasValidAccess(userProfile, currentUser);
+    // Check 2: Subscription status from auth.me() (met admin bypass)
+    const hasActiveSubscription = hasValidAccess(currentUser, currentUser);
     console.log('🔐 [AccessGuard] Access check result:', { 
       hasActiveSubscription,
       isAdmin: currentUser?.role === 'admin' 
@@ -102,7 +81,7 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     } else if (hasActiveSubscription) {
       console.log('✅ [AccessGuard] User has valid access - rendering protected content');
     }
-  }, [currentUser, userProfile, isLoading, pageType, navigate, location]);
+  }, [currentUser, isLoading, pageType, navigate, location]);
 
   // --- Render Logic ---
 
@@ -130,21 +109,13 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     );
   }
 
-  // Admin bypass - admins hoeven niet te wachten op profile
+  // Admin bypass - admins hebben altijd toegang
   if (currentUser.role === 'admin') {
     return children;
   }
 
-  // Reguliere users moeten profile hebben
-  if (!userProfile) {
-    return renderWithModal(
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
-
-  const hasActiveSubscription = hasValidAccess(userProfile, currentUser);
+  // Check subscription using ONLY auth.me() data
+  const hasActiveSubscription = hasValidAccess(currentUser, currentUser);
 
   if (!hasActiveSubscription) {
     return renderWithModal(
