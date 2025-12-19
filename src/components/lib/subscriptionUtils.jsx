@@ -1,3 +1,10 @@
+// Debug logging helper - only log in dev or when explicitly enabled
+const debugLog = (...args) => {
+  if (typeof window !== 'undefined' && (import.meta.env.DEV || localStorage.getItem('debugAccess') === '1')) {
+    console.log(...args);
+  }
+};
+
 /**
  * HARDENED subscription access checker
  * 
@@ -14,19 +21,19 @@
 export function hasValidAccess(user) {
   // Defensive: null/undefined check
   if (!user) {
-    console.log('[subscriptionUtils] DENIED: No user object');
+    debugLog('[subscriptionUtils] DENIED: No user object');
     return false;
   }
 
   // Rule 1: ADMIN BYPASS - admins always have access
   if (user.role === 'admin') {
-    console.log('[subscriptionUtils] GRANTED: Admin bypass');
+    debugLog('[subscriptionUtils] GRANTED: Admin bypass');
     return true;
   }
   
   // Rule 2: Active subscription = access
   if (user.subscription_status === 'active') {
-    console.log('[subscriptionUtils] GRANTED: Active subscription');
+    debugLog('[subscriptionUtils] GRANTED: Active subscription');
     return true;
   }
   
@@ -36,7 +43,7 @@ export function hasValidAccess(user) {
     const trialEnd = user.trial_ends_at || user.trial_end;
     
     if (!trialEnd) {
-      console.log('[subscriptionUtils] DENIED: Trialing but no end date');
+      debugLog('[subscriptionUtils] DENIED: Trialing but no end date');
       return false;
     }
     
@@ -45,7 +52,7 @@ export function hasValidAccess(user) {
       const now = new Date();
       const isValid = endDate > now;
       
-      console.log('[subscriptionUtils] Trial check:', {
+      debugLog('[subscriptionUtils] Trial check:', {
         endDate: endDate.toISOString(),
         now: now.toISOString(),
         isValid,
@@ -60,7 +67,7 @@ export function hasValidAccess(user) {
   }
   
   // Rule 4: No valid subscription = no access
-  console.log('[subscriptionUtils] DENIED: No valid subscription', {
+  debugLog('[subscriptionUtils] DENIED: No valid subscription', {
     status: user.subscription_status || 'none',
     email: user.email
   });

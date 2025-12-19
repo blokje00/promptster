@@ -203,6 +203,11 @@ export default function Header() {
     const seedForNewUser = async () => {
       if (!user || !user.email) return;
       
+      // PERFORMANCE: Only seed for users with valid access
+      if (!hasValidAccess(user)) {
+        return;
+      }
+      
       // Check localStorage to prevent infinite loop
       const seedKey = `demo_seeded_${user.id}`;
       if (localStorage.getItem(seedKey)) {
