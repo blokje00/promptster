@@ -7,7 +7,7 @@ import { Loader2, CheckCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { hasValidAccess } from "@/components/lib/subscriptionUtils";
+import { hasValidAccess, hasValidLatch } from "@/components/lib/subscriptionUtils";
 
 export default function SubscriptionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -33,7 +33,8 @@ export default function SubscriptionPage() {
   });
 
   // Filter plans based on subscription status AND only show active plans
-  const displayPlans = hasValidAccess(user, user) 
+  const userHasAccess = hasValidAccess(user) || hasValidLatch();
+  const displayPlans = userHasAccess 
     ? [] 
     : plans.filter(plan => plan.is_active === true);
 
@@ -195,7 +196,8 @@ export default function SubscriptionPage() {
     }
     
     // Check if we should auto-sync (e.g., after Stripe return or initial load)
-    const shouldSync = params.get("session_id") || params.get("from=stripe_portal") || !hasValidAccess(user);
+    const userHasAccess = hasValidAccess(user) || hasValidLatch();
+    const shouldSync = params.get("session_id") || params.get("from_stripe_portal") || !userHasAccess;
     
     if (shouldSync && user?.email) {
       // Cooldown check: don't sync more than once per minute
@@ -240,7 +242,7 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {hasValidAccess(user, user) && !isSyncing && (
+      {userHasAccess && !isSyncing && (
         <div className="mb-8 p-4 bg-indigo-50 border border-indigo-100 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-indigo-900">Your subscription is active!</h3>
@@ -252,7 +254,7 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {!hasValidAccess(user, user) && !isSyncing && (!user?.subscription_status || user?.subscription_status === 'none') && (
+      {!userHasAccess && !isSyncing && (!user?.subscription_status || user?.subscription_status === 'none') && (
         <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <div>
             <h3 className="font-semibold text-yellow-900">No active subscription found</h3>

@@ -101,6 +101,53 @@ export function getAccessDeniedReason(user) {
 }
 
 /**
+ * Check if user has a valid local access latch (10min TTL fallback)
+ * Used as bridge when auth.me() doesn't have subscription fields yet
+ * 
+ * @returns {boolean} - true if valid latch exists
+ */
+export function hasValidLatch() {
+  // Debug logging helper - only in dev or with flag
+  const debugLog = (...args) => {
+    if (typeof window !== 'undefined' && (import.meta.env.DEV || localStorage.getItem('debugAccess') === '1')) {
+      console.log(...args);
+    }
+  };
+
+  try {
+    const latchString = localStorage.getItem("promptster_access_latch");
+    if (!latchString) return false;
+
+    const latch = JSON.parse(latchString);
+    const now = Date.now();
+    const setAt = new Date(latch.set_at).getTime();
+    const trialEnd = new Date(latch.trial_ends_at).getTime();
+    
+    // Latch is valid for a short period (10 minutes) AND trial is not expired
+    const latchTTL = 10 * 60 * 1000; // 10 minutes
+    const isFresh = (now - setAt) < latchTTL;
+    const isTrialActive = trialEnd > now;
+
+    if (latch.status === "trialing" && isFresh && isTrialActive) {
+      debugLog('[subscriptionUtils] GRANTED: Valid local access latch found');
+      return true;
+    }
+    
+    // Clean up expired latch
+    if (!isFresh || !isTrialActive) {
+      debugLog('[subscriptionUtils] Removing expired access latch');
+      localStorage.removeItem("promptster_access_latch");
+    }
+  } catch (e) {
+    console.error('[subscriptionUtils] Error parsing access latch:', e);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem("promptster_access_latch");
+    }
+  }
+  return false;
+}
+
+/**
  * Get subscription state with fallback behavior
  * CRITICAL: Missing status = treat as Free (not denied)
  * 

@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useNavigate, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import StartTrialModal from "./StartTrialModal";
-import { hasValidAccess } from "@/components/lib/subscriptionUtils";
+import { hasValidAccess, hasValidLatch } from "@/components/lib/subscriptionUtils";
 
 /**
  * AccessGuard - HARDENED subscription gate
@@ -41,46 +41,6 @@ export default function AccessGuard({ children, pageType = "protected" }) {
   });
 
   const isLoading = isUserLoading;
-
-  // Check local access latch (fallback when auth.me() doesn't have subscription fields)
-  const hasValidLatch = useCallback(() => {
-    // Debug logging helper - only in dev or with flag
-    const debugLog = (...args) => {
-      if (import.meta.env.DEV || (typeof localStorage !== 'undefined' && localStorage.getItem('debugAccess') === '1')) {
-        console.log(...args);
-      }
-    };
-
-    try {
-      const latchString = localStorage.getItem("promptster_access_latch");
-      if (!latchString) return false;
-
-      const latch = JSON.parse(latchString);
-      const now = Date.now();
-      const setAt = new Date(latch.set_at).getTime();
-      const trialEnd = new Date(latch.trial_ends_at).getTime();
-      
-      // Latch is valid for a short period (10 minutes) AND trial is not expired
-      const latchTTL = 10 * 60 * 1000; // 10 minutes
-      const isFresh = (now - setAt) < latchTTL;
-      const isTrialActive = trialEnd > now;
-
-      if (latch.status === "trialing" && isFresh && isTrialActive) {
-        debugLog('[AccessGuard] GRANTED: Valid local access latch found');
-        return true;
-      }
-      
-      // Clean up expired latch
-      if (!isFresh || !isTrialActive) {
-        debugLog('[AccessGuard] Removing expired access latch');
-        localStorage.removeItem("promptster_access_latch");
-      }
-    } catch (e) {
-      console.error('[AccessGuard] Error parsing access latch:', e);
-      localStorage.removeItem("promptster_access_latch"); // Clear invalid latch
-    }
-    return false;
-  }, []);
 
   // Render StartTrialModal consistently at the bottom
   const renderWithModal = (content) => (
