@@ -8,8 +8,11 @@ import { hasValidAccess } from "@/components/lib/subscriptionUtils";
 
 /**
  * AccessGuard - Protects pages based on subscription status
- * - pageType="public": accessible to everyone (Features, Legal, Support)
- * - pageType="protected": requires auth AND valid trial/subscription
+ * - pageType="public" or "free": accessible to everyone (Features, Legal, Support)
+ * - pageType="protected" or "premium": requires auth AND valid trial/subscription
+ * 
+ * Note: Subscription.jsx heeft GEEN AccessGuard nodig - die pagina moet altijd
+ * toegankelijk zijn zodat gebruikers hun subscription kunnen beheren.
  */
 export default function AccessGuard({ children, pageType = "protected" }) {
   const navigate = useNavigate();
