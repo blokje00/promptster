@@ -222,7 +222,8 @@ export default function Multiprompt() {
     mutationFn: (data) => base44.entities.Item.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
-      queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] }); // TASK-6: Reset badge
+      // TASK-2: Reset allThoughtsCount badge after save
+      queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] });
       selectedThoughtIds.forEach(id => deleteThought.mutate(id));
       setSelectedThoughtIds([]);
       promptGeneration.setImprovedPrompt("");

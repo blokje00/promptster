@@ -345,10 +345,6 @@ export default function Header() {
 
         {/* Right side: Settings */}
         <div className="flex items-center gap-1">
-          <ThemeToggleButton />
-          
-
-          
           {/* Admin items moved to dropdown */}
           {false && user?.role === 'admin' && (
             <>
@@ -413,12 +409,7 @@ export default function Header() {
                         <span>AI Backoffice</span>
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to={createPageUrl("AdminFeatures")} className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 bg-red-50/50 dark:bg-red-950/30">
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        <span>Features CMS</span>
-                      </Link>
-                    </DropdownMenuItem>
+
                     <DropdownMenuItem asChild>
                       <Link to={createPageUrl("AdminSupportTickets")} className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400 bg-red-50/50 dark:bg-red-950/30">
                         <MessageCircle className="mr-2 h-4 w-4" />
@@ -443,6 +434,12 @@ export default function Header() {
                     <MessageCircle className="mr-2 h-4 w-4" />
                     <span>Support</span>
                   </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <div className="w-full flex items-center justify-between">
+                    <span className="text-slate-700 dark:text-slate-300">Theme</span>
+                    <ThemeToggleButton />
+                  </div>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="hover:bg-slate-100 dark:hover:bg-slate-800">
                   <Link to={createPageUrl("Legal")} className="cursor-pointer text-slate-700 dark:text-slate-300">
