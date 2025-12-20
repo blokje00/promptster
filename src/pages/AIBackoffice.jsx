@@ -171,6 +171,13 @@ export default function AIBackoffice() {
   const [settingsId, setSettingsId] = useState(null);
   const [exampleIndex, setExampleIndex] = useState(0);
 
+  // Fetch currentUser FIRST (no dependencies)
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: async () => await base44.auth.me(),
+    staleTime: 30_000,
+  });
+
   // HARDENED: AISettings can fail without blocking page
   const { data: settings = [] } = useQuery({
     queryKey: ['aiSettings', currentUser?.email],
@@ -183,13 +190,8 @@ export default function AIBackoffice() {
         return []; // Graceful fallback - use defaults
       }
     },
-    enabled: !!currentUser?.email,
+    enabled: Boolean(currentUser?.email),
     retry: false,
-  });
-
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: async () => await base44.auth.me(),
   });
 
   const { data: projects = [] } = useQuery({
