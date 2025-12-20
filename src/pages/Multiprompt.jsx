@@ -194,7 +194,11 @@ export default function Multiprompt() {
   });
 
   // --- Derived State ---
-  const currentPlan = subscriptionPlans.find(p => p.id === currentUser?.plan_id) || {};
+  const currentPlan = useMemo(() => {
+    if (!currentUser) return {};
+    return subscriptionPlans.find(p => p.id === currentUser.plan_id) || {};
+  }, [currentUser, subscriptionPlans]);
+  
   const maxThoughts = currentPlan.max_thoughts || 10;
   const isLimitReached = currentUser?.role !== 'admin' && thoughts.length >= maxThoughts;
   const enableContextSuggestions = aiSettings[0]?.enable_context_suggestions !== false;
