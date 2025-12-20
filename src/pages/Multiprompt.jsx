@@ -165,7 +165,8 @@ export default function Multiprompt() {
   } = useMultipromptData({
     currentUser,
     selectedProjectId,
-    idsToAutoSelect: location.state?.retryThoughtIds
+    idsToAutoSelect: location.state?.retryThoughtIds,
+    activeProjectIds: projects.map(p => p.id) // Only count tasks from visible projects
   });
 
   // Update getProjectCount with allThoughts from useMultipromptData

@@ -64,9 +64,26 @@ export default function Header() {
     retry: false, // Don't retry badge queries
   });
 
+  // Fetch active projects to filter thoughts
+  const { data: activeProjects = [] } = useQuery({
+    queryKey: ['projects', user?.email],
+    queryFn: async () => {
+      try {
+        if (!user?.email) return [];
+        return await base44.entities.Project.filter({ created_by: user.email });
+      } catch (error) {
+        console.warn('[Header] Projects fetch failed (non-blocking):', error.message);
+        return [];
+      }
+    },
+    enabled: !!user?.email,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
   // HARDENED: Badge counts derived from CANONICAL activeThoughts query
   // This ensures Header badge always matches Multiprompt badge
-  const { data: activeThoughts = [] } = useQuery({
+  const { data: rawThoughts = [] } = useQuery({
     queryKey: ['activeThoughts', user?.email],
     queryFn: async () => {
       try {
@@ -88,7 +105,14 @@ export default function Header() {
     retry: false,
   });
   
+  // Filter: only count thoughts from active projects OR without project
+  const activeProjectIds = activeProjects.map(p => p.id);
+  const activeThoughts = rawThoughts.filter(t => 
+    !t.project_id || activeProjectIds.includes(t.project_id)
+  );
   const allThoughtsCount = activeThoughts.length;
+  
+  console.log(`[Header] Badge: ${rawThoughts.length} raw → ${activeThoughts.length} filtered (active projects)`);
 
   // HARDENED: Open tasks badge is non-critical UI feature
   const { data: openTasksCount = 0 } = useQuery({

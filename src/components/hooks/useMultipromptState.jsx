@@ -10,14 +10,15 @@ import { toast } from "sonner";
 export const useMultipromptData = ({ 
   currentUser, 
   selectedProjectId, 
-  idsToAutoSelect = []
+  idsToAutoSelect = [],
+  activeProjectIds = [] // NEW: List of active project IDs
 }) => {
   const queryClient = useQueryClient();
   const [selectedThoughtIds, setSelectedThoughtIds] = useState([]);
 
   // HARDENED: Thought fetch can fail without blocking access
   // CANONICAL QUERY - This is the SINGLE SOURCE OF TRUTH for active tasks
-  const { data: allThoughts = [], isLoading } = useQuery({
+  const { data: rawThoughts = [], isLoading } = useQuery({
     queryKey: ['activeThoughts', currentUser?.email],
     queryFn: async () => {
       try {
@@ -41,6 +42,22 @@ export const useMultipromptData = ({
     refetchOnWindowFocus: true, // Refresh when user returns to tab
     retry: 1,
   });
+
+  // Filter thoughts: only from active projects OR no project (orphaned)
+  const allThoughts = useMemo(() => {
+    if (!activeProjectIds || activeProjectIds.length === 0) {
+      // No projects loaded yet, show all thoughts
+      return rawThoughts;
+    }
+    
+    // Only show thoughts from active projects OR without project
+    const filtered = rawThoughts.filter(t => 
+      !t.project_id || activeProjectIds.includes(t.project_id)
+    );
+    
+    console.log(`[useMultipromptState] Filtered ${rawThoughts.length} → ${filtered.length} (active projects only)`);
+    return filtered;
+  }, [rawThoughts, activeProjectIds]);
 
   // Client-side filtering for view
   const thoughts = useMemo(() => {
