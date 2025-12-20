@@ -73,6 +73,19 @@ function FeaturesPage() {
     retry: false,
   });
 
+  const { data: tierAdvisorSettings = [] } = useQuery({
+    queryKey: ['tierAdvisorSettings'],
+    queryFn: async () => {
+      try {
+        return await base44.entities.TierAdvisorSettings.list() || [];
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  const showTierAdvisor = currentUser?.role === 'admin' || tierAdvisorSettings[0]?.show_on_features_page;
+
   const { data: blocks = [] } = useQuery({
     queryKey: ['featureContentBlocks'],
     queryFn: async () => {
@@ -194,10 +207,12 @@ function FeaturesPage() {
           </p>
         </div>
 
-        {/* Tier Advisor */}
-        <div className="mb-12">
-          <TierAdvisor />
-        </div>
+        {/* Tier Advisor - Admin or enabled for users */}
+        {showTierAdvisor && (
+          <div className="mb-12">
+            <TierAdvisor />
+          </div>
+        )}
 
         {/* Story Section - Pass resolved blocks and edit state */}
         <PromptsterStory 
