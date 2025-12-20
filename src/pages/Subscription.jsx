@@ -233,10 +233,12 @@ export default function SubscriptionPage() {
         <h1 className="text-3xl font-bold text-slate-900">Subscriptions</h1>
       </div>
 
-      {/* Tier Advisor */}
-      <div className="mb-8">
-        <TierAdvisor />
-      </div>
+      {/* Tier Advisor - Admin or enabled for users */}
+      {showTierAdvisor && (
+        <div className="mb-8">
+          <TierAdvisor />
+        </div>
+      )}
 
       {isSyncing && (
         <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">

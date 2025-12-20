@@ -14,6 +14,7 @@ import MaintenanceTools from "../components/settings/MaintenanceTools";
 import AIInstructionForm from "../components/settings/AIInstructionForm";
 import PersonalPreferencesForm from "../components/settings/PersonalPreferencesForm";
 import AIContextToggle from "../components/settings/AIContextToggle";
+import TierAdvisorToggles from "../components/settings/TierAdvisorToggles";
 import { toast } from "sonner";
 
 const getDefaultInstruction = () => `Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.`;
@@ -352,6 +353,7 @@ export default function AIBackoffice() {
                   isDirty={personalPrefsHook.isDirty}
                   defaultExample={DEFAULT_PERSONAL_PREFERENCES}
                 />
+                <TierAdvisorToggles currentUser={currentUser} />
                 <Card id="retry-message">
                   <CardHeader>
                     <CardTitle className="text-lg">Retry Task Message</CardTitle>
