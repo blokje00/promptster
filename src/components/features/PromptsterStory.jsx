@@ -133,7 +133,7 @@ export default function PromptsterStory({ isAdmin = false, editMode = false, res
         </div>
       </div>
 
-      {/* Solution Section */}
+      {/* Solution Section - Introducing Promptster */}
       <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 md:p-12 shadow-sm border border-slate-200 dark:border-slate-700">
         <div className="text-center max-w-3xl mx-auto mb-12">
           <Badge className="mb-4 bg-green-100 text-green-700 hover:bg-green-100 border-green-200 px-3 py-1 text-sm">
@@ -177,65 +177,7 @@ export default function PromptsterStory({ isAdmin = false, editMode = false, res
             </div>
           </div>
           <div className="order-1 md:order-2 space-y-6">
-            <h3 className="text-2xl font-bold text-slate-900">
-              <InlineEditableText
-                blockKey="story.solution.builder.title"
-                value={getContent('story.solution.builder.title')}
-                isAdmin={isAdmin}
-                editMode={editMode}
-                as="span"
-              />
-            </h3>
-            
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-slate-900 flex items-center gap-2">
-                  <span className="text-xs font-mono bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded">01</span> 
-                  <InlineEditableText
-                    blockKey="story.solution.builder.step1.title"
-                    value={getContent('story.solution.builder.step1.title')}
-                    isAdmin={isAdmin}
-                    editMode={editMode}
-                    as="span"
-                  />
-                </h4>
-                <p className="text-slate-600 mt-1">
-                  <InlineEditableText
-                    blockKey="story.solution.builder.step1.description"
-                    value={getContent('story.solution.builder.step1.description')}
-                    isAdmin={isAdmin}
-                    editMode={editMode}
-                    multiline
-                    as="span"
-                  />
-                </p>
-              </div>
-              
-              <div>
-                <h4 className="font-semibold text-slate-900 flex items-center gap-2">
-                  <span className="text-xs font-mono bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded">02</span>
-                  <InlineEditableText
-                    blockKey="story.solution.builder.step2.title"
-                    value={getContent('story.solution.builder.step2.title')}
-                    isAdmin={isAdmin}
-                    editMode={editMode}
-                    as="span"
-                  />
-                </h4>
-                <p className="text-slate-600 mt-1">
-                  <InlineEditableText
-                    blockKey="story.solution.builder.step2.description"
-                    value={getContent('story.solution.builder.step2.description')}
-                    isAdmin={isAdmin}
-                    editMode={editMode}
-                    multiline
-                    as="span"
-                  />
-                </p>
-              </div>
-            </div>
-
-            <ul className="space-y-4 border-t border-slate-100 pt-4">
+            <ul className="space-y-4">
               <li className="flex gap-3">
                 <div className="mt-1 bg-indigo-100 p-1 rounded text-indigo-600">
                   <Cpu className="w-4 h-4" />
@@ -289,6 +231,69 @@ export default function PromptsterStory({ isAdmin = false, editMode = false, res
                 </div>
               </li>
             </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Multi-Step Builder Details */}
+      <div className="bg-slate-50 dark:bg-slate-800/50 rounded-3xl p-8 md:p-12 shadow-sm border border-slate-200 dark:border-slate-700">
+        <div className="text-center max-w-3xl mx-auto mb-8">
+          <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            <InlineEditableText
+              blockKey="story.solution.builder.title"
+              value={getContent('story.solution.builder.title')}
+              isAdmin={isAdmin}
+              editMode={editMode}
+              as="span"
+            />
+          </h3>
+        </div>
+            
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+            <h4 className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-3">
+              <span className="text-xs font-mono bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded">01</span> 
+              <InlineEditableText
+                blockKey="story.solution.builder.step1.title"
+                value={getContent('story.solution.builder.step1.title')}
+                isAdmin={isAdmin}
+                editMode={editMode}
+                as="span"
+              />
+            </h4>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">
+              <InlineEditableText
+                blockKey="story.solution.builder.step1.description"
+                value={getContent('story.solution.builder.step1.description')}
+                isAdmin={isAdmin}
+                editMode={editMode}
+                multiline
+                as="span"
+              />
+            </p>
+          </div>
+          
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+            <h4 className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-3">
+              <span className="text-xs font-mono bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded">02</span>
+              <InlineEditableText
+                blockKey="story.solution.builder.step2.title"
+                value={getContent('story.solution.builder.step2.title')}
+                isAdmin={isAdmin}
+                editMode={editMode}
+                as="span"
+              />
+            </h4>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">
+              <InlineEditableText
+                blockKey="story.solution.builder.step2.description"
+                value={getContent('story.solution.builder.step2.description')}
+                isAdmin={isAdmin}
+                editMode={editMode}
+                multiline
+                as="span"
+              />
+            </p>
           </div>
         </div>
       </div>
