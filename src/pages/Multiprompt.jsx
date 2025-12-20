@@ -265,7 +265,7 @@ export default function Multiprompt() {
         toast.success("Task added");
       }
     });
-  }, [newThoughtInput, currentUser, selectedProjectId, isLimitReached, maxThoughts, createThought, triggerVisionAnalysis]);
+  }, [newThoughtInput, selectedProjectId, isLimitReached, maxThoughts, createThought, triggerVisionAnalysis, currentUser]);
 
   const handleQuickSave = useCallback(async () => {
     const content = promptGeneration.improvedPrompt || promptGeneration.generatedPrompt;
