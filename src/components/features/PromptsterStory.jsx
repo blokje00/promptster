@@ -133,93 +133,6 @@ export default function PromptsterStory({ isAdmin = false, editMode = false, res
         </div>
       </div>
 
-      {/* AI Vision Technology Section */}
-      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 rounded-3xl p-8 md:p-12 shadow-sm border border-purple-200 dark:border-purple-800">
-        <div className="text-center max-w-3xl mx-auto mb-8">
-          <Badge className="mb-4 bg-purple-100 text-purple-700 hover:bg-purple-100 border-purple-200 px-3 py-1 text-sm">
-            <InlineEditableText
-              blockKey="story.vision.badge"
-              value={getContent('story.vision.badge')}
-              isAdmin={isAdmin}
-              editMode={editMode}
-            />
-          </Badge>
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-6">
-            <InlineEditableText
-              blockKey="story.vision.title"
-              value={getContent('story.vision.title')}
-              isAdmin={isAdmin}
-              editMode={editMode}
-              multiline
-              as="span"
-            />
-          </h2>
-          <p className="text-lg text-slate-700 dark:text-slate-300 mb-4">
-            <InlineEditableText
-              blockKey="story.vision.description"
-              value={getContent('story.vision.description')}
-              isAdmin={isAdmin}
-              editMode={editMode}
-              multiline
-              as="span"
-            />
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl p-6 border border-purple-200 dark:border-purple-800">
-            <h3 className="text-lg font-bold text-purple-900 dark:text-purple-100 mb-4 flex items-center gap-2">
-              <Cpu className="w-5 h-5" />
-              <InlineEditableText
-                blockKey="story.vision.recognizes.title"
-                value={getContent('story.vision.recognizes.title')}
-                isAdmin={isAdmin}
-                editMode={editMode}
-                as="span"
-              />
-            </h3>
-            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-              {[0, 1, 2, 3].map(i => (
-                <li key={i} className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 shrink-0" />
-                  <InlineEditableText
-                    blockKey={`story.vision.recognizes.item.${i}`}
-                    value={getContent(`story.vision.recognizes.item.${i}`)}
-                    isAdmin={isAdmin}
-                    editMode={editMode}
-                    multiline
-                    as="span"
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl p-6 border border-purple-200 dark:border-purple-800">
-            <h3 className="text-lg font-bold text-purple-900 dark:text-purple-100 mb-4 flex items-center gap-2">
-              <Target className="w-5 h-5" />
-              <InlineEditableText
-                blockKey="story.vision.result.title"
-                value={getContent('story.vision.result.title')}
-                isAdmin={isAdmin}
-                editMode={editMode}
-                as="span"
-              />
-            </h3>
-            <p className="text-slate-700 dark:text-slate-300 text-lg font-medium italic">
-              <InlineEditableText
-                blockKey="story.vision.result.description"
-                value={getContent('story.vision.result.description')}
-                isAdmin={isAdmin}
-                editMode={editMode}
-                multiline
-                as="span"
-              />
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Solution Section */}
       <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 md:p-12 shadow-sm border border-slate-200 dark:border-slate-700">
         <div className="text-center max-w-3xl mx-auto mb-12">
@@ -376,6 +289,93 @@ export default function PromptsterStory({ isAdmin = false, editMode = false, res
                 </div>
               </li>
             </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* AI Vision Technology Section */}
+      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 rounded-3xl p-8 md:p-12 shadow-sm border border-purple-200 dark:border-purple-800">
+        <div className="text-center max-w-3xl mx-auto mb-8">
+          <Badge className="mb-4 bg-purple-100 text-purple-700 hover:bg-purple-100 border-purple-200 px-3 py-1 text-sm">
+            <InlineEditableText
+              blockKey="story.vision.badge"
+              value={getContent('story.vision.badge')}
+              isAdmin={isAdmin}
+              editMode={editMode}
+            />
+          </Badge>
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-slate-100 mb-6">
+            <InlineEditableText
+              blockKey="story.vision.title"
+              value={getContent('story.vision.title')}
+              isAdmin={isAdmin}
+              editMode={editMode}
+              multiline
+              as="span"
+            />
+          </h2>
+          <p className="text-lg text-slate-700 dark:text-slate-300 mb-4">
+            <InlineEditableText
+              blockKey="story.vision.description"
+              value={getContent('story.vision.description')}
+              isAdmin={isAdmin}
+              editMode={editMode}
+              multiline
+              as="span"
+            />
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl p-6 border border-purple-200 dark:border-purple-800">
+            <h3 className="text-lg font-bold text-purple-900 dark:text-purple-100 mb-4 flex items-center gap-2">
+              <Cpu className="w-5 h-5" />
+              <InlineEditableText
+                blockKey="story.vision.recognizes.title"
+                value={getContent('story.vision.recognizes.title')}
+                isAdmin={isAdmin}
+                editMode={editMode}
+                as="span"
+              />
+            </h3>
+            <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+              {[0, 1, 2, 3].map(i => (
+                <li key={i} className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-purple-600 dark:text-purple-400 mt-0.5 shrink-0" />
+                  <InlineEditableText
+                    blockKey={`story.vision.recognizes.item.${i}`}
+                    value={getContent(`story.vision.recognizes.item.${i}`)}
+                    isAdmin={isAdmin}
+                    editMode={editMode}
+                    multiline
+                    as="span"
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl p-6 border border-purple-200 dark:border-purple-800">
+            <h3 className="text-lg font-bold text-purple-900 dark:text-purple-100 mb-4 flex items-center gap-2">
+              <Target className="w-5 h-5" />
+              <InlineEditableText
+                blockKey="story.vision.result.title"
+                value={getContent('story.vision.result.title')}
+                isAdmin={isAdmin}
+                editMode={editMode}
+                as="span"
+              />
+            </h3>
+            <p className="text-slate-700 dark:text-slate-300 text-lg font-medium italic">
+              <InlineEditableText
+                blockKey="story.vision.result.description"
+                value={getContent('story.vision.result.description')}
+                isAdmin={isAdmin}
+                editMode={editMode}
+                multiline
+                as="span"
+              />
+            </p>
           </div>
         </div>
       </div>
