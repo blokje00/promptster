@@ -170,7 +170,7 @@ export default function Multiprompt() {
 
   // Update getProjectCount with allThoughts from useMultipromptData
   const getProjectCount = useCallback((pid) => {
-    return allThoughts?.filter(t => t.project_id === pid).length || 0;
+    return (allThoughts || []).filter(t => t.project_id === pid && !t.is_deleted).length;
   }, [allThoughts]);
 
   const templateSelection = useTemplateSelection(selectedProjectId, selectedProject);
