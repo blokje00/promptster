@@ -23,6 +23,19 @@ export default function SubscriptionPage() {
     queryFn: async () => base44.auth.me(),
   });
 
+  const { data: tierAdvisorSettings = [] } = useQuery({
+    queryKey: ['tierAdvisorSettings'],
+    queryFn: async () => {
+      try {
+        return await base44.entities.TierAdvisorSettings.list() || [];
+      } catch (error) {
+        return [];
+      }
+    },
+  });
+
+  const showTierAdvisor = user?.role === 'admin' || tierAdvisorSettings[0]?.show_on_subscription_page;
+
   // No UserProfile fetch needed - using auth.me() directly
 
   const { data: plans = [], isLoading } = useQuery({
