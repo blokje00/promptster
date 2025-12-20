@@ -85,6 +85,7 @@ export const useMultipromptData = ({
       }
       
       await invalidateAllThoughts();
+      queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] }); // Update badge count
       
       if (newThought?.id) {
         setSelectedThoughtIds(prev => [...prev, newThought.id]);
@@ -168,6 +169,7 @@ export const useMultipromptData = ({
     onSuccess: (_, id) => {
       invalidateAllThoughts();
       queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
+      queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] }); // Update badge count
       setSelectedThoughtIds(prev => prev.filter(tid => tid !== id));
       
       toast("Task moved to recycle bin", {
@@ -177,6 +179,7 @@ export const useMultipromptData = ({
             await base44.entities.Thought.update(id, { is_deleted: false, deleted_at: null });
             invalidateAllThoughts();
             queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
+            queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] }); // Update badge count
           }
         },
         duration: 5000
