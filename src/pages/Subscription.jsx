@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Loader2, CheckCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import TierAdvisor from "@/components/subscription/TierAdvisor";
 import { createPageUrl } from "@/utils";
 import { hasValidAccess, hasValidLatch } from "@/components/lib/subscriptionUtils";
 
@@ -230,6 +231,11 @@ export default function SubscriptionPage() {
     <div className="p-8 max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-slate-900">Subscriptions</h1>
+      </div>
+
+      {/* Tier Advisor */}
+      <div className="mb-8">
+        <TierAdvisor />
       </div>
 
       {isSyncing && (

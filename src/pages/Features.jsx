@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import PromptsterStory from "@/components/features/PromptsterStory.jsx";
 import InlineEditableText from "@/components/features/InlineEditableText";
+import TierAdvisor from "@/components/subscription/TierAdvisor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -191,6 +192,11 @@ function FeaturesPage() {
               as="span"
             />
           </p>
+        </div>
+
+        {/* Tier Advisor */}
+        <div className="mb-12">
+          <TierAdvisor />
         </div>
 
         {/* Story Section - Pass resolved blocks and edit state */}
