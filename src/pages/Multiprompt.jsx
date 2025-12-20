@@ -353,7 +353,7 @@ export default function Multiprompt() {
             selectedProjectId={selectedProjectId}
             selectedProject={selectedProject}
             onSelectProject={setSelectedProjectId}
-            allThoughtsCount={allThoughts?.length || 0}
+            allThoughtsCount={(allThoughts || []).filter(t => !t.is_deleted).length}
             getProjectCount={getProjectCount}
           />
 

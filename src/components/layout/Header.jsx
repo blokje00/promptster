@@ -81,7 +81,8 @@ export default function Header() {
       }
     },
     enabled: !!user?.email,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0, // No cache - always fresh count
+    refetchOnWindowFocus: true, // Refresh when window regains focus
     retry: false,
   });
 
