@@ -237,9 +237,15 @@ export default function Multiprompt() {
 
   // --- Handlers ---
   const handleAddThought = useCallback(() => {
+    if (!currentUser?.email) {
+      toast.error("Je moet ingelogd zijn");
+      return;
+    }
+    
     if (!newThoughtInput.newThoughtContent.trim() && newThoughtInput.newThoughtScreenshots.length === 0) return;
-    if (!currentUser?.email || isLimitReached) {
-      toast.error(isLimitReached ? `Limit reached: Max ${maxThoughts} tasks allowed` : "Je moet ingelogd zijn");
+    
+    if (isLimitReached) {
+      toast.error(`Limit reached: Max ${maxThoughts} tasks allowed`);
       return;
     }
 
@@ -265,7 +271,7 @@ export default function Multiprompt() {
         toast.success("Task added");
       }
     });
-  }, [newThoughtInput, selectedProjectId, isLimitReached, maxThoughts, createThought, triggerVisionAnalysis, currentUser]);
+  }, [currentUser, newThoughtInput, selectedProjectId, isLimitReached, maxThoughts, createThought, triggerVisionAnalysis]);
 
   const handleQuickSave = useCallback(async () => {
     const content = promptGeneration.improvedPrompt || promptGeneration.generatedPrompt;
