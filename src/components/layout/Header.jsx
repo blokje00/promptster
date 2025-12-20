@@ -64,27 +64,31 @@ export default function Header() {
     retry: false, // Don't retry badge queries
   });
 
-  // HARDENED: Badge counts are UI-only, failures don't affect access
-  const { data: allThoughtsCount = 0 } = useQuery({
-    queryKey: ['allThoughtsCount', user?.email],
+  // HARDENED: Badge counts derived from CANONICAL activeThoughts query
+  // This ensures Header badge always matches Multiprompt badge
+  const { data: activeThoughts = [] } = useQuery({
+    queryKey: ['activeThoughts', user?.email],
     queryFn: async () => {
       try {
-        if (!user?.email) return 0;
+        if (!user?.email) return [];
         const thoughts = await base44.entities.Thought.filter({ 
           created_by: user.email,
           is_deleted: false
         });
-        return thoughts?.length || 0;
+        console.log('[Header] ✓ Fetched active thoughts for badge:', thoughts?.length || 0);
+        return thoughts || [];
       } catch (error) {
-        console.warn('[Header] All thoughts count failed (non-blocking):', error.message);
-        return 0;
+        console.warn('[Header] Active thoughts fetch failed (non-blocking):', error.message);
+        return [];
       }
     },
     enabled: !!user?.email,
-    staleTime: 0, // No cache - always fresh count
-    refetchOnWindowFocus: true, // Refresh when window regains focus
+    staleTime: 0, // Always fresh
+    refetchOnWindowFocus: true,
     retry: false,
   });
+  
+  const allThoughtsCount = activeThoughts.length;
 
   // HARDENED: Open tasks badge is non-critical UI feature
   const { data: openTasksCount = 0 } = useQuery({

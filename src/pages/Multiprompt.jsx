@@ -169,8 +169,9 @@ export default function Multiprompt() {
   });
 
   // Update getProjectCount with allThoughts from useMultipromptData
+  // Note: allThoughts already filtered for is_deleted:false by canonical query
   const getProjectCount = useCallback((pid) => {
-    return (allThoughts || []).filter(t => t.project_id === pid && !t.is_deleted).length;
+    return (allThoughts || []).filter(t => t.project_id === pid).length;
   }, [allThoughts]);
 
   const templateSelection = useTemplateSelection(selectedProjectId, selectedProject);
@@ -353,7 +354,7 @@ export default function Multiprompt() {
             selectedProjectId={selectedProjectId}
             selectedProject={selectedProject}
             onSelectProject={setSelectedProjectId}
-            allThoughtsCount={(allThoughts || []).filter(t => !t.is_deleted).length}
+            allThoughtsCount={allThoughts.length}
             getProjectCount={getProjectCount}
           />
 

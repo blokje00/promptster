@@ -16,28 +16,30 @@ export const useMultipromptData = ({
   const [selectedThoughtIds, setSelectedThoughtIds] = useState([]);
 
   // HARDENED: Thought fetch can fail without blocking access
+  // CANONICAL QUERY - This is the SINGLE SOURCE OF TRUTH for active tasks
   const { data: allThoughts = [], isLoading } = useQuery({
-    queryKey: ['thoughts', { 
-      userEmail: currentUser?.email
-    }],
+    queryKey: ['activeThoughts', currentUser?.email],
     queryFn: async () => {
       try {
         if (!currentUser?.email) return [];
         
-        // Fetch ALL non-deleted thoughts for user (Client-side filtering for projects)
-        return await base44.entities.Thought.filter({ 
+        // Fetch ONLY non-deleted thoughts - server-side filter for performance
+        const thoughts = await base44.entities.Thought.filter({ 
           created_by: currentUser.email,
           is_deleted: false 
         }, "-created_date");
+        
+        console.log('[useMultipromptState] ✓ Fetched active thoughts:', thoughts?.length || 0);
+        return thoughts || [];
       } catch (error) {
         console.warn('[useMultipromptState] Thought fetch failed (non-blocking):', error.message);
         return []; // Graceful fallback - empty list, not error state
       }
     },
     enabled: !!currentUser?.email,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    retry: 1, // Single retry before fallback
+    staleTime: 0, // Always fresh
+    refetchOnWindowFocus: true, // Refresh when user returns to tab
+    retry: 1,
   });
 
   // Client-side filtering for view
@@ -65,9 +67,13 @@ export const useMultipromptData = ({
   // 3. Mutations with Global Invalidation
   const invalidateAllThoughts = async () => {
     try {
-      await queryClient.invalidateQueries({ 
-        predicate: (query) => query.queryKey[0] === 'thoughts'
-      });
+      // Invalidate ALL thought-related queries (unified approach)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['activeThoughts'] }),
+        queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] }),
+        queryClient.invalidateQueries({ queryKey: ['thoughts'] })
+      ]);
+      console.log('[useMultipromptState] ✓ Invalidated all thought caches');
     } catch (error) {
       console.error("Invalidate failed:", error);
     }
@@ -76,20 +82,18 @@ export const useMultipromptData = ({
   const createThought = useMutation({
     mutationFn: (data) => base44.entities.Thought.create(data),
     onSuccess: async (newThought) => {
-      // Optimistic update: direct toevoegen aan cache
+      // Optimistic update: direct toevoegen aan canonical cache
       if (newThought) {
-        const queryKey = ['thoughts', { 
-          userEmail: currentUser?.email
-        }];
-        queryClient.setQueryData(queryKey, (old) => [newThought, ...(old || [])]);
+        queryClient.setQueryData(['activeThoughts', currentUser?.email], (old) => [newThought, ...(old || [])]);
       }
       
       await invalidateAllThoughts();
-      queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] }); // Update badge count
       
       if (newThought?.id) {
         setSelectedThoughtIds(prev => [...prev, newThought.id]);
       }
+      
+      console.log('[useMultipromptState] ✓ Task created, badge count updated');
     },
     onError: (error) => {
       console.error("Failed to create thought:", error);
@@ -167,10 +171,16 @@ export const useMultipromptData = ({
       });
     },
     onSuccess: (_, id) => {
+      // Immediate optimistic removal from canonical cache
+      queryClient.setQueryData(['activeThoughts', currentUser?.email], (old) => 
+        (old || []).filter(t => t.id !== id)
+      );
+      
       invalidateAllThoughts();
       queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
-      queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] }); // Update badge count
       setSelectedThoughtIds(prev => prev.filter(tid => tid !== id));
+      
+      console.log('[useMultipromptState] ✓ Task deleted, badge count updated');
       
       toast("Task moved to recycle bin", {
         action: {
@@ -179,7 +189,7 @@ export const useMultipromptData = ({
             await base44.entities.Thought.update(id, { is_deleted: false, deleted_at: null });
             invalidateAllThoughts();
             queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
-            queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] }); // Update badge count
+            console.log('[useMultipromptState] ✓ Task restored, badge count updated');
           }
         },
         duration: 5000
