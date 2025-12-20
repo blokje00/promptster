@@ -37,7 +37,7 @@ export const useMultipromptData = ({
         return []; // Graceful fallback - empty list, not error state
       }
     },
-    enabled: !!currentUser?.email,
+    enabled: !!currentUser?.email && currentUser !== undefined,
     staleTime: 0, // Always fresh
     refetchOnWindowFocus: true, // Refresh when user returns to tab
     retry: 1,
