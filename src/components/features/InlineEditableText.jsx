@@ -11,7 +11,8 @@ export default function InlineEditableText({
   isAdmin, 
   editMode, 
   multiline = false,
-  className = "" 
+  className = "",
+  as: Component = "span"
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -93,15 +94,15 @@ export default function InlineEditableText({
 
   // Non-admin or not in edit mode: plain text
   if (!isAdmin || !editMode) {
-    return <span className={className}>{value}</span>;
+    return <Component className={className}>{value}</Component>;
   }
 
   // Admin in edit mode but not actively editing this block
   if (!isEditing) {
     return (
-      <span 
+      <Component 
         className={cn(
-          "inline-block cursor-pointer hover:outline hover:outline-2 hover:outline-indigo-400 hover:outline-offset-2 rounded px-1 transition-all",
+          "cursor-pointer hover:outline hover:outline-2 hover:outline-indigo-400 hover:outline-offset-2 rounded px-1 transition-all",
           className
         )}
         onClick={() => {
@@ -111,19 +112,19 @@ export default function InlineEditableText({
         title="Click to edit"
       >
         {value}
-      </span>
+      </Component>
     );
   }
 
   // Actively editing
   return (
-    <span className={cn("inline-flex items-center gap-2", className)}>
+    <Component className={cn("inline-flex items-center gap-2 flex-wrap", className)}>
       {multiline ? (
         <textarea
           ref={inputRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          className="border-2 border-indigo-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-600 w-full min-h-[60px]"
+          className="border-2 border-indigo-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-600 w-full min-h-[80px] text-base"
           onKeyDown={(e) => {
             if (e.key === 'Escape') handleCancel();
             if (e.key === 'Enter' && e.ctrlKey) handleSave();
@@ -135,7 +136,7 @@ export default function InlineEditableText({
           type="text"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          className="border-2 border-indigo-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+          className="border-2 border-indigo-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-600 w-full text-base"
           onKeyDown={(e) => {
             if (e.key === 'Escape') handleCancel();
             if (e.key === 'Enter') handleSave();
@@ -165,6 +166,6 @@ export default function InlineEditableText({
           </button>
         </>
       )}
-    </span>
+    </Component>
   );
 }
