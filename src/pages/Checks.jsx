@@ -67,7 +67,7 @@ export default function Checks() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("open");
-  const [sortConfig, setSortConfig] = useState({ key: "updated_date", direction: "desc" });
+  const [sortConfig, setSortConfig] = useState({ key: "updated_date", direction: "asc" });
   const [retryModalOpen, setRetryModalOpen] = useState(false);
   const [selectedRetryTask, setSelectedRetryTask] = useState(null);
 
@@ -318,19 +318,19 @@ export default function Checks() {
                    <th className="px-6 py-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('task_name')}>
                      <div className="flex items-center gap-2">
                        Task
-                       <ArrowUpDown className="w-3 h-3" />
+                       <ArrowUpDown className={`w-3 h-3 ${sortConfig.key === 'task_name' ? 'font-bold stroke-[3]' : ''}`} />
                      </div>
                    </th>
                    <th className="px-6 py-3 w-[160px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('project')}>
                      <div className="flex items-center gap-2">
                        Project
-                       <ArrowUpDown className="w-3 h-3" />
+                       <ArrowUpDown className={`w-3 h-3 ${sortConfig.key === 'project' ? 'font-bold stroke-[3]' : ''}`} />
                      </div>
                    </th>
                    <th className="px-6 py-3 w-[140px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('updated_date')}>
                      <div className="flex items-center gap-2">
                        Updated
-                       <ArrowUpDown className="w-3 h-3" />
+                       <ArrowUpDown className={`w-3 h-3 ${sortConfig.key === 'updated_date' ? 'font-bold stroke-[3]' : ''}`} />
                      </div>
                    </th>
                    <th className="px-6 py-3 w-[120px] text-right">Actions</th>
