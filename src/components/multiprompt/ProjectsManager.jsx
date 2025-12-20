@@ -63,10 +63,23 @@ export default function ProjectsManager({ projects = [] }) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Project.delete(id),
+    mutationFn: async (id) => {
+      // TASK-8: Delete all thoughts belonging to this project first
+      const thoughts = await base44.entities.Thought.filter({ project_id: id });
+      
+      // Delete thoughts (mark as deleted, actual cleanup separate)
+      await Promise.all(
+        thoughts.map(thought => base44.entities.Thought.update(thought.id, { is_deleted: true }))
+      );
+      
+      // Then delete the project
+      await base44.entities.Project.delete(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      toast.success("Project deleted");
+      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+      queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] }); // TASK-8: Reset badge
+      toast.success("Project and related tasks deleted");
     }
   });
 
