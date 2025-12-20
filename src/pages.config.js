@@ -39,7 +39,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "Features",
+    mainPage: "Multiprompt",
     Pages: PAGES,
     Layout: __Layout,
 };
