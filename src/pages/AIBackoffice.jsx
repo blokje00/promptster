@@ -200,7 +200,7 @@ export default function AIBackoffice() {
       if (!currentUser?.email) return [];
       return await base44.entities.Project.filter({ created_by: currentUser.email });
     },
-    enabled: !!currentUser?.email,
+    enabled: Boolean(currentUser?.email),
   });
 
   const { data: projectStructures = [] } = useQuery({
@@ -209,7 +209,7 @@ export default function AIBackoffice() {
       if (!currentUser?.email) return [];
       return await base44.entities.ProjectStructure.filter({ created_by: currentUser.email });
     },
-    enabled: !!currentUser?.email,
+    enabled: Boolean(currentUser?.email),
   });
 
   const [selectedProjectId, setSelectedProjectId] = useState("");
