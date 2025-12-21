@@ -170,7 +170,7 @@ export default function PromptsterStory({ isAdmin = false, editMode = false, res
             <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl opacity-20 blur-lg"></div>
             <div className="relative bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden min-h-[300px]">
               <img 
-                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68f4bcd57ca6479c7acf2f47/a66e5dcb4_Screenshot2025-12-07at194740.png"
+                src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68f4bcd57ca6479c7acf2f47/8b6ef1003_Screenshot2025-12-21at152627.png"
                 alt="Promptster Multi-Step Builder"
                 className="w-full h-full object-cover"
               />
