@@ -194,17 +194,20 @@ export default function Checks() {
     // Calculate parent item status
     const parentStatus = newChecks.some(c => c.status !== 'success') ? 'open' : 'success';
 
+    // If failed, show retry modal BEFORE updating (prevents status flicker)
+    if (newStatus === 'failed') {
+      setSelectedRetryTask({ ...task, originalStatus: task.status || 'open' });
+      setRetryModalOpen(true);
+      return; // Don't update yet - wait for retry modal confirmation
+    }
+
     try {
       await base44.entities.Item.update(item.id, {
         task_checks: newChecks,
         status: parentStatus
       });
 
-      // If failed, open guided retry modal
-      if (newStatus === 'failed') {
-        setSelectedRetryTask({ ...task, originalStatus: task.status || 'open' });
-        setRetryModalOpen(true);
-      } else if (newStatus === 'success') {
+      if (newStatus === 'success') {
         toast.success("Task marked as success");
       } else {
         toast.success(`Task updated to ${newStatus}`);
@@ -223,6 +226,27 @@ export default function Checks() {
       const task = selectedRetryTask;
       const item = items.find(i => i.id === task.itemId);
       if (!item) return;
+
+      // Optimistic update: immediately remove from UI
+      queryClient.setQueryData(['items', currentUser?.email], (old) => {
+        if (!old) return old;
+        return old.map(it => {
+          if (it.id === item.id) {
+            const updatedChecks = [...it.task_checks];
+            updatedChecks[task.index] = {
+              ...updatedChecks[task.index],
+              status: 'retried',
+              updated_date: new Date().toISOString()
+            };
+            return { ...it, task_checks: updatedChecks };
+          }
+          return it;
+        });
+      });
+
+      // Close modal immediately for instant feedback
+      setRetryModalOpen(false);
+      setSelectedRetryTask(null);
 
       // Create the structured retry Thought
       await base44.entities.Thought.create({
@@ -247,16 +271,14 @@ export default function Checks() {
 
       toast.success("Retry task created in Multi-Task!");
       
-      // Close modal and reset state
-      setRetryModalOpen(false);
-      setSelectedRetryTask(null);
-      
-      // Invalidate queries to refresh UI
+      // Final refetch to ensure data consistency
       queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
       queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] });
       queryClient.invalidateQueries({ queryKey: ['openTasksCount'] });
     } catch (error) {
+      // Rollback optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ['items'] });
       toast.error("Failed to create retry task");
     }
   };
