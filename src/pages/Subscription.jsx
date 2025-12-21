@@ -347,10 +347,13 @@ export default function SubscriptionPage() {
               ) : null}
             </div>
             <div className="flex gap-2">
-              {user?.plan_id === plan.id && (user?.subscription_status === 'active' || user?.subscription_status === 'trialing') ? (
-                <Button disabled className="bg-green-500 hover:bg-green-600 text-white">
-                  Active
-                </Button>
+              {/* Hide ALL buttons if user already has active or trialing status */}
+              {user?.subscription_status === 'active' || user?.subscription_status === 'trialing' ? (
+                user?.plan_id === plan.id ? (
+                  <Button disabled className="bg-green-500 hover:bg-green-600 text-white">
+                    Active
+                  </Button>
+                ) : null
               ) : !plan.is_active ? (
                 <Button disabled variant="outline" className="text-slate-400">
                   Not Available
