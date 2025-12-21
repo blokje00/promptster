@@ -17,7 +17,19 @@ import AIContextToggle from "../components/settings/AIContextToggle";
 import TierAdvisorToggles from "../components/settings/TierAdvisorToggles";
 import { toast } from "sonner";
 
-const getDefaultInstruction = () => `Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.`;
+const getDefaultInstruction = () => `You are optimizing a multi-task prompt that may include screenshots and OCR vision data.
+
+YOUR TASK:
+Improve the prompt's clarity, structure, and technical precision while keeping ALL content intact (especially JSON blocks and screenshot data).
+
+CRITICAL RULES:
+- NEVER say "I cannot access files/screenshots" - the screenshot data is embedded in the prompt as JSON
+- Keep all JSON structures exactly as they are (including ocrVision data)
+- Improve only the text instructions and formatting
+- Make the prompt more actionable and precise
+- Return ONLY the improved prompt, no meta-commentary
+
+Focus on making instructions clearer and more structured, while preserving all technical details and data.`;
 
 const DEFAULT_PERSONAL_PREFERENCES = `# My Personal Development Preferences
 
