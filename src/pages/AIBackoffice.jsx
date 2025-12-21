@@ -283,27 +283,27 @@ export default function AIBackoffice() {
   
 
 
-  const saveMutation = useMutation({
-    mutationFn: async (data) => {
+  const handleSave = async () => {
+    try {
+      const payload = {
+        improve_prompt_instruction: instruction,
+        model_preference: modelPreference,
+        enable_context_suggestions: enableContextSuggestions
+      };
+
       if (settingsId) {
-        return base44.entities.AISettings.update(settingsId, data);
+        await base44.entities.AISettings.update(settingsId, payload);
       } else {
-        return base44.entities.AISettings.create(data);
+        const created = await base44.entities.AISettings.create(payload);
+        setSettingsId(created.id);
       }
-    },
-    onSuccess: () => {
+
       queryClient.invalidateQueries({ queryKey: ['aiSettings'] });
       toast.success("AI settings saved");
-    },
-  });
-
-  const handleSave = () => {
-    saveMutation.mutate({
-      improve_prompt_instruction: instruction,
-      model_preference: modelPreference,
-      enable_context_suggestions: enableContextSuggestions
-    });
-    resetInstruction();
+      resetInstruction();
+    } catch (error) {
+      toast.error("Failed to save: " + error.message);
+    }
   };
 
   const handleSavePersonalPreferences = async () => {
@@ -404,7 +404,7 @@ export default function AIBackoffice() {
                   modelPreference={modelPreference}
                   setModelPreference={setModelPreference}
                   onSave={handleSave}
-                  isSaving={saveMutation.isPending}
+                  isSaving={false}
                   onReset={() => setInstruction(getDefaultInstruction())}
                 />
               </div>
