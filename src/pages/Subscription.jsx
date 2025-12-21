@@ -98,7 +98,7 @@ export default function SubscriptionPage() {
         console.log('[Subscription] 🔐 Access latch set:', accessLatch);
 
         // Invalidate cache for future refreshes
-        await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        await queryClient.invalidateQueries({ queryKey: ['currentUserSettings'] });
 
         toast.success('🎉 Trial succesvol geactiveerd! Doorsturen...', {
           description: `${plan.trial_days} dagen volledige toegang`
@@ -164,7 +164,7 @@ export default function SubscriptionPage() {
         console.log('✅ [Subscription] Automatic sync successful');
         
         // Invalidate cache
-        await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        await queryClient.invalidateQueries({ queryKey: ['currentUserSettings'] });
         
         // Refresh auth.me() for latest subscription data
         const freshUser = await base44.auth.me();
