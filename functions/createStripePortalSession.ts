@@ -45,12 +45,13 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
-    const origin = req.headers.get('origin') || 'https://base44.app';
-    const returnUrl = `${origin}/subscription`;
+    const { returnUrl } = await req.json().catch(() => ({}));
+    const origin = req.headers.get('origin') || 'https://promptster.app';
+    const finalReturnUrl = returnUrl || `${origin}/Subscription`;
 
     const session = await stripe.billingPortal.sessions.create({
       customer: targetUser.stripe_customer_id,
-      return_url: returnUrl,
+      return_url: finalReturnUrl,
     });
 
     // Log activity
