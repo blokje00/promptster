@@ -84,7 +84,7 @@ function FeaturesPage() {
     },
   });
 
-  const showTierAdvisor = currentUser?.role === 'admin' || tierAdvisorSettings[0]?.show_on_features_page;
+  const showTierAdvisor = (currentUser?.role === 'admin') || (tierAdvisorSettings[0]?.show_on_features_page === true);
 
   const { data: blocks = [] } = useQuery({
     queryKey: ['featureContentBlocks'],

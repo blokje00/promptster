@@ -205,23 +205,15 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
       }
 
       // Call backend function with rate limiting using enriched prompt
-      const response = await fetch('/api/functions/runPrompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: `Improve this prompt:\n${enrichedPromptWithVision}${visionContext}\n\nIMPORTANT: Return ONLY the improved prompt content.`,
-          file_urls: allScreenshotUrls.length > 0 ? allScreenshotUrls : undefined
-        })
+      const response = await base44.functions.invoke('runPrompt', {
+        prompt: `Improve this prompt:\n${enrichedPromptWithVision}${visionContext}\n\nIMPORTANT: Return ONLY the improved prompt content.`,
+        file_urls: allScreenshotUrls.length > 0 ? allScreenshotUrls : undefined
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (!response.ok) {
-        if (response.status === 429) {
-          toast.error(data.error || "Rate limit exceeded");
-        } else {
-          toast.error(data.error || "AI Improvement failed");
-        }
+      if (response.status !== 200 || data.error) {
+        toast.error(data.error || "AI Improvement failed");
         return;
       }
 

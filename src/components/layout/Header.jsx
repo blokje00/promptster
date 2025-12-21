@@ -301,7 +301,7 @@ export default function Header() {
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <img 
-            src="https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/59f339046_Promptguardlogopurplebeta.png" 
+            src="https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/495110831_Promptsterbeta.png" 
             alt="Promptster" 
             className="h-20 w-auto object-contain"
           />

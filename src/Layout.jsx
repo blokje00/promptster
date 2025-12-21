@@ -8,7 +8,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function Layout({ children }) {
   useEffect(() => {
-    const iconUrl = "https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/59f339046_Promptguardlogopurplebeta.png";
+    const iconUrl = "https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/495110831_Promptsterbeta.png";
     
     // Favicon
     let link = document.querySelector("link[rel~='icon']");
