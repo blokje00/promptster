@@ -42,42 +42,42 @@ export function hasValidAccess(user) {
     return true;
   }
   
-  // Rule 2: Active subscription = access
-  if (user.subscription_status === 'active') {
-    debugLog('[subscriptionUtils] GRANTED: Active subscription');
+  // Rule 2: Use central isPaidOrTrial helper
+  if (isPaidOrTrial(user.subscription_status)) {
+    // For trialing, verify trial hasn't expired
+    if (user.subscription_status === 'trialing') {
+      const trialEnd = user.trial_ends_at || user.trial_end;
+      
+      if (!trialEnd) {
+        debugLog('[subscriptionUtils] DENIED: Trialing but no end date');
+        return false;
+      }
+      
+      try {
+        const endDate = new Date(trialEnd);
+        const now = new Date();
+        const isValid = endDate > now;
+        
+        debugLog('[subscriptionUtils] Trial check:', {
+          endDate: endDate.toISOString(),
+          now: now.toISOString(),
+          isValid,
+          status: isValid ? 'GRANTED' : 'DENIED (expired)'
+        });
+        
+        return isValid;
+      } catch (error) {
+        console.warn('[subscriptionUtils] Invalid trial date format:', trialEnd);
+        return false;
+      }
+    }
+    
+    // Active subscription = access
+    debugLog('[subscriptionUtils] GRANTED: Active/valid subscription');
     return true;
   }
   
-  // Rule 3: Valid trial = access
-  if (user.subscription_status === 'trialing') {
-    // Support both trial_ends_at and trial_end
-    const trialEnd = user.trial_ends_at || user.trial_end;
-    
-    if (!trialEnd) {
-      debugLog('[subscriptionUtils] DENIED: Trialing but no end date');
-      return false;
-    }
-    
-    try {
-      const endDate = new Date(trialEnd);
-      const now = new Date();
-      const isValid = endDate > now;
-      
-      debugLog('[subscriptionUtils] Trial check:', {
-        endDate: endDate.toISOString(),
-        now: now.toISOString(),
-        isValid,
-        status: isValid ? 'GRANTED' : 'DENIED (expired)'
-      });
-      
-      return isValid;
-    } catch (error) {
-      console.warn('[subscriptionUtils] Invalid trial date format:', trialEnd);
-      return false;
-    }
-  }
-  
-  // Rule 4: No valid subscription = no access
+  // Rule 3: No valid subscription = no access
   debugLog('[subscriptionUtils] DENIED: No valid subscription', {
     status: user.subscription_status || 'none',
     email: user.email
