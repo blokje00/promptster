@@ -126,27 +126,40 @@ export default function SubscriptionPage() {
   };
 
   const handleManageSubscription = async () => {
+    console.log('[Subscription] Manage button clicked');
+    console.log('[Subscription] User data:', user);
+    console.log('[Subscription] Stripe customer ID:', user?.stripe_customer_id);
+    
     if (!user?.stripe_customer_id) {
+      console.warn('[Subscription] No stripe_customer_id found');
       toast.error("We're still syncing your subscription. Please wait a moment.");
       return;
     }
 
     setIsProcessing(true);
+    console.log('[Subscription] Calling createStripePortalSession...');
+    
     try {
       const result = await base44.functions.invoke("createStripePortalSession", {
         returnUrl: window.location.href + "?from=stripe_portal"
       });
       
+      console.log('[Subscription] Portal session result:', result);
+      
       if (result.data?.url) {
+        console.log('[Subscription] Opening portal URL:', result.data.url);
         window.open(result.data.url, '_blank');
+        toast.success("Opening Stripe portal...");
       } else {
+        console.error('[Subscription] No URL in response:', result);
         toast.error("Could not open customer portal.");
       }
     } catch (error) {
-      console.error("Portal error:", error);
-      toast.error("Something went wrong opening the management portal.");
+      console.error("[Subscription] Portal error:", error);
+      toast.error("Something went wrong: " + error.message);
     } finally {
       setIsProcessing(false);
+      console.log('[Subscription] Manage flow finished');
     }
   };
 
