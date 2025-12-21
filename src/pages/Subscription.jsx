@@ -36,7 +36,11 @@ export default function SubscriptionPage() {
 
   // Filter plans based on subscription status AND only show active plans
   const userHasAccess = hasValidAccess(user) || hasValidLatch();
-  const displayPlans = userHasAccess 
+  const isTrialing = user?.subscription_status === 'trialing';
+  const isActive = user?.subscription_status === 'active';
+  
+  // Show plans to trialing users so they can upgrade, hide for active users
+  const displayPlans = isActive 
     ? [] 
     : plans.filter(plan => plan.is_active === true);
 
