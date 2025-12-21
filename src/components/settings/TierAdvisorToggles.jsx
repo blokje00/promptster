@@ -53,21 +53,7 @@ export default function TierAdvisorToggles({ currentUser }) {
     }
   }, [settings]);
 
-  const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      if (settingsId) {
-        return base44.entities.TierAdvisorSettings.update(settingsId, data);
-      } else {
-        return base44.entities.TierAdvisorSettings.create(data);
-      }
-    },
-    onSuccess: (result) => {
-      // CRITICAL: Direct cache update + invalidation for reliability
-      queryClient.setQueryData(['tierAdvisorSettings'], [result]);
-      queryClient.invalidateQueries({ queryKey: ['tierAdvisorSettings'] });
-      toast.success("Tier Advisor settings saved - refresh Features/Subscription to see changes");
-    },
-  });
+
 
   const createWrapperMutation = useMutation({
     mutationFn: (data) => base44.entities.AIWrapper.create(data),
@@ -87,11 +73,37 @@ export default function TierAdvisorToggles({ currentUser }) {
     },
   });
 
-  const handleSave = () => {
-    saveMutation.mutate({
-      show_on_features_page: showOnFeatures,
-      show_on_subscription_page: showOnSubscription,
-    });
+  const handleSave = async () => {
+    try {
+      // Always upsert: if exists, update; if not, create
+      const payload = {
+        show_on_features_page: showOnFeatures,
+        show_on_subscription_page: showOnSubscription,
+      };
+
+      let result;
+      if (settingsId) {
+        console.log('[TierAdvisor] Updating existing record:', settingsId);
+        result = await base44.entities.TierAdvisorSettings.update(settingsId, payload);
+      } else {
+        console.log('[TierAdvisor] Creating new record');
+        result = await base44.entities.TierAdvisorSettings.create(payload);
+        setSettingsId(result.id);
+      }
+
+      console.log('[TierAdvisor] Save successful:', result);
+
+      // CRITICAL: Direct cache update for instant UI feedback
+      queryClient.setQueryData(['tierAdvisorSettings'], [result]);
+      
+      // Invalidate to ensure all pages refetch
+      await queryClient.invalidateQueries({ queryKey: ['tierAdvisorSettings'] });
+      
+      toast.success("✅ Tier Advisor settings saved - changes will appear on Features/Subscription pages");
+    } catch (error) {
+      console.error('[TierAdvisor] Save failed:', error);
+      toast.error("Failed to save settings: " + error.message);
+    }
   };
 
   const handleCreateWrapper = () => {
@@ -139,10 +151,9 @@ export default function TierAdvisorToggles({ currentUser }) {
 
           <Button
             onClick={handleSave}
-            disabled={saveMutation.isPending}
             className="w-full"
           >
-            {saveMutation.isPending ? "Saving..." : "Save Tier Advisor Settings"}
+            Save Tier Advisor Settings
           </Button>
         </div>
 
