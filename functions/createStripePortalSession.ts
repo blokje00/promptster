@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { userId } = await req.json().catch(() => ({}));
+    const { userId, returnUrl } = await req.json().catch(() => ({}));
     const targetUserId = userId || currentUser.id;
 
     // Fetch user via service role (in case admin wants to check other user)
@@ -45,7 +45,6 @@ Deno.serve(async (req) => {
       }, { status: 400 });
     }
 
-    const { returnUrl } = await req.json().catch(() => ({}));
     const origin = req.headers.get('origin') || 'https://promptster.app';
     const finalReturnUrl = returnUrl || `${origin}/Subscription`;
 
