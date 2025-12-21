@@ -101,8 +101,9 @@ export default function RecycleBin() {
       const promises = deletedThoughts.map(t => base44.entities.Thought.delete(t.id));
       await Promise.all(promises);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
+      await queryClient.invalidateQueries({ queryKey: ['deletedThoughtsCount'] });
       toast.success("Recycle bin emptied");
       setIsConfirmingDeleteAll(false);
     }
@@ -133,9 +134,12 @@ export default function RecycleBin() {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel onClick={() => setIsConfirmingDeleteAll(false)}>Cancel</AlertDialogCancel>
                     <AlertDialogAction 
-                      onClick={() => emptyBinMutation.mutate()}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        emptyBinMutation.mutate();
+                      }}
                       className="bg-red-600 hover:bg-red-700"
                     >
                       {emptyBinMutation.isPending ? "Deleting..." : "Yes, Empty Bin"}

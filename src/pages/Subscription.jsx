@@ -34,7 +34,7 @@ export default function SubscriptionPage() {
     },
   });
 
-  const showTierAdvisor = user?.role === 'admin' || tierAdvisorSettings[0]?.show_on_subscription_page;
+  const showTierAdvisor = (user?.role === 'admin') || (tierAdvisorSettings[0]?.show_on_subscription_page === true);
 
   // No UserProfile fetch needed - using auth.me() directly
 
