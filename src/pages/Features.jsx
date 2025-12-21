@@ -84,8 +84,8 @@ function FeaturesPage() {
     },
   });
 
-  // CRITICAL: Only show if explicitly enabled AND not undefined/null
-  const showTierAdvisor = currentUser?.role === 'admin' || (tierAdvisorSettings.length > 0 && tierAdvisorSettings[0]?.show_on_features_page === true);
+  // HARDENED: Only show if record exists AND explicitly enabled (no admin bypass)
+  const showTierAdvisor = tierAdvisorSettings.length > 0 && tierAdvisorSettings[0]?.show_on_features_page === true;
 
   const { data: blocks = [] } = useQuery({
     queryKey: ['featureContentBlocks'],
