@@ -28,11 +28,6 @@ export default function TierAdvisorToggles() {
     order: 0
   });
 
-  // Admin only
-  if (currentUser?.role !== 'admin') return null;
-
-
-
   const { data: wrappers = [] } = useQuery({
     queryKey: ['aiWrappers'],
     queryFn: async () => {
@@ -43,6 +38,9 @@ export default function TierAdvisorToggles() {
       }
     },
   });
+
+  // Admin only - MUST be after all hooks
+  if (currentUser?.role !== 'admin') return null;
 
   useEffect(() => {
     if (currentUser) {
