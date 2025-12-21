@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { useTierAdvisorSettings } from "@/components/hooks/useTierAdvisorSettings";
+import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
 import PromptsterStory from "@/components/features/PromptsterStory.jsx";
 import InlineEditableText from "@/components/features/InlineEditableText";
 import TierAdvisor from "@/components/subscription/TierAdvisor";
@@ -62,22 +62,10 @@ const iconMap = {
 function FeaturesPage() {
   const [editMode, setEditMode] = useState(false);
   
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: async () => {
-      try {
-        return await base44.auth.me();
-      } catch (error) {
-        return null;
-      }
-    },
-    retry: false,
-  });
+  const { data: currentUser } = useCurrentUserSettings();
 
-  const { data: tierAdvisorSettings = [] } = useTierAdvisorSettings();
-
-  // HARDENED: Only show if record exists AND explicitly enabled (no admin bypass)
-  const showTierAdvisor = tierAdvisorSettings.length > 0 && tierAdvisorSettings[0]?.show_on_features_page === true;
+  // DEFINITIVE: Read directly from User entity
+  const showTierAdvisor = currentUser?.tier_advisor_features_enabled === true;
 
   const { data: blocks = [] } = useQuery({
     queryKey: ['featureContentBlocks'],

@@ -365,7 +365,7 @@ export default function AIBackoffice() {
                   isDirty={personalPrefsHook.isDirty}
                   defaultExample={DEFAULT_PERSONAL_PREFERENCES}
                 />
-                <TierAdvisorToggles currentUser={currentUser} />
+                <TierAdvisorToggles />
                 <Card id="retry-message">
                   <CardHeader>
                     <CardTitle className="text-lg">Retry Task Message</CardTitle>

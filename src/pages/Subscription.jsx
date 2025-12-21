@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTierAdvisorSettings } from "@/components/hooks/useTierAdvisorSettings";
+import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, RefreshCw } from "lucide-react";
@@ -19,15 +19,10 @@ export default function SubscriptionPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: async () => base44.auth.me(),
-  });
+  const { data: user } = useCurrentUserSettings();
 
-  const { data: tierAdvisorSettings = [] } = useTierAdvisorSettings();
-
-  // HARDENED: Only show if record exists AND explicitly enabled (no admin bypass)
-  const showTierAdvisor = tierAdvisorSettings.length > 0 && tierAdvisorSettings[0]?.show_on_subscription_page === true;
+  // DEFINITIVE: Read directly from User entity
+  const showTierAdvisor = user?.tier_advisor_subscription_enabled === true;
 
   // No UserProfile fetch needed - using auth.me() directly
 

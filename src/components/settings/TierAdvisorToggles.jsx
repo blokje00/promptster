@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
-import { useTierAdvisorSettings } from "@/components/hooks/useTierAdvisorSettings";
+import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -11,11 +11,11 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-export default function TierAdvisorToggles({ currentUser }) {
+export default function TierAdvisorToggles() {
   const queryClient = useQueryClient();
+  const { data: currentUser } = useCurrentUserSettings();
   const [showOnFeatures, setShowOnFeatures] = useState(false);
   const [showOnSubscription, setShowOnSubscription] = useState(false);
-  const [settingsId, setSettingsId] = useState(null);
 
   // New wrapper form state
   const [showWrapperForm, setShowWrapperForm] = useState(false);
@@ -31,7 +31,7 @@ export default function TierAdvisorToggles({ currentUser }) {
   // Admin only
   if (currentUser?.role !== 'admin') return null;
 
-  const { data: settings = [] } = useTierAdvisorSettings();
+
 
   const { data: wrappers = [] } = useQuery({
     queryKey: ['aiWrappers'],
@@ -45,13 +45,11 @@ export default function TierAdvisorToggles({ currentUser }) {
   });
 
   useEffect(() => {
-    if (settings.length > 0) {
-      const s = settings[0];
-      setShowOnFeatures(s.show_on_features_page || false);
-      setShowOnSubscription(s.show_on_subscription_page || false);
-      setSettingsId(s.id);
+    if (currentUser) {
+      setShowOnFeatures(currentUser.tier_advisor_features_enabled || false);
+      setShowOnSubscription(currentUser.tier_advisor_subscription_enabled || false);
     }
-  }, [settings]);
+  }, [currentUser]);
 
 
 
@@ -74,35 +72,36 @@ export default function TierAdvisorToggles({ currentUser }) {
   });
 
   const handleSave = async () => {
+    if (!currentUser?.id) {
+      toast.error("User not loaded");
+      return;
+    }
+
     try {
-      // Always upsert: if exists, update; if not, create
+      console.log('[TierAdvisor] Saving to User entity:', currentUser.id);
+      
       const payload = {
-        show_on_features_page: showOnFeatures,
-        show_on_subscription_page: showOnSubscription,
+        tier_advisor_features_enabled: showOnFeatures,
+        tier_advisor_subscription_enabled: showOnSubscription,
       };
 
-      let result;
-      if (settingsId) {
-        console.log('[TierAdvisor] Updating existing record:', settingsId);
-        result = await base44.entities.TierAdvisorSettings.update(settingsId, payload);
-      } else {
-        console.log('[TierAdvisor] Creating new record');
-        result = await base44.entities.TierAdvisorSettings.create(payload);
-        setSettingsId(result.id);
-      }
-
+      // Update User entity
+      const result = await base44.entities.User.update(currentUser.id, payload);
       console.log('[TierAdvisor] Save successful:', result);
 
       // CRITICAL: Direct cache update for instant UI feedback
-      queryClient.setQueryData(['tierAdvisorSettings'], [result]);
+      queryClient.setQueryData(['currentUserSettings'], (old) => ({
+        ...old,
+        ...payload
+      }));
       
-      // Invalidate to ensure all pages refetch
-      await queryClient.invalidateQueries({ queryKey: ['tierAdvisorSettings'] });
+      // Safety: invalidate to ensure all pages refetch
+      await queryClient.invalidateQueries({ queryKey: ['currentUserSettings'] });
       
-      toast.success("✅ Tier Advisor settings saved - changes will appear on Features/Subscription pages");
+      toast.success("✅ Tier Advisor settings saved!");
     } catch (error) {
       console.error('[TierAdvisor] Save failed:', error);
-      toast.error("Failed to save settings: " + error.message);
+      toast.error("Failed to save: " + error.message);
     }
   };
 
