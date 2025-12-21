@@ -305,7 +305,7 @@ export default function SubscriptionPage() {
               Trial active (no CC required)
             </h3>
             <p className="text-sm text-green-700">
-              Your free trial is active until {user.trial_ends_at ? new Date(user.trial_ends_at).toLocaleDateString() : 'unknown'}. Enjoy full access!
+              Your free trial is active until {user.trial_ends_at ? new Date(user.trial_ends_at).toLocaleDateString() : 'unknown'}. Want to continue after the trial? Choose a plan below to upgrade.
             </p>
           </div>
         </div>
