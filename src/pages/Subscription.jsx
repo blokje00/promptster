@@ -163,7 +163,7 @@ export default function SubscriptionPage() {
     }
   };
 
-  // OPTIE 1: Automatische sync (geen UI knop meer)
+  // Automatic sync with proper refetch flow
   const autoSyncStatus = async () => {
     console.log('🔄 [Subscription] Starting automatic sync...');
     setIsSyncing(true);
@@ -176,11 +176,15 @@ export default function SubscriptionPage() {
       if (result.data?.success) {
         console.log('✅ [Subscription] Automatic sync successful');
         
-        // Invalidate cache
+        // CRITICAL: Always refetch after sync
         await queryClient.invalidateQueries({ queryKey: ['currentUserSettings'] });
+        await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
         
-        // Refresh auth.me() for latest subscription data
+        // Refetch profile with fresh data
         const freshUser = await base44.auth.me();
+        console.log('📥 [Subscription] Fresh user data:', freshUser);
+        
+        // Check access using central helper
         const hasAccess = hasValidAccess(freshUser);
         console.log('🔐 [Subscription] Access check result:', hasAccess);
         
