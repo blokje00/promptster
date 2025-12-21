@@ -389,6 +389,7 @@ export default function ThoughtCard({
             maxCount={5}
             compact
             onDebugClick={onDebugScreenshot}
+            visionAnalysis={thought.vision_analysis}
           />
         </div>
       </div>

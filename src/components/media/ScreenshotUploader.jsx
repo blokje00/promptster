@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
-import ScreenshotThumb from "./ScreenshotThumb";
+import ScreenshotThumbWithOCR from "./ScreenshotThumbWithOCR";
 import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 
 export default function ScreenshotUploader({ 
@@ -14,7 +14,8 @@ export default function ScreenshotUploader({
   maxCount = 10,
   compact = false,
   onDebugClick = null,
-  showOCRFeedback = true
+  showOCRFeedback = true,
+  visionAnalysis = null // vision analysis object from thought
 }) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
@@ -225,22 +226,23 @@ export default function ScreenshotUploader({
           <div className={`flex gap-2 ${compact ? '' : 'flex-wrap'}`}>
             {screenshotIds.map((id, index) => {
               const isAnalyzing = analyzingUrls.includes(id);
+              // Determine vision status for this specific screenshot
+              let visionStatus = null;
+              if (isAnalyzing) {
+                visionStatus = 'analyzing';
+              } else if (visionAnalysis) {
+                visionStatus = visionAnalysis.status || null;
+              }
+              
               return (
-                <div key={`${id}-${index}`} className="relative">
-                  <ScreenshotThumb
+                <div key={`${id}-${index}`}>
+                  <ScreenshotThumbWithOCR
                     screenshotId={id}
                     onRemove={handleRemove}
                     showCopyEmbed={!compact}
                     onDebugClick={onDebugClick}
+                    visionStatus={showOCRFeedback ? visionStatus : null}
                   />
-                  {isAnalyzing && showOCRFeedback && (
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] rounded-lg flex items-center justify-center">
-                      <div className="bg-white/90 dark:bg-slate-800/90 px-3 py-1.5 rounded-full flex items-center gap-2 shadow-lg">
-                        <Loader2 className="w-3 h-3 animate-spin text-indigo-600" />
-                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">OCR...</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               );
             })}
