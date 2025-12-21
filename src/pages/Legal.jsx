@@ -140,8 +140,8 @@ export default function Legal() {
                 <CardTitle className="dark:text-slate-100">Privacy Policy</CardTitle>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[600px] pr-4">
+              <CardContent className="p-4">
+                <ScrollArea className="h-[70vh] pr-4">
                   <div className="prose prose-slate max-w-none space-y-6">
                     <div className="border-l-4 border-slate-300 dark:border-slate-600 p-4 rounded-r">
                       <p className="font-medium text-slate-900 dark:text-slate-100">Promptster respects your privacy. This Privacy Policy explains how we collect, use, store, and protect your information.</p>
@@ -249,8 +249,8 @@ export default function Legal() {
                 <CardTitle className="dark:text-slate-100">Cookie Policy</CardTitle>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[600px] pr-4">
+              <CardContent className="p-4">
+                <ScrollArea className="h-[70vh] pr-4">
                   <div className="prose prose-slate max-w-none space-y-6">
                     <div>
                       <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3">What Are Cookies?</h3>
@@ -298,8 +298,8 @@ export default function Legal() {
                 <CardTitle className="dark:text-slate-100">Acceptable Use Policy</CardTitle>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[600px] pr-4">
+              <CardContent className="p-4">
+                <ScrollArea className="h-[70vh] pr-4">
                   <div className="prose prose-slate max-w-none space-y-6">
                     <div className="border-l-4 border-slate-300 dark:border-slate-600 p-4 rounded-r">
                       <p className="font-bold text-slate-900 dark:text-slate-100 mb-3">Users must NOT:</p>
@@ -339,8 +339,8 @@ export default function Legal() {
                 <CardTitle className="dark:text-slate-100">Refund & Cancellation Policy</CardTitle>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[600px] pr-4">
+              <CardContent className="p-4">
+                <ScrollArea className="h-[70vh] pr-4">
                   <div className="prose prose-slate max-w-none space-y-6">
                     <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-700">
                       <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3">Subscription Terms</h3>
@@ -397,8 +397,8 @@ export default function Legal() {
                 <CardTitle className="dark:text-slate-100">AI Disclaimer</CardTitle>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[600px] pr-4">
+              <CardContent className="p-4">
+                <ScrollArea className="h-[70vh] pr-4">
                   <div className="prose prose-slate max-w-none space-y-6">
                     <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-700">
                       <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3">🤖 AI-Generated Content</h3>
@@ -474,8 +474,8 @@ export default function Legal() {
                 <CardTitle className="dark:text-slate-100">Security Practices</CardTitle>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[600px] pr-4">
+              <CardContent className="p-4">
+                <ScrollArea className="h-[70vh] pr-4">
                   <div className="prose prose-slate max-w-none space-y-6">
                     <div className="border-l-4 border-slate-300 dark:border-slate-600 p-4 rounded-r">
                       <p className="font-medium text-slate-900 dark:text-slate-100">Promptster follows industry-standard security practices to protect your data.</p>
@@ -575,8 +575,8 @@ export default function Legal() {
                 <CardTitle className="dark:text-slate-100">Support & Contact</CardTitle>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[600px] pr-4">
+              <CardContent className="p-4">
+                <ScrollArea className="h-[70vh] pr-4">
                   <div className="prose prose-slate max-w-none space-y-6">
                     <div className="p-4 rounded-lg border border-slate-200 dark:border-slate-700">
                       <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-3">📞 Contact Information</h3>
