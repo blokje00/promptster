@@ -143,7 +143,14 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
     return parts.join("\n\n---\n\n");
   }, [thoughts, selectedThoughtIds, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, currentUser, selectedProject, templates]);
 
-  const handleImprovePrompt = useCallback(async () => {
+  const handleImprovePrompt = useCallback(async (isUndo = false) => {
+    // Undo: clear improved prompt
+    if (isUndo) {
+      setImprovedPrompt("");
+      toast.success("Reverted to original prompt");
+      return;
+    }
+
     if (!generatedPrompt) return;
     setIsImproving(true);
     try {
@@ -204,10 +211,9 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
         }
       }
 
-      // Call backend function with rate limiting using enriched prompt
+      // Call backend function with rate limiting - DON'T send file_urls (AI can't access them anyway)
       const response = await base44.functions.invoke('runPrompt', {
-        prompt: `Improve this prompt:\n${enrichedPromptWithVision}${visionContext}\n\nIMPORTANT: Return ONLY the improved prompt content.`,
-        file_urls: allScreenshotUrls.length > 0 ? allScreenshotUrls : undefined
+        prompt: `Improve and optimize this multi-task prompt for better clarity and execution:\n\n${enrichedPromptWithVision}\n\nIMPORTANT: Return ONLY the improved prompt content, keeping the JSON structure and all screenshot data intact.`
       });
 
       const data = response.data;

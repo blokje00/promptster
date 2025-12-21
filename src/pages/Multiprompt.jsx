@@ -527,6 +527,7 @@ export default function Multiprompt() {
                   </div>
                   <PromptPreview
                     {...promptGeneration}
+                    setImprovedPrompt={promptGeneration.setImprovedPrompt}
                     onImprove={promptGeneration.handleImprovePrompt}
                     saveSuccess={saveSuccess}
                     onQuickSave={handleQuickSave}

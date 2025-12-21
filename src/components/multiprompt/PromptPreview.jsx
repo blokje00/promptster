@@ -11,6 +11,7 @@ import { base44 } from "@/api/base44Client";
 export default function PromptPreview({
   generatedPrompt,
   improvedPrompt,
+  setImprovedPrompt,
   isImproving,
   onImprove,
   saveSuccess,
@@ -42,8 +43,18 @@ export default function PromptPreview({
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle>Preview</CardTitle>
         <div className="flex gap-2">
+          {improvedPrompt && (
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={() => onImprove(true)}
+              className="text-slate-500 hover:text-slate-700"
+            >
+              <Cog className="w-4 h-4 mr-1" /> Undo
+            </Button>
+          )}
           {canUseAI ? (
-            <Button size="sm" variant="outline" onClick={onImprove} disabled={!generatedPrompt}>
+            <Button size="sm" variant="outline" onClick={() => onImprove(false)} disabled={!generatedPrompt}>
               {isImproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />} Improve
             </Button>
           ) : (
