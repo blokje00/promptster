@@ -41,8 +41,8 @@ export default function Legal() {
                 <CardTitle className="text-slate-900 dark:text-slate-100">Terms of Service</CardTitle>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Last Updated: {lastUpdated}</p>
               </CardHeader>
-              <CardContent className="bg-white dark:bg-slate-800">
-                <ScrollArea className="h-[600px] pr-4">
+              <CardContent className="bg-white dark:bg-slate-800 p-4">
+                <ScrollArea className="h-[70vh] pr-4">
                   <div className="prose prose-slate dark:prose-invert max-w-none space-y-6">
                     <div className="border-l-4 border-slate-300 dark:border-slate-600 p-4 rounded-r">
                       <p className="font-medium text-slate-900 dark:text-slate-100 mb-2">Welcome to Promptster</p>

@@ -374,6 +374,9 @@ export default function Header() {
 
         {/* Right side: Settings */}
         <div className="flex items-center gap-1">
+          {/* Theme toggle - outside dropdown */}
+          {user && <ThemeToggleButton />}
+          
           {/* Admin items moved to dropdown */}
           {false && user?.role === 'admin' && (
             <>
@@ -464,12 +467,7 @@ export default function Header() {
                     <span>Support</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <div className="w-full flex items-center justify-between">
-                    <span className="text-slate-700 dark:text-slate-300">Theme</span>
-                    <ThemeToggleButton />
-                  </div>
-                </DropdownMenuItem>
+
                 <DropdownMenuItem asChild className="hover:bg-slate-100 dark:hover:bg-slate-800">
                   <Link to={createPageUrl("Legal")} className="cursor-pointer text-slate-700 dark:text-slate-300">
                     <FileText className="mr-2 h-4 w-4" />
@@ -485,8 +483,15 @@ export default function Header() {
                 <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
                 <DropdownMenuItem asChild className="hover:bg-slate-100 dark:hover:bg-slate-800">
                   <Link to={createPageUrl("RecycleBin")} className="cursor-pointer text-slate-700 dark:text-slate-300">
-                    <Trash className="mr-2 h-4 w-4" />
-                    <span>Recycle Bin</span>
+                    <div className="relative flex items-center">
+                      <Trash className={`mr-2 h-4 w-4 ${deletedCount > 0 ? 'text-red-600 dark:text-red-400' : ''}`} />
+                      <span>Recycle Bin</span>
+                      {deletedCount > 0 && (
+                        <span className="ml-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold">
+                          {deletedCount}
+                        </span>
+                      )}
+                    </div>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
