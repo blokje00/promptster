@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTierAdvisorSettings } from "@/components/hooks/useTierAdvisorSettings";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, RefreshCw } from "lucide-react";
@@ -23,16 +24,7 @@ export default function SubscriptionPage() {
     queryFn: async () => base44.auth.me(),
   });
 
-  const { data: tierAdvisorSettings = [] } = useQuery({
-    queryKey: ['tierAdvisorSettings'],
-    queryFn: async () => {
-      try {
-        return await base44.entities.TierAdvisorSettings.list() || [];
-      } catch (error) {
-        return [];
-      }
-    },
-  });
+  const { data: tierAdvisorSettings = [] } = useTierAdvisorSettings();
 
   // HARDENED: Only show if record exists AND explicitly enabled (no admin bypass)
   const showTierAdvisor = tierAdvisorSettings.length > 0 && tierAdvisorSettings[0]?.show_on_subscription_page === true;
