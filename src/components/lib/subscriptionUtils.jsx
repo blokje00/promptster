@@ -6,6 +6,17 @@ const debugLog = (...args) => {
 };
 
 /**
+ * CENTRALE HELPER - Check if user has paid or trial subscription
+ * Use this everywhere for consistent subscription checks
+ * 
+ * @param {string} status - Subscription status from user.subscription_status
+ * @returns {boolean} - true if active or trialing
+ */
+export function isPaidOrTrial(status) {
+  return ["active", "trialing"].includes(status);
+}
+
+/**
  * HARDENED subscription access checker
  * 
  * CRITICAL RULES:
