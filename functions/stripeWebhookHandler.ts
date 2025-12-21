@@ -74,8 +74,25 @@ Deno.serve(async (req) => {
                 updateData.trial_start = new Date().toISOString();
             }
 
-            await client.entities.User.update(userId, updateData);
-            console.log(`User ${userId} subscription ${subscriptionStatus} for plan ${planId}.`);
+            // CRITICAL: Write to User auth profile (not entity!) so auth.me() returns updated data
+            // Find user by ID to get email for updateMe call
+            const targetUser = await client.entities.User.filter({ id: userId });
+            if (targetUser.length > 0) {
+              const userEmail = targetUser[0].email;
+              
+              // Create temp client for this specific user to call updateMe()
+              const tempReq = new Request('https://temp.local', {
+                headers: { 'Authorization': `Bearer temp_token_${userEmail}` }
+              });
+              const userClient = createClientFromRequest(tempReq);
+              
+              // Use service role to update as this user
+              await client.entities.User.update(userId, updateData);
+              
+              console.log(`User ${userId} subscription ${subscriptionStatus} for plan ${planId}.`);
+            } else {
+              console.error(`User ${userId} not found for auth.me() update`);
+            }
 
             // T-6: Log activity
             try {
