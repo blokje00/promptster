@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Copy, X, ZoomIn, Eye, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Copy, X, ZoomIn, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import VisionProgressOverlay from "./VisionProgressOverlay";
 
 export default function ScreenshotThumbWithOCR({ 
   screenshotId, 
@@ -55,36 +56,23 @@ export default function ScreenshotThumbWithOCR({
     return null;
   }
 
-  // OCR status indicator
-  const getOCRIndicator = () => {
+  // Render OCR overlay based on vision status
+  const renderOCROverlay = () => {
     if (!visionStatus || visionStatus === 'pending') return null;
     
-    if (visionStatus === 'analyzing') {
-      return (
-        <div className="absolute top-1 left-1 bg-blue-500/90 text-white rounded px-2 py-1 text-[10px] font-medium flex items-center gap-1 shadow-lg">
-          <Loader2 className="w-3 h-3 animate-spin" />
-          <span>Analyzing...</span>
-        </div>
-      );
-    }
+    let state = 'analyzing';
+    if (visionStatus === 'completed') state = 'complete';
+    if (visionStatus === 'failed') state = 'failed';
     
-    if (visionStatus === 'completed') {
-      return (
-        <div className="absolute top-1 left-1 bg-green-500/90 text-white rounded px-2 py-1 text-[10px] font-medium flex items-center gap-1 shadow-lg">
-          <CheckCircle2 className="w-3 h-3" />
-          <span>OCR Done</span>
-        </div>
-      );
-    }
-    
-    if (visionStatus === 'failed') {
-      return (
-        <div className="absolute top-1 left-1 bg-red-500/90 text-white rounded px-2 py-1 text-[10px] font-medium flex items-center gap-1 shadow-lg">
-          <AlertCircle className="w-3 h-3" />
-          <span>OCR Failed</span>
-        </div>
-      );
-    }
+    return (
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded flex items-center justify-center">
+        <VisionProgressOverlay 
+          state={state}
+          stage="ocr"
+          progress={0}
+        />
+      </div>
+    );
   };
 
   return (
@@ -98,8 +86,8 @@ export default function ScreenshotThumbWithOCR({
               className="w-20 h-20 rounded border object-cover hover:opacity-90 transition-opacity"
             />
             
-            {/* OCR Status Indicator */}
-            {getOCRIndicator()}
+            {/* OCR Status Overlay */}
+            {renderOCROverlay()}
             
             {/* Zoom indicator on hover */}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded flex items-center justify-center">
