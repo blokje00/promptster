@@ -39,18 +39,6 @@ export default function TierAdvisorToggles() {
     },
   });
 
-  // Admin only - MUST be after all hooks
-  if (currentUser?.role !== 'admin') return null;
-
-  useEffect(() => {
-    if (currentUser) {
-      setShowOnFeatures(currentUser.tier_advisor_features_enabled || false);
-      setShowOnSubscription(currentUser.tier_advisor_subscription_enabled || false);
-    }
-  }, [currentUser]);
-
-
-
   const createWrapperMutation = useMutation({
     mutationFn: (data) => base44.entities.AIWrapper.create(data),
     onSuccess: () => {
@@ -68,6 +56,16 @@ export default function TierAdvisorToggles() {
       toast.success("AI Wrapper deleted");
     },
   });
+
+  useEffect(() => {
+    if (currentUser) {
+      setShowOnFeatures(currentUser.tier_advisor_features_enabled || false);
+      setShowOnSubscription(currentUser.tier_advisor_subscription_enabled || false);
+    }
+  }, [currentUser]);
+
+  // Admin only - MUST be after ALL hooks
+  if (currentUser?.role !== 'admin') return null;
 
   const handleSave = async () => {
     if (!currentUser?.id) {
