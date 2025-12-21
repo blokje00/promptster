@@ -146,14 +146,20 @@ Deno.serve(async (req) => {
 
     console.log('[activateTrial] Stripe Subscription created:', subscription.id, 'Status:', subscription.status);
 
-    // Step 4: Update UserProfile with Stripe data
-    await base44.asServiceRole.entities.UserProfile.update(userProfile.id, {
+    // Step 4: Update BOTH UserProfile AND User entity with Stripe data
+    const updatePayload = {
       subscription_status: 'trialing',
       trial_ends_at: trialEnd.toISOString(),
       plan_id: planId,
       stripe_customer_id: stripeCustomerId,
       stripe_subscription_id: subscription.id
-    });
+    };
+
+    // Update UserProfile for backwards compatibility
+    await base44.asServiceRole.entities.UserProfile.update(userProfile.id, updatePayload);
+    
+    // CRITICAL: Also update User entity so auth.me() returns correct data
+    await base44.asServiceRole.entities.User.update(user.id, updatePayload);
 
     console.log(`[activateTrial] Trial activated for ${user.email} until ${trialEnd.toISOString()}`);
 
