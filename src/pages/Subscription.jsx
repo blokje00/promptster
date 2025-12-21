@@ -264,7 +264,8 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {userHasAccess && !isSyncing && (
+      {/* Show active banner for BOTH active AND trialing users */}
+      {user?.subscription_status === 'active' && !isSyncing && (
         <div className="mb-8 p-4 bg-indigo-50 border border-indigo-100 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h3 className="font-semibold text-indigo-900">Your subscription is active!</h3>
@@ -287,7 +288,23 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {!userHasAccess && !isSyncing && (!user?.subscription_status || user?.subscription_status === 'none') && (
+      {/* Show trial banner for trialing users (no CC required) */}
+      {user?.subscription_status === 'trialing' && !isSyncing && (
+        <div className="mb-8 p-4 bg-green-50 border border-green-200 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h3 className="font-semibold text-green-900 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              Trial active (no CC required)
+            </h3>
+            <p className="text-sm text-green-700">
+              Your free trial is active until {user.trial_ends_at ? new Date(user.trial_ends_at).toLocaleDateString() : 'unknown'}. Enjoy full access!
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Only show "no subscription" if status is truly invalid/missing */}
+      {!userHasAccess && !isSyncing && (!user?.subscription_status || ['none', 'canceled', 'incomplete_expired', 'unpaid'].includes(user?.subscription_status)) && (
         <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <div>
             <h3 className="font-semibold text-yellow-900">No active subscription found</h3>
