@@ -270,8 +270,19 @@ export default function SubscriptionPage() {
             <h3 className="font-semibold text-indigo-900">Your subscription is active!</h3>
             <p className="text-sm text-indigo-700">You can manage your invoices and payment method in the customer portal.</p>
           </div>
-          <Button onClick={handleManageSubscription} disabled={isProcessing} variant="outline" className="border-indigo-200 hover:bg-indigo-100 text-indigo-700">
-            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Manage Subscription"}
+          <Button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('[Button] Click event triggered');
+              handleManageSubscription();
+            }} 
+            disabled={isProcessing} 
+            variant="outline" 
+            className="border-indigo-200 hover:bg-indigo-100 text-indigo-700"
+          >
+            {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+            Manage Subscription
           </Button>
         </div>
       )}
