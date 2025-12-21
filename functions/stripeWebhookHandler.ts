@@ -164,9 +164,13 @@ Deno.serve(async (req) => {
         const users = await client.entities.User.filter({ stripe_customer_id: subscription.customer });
         if (users.length > 0) {
             const user = users[0];
-            await client.entities.User.update(user.id, {
+            const updatePayload = {
                 subscription_status: 'cancelled'
-            });
+            };
+            
+            // Update User entity for persistence
+            await client.entities.User.update(user.id, updatePayload);
+            
             console.log(`User ${user.id} subscription canceled.`);
 
             // T-6: Log activity
