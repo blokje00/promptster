@@ -355,13 +355,33 @@ export default function SubscriptionPage() {
               ) : null}
             </div>
             <div className="flex gap-2">
-              {/* Hide ALL buttons if user already has active or trialing status */}
-              {user?.subscription_status === 'active' || user?.subscription_status === 'trialing' ? (
+              {/* Active users: only show Active badge for their plan */}
+              {user?.subscription_status === 'active' ? (
                 user?.plan_id === plan.id ? (
                   <Button disabled className="bg-green-500 hover:bg-green-600 text-white">
                     Active
                   </Button>
                 ) : null
+              ) : user?.subscription_status === 'trialing' ? (
+                /* Trialing users: show current plan badge + upgrade buttons for other plans */
+                user?.plan_id === plan.id ? (
+                  <Button disabled className="bg-green-500 hover:bg-green-600 text-white">
+                    Current Trial Plan
+                  </Button>
+                ) : plan.payment_link ? (
+                  <Button 
+                    onClick={() => handleSubscribe(plan)} 
+                    disabled={isProcessing}
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                    Upgrade Now
+                  </Button>
+                ) : (
+                  <Button disabled variant="outline">
+                    Contact
+                  </Button>
+                )
               ) : !plan.is_active ? (
                 <Button disabled variant="outline" className="text-slate-400">
                   Not Available
