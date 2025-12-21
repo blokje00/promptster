@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useTierAdvisorSettings } from "@/components/hooks/useTierAdvisorSettings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -30,16 +31,7 @@ export default function TierAdvisorToggles({ currentUser }) {
   // Admin only
   if (currentUser?.role !== 'admin') return null;
 
-  const { data: settings = [] } = useQuery({
-    queryKey: ['tierAdvisorSettings'],
-    queryFn: async () => {
-      try {
-        return await base44.entities.TierAdvisorSettings.list() || [];
-      } catch (error) {
-        return [];
-      }
-    },
-  });
+  const { data: settings = [] } = useTierAdvisorSettings();
 
   const { data: wrappers = [] } = useQuery({
     queryKey: ['aiWrappers'],
@@ -69,9 +61,11 @@ export default function TierAdvisorToggles({ currentUser }) {
         return base44.entities.TierAdvisorSettings.create(data);
       }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      // CRITICAL: Direct cache update + invalidation for reliability
+      queryClient.setQueryData(['tierAdvisorSettings'], [result]);
       queryClient.invalidateQueries({ queryKey: ['tierAdvisorSettings'] });
-      toast.success("Tier Advisor settings saved");
+      toast.success("Tier Advisor settings saved - refresh Features/Subscription to see changes");
     },
   });
 

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useTierAdvisorSettings } from "@/components/hooks/useTierAdvisorSettings";
 import PromptsterStory from "@/components/features/PromptsterStory.jsx";
 import InlineEditableText from "@/components/features/InlineEditableText";
 import TierAdvisor from "@/components/subscription/TierAdvisor";
@@ -73,16 +74,7 @@ function FeaturesPage() {
     retry: false,
   });
 
-  const { data: tierAdvisorSettings = [] } = useQuery({
-    queryKey: ['tierAdvisorSettings'],
-    queryFn: async () => {
-      try {
-        return await base44.entities.TierAdvisorSettings.list() || [];
-      } catch (error) {
-        return [];
-      }
-    },
-  });
+  const { data: tierAdvisorSettings = [] } = useTierAdvisorSettings();
 
   // HARDENED: Only show if record exists AND explicitly enabled (no admin bypass)
   const showTierAdvisor = tierAdvisorSettings.length > 0 && tierAdvisorSettings[0]?.show_on_features_page === true;
