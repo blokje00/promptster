@@ -186,7 +186,7 @@ export default function AdminSubscription() {
     });
 
     return () => saveBtn.destroy();
-  }, [dialogOpen, isEditing, currentPlan?.id, formData, queryClient]);
+  }, [dialogOpen, isEditing, currentPlan?.id, queryClient]);
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
