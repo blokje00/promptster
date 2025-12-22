@@ -70,6 +70,31 @@ export default function SubscriptionPage() {
     }
   };
 
+  // NEW: Schedule upgrade after trial (keep trial running)
+  const handleScheduleUpgrade = async (plan) => {
+    setIsProcessing(true);
+    
+    try {
+      const result = await base44.functions.invoke("scheduleUpgradeAfterTrial", {
+        priceId: plan.monthly_price_id
+      });
+
+      if (result.data?.ok) {
+        toast.success(`✅ Upgrade scheduled! ${plan.name} will start after your trial ends.`);
+        
+        // Refresh user data to show scheduled badge
+        await queryClient.invalidateQueries({ queryKey: ['currentUserSettings'] });
+      } else {
+        toast.error(result.data?.error || "Failed to schedule upgrade.");
+      }
+    } catch (error) {
+      console.error("Schedule upgrade error:", error);
+      toast.error("Something went wrong scheduling the upgrade.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // Handler for no-CC trials (uses activateTrial backend, not Stripe)
   const handleStartFreeTrial = async (plan) => {
     console.log('[Subscription] 🎯 Start Free Trial clicked');
@@ -305,7 +330,12 @@ export default function SubscriptionPage() {
               Trial active (no CC required)
             </h3>
             <p className="text-sm text-green-700">
-              Your free trial is active until {user.trial_ends_at ? new Date(user.trial_ends_at).toLocaleDateString() : 'unknown'}. Want to continue after the trial? Choose a plan below to upgrade.
+              Your free trial is active until {user.trial_ends_at ? new Date(user.trial_ends_at).toLocaleDateString() : 'unknown'}. 
+              {user?.scheduled_plan_id ? (
+                <span className="font-semibold"> ✅ Upgrade scheduled for after trial.</span>
+              ) : (
+                <span> Want to continue after the trial? Choose a plan below to upgrade.</span>
+              )}
             </p>
           </div>
         </div>
@@ -363,20 +393,35 @@ export default function SubscriptionPage() {
                   </Button>
                 ) : null
               ) : user?.subscription_status === 'trialing' ? (
-                /* Trialing users: show current plan badge + upgrade buttons for other plans */
+                /* Trialing users: show current plan badge + TWO upgrade buttons for other plans */
                 user?.plan_id === plan.id ? (
                   <Button disabled className="bg-green-500 hover:bg-green-600 text-white">
                     Current Trial Plan
                   </Button>
-                ) : plan.payment_link ? (
-                  <Button 
-                    onClick={() => handleSubscribe(plan)} 
-                    disabled={isProcessing}
-                    className="bg-indigo-600 hover:bg-indigo-700"
-                  >
-                    {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    Upgrade Now
+                ) : user?.scheduled_plan_id === plan.monthly_price_id ? (
+                  <Button disabled className="bg-blue-500 hover:bg-blue-600 text-white">
+                    Scheduled ✓
                   </Button>
+                ) : plan.payment_link ? (
+                  <>
+                    <Button 
+                      onClick={() => handleSubscribe(plan)} 
+                      disabled={isProcessing}
+                      className="bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      Upgrade Now
+                    </Button>
+                    <Button 
+                      onClick={() => handleScheduleUpgrade(plan)} 
+                      disabled={isProcessing}
+                      variant="outline"
+                      className="border-indigo-600 text-indigo-600 hover:bg-indigo-50"
+                    >
+                      {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      After Trial
+                    </Button>
+                  </>
                 ) : (
                   <Button disabled variant="outline">
                     Contact
