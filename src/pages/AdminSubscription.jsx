@@ -123,13 +123,16 @@ export default function AdminSubscription() {
   const modalContainerRef = useRef(null);
   const saveInstanceRef = useRef(null);
   
-  // Initialize UltimateSaveButton when dialog opens (STABLE - no formData dependency)
+  // Initialize UltimateSaveButton - MUST cleanup and re-init on every modal open/plan change
   useEffect(() => {
+    // Cleanup old instance first
+    if (saveInstanceRef.current) {
+      saveInstanceRef.current.destroy();
+      saveInstanceRef.current = null;
+    }
+
     if (!dialogOpen) return;
     if (!saveButtonRef.current) return;
-    
-    // Prevent double init
-    if (saveInstanceRef.current) return;
 
     const getPayload = () => ({
       ...formData,
@@ -146,8 +149,10 @@ export default function AdminSubscription() {
       return { valid: true };
     };
 
+    console.log("[AdminSubscription] Initializing UltimateSaveButton", { dialogOpen, isEditing, planId: currentPlan?.id });
+
     saveInstanceRef.current = new UltimateSaveButton({
-      apiEndpoint: "__DIRECT__", // Skip fetch, use onBeforeSave only
+      apiEndpoint: "__DIRECT__",
       buttonElement: saveButtonRef.current,
       containerToClose: modalContainerRef.current,
       validate,
@@ -157,22 +162,17 @@ export default function AdminSubscription() {
         const payload = getPayload();
         const planId = isEditing && currentPlan ? currentPlan.id : null;
 
-        // DB call
         const saved = await savePlan(planId, payload);
 
-        // ✅ Optimistic update: plans array direct patchen
         queryClient.setQueryData(qk.subscriptionPlans, (old = []) => {
           const idx = old.findIndex((p) => p.id === saved.id);
-          if (idx === -1) return [saved, ...old];     // nieuw plan vooraan
+          if (idx === -1) return [saved, ...old];
           const next = [...old];
-          next[idx] = { ...old[idx], ...saved };      // bestaand plan updaten
+          next[idx] = { ...old[idx], ...saved };
           return next;
         });
 
-        // Set individual plan cache
         queryClient.setQueryData(qk.subscriptionPlan(saved.id), saved);
-
-        // ✅ Safety refetch: blijft alles consistent
         queryClient.invalidateQueries({ queryKey: qk.subscriptionPlans });
 
         return true;
@@ -197,7 +197,7 @@ export default function AdminSubscription() {
         saveInstanceRef.current = null;
       }
     };
-  }, [dialogOpen, isEditing, currentPlan?.id]);
+  }, [dialogOpen, isEditing, currentPlan?.id, queryClient]);
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
