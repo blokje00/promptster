@@ -133,6 +133,12 @@ export default function AdminSubscription() {
     try {
       const payload = {
         ...formData,
+        show_trial_badge: !!formData.show_trial_badge,
+        trial_badge_text: (formData.trial_badge_text || "").trim(),
+        show_max_tasks_badge: !!formData.show_max_tasks_badge,
+        max_tasks_badge_text: (formData.max_tasks_badge_text || "").trim(),
+        is_credit_card_required_for_trial: !!formData.is_credit_card_required_for_trial,
+        is_active: !!formData.is_active,
         features: formData.features.filter(f => f.trim())
       };
       const planId = isEditing && currentPlan ? currentPlan.id : null;
@@ -258,8 +264,10 @@ export default function AdminSubscription() {
                 </div>
                 <div className="flex items-center gap-2 pt-6">
                   <Switch 
-                    checked={formData.is_credit_card_required_for_trial} 
-                    onCheckedChange={(checked) => setFormData({...formData, is_credit_card_required_for_trial: checked})} 
+                    checked={!!formData.is_credit_card_required_for_trial} 
+                    onCheckedChange={(checked) => 
+                      setFormData((p) => ({ ...p, is_credit_card_required_for_trial: checked }))
+                    } 
                   />
                   <Label>Creditcard Required</Label>
                 </div>
@@ -271,8 +279,14 @@ export default function AdminSubscription() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Switch 
-                      checked={formData.show_trial_badge} 
-                      onCheckedChange={(checked) => setFormData({...formData, show_trial_badge: checked})} 
+                      checked={!!formData.show_trial_badge} 
+                      onCheckedChange={(checked) => 
+                        setFormData((p) => ({ 
+                          ...p, 
+                          show_trial_badge: checked,
+                          trial_badge_text: checked ? p.trial_badge_text : ""
+                        }))
+                      } 
                     />
                     <Label>Show Trial Badge</Label>
                   </div>
@@ -281,7 +295,9 @@ export default function AdminSubscription() {
                       <Label className="text-xs text-slate-500">Custom Trial Badge Text (optional)</Label>
                       <Input 
                         value={formData.trial_badge_text} 
-                        onChange={(e) => setFormData({...formData, trial_badge_text: e.target.value})} 
+                        onChange={(e) => 
+                          setFormData((p) => ({ ...p, trial_badge_text: e.target.value }))
+                        } 
                         placeholder="e.g. 14 days free (no CC)"
                       />
                     </div>
@@ -291,8 +307,14 @@ export default function AdminSubscription() {
                 <div className="space-y-3 mt-4">
                   <div className="flex items-center gap-2">
                     <Switch 
-                      checked={formData.show_max_tasks_badge} 
-                      onCheckedChange={(checked) => setFormData({...formData, show_max_tasks_badge: checked})} 
+                      checked={!!formData.show_max_tasks_badge} 
+                      onCheckedChange={(checked) => 
+                        setFormData((p) => ({ 
+                          ...p, 
+                          show_max_tasks_badge: checked,
+                          max_tasks_badge_text: checked ? p.max_tasks_badge_text : ""
+                        }))
+                      } 
                     />
                     <Label>Show Max Tasks Badge</Label>
                   </div>
@@ -301,7 +323,9 @@ export default function AdminSubscription() {
                       <Label className="text-xs text-slate-500">Custom Max Tasks Badge Text (optional)</Label>
                       <Input 
                         value={formData.max_tasks_badge_text} 
-                        onChange={(e) => setFormData({...formData, max_tasks_badge_text: e.target.value})} 
+                        onChange={(e) => 
+                          setFormData((p) => ({ ...p, max_tasks_badge_text: e.target.value }))
+                        } 
                         placeholder="e.g. Max Tasks: 20"
                       />
                     </div>
@@ -321,8 +345,10 @@ export default function AdminSubscription() {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <Switch 
-                    checked={formData.is_active} 
-                    onCheckedChange={(checked) => setFormData({...formData, is_active: checked})} 
+                    checked={!!formData.is_active} 
+                    onCheckedChange={(checked) => 
+                      setFormData((p) => ({ ...p, is_active: checked }))
+                    } 
                   />
                   <Label>Active</Label>
                 </div>
