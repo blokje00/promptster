@@ -68,22 +68,24 @@ export default function TierAdvisorToggles() {
   if (currentUser?.role !== 'admin') return null;
 
   const handleSave = async () => {
-    if (!currentUser?.id) {
+    if (!currentUser?.id || !currentUser?.email) {
       toast.error("User not loaded");
       return;
     }
 
     try {
-      console.log('[TierAdvisor] Saving to User entity:', currentUser.id);
+      console.log('[TierAdvisor] Saving to both User entity and auth.me():', currentUser.id);
       
       const payload = {
-        tier_advisor_features_enabled: showOnFeatures,
-        tier_advisor_subscription_enabled: showOnSubscription,
+        tier_advisor_features_enabled: !!showOnFeatures,
+        tier_advisor_subscription_enabled: !!showOnSubscription,
       };
 
-      // Update User entity
-      const result = await base44.entities.User.update(currentUser.id, payload);
-      console.log('[TierAdvisor] Save successful:', result);
+      // Save to BOTH User entity AND auth.updateMe for consistency
+      await base44.entities.User.update(currentUser.id, payload);
+      await base44.auth.updateMe(payload);
+      
+      console.log('[TierAdvisor] Save successful to both sources');
 
       // CRITICAL: Direct cache update for instant UI feedback
       queryClient.setQueryData(['currentUserSettings'], (old) => ({
@@ -91,8 +93,12 @@ export default function TierAdvisorToggles() {
         ...payload
       }));
       
-      // Safety: invalidate to ensure all pages refetch
-      await queryClient.invalidateQueries({ queryKey: ['currentUserSettings'] });
+      // Invalidate ALL relevant query keys to ensure consistency across pages
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['currentUserSettings'] }),
+        queryClient.invalidateQueries({ queryKey: ['currentUser'] }),
+        queryClient.invalidateQueries({ queryKey: ['me'] })
+      ]);
       
       toast.success("✅ Tier Advisor settings saved!");
     } catch (error) {
@@ -129,7 +135,7 @@ export default function TierAdvisorToggles() {
             </div>
             <Switch
               checked={!!showOnFeatures}
-              onCheckedChange={(checked) => setShowOnFeatures(checked)}
+              onCheckedChange={(checked) => setShowOnFeatures(() => checked)}
             />
           </div>
 
@@ -140,7 +146,7 @@ export default function TierAdvisorToggles() {
             </div>
             <Switch
               checked={!!showOnSubscription}
-              onCheckedChange={(checked) => setShowOnSubscription(checked)}
+              onCheckedChange={(checked) => setShowOnSubscription(() => checked)}
             />
           </div>
 

@@ -300,6 +300,12 @@ export default function AIBackoffice() {
 
 
   const handleSave = async () => {
+    // Guard: prevent save if user not loaded yet
+    if (!currentUser?.email) {
+      toast.error("User not loaded yet");
+      return;
+    }
+
     // Guard: prevent double-click / multiple saves in flight
     if (isSavingAI) return;
     
@@ -310,7 +316,8 @@ export default function AIBackoffice() {
       const payload = {
         improve_prompt_instruction: (instruction || "").trim(),
         model_preference: modelPreference || "default",
-        enable_context_suggestions: !!enableContextSuggestions
+        enable_context_suggestions: !!enableContextSuggestions,
+        created_by: currentUser.email
       };
 
       let saved;
@@ -322,7 +329,7 @@ export default function AIBackoffice() {
       }
 
       // Optimistic cache update
-      queryClient.setQueryData(['aiSettings', currentUser?.email], (old = []) => {
+      queryClient.setQueryData(['aiSettings', currentUser.email], (old = []) => {
         const idx = old.findIndex((s) => s.id === saved.id);
         if (idx === -1) return [saved, ...old];
         const next = [...old];
@@ -331,7 +338,7 @@ export default function AIBackoffice() {
       });
 
       // Invalidate for consistency
-      queryClient.invalidateQueries({ queryKey: ['aiSettings', currentUser?.email] });
+      queryClient.invalidateQueries({ queryKey: ['aiSettings', currentUser.email] });
 
       // Update saved values (reset dirty state)
       setSavedAIValues({
@@ -339,6 +346,9 @@ export default function AIBackoffice() {
         modelPreference: payload.model_preference,
         enableContextSuggestions: payload.enable_context_suggestions
       });
+
+      // Reset autosave baseline to prevent unexpected jumps
+      resetInstruction(payload.improve_prompt_instruction);
 
       toast.success("AI settings saved");
     } catch (error) {

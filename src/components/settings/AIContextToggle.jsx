@@ -38,7 +38,7 @@ export default function AIContextToggle({ enableContextSuggestions, setEnableCon
           </div>
           <Switch
             checked={!!enableContextSuggestions}
-            onCheckedChange={(checked) => setEnableContextSuggestions(checked)}
+            onCheckedChange={(checked) => setEnableContextSuggestions(() => checked)}
             disabled={!isAdmin}
           />
         </div>
