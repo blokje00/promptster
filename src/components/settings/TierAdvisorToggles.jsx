@@ -128,8 +128,8 @@ export default function TierAdvisorToggles() {
               <p className="text-xs text-slate-500 dark:text-slate-400">Allow regular users to see Tier Advisor on Features page</p>
             </div>
             <Switch
-              checked={showOnFeatures}
-              onCheckedChange={setShowOnFeatures}
+              checked={!!showOnFeatures}
+              onCheckedChange={(checked) => setShowOnFeatures(checked)}
             />
           </div>
 
@@ -139,8 +139,8 @@ export default function TierAdvisorToggles() {
               <p className="text-xs text-slate-500 dark:text-slate-400">Allow regular users to see Tier Advisor on Subscription page</p>
             </div>
             <Switch
-              checked={showOnSubscription}
-              onCheckedChange={setShowOnSubscription}
+              checked={!!showOnSubscription}
+              onCheckedChange={(checked) => setShowOnSubscription(checked)}
             />
           </div>
 
@@ -182,8 +182,8 @@ export default function TierAdvisorToggles() {
               <div className="flex gap-4">
                 <label className="flex items-center gap-2">
                   <Switch
-                    checked={newWrapper.has_credit_savings}
-                    onCheckedChange={(v) => setNewWrapper({ ...newWrapper, has_credit_savings: v })}
+                    checked={!!newWrapper.has_credit_savings}
+                    onCheckedChange={(checked) => setNewWrapper(prev => ({ ...prev, has_credit_savings: checked }))}
                   />
                   <span className="text-sm">Has credit savings</span>
                 </label>

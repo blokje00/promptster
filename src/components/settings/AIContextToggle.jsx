@@ -37,8 +37,8 @@ export default function AIContextToggle({ enableContextSuggestions, setEnableCon
             <p className="text-xs text-slate-500">Get automatic suggested context based on your text</p>
           </div>
           <Switch
-            checked={enableContextSuggestions}
-            onCheckedChange={setEnableContextSuggestions}
+            checked={!!enableContextSuggestions}
+            onCheckedChange={(checked) => setEnableContextSuggestions(checked)}
             disabled={!isAdmin}
           />
         </div>
