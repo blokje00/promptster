@@ -72,7 +72,11 @@ export default function AdminSubscription() {
     is_active: true,
     order: 0,
     trial_days: 0,
-    is_credit_card_required_for_trial: true
+    is_credit_card_required_for_trial: true,
+    show_trial_badge: true,
+    trial_badge_text: "",
+    show_max_tasks_badge: true,
+    max_tasks_badge_text: ""
   });
 
   const resetForm = () => {
@@ -89,7 +93,11 @@ export default function AdminSubscription() {
       is_active: true,
       order: 0,
       trial_days: 0,
-      is_credit_card_required_for_trial: true
+      is_credit_card_required_for_trial: true,
+      show_trial_badge: true,
+      trial_badge_text: "",
+      show_max_tasks_badge: true,
+      max_tasks_badge_text: ""
     });
     setIsEditing(false);
     setCurrentPlan(null);
@@ -109,7 +117,11 @@ export default function AdminSubscription() {
       is_active: plan.is_active,
       order: plan.order,
       trial_days: plan.trial_days || 0,
-      is_credit_card_required_for_trial: plan.is_credit_card_required_for_trial !== undefined ? plan.is_credit_card_required_for_trial : true
+      is_credit_card_required_for_trial: plan.is_credit_card_required_for_trial !== undefined ? plan.is_credit_card_required_for_trial : true,
+      show_trial_badge: plan.show_trial_badge !== undefined ? plan.show_trial_badge : true,
+      trial_badge_text: plan.trial_badge_text || "",
+      show_max_tasks_badge: plan.show_max_tasks_badge !== undefined ? plan.show_max_tasks_badge : true,
+      max_tasks_badge_text: plan.max_tasks_badge_text || ""
     });
     setCurrentPlan(plan);
     setIsEditing(true);
@@ -231,6 +243,50 @@ export default function AdminSubscription() {
                     onCheckedChange={(checked) => setFormData({...formData, is_credit_card_required_for_trial: checked})} 
                   />
                   <Label>Creditcard Required</Label>
+                </div>
+              </div>
+              
+              <div className="border-t pt-4">
+                <h4 className="font-semibold mb-3 text-sm">Badge Display Settings</h4>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Switch 
+                      checked={formData.show_trial_badge} 
+                      onCheckedChange={(checked) => setFormData({...formData, show_trial_badge: checked})} 
+                    />
+                    <Label>Show Trial Badge</Label>
+                  </div>
+                  {formData.show_trial_badge && (
+                    <div>
+                      <Label className="text-xs text-slate-500">Custom Trial Badge Text (optional)</Label>
+                      <Input 
+                        value={formData.trial_badge_text} 
+                        onChange={(e) => setFormData({...formData, trial_badge_text: e.target.value})} 
+                        placeholder="e.g. 14 days free (no CC)"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3 mt-4">
+                  <div className="flex items-center gap-2">
+                    <Switch 
+                      checked={formData.show_max_tasks_badge} 
+                      onCheckedChange={(checked) => setFormData({...formData, show_max_tasks_badge: checked})} 
+                    />
+                    <Label>Show Max Tasks Badge</Label>
+                  </div>
+                  {formData.show_max_tasks_badge && (
+                    <div>
+                      <Label className="text-xs text-slate-500">Custom Max Tasks Badge Text (optional)</Label>
+                      <Input 
+                        value={formData.max_tasks_badge_text} 
+                        onChange={(e) => setFormData({...formData, max_tasks_badge_text: e.target.value})} 
+                        placeholder="e.g. Max Tasks: 20"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
               <div>

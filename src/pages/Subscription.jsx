@@ -359,14 +359,13 @@ export default function SubscriptionPage() {
               <div className="flex items-center gap-3 mb-1">
                 <h3 className="text-xl font-semibold">{plan.name}</h3>
                 {!plan.is_active && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Inactive</span>}
-                {plan.trial_days > 0 && !plan.is_credit_card_required_for_trial && (
-                  <span className="text-xs bg-green-100 px-2 py-1 rounded text-green-700 font-medium">
-                    {plan.trial_days} days free (no CC)
-                  </span>
-                )}
-                {plan.trial_days > 0 && plan.is_credit_card_required_for_trial && (
-                  <span className="text-xs bg-blue-100 px-2 py-1 rounded text-blue-700 font-medium">
-                    {plan.trial_days} days trial
+                {plan.show_trial_badge && plan.trial_days > 0 && (
+                  <span className={`text-xs px-2 py-1 rounded font-medium ${
+                    plan.is_credit_card_required_for_trial 
+                      ? 'bg-blue-100 text-blue-700' 
+                      : 'bg-green-100 text-green-700'
+                  }`}>
+                    {plan.trial_badge_text || `${plan.trial_days} days ${plan.is_credit_card_required_for_trial ? 'trial' : 'free (no CC)'}`}
                   </span>
                 )}
               </div>
@@ -374,7 +373,11 @@ export default function SubscriptionPage() {
               <div className="flex gap-4 text-sm text-slate-500">
                 <span>Month: €{plan.monthly_price_amount}</span>
                 {plan.annual_price_amount && <span>Year: €{plan.annual_price_amount}</span>}
-                <span className="font-medium text-indigo-600">Max Tasks: {plan.max_thoughts || 10}</span>
+                {plan.show_max_tasks_badge && (
+                  <span className="font-medium text-indigo-600">
+                    {plan.max_tasks_badge_text || `Max Tasks: ${plan.max_thoughts || 10}`}
+                  </span>
+                )}
               </div>
               {plan.features && plan.features.length > 0 ? (
                 <ul className="mt-3 space-y-1">
