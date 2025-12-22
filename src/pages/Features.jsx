@@ -81,8 +81,6 @@ function FeaturesPage() {
     retry: false,
   });
 
-  const isAdmin = currentUser?.role === 'admin';
-
   // Build resolved blocks map: DB values merged with defaults
   const resolvedBlocks = { ...defaultContent };
   blocks.forEach(block => {
