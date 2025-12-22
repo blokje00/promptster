@@ -59,6 +59,7 @@ export default function AdminSubscription() {
     payment_link: "",
     max_thoughts: 10,
     features: [],
+    visibility_status: "visible_purchasable",
     is_active: true,
     order: 0,
     trial_days: 0,
@@ -80,6 +81,7 @@ export default function AdminSubscription() {
       payment_link: "",
       max_thoughts: 10,
       features: [],
+      visibility_status: "visible_purchasable",
       is_active: true,
       order: 0,
       trial_days: 0,
@@ -104,6 +106,7 @@ export default function AdminSubscription() {
       payment_link: plan.payment_link || "",
       max_thoughts: plan.max_thoughts || 10,
       features: plan.features || [],
+      visibility_status: plan.visibility_status || "visible_purchasable",
       is_active: plan.is_active,
       order: plan.order,
       trial_days: plan.trial_days || 0,
@@ -342,18 +345,36 @@ export default function AdminSubscription() {
                   rows={6}
                 />
               </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Switch 
-                    checked={!!formData.is_active} 
-                    onCheckedChange={(checked) => 
-                      setFormData((p) => ({ ...p, is_active: checked }))
-                    } 
-                  />
-                  <Label>Active</Label>
+              <div className="border-t pt-4">
+                <h4 className="font-semibold mb-3 text-sm">Visibility & Purchase Status</h4>
+                <div className="space-y-3">
+                  <div>
+                    <Label>Visibility Status</Label>
+                    <Select
+                      value={formData.visibility_status}
+                      onValueChange={(value) => setFormData({...formData, visibility_status: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select visibility" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="visible_purchasable">✅ Visible + Purchasable</SelectItem>
+                        <SelectItem value="visible_not_purchasable">👁️ Visible + Not Purchasable (Coming Soon)</SelectItem>
+                        <SelectItem value="hidden">🚫 Hidden (Not Shown)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {formData.visibility_status === "visible_purchasable" && "Plan is shown and users can subscribe"}
+                      {formData.visibility_status === "visible_not_purchasable" && "Plan is shown but cannot be purchased (e.g., coming soon)"}
+                      {formData.visibility_status === "hidden" && "Plan is completely hidden from users"}
+                    </p>
+                  </div>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-4 border-t pt-4">
                 <div className="flex items-center gap-2">
-                  <Label>Order</Label>
+                  <Label>Display Order</Label>
                   <Input 
                     type="number" 
                     className="w-20"
@@ -375,13 +396,24 @@ export default function AdminSubscription() {
       </div>
 
       <div className="grid gap-6">
-        {plans.map((plan) => (
-          <Card key={plan.id} className={`border-l-4 ${plan.is_active ? 'border-l-green-500' : 'border-l-slate-300'}`}>
+        {plans.map((plan) => {
+          const statusColor = 
+            plan.visibility_status === 'visible_purchasable' ? 'border-l-green-500' :
+            plan.visibility_status === 'visible_not_purchasable' ? 'border-l-yellow-500' :
+            'border-l-slate-300';
+          
+          return (
+          <Card key={plan.id} className={`border-l-4 ${statusColor}`}>
             <CardContent className="p-6 flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-3 mb-1">
                   <h3 className="text-xl font-semibold">{plan.name}</h3>
-                  {!plan.is_active && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Inactive</span>}
+                  {plan.visibility_status === 'visible_not_purchasable' && (
+                    <span className="text-xs bg-yellow-100 px-2 py-1 rounded text-yellow-700">Coming Soon</span>
+                  )}
+                  {plan.visibility_status === 'hidden' && (
+                    <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Hidden</span>
+                  )}
                 </div>
                 <p className="text-slate-600 mb-2">{plan.description}</p>
                 <div className="flex gap-4 text-sm text-slate-500 flex-wrap">
@@ -422,7 +454,8 @@ export default function AdminSubscription() {
               </div>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
         {plans.length === 0 && (
           <p className="text-center text-slate-500 py-12">No subscription plans configured yet.</p>
         )}

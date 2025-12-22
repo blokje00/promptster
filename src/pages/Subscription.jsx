@@ -35,15 +35,18 @@ export default function SubscriptionPage() {
     },
   });
 
-  // Filter plans based on subscription status AND only show active plans
+  // Filter plans based on subscription status AND visibility
   const userHasAccess = hasValidAccess(user) || hasValidLatch();
   const isTrialing = user?.subscription_status === 'trialing';
   const isActive = user?.subscription_status === 'active';
-  
-  // Show plans to trialing users so they can upgrade, hide for active users
+
+  // Show plans based on visibility_status (fallback to is_active for backwards compatibility)
   const displayPlans = isActive 
     ? [] 
-    : plans.filter(plan => plan.is_active === true);
+    : plans.filter(plan => {
+        const status = plan.visibility_status || (plan.is_active ? 'visible_purchasable' : 'hidden');
+        return status !== 'hidden';
+      });
 
   const handleSubscribe = async (plan) => {
     setIsProcessing(true);
@@ -353,13 +356,18 @@ export default function SubscriptionPage() {
       )}
 
       <div className="grid gap-6">
-        {displayPlans.map((plan) => (
-        <Card key={plan.id} className={`border-l-4 ${plan.is_active ? 'border-l-green-500' : 'border-l-slate-300'}`}>
+        {displayPlans.map((plan) => {
+        const isPurchasable = (plan.visibility_status || 'visible_purchasable') === 'visible_purchasable';
+
+        return (
+        <Card key={plan.id} className={`border-l-4 ${isPurchasable ? 'border-l-green-500' : 'border-l-yellow-500'}`}>
           <CardContent className="p-6 flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-1">
                 <h3 className="text-xl font-semibold">{plan.name}</h3>
-                {!plan.is_active && <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">Inactive</span>}
+                {!isPurchasable && (
+                  <span className="text-xs bg-yellow-100 px-2 py-1 rounded text-yellow-700">Coming Soon</span>
+                )}
                 {plan.show_trial_badge && plan.trial_days > 0 && (
                   <span className={`text-xs px-2 py-1 rounded font-medium ${
                     plan.is_credit_card_required_for_trial 
@@ -433,7 +441,7 @@ export default function SubscriptionPage() {
                 )
               ) : !plan.is_active ? (
                 <Button disabled variant="outline" className="text-slate-400">
-                  Not Available
+                  {isPurchasable ? 'Not Available' : 'Coming Soon'}
                 </Button>
               ) : plan.trial_days > 0 && !plan.is_credit_card_required_for_trial ? (
                 <Button 
@@ -460,9 +468,10 @@ export default function SubscriptionPage() {
               )}
             </div>
           </CardContent>
-        </Card>
-        ))}
-        {displayPlans.length === 0 && !isLoading && user?.subscription_status !== 'active' && user?.subscription_status !== 'trialing' && (
+          </Card>
+          );
+          })}
+          {displayPlans.length === 0 && !isLoading && user?.subscription_status !== 'active' && user?.subscription_status !== 'trialing' && (
           <p className="text-center text-slate-500 py-12">No subscription plans available at this time.</p>
         )}
       </div>

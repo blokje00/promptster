@@ -15,7 +15,8 @@ export default function PromptPreview({
   isImproving,
   onImprove,
   saveSuccess,
-  onQuickSave
+  onQuickSave,
+  selectedThoughts = []
 }) {
   const displayPrompt = improvedPrompt || generatedPrompt;
 
@@ -78,7 +79,11 @@ export default function PromptPreview({
       </CardHeader>
       <CardContent className="flex-1 relative group/preview">
         <div className="bg-slate-900 rounded-lg p-4 min-h-[300px] max-h-[500px] overflow-auto text-slate-300 font-mono text-sm whitespace-pre-wrap">
-          {displayPrompt || "// Create / select tasks to generate prompt..."}
+          {displayPrompt || (
+            selectedThoughts.length > 0 
+              ? "// Tasks loaded. Click 'Generate Prompt' to create preview..." 
+              : "// Create / select tasks to generate prompt..."
+          )}
         </div>
         {displayPrompt && (
           <Button

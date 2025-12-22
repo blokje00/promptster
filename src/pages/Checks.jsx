@@ -91,7 +91,7 @@ export default function Checks() {
     enabled: !!currentUser
   });
 
-  // Flatten tasks - FIXED: Don't copy item screenshots to all tasks
+  // Flatten tasks with proper screenshot handling
   const allTasks = useMemo(() => {
     const tasks = [];
     items.forEach(item => {
@@ -104,10 +104,11 @@ export default function Checks() {
             projectId: item.project_id,
             index: index,
             taskNumber: `TASK-${index + 1}`,
-            // FIXED: Only include screenshots if they exist on the check itself
-            screenshot_ids: check.screenshot_ids || [],
+            // Only include screenshots that belong to THIS specific check
+            // If check has its own screenshots, use those
+            // Otherwise, fall back to item screenshots ONLY if this is the first task
+            screenshot_ids: check.screenshot_ids || (index === 0 ? (item.screenshot_ids || []) : []),
             ...check,
-            // Use updated_date if available, otherwise item's updated_date as fallback
             updated_date: check.updated_date || item.updated_date,
             created_date: check.created_date || item.created_date
           });
