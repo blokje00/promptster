@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { UltimateSaveButton } from "@/components/lib/UltimateSaveButton";
+import { qk } from "@/components/lib/queryKeys";
 
 export default function AdminSubscription() {
   const queryClient = useQueryClient();
@@ -24,37 +26,25 @@ export default function AdminSubscription() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { data: plans = [], isLoading } = useQuery({
-    queryKey: ['subscriptionPlans'],
+    queryKey: qk.subscriptionPlans,
     queryFn: async () => {
       const result = await base44.entities.SubscriptionPlan.list("order", 100);
       return result || [];
     },
   });
 
-  const createPlanMutation = useMutation({
-    mutationFn: (data) => base44.entities.SubscriptionPlan.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subscriptionPlans'] });
-      toast.success("Plan created");
-      setDialogOpen(false);
-      resetForm();
-    },
-  });
-
-  const updatePlanMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.SubscriptionPlan.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subscriptionPlans'] });
-      toast.success("Plan updated");
-      setDialogOpen(false);
-      resetForm();
-    },
-  });
+  // Single source of truth for save
+  const savePlan = async (planId, payload) => {
+    if (planId) {
+      return await base44.entities.SubscriptionPlan.update(planId, payload);
+    }
+    return await base44.entities.SubscriptionPlan.create(payload);
+  };
 
   const deletePlanMutation = useMutation({
     mutationFn: (id) => base44.entities.SubscriptionPlan.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subscriptionPlans'] });
+      queryClient.invalidateQueries({ queryKey: qk.subscriptionPlans });
       toast.success("Plan deleted");
     },
   });
@@ -128,17 +118,82 @@ export default function AdminSubscription() {
     setDialogOpen(true);
   };
 
-  const handleSubmit = () => {
-    const cleanedData = {
+  // UltimateSaveButton refs
+  const saveButtonRef = useRef(null);
+  const modalContainerRef = useRef(null);
+  
+  // Initialize UltimateSaveButton when dialog opens
+  useEffect(() => {
+    if (!dialogOpen || !saveButtonRef.current) return;
+
+    const getPayload = () => ({
       ...formData,
       features: formData.features.filter(f => f.trim())
+    });
+
+    const validate = () => {
+      if (!formData.name?.trim()) {
+        return { valid: false, message: "Plan name is required" };
+      }
+      if (!formData.monthly_price_amount || formData.monthly_price_amount <= 0) {
+        return { valid: false, message: "Monthly price must be greater than 0" };
+      }
+      return { valid: true };
     };
-    if (isEditing && currentPlan) {
-      updatePlanMutation.mutate({ id: currentPlan.id, data: cleanedData });
-    } else {
-      createPlanMutation.mutate(cleanedData);
-    }
-  };
+
+    const saveBtn = new UltimateSaveButton({
+      buttonElement: saveButtonRef.current,
+      containerToClose: null, // we handle close manually
+      validate,
+      
+      onBeforeSave: async () => {
+        const payload = getPayload();
+        const planId = isEditing && currentPlan ? currentPlan.id : null;
+
+        // DB call
+        const result = await savePlan(planId, payload);
+
+        // Optimistic cache update
+        queryClient.setQueryData(qk.subscriptionPlans, (old) => {
+          if (!old) return old;
+          const arr = Array.isArray(old) ? old : [];
+          
+          if (planId) {
+            // Update existing
+            const next = arr.map((p) => (p.id === result.id ? { ...p, ...result } : p));
+            return next;
+          } else {
+            // Add new
+            return [...arr, result];
+          }
+        });
+
+        // Set individual plan cache
+        queryClient.setQueryData(qk.subscriptionPlan(result.id), result);
+
+        // Safety refetch
+        queryClient.invalidateQueries({ queryKey: qk.subscriptionPlans });
+
+        return true;
+      },
+
+      onSuccess: () => {
+        setTimeout(() => {
+          setDialogOpen(false);
+          resetForm();
+        }, 600);
+      },
+
+      labels: {
+        idle: "Save Plan",
+        saving: "Saving…",
+        success: "Saved ✓",
+        error: "Save failed"
+      }
+    });
+
+    return () => saveBtn.destroy();
+  }, [dialogOpen, isEditing, currentPlan?.id, formData, queryClient]);
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -317,10 +372,9 @@ export default function AdminSubscription() {
                   />
                 </div>
               </div>
-              <Button onClick={handleSubmit} className="w-full bg-indigo-600">
-                <Save className="w-4 h-4 mr-2" />
-                Save
-              </Button>
+              <button ref={saveButtonRef} type="button" className="w-full">
+                Save Plan
+              </button>
             </div>
           </DialogContent>
         </Dialog>
