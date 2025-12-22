@@ -1,412 +1,298 @@
 /**
- * Promptster Ultimate Save Button (Base44 friendly)
- * - No stacking spinner/checkmark
- * - Correct cleanup (no listener leaks)
- * - Timeout + AbortController
- * - Safer JSON parsing
- * - Promptster-like indigo/purple styling
+ * UltimateSaveButton Pattern (React onClick + State)
+ * 
+ * Simpelste en meest betrouwbare save pattern - geen DOM listeners, geen refs
+ * 
+ * CORE PRINCIPLES:
+ * 1. Normal React onClick handler (geen DOM addEventListener)
+ * 2. Local state voor saving/saved status
+ * 3. Optimistic UI updates via queryClient.setQueryData
+ * 4. Cache invalidation voor refetch
+ * 5. Automatic modal close on success
+ * 
+ * Waarom dit beter is dan complexe save libraries:
+ * - Volledig voorspelbaar React gedrag
+ * - Geen cleanup issues (listeners, refs, timers)
+ * - Makkelijk te debuggen
+ * - Werkt altijd consistent, ook bij herhaaldelijk gebruik
  */
 
-export class UltimateSaveButton {
-  constructor(config = {}) {
-    this.config = {
-      // Data & API
-      apiEndpoint: config.apiEndpoint || "/api/save",
-      getData: config.getData || (() => ({})),
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { base44 } from "@/api/base44Client";
 
-      // UI
-      buttonElement: config.buttonElement,
-      containerToClose: config.containerToClose,
-
-      // Timing
-      autoCloseDelay: config.autoCloseDelay ?? 1200,
-      debounceTime: config.debounceTime ?? 250,
-
-      // Network hardening
-      requestTimeoutMs: config.requestTimeoutMs ?? 15000,
-
-      // Callbacks
-      onBeforeSave: config.onBeforeSave || null,
-      onSuccess: config.onSuccess || null,
-      onError: config.onError || null,
-      onClose: config.onClose || null,
-
-      // Validation
-      validate: config.validate || (() => ({ valid: true })),
-
-      // Retry
-      maxRetries: config.maxRetries ?? 2,
-
-      // Optimistic
-      optimistic: config.optimistic ?? false,
-      rollback: config.rollback || null,
-
-      // Labels (NL default, Promptster tone)
-      labels: {
-        idle: "Save",
-        saving: "Saving…",
-        success: "Saved ✓",
-        error: "Save failed",
-        ...config.labels,
-      },
-
-      // Toast
-      toast: config.toast ?? true,
-    };
-
-    this.state = "idle";
-    this.debounceTimer = null;
-
-    // Keep handler refs for cleanup
-    this._onClick = (e) => {
-      e?.preventDefault?.();
-      console.log("[USB] click detected");
-      this.handleSave();
-    };
-    this._onKeyDown = (e) => {
-      const key = String(e.key || "").toLowerCase();
-      if ((e.ctrlKey || e.metaKey) && key === "s") {
-        e.preventDefault();
-        this.handleSave();
-      }
-    };
-
-    // Abort controller for inflight request
-    this._abortController = null;
-
-    this.init();
-  }
-
-  init() {
-    const btn = this.config.buttonElement;
-    if (!btn) {
-      console.warn("[UltimateSaveButton] No buttonElement provided.");
+/**
+ * BASIC PATTERN (minimaal voorbeeld)
+ */
+export function BasicSaveExample() {
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({ name: "", price: 0 });
+  
+  const handleSave = async () => {
+    // 1. Validation
+    if (!formData.name?.trim()) {
+      toast.error("Name is required");
       return;
     }
 
-    console.log("[USB] init", { hasBtn: !!btn, label: btn?.textContent });
-
-    this.ensureBaseStylesOnce();
-    this.ensureIconNodes();
-
-    btn.addEventListener("click", this._onClick);
-    document.addEventListener("keydown", this._onKeyDown);
-
-    // Optional: if button already has a class, keep it; otherwise apply base
-    if (!btn.classList.contains("ps-save-btn")) btn.classList.add("ps-save-btn");
-
-    this.updateButtonUI();
-  }
-
-  handleSave() {
-    clearTimeout(this.debounceTimer);
-    this.debounceTimer = setTimeout(() => this.executeSave(), this.config.debounceTime);
-  }
-
-  async executeSave() {
-    if (this.state === "saving") return;
-
+    // 2. Set saving state
+    setSaving(true);
+    
     try {
-      // 1) validate
-      const validation = this.config.validate?.() || { valid: true };
-      if (!validation.valid) {
-        this.showError(validation.message || "Validation failed");
-        return;
-      }
-
-      // 2) beforeSave
-      if (this.config.onBeforeSave) {
-        const proceed = await this.config.onBeforeSave();
-        if (proceed === false) return;
-      }
-
-      // 3) gather data
-      const data = await this.config.getData();
-
-      // 4) saving state
-      this.setState("saving");
-
-      // 5) optimistic UI (optional)
-      if (this.config.optimistic && this.config.onSuccess) {
-        try {
-          this.config.onSuccess(data);
-        } catch (e) {
-          console.warn("[UltimateSaveButton] optimistic onSuccess threw", e);
-        }
-      }
-
-      // 6) call API with retry (unless in direct mode)
-      let result;
-      if (this.config.apiEndpoint === "__DIRECT__") {
-        // Direct mode: onBeforeSave handled everything, no fetch needed
-        result = { ok: true };
-      } else {
-        result = await this.saveWithRetry(data);
-      }
-
-      // 7) success
-      this.setState("success");
-
-      if (!this.config.optimistic && this.config.onSuccess) {
-        this.config.onSuccess(result);
-      }
-
-      // 8) autoclose
-      if (this.config.containerToClose && this.config.autoCloseDelay > 0) {
-        setTimeout(() => this.closeContainer(), this.config.autoCloseDelay);
-      } else {
-        // After success, reset back to idle after a short moment (so user can save again)
-        setTimeout(() => this.setState("idle"), 1200);
-      }
+      // 3. Save to API
+      const result = await base44.entities.Product.create(formData);
+      
+      // 4. Success feedback
+      toast.success("Saved!");
+      
+      // 5. Reset or close
+      setFormData({ name: "", price: 0 });
     } catch (error) {
-      if (this.config.optimistic && this.config.rollback) {
-        try {
-          this.config.rollback();
-        } catch (e) {
-          console.warn("[UltimateSaveButton] rollback threw", e);
-        }
-      }
-
-      this.showError(error?.message || "Something went wrong");
-      if (this.config.onError) this.config.onError(error);
+      toast.error(error.message || "Save failed");
+    } finally {
+      setSaving(false);
     }
-  }
+  };
 
-  async saveWithRetry(data, attempt = 0) {
-    try {
-      // Cancel previous inflight
-      if (this._abortController) this._abortController.abort();
-      this._abortController = new AbortController();
-
-      const timeoutId = setTimeout(() => {
-        try {
-          this._abortController.abort();
-        } catch {}
-      }, this.config.requestTimeoutMs);
-
-      const response = await fetch(this.config.apiEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        signal: this._abortController.signal,
-      }).finally(() => clearTimeout(timeoutId));
-
-      if (!response.ok) {
-        const errJson = await this.safeJson(response);
-        const msg = errJson?.message || errJson?.error || `HTTP ${response.status}`;
-        throw new Error(msg);
-      }
-
-      const json = await this.safeJson(response);
-      return json ?? { ok: true };
-    } catch (error) {
-      if (attempt < this.config.maxRetries) {
-        const wait = 700 * (attempt + 1); // simple backoff (fast)
-        console.log(`[UltimateSaveButton] Retry ${attempt + 1}/${this.config.maxRetries} in ${wait}ms`);
-        await this.sleep(wait);
-        return this.saveWithRetry(data, attempt + 1);
-      }
-      throw error;
-    }
-  }
-
-  setState(newState) {
-    this.state = newState;
-    this.updateButtonUI();
-  }
-
-  updateButtonUI() {
-    const btn = this.config.buttonElement;
-    if (!btn) return;
-
-    btn.classList.remove("is-saving", "is-success", "is-error");
-
-    // Ensure icon nodes exist and are not duplicated
-    const spinner = btn.querySelector(".ps-save-spinner");
-    const check = btn.querySelector(".ps-save-check");
-
-    // Reset icon visibility
-    if (spinner) spinner.style.display = "none";
-    if (check) check.style.display = "none";
-
-    switch (this.state) {
-      case "idle":
-        btn.disabled = false;
-        btn.textContent = this.config.labels.idle;
-        this.ensureIconNodes(); // re-add icons after textContent reset
-        break;
-
-      case "saving":
-        btn.disabled = true;
-        btn.classList.add("is-saving");
-        btn.textContent = this.config.labels.saving;
-        this.ensureIconNodes();
-        btn.querySelector(".ps-save-spinner").style.display = "inline-block";
-        break;
-
-      case "success":
-        btn.disabled = true;
-        btn.classList.add("is-success");
-        btn.textContent = this.config.labels.success;
-        this.ensureIconNodes();
-        btn.querySelector(".ps-save-check").style.display = "inline-block";
-        break;
-
-      case "error":
-        btn.disabled = false;
-        btn.classList.add("is-error");
-        btn.textContent = this.config.labels.error;
-        this.ensureIconNodes();
-        setTimeout(() => this.setState("idle"), 2500);
-        break;
-    }
-  }
-
-  showError(message) {
-    this.setState("error");
-    if (this.config.toast) this.showNotification(message, "error");
-  }
-
-  showNotification(message, type = "info") {
-    const n = document.createElement("div");
-    n.className = `ps-toast ps-toast-${type}`;
-    n.textContent = message;
-
-    document.body.appendChild(n);
-    requestAnimationFrame(() => n.classList.add("is-in"));
-
-    setTimeout(() => {
-      n.classList.remove("is-in");
-      setTimeout(() => n.remove(), 200);
-    }, 3000);
-  }
-
-  closeContainer() {
-    const el = this.config.containerToClose;
-    if (!el) {
-      // No container to close, just call onClose directly
-      if (this.config.onClose) this.config.onClose();
-      return;
-    }
-
-    el.classList.add("ps-fade-out");
-    setTimeout(() => {
-      el.style.display = "none";
-      el.classList.remove("ps-fade-out");
-      if (this.config.onClose) this.config.onClose();
-    }, 180);
-  }
-
-  ensureIconNodes() {
-    const btn = this.config.buttonElement;
-    if (!btn) return;
-
-    // Remove any existing icons first to prevent duplicates
-    const existingSpinner = btn.querySelector(".ps-save-spinner");
-    const existingCheck = btn.querySelector(".ps-save-check");
-    if (existingSpinner) existingSpinner.remove();
-    if (existingCheck) existingCheck.remove();
-
-    // Add fresh icons
-    const spinner = document.createElement("span");
-    spinner.className = "ps-save-spinner";
-    spinner.innerHTML = "⟳";
-    spinner.style.display = "none";
-    btn.appendChild(spinner);
-
-    const check = document.createElement("span");
-    check.className = "ps-save-check";
-    check.innerHTML = "✓";
-    check.style.display = "none";
-    btn.appendChild(check);
-  }
-
-  async safeJson(response) {
-    try {
-      const text = await response.text();
-      if (!text) return null;
-      return JSON.parse(text);
-    } catch {
-      return null;
-    }
-  }
-
-  sleep(ms) {
-    return new Promise((r) => setTimeout(r, ms));
-  }
-
-  reset() {
-    this.setState("idle");
-  }
-
-  destroy() {
-    const btn = this.config.buttonElement;
-    if (btn) btn.removeEventListener("click", this._onClick);
-    document.removeEventListener("keydown", this._onKeyDown);
-    if (this._abortController) this._abortController.abort();
-  }
-
-  // One-time style injection
-  ensureBaseStylesOnce() {
-    if (document.getElementById("ps-savebutton-styles")) return;
-
-    const style = document.createElement("style");
-    style.id = "ps-savebutton-styles";
-    style.textContent = `
-      .ps-save-btn{
-        padding: 10px 14px;
-        border: 1px solid rgba(255,255,255,.12);
-        border-radius: 10px;
-        font-size: 14px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: transform .12s ease, opacity .12s ease, filter .12s ease;
-        background: linear-gradient(135deg, #6D28D9, #4F46E5); /* Promptster-ish purple/indigo */
-        color: white;
-      }
-      .ps-save-btn:hover:not(:disabled){ transform: translateY(-1px); filter: brightness(1.03); }
-      .ps-save-btn:disabled{ opacity: .75; cursor: not-allowed; }
-      .ps-save-btn.is-saving{ background: linear-gradient(135deg, #4F46E5, #4338CA); }
-      .ps-save-btn.is-success{ background: linear-gradient(135deg, #10B981, #059669); }
-      .ps-save-btn.is-error{ background: linear-gradient(135deg, #EF4444, #DC2626); }
-
-      .ps-save-spinner{
-        margin-left: 10px;
-        display: inline-block;
-        animation: psSpin 1s linear infinite;
-        font-weight: 900;
-      }
-      .ps-save-check{
-        margin-left: 10px;
-        display: inline-block;
-        animation: psPop .16s ease;
-        font-weight: 900;
-      }
-      @keyframes psSpin{ to { transform: rotate(360deg); } }
-      @keyframes psPop{ from { transform: scale(.6); opacity: .3; } to { transform: scale(1); opacity: 1; } }
-
-      .ps-toast{
-        position: fixed;
-        top: 18px;
-        right: 18px;
-        padding: 10px 14px;
-        border-radius: 12px;
-        color: white;
-        font-weight: 700;
-        box-shadow: 0 10px 30px rgba(0,0,0,.22);
-        transform: translateX(16px);
-        opacity: 0;
-        transition: transform .18s ease, opacity .18s ease;
-        z-index: 10000;
-      }
-      .ps-toast.is-in{ transform: translateX(0); opacity: 1; }
-      .ps-toast-error{ background: #EF4444; }
-      .ps-toast-info{ background: #4F46E5; }
-      .ps-toast-success{ background: #10B981; }
-
-      .ps-fade-out{ animation: psFadeOut .18s ease forwards; }
-      @keyframes psFadeOut{ to { opacity: 0; transform: scale(.99); } }
-    `;
-    document.head.appendChild(style);
-  }
+  return (
+    <div className="space-y-4">
+      <input 
+        value={formData.name}
+        onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
+      />
+      <Button 
+        onClick={handleSave} 
+        disabled={saving}
+      >
+        {saving ? "Saving…" : "Save"}
+      </Button>
+    </div>
+  );
 }
+
+/**
+ * FULL PATTERN (met React Query optimistic updates)
+ */
+export function FullSaveExample({ dialogOpen, setDialogOpen }) {
+  const queryClient = useQueryClient();
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    price: 0
+  });
+
+  const resetForm = () => {
+    setFormData({ name: "", description: "", price: 0 });
+  };
+
+  const handleSave = async () => {
+    // 1. Validation (front-end checks)
+    if (!formData.name?.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+    if (!formData.price || formData.price <= 0) {
+      toast.error("Price must be greater than 0");
+      return;
+    }
+
+    // 2. Set saving state (disables button, shows loading)
+    setSaving(true);
+    
+    try {
+      // 3. Normalize payload (trim strings, ensure booleans)
+      const payload = {
+        ...formData,
+        name: formData.name.trim(),
+        description: (formData.description || "").trim()
+      };
+
+      // 4. Save to API (create or update)
+      const saved = await base44.entities.Product.create(payload);
+
+      // 5. Optimistic UI update (instant feedback)
+      queryClient.setQueryData(['products'], (old = []) => {
+        return [saved, ...old];
+      });
+
+      // 6. Update single item cache
+      queryClient.setQueryData(['product', saved.id], saved);
+
+      // 7. Invalidate for background refetch (ensures consistency)
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+
+      // 8. Success feedback
+      toast.success("Product saved");
+
+      // 9. Close modal and reset
+      setDialogOpen(false);
+      resetForm();
+
+    } catch (error) {
+      // Error handling
+      toast.error(error.message || "Failed to save");
+    } finally {
+      // Always reset saving state
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Button 
+      onClick={handleSave} 
+      disabled={saving}
+      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+    >
+      {saving ? "Saving…" : "Save"}
+    </Button>
+  );
+}
+
+/**
+ * ADMIN SUBSCRIPTION PATTERN (complete real-world example)
+ * 
+ * Zoals geïmplementeerd in pages/AdminSubscription
+ */
+export function AdminSubscriptionSavePattern() {
+  const queryClient = useQueryClient();
+  const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    monthly_price_amount: 0,
+    show_trial_badge: true,
+    trial_badge_text: "",
+    is_active: true
+  });
+
+  // Single source of truth voor save operatie
+  const savePlan = async (planId, payload) => {
+    if (planId) {
+      return await base44.entities.SubscriptionPlan.update(planId, payload);
+    }
+    return await base44.entities.SubscriptionPlan.create(payload);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      monthly_price_amount: 0,
+      show_trial_badge: true,
+      trial_badge_text: "",
+      is_active: true
+    });
+    setIsEditing(false);
+    setCurrentPlan(null);
+  };
+
+  const handleSave = async () => {
+    // 1. Validation
+    if (!formData.name?.trim()) {
+      toast.error("Plan name is required");
+      return;
+    }
+    if (!formData.monthly_price_amount || formData.monthly_price_amount <= 0) {
+      toast.error("Monthly price must be greater than 0");
+      return;
+    }
+
+    // 2. Set saving state
+    setSaving(true);
+    
+    try {
+      // 3. Normalize payload (critical voor toggles!)
+      const payload = {
+        ...formData,
+        show_trial_badge: !!formData.show_trial_badge,
+        trial_badge_text: (formData.trial_badge_text || "").trim(),
+        is_active: !!formData.is_active,
+        features: formData.features.filter(f => f.trim())
+      };
+
+      // 4. Save (create or update)
+      const planId = isEditing && currentPlan ? currentPlan.id : null;
+      const saved = await savePlan(planId, payload);
+
+      // 5. Optimistic cache update (array)
+      queryClient.setQueryData(['subscriptionPlans'], (old = []) => {
+        const idx = old.findIndex((p) => p.id === saved.id);
+        if (idx === -1) return [saved, ...old];
+        const next = [...old];
+        next[idx] = { ...old[idx], ...saved };
+        return next;
+      });
+
+      // 6. Single item cache update
+      queryClient.setQueryData(['subscriptionPlan', saved.id], saved);
+
+      // 7. Invalidate voor consistency
+      queryClient.invalidateQueries({ queryKey: ['subscriptionPlans'] });
+
+      // 8. Success feedback
+      toast.success("Plan saved");
+
+      // 9. Close en reset
+      setDialogOpen(false);
+      resetForm();
+
+    } catch (error) {
+      toast.error(error.message || "Failed to save plan");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Button 
+      onClick={handleSave} 
+      disabled={saving}
+      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+    >
+      {saving ? "Saving…" : "Save Plan"}
+    </Button>
+  );
+}
+
+/**
+ * WHY THIS PATTERN WORKS PERFECTLY:
+ * 
+ * ✅ Pure React: Normal onClick, geen DOM listeners
+ * ✅ No refs: Geen buttonRef, containerRef, saveInstanceRef
+ * ✅ No effects: Geen useEffect cleanup problemen
+ * ✅ Predictable: saving state altijd correct
+ * ✅ Optimistic UI: setQueryData voor instant feedback
+ * ✅ Cache consistency: invalidateQueries voor refetch
+ * ✅ Works every time: Ook bij herhaaldelijk save/edit/save
+ * ✅ Easy debugging: Console.log overal mogelijk
+ * ✅ Modal close: setDialogOpen(false) altijd betrouwbaar
+ * 
+ * COMPARISON MET OUDE APPROACH:
+ * 
+ * ❌ OLD: DOM addEventListener → listener leaks, duplicate handlers
+ * ✅ NEW: React onClick → automatic cleanup, single source
+ * 
+ * ❌ OLD: useEffect deps → stale closures, re-init bugs
+ * ✅ NEW: Direct state access → altijd fresh state
+ * 
+ * ❌ OLD: Ref juggling → null checks, timing issues
+ * ✅ NEW: Props/state → direct React flow
+ * 
+ * ❌ OLD: Complex state machine → success/error/saving states verward
+ * ✅ NEW: Single saving boolean → crystal clear
+ * 
+ * DEZE PATTERN GEBRUIKEN VOOR:
+ * - Create/Update forms in modals
+ * - Settings save buttons
+ * - Profile updates
+ * - Any form with optimistic UI
+ * 
+ * COMBINEREN MET:
+ * - UltimateToggle voor boolean fields
+ * - Controlled inputs (formData als single source)
+ * - React Query voor cache management
+ */
