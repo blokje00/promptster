@@ -74,35 +74,32 @@ export default function TierAdvisorToggles() {
     }
 
     try {
-      console.log('[TierAdvisor] Saving to both User entity and auth.me():', currentUser.id);
+      console.log('[TierAdvisor] 💾 Saving settings for user:', currentUser.email);
       
       const payload = {
         tier_advisor_features_enabled: !!showOnFeatures,
         tier_advisor_subscription_enabled: !!showOnSubscription,
       };
 
-      // Save to BOTH User entity AND auth.updateMe for consistency
-      await base44.entities.User.update(currentUser.id, payload);
-      await base44.auth.updateMe(payload);
-      
-      console.log('[TierAdvisor] Save successful to both sources');
+      console.log('[TierAdvisor] 📦 Payload:', payload);
 
-      // CRITICAL: Direct cache update for instant UI feedback
+      // Save ONLY to auth.updateMe (single source of truth matching auth.me load)
+      const result = await base44.auth.updateMe(payload);
+      
+      console.log('[TierAdvisor] ✅ Save result:', result);
+
+      // CRITICAL: Null-safe cache update for instant UI feedback
       queryClient.setQueryData(['currentUserSettings'], (old) => ({
-        ...old,
+        ...(old || {}),
         ...payload
       }));
       
-      // Invalidate ALL relevant query keys to ensure consistency across pages
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['currentUserSettings'] }),
-        queryClient.invalidateQueries({ queryKey: ['currentUser'] }),
-        queryClient.invalidateQueries({ queryKey: ['me'] })
-      ]);
+      // Invalidate to trigger refetch with fresh server data
+      await queryClient.invalidateQueries({ queryKey: ['currentUserSettings'] });
       
       toast.success("✅ Tier Advisor settings saved!");
     } catch (error) {
-      console.error('[TierAdvisor] Save failed:', error);
+      console.error('[TierAdvisor] ❌ Save failed:', error);
       toast.error("Failed to save: " + error.message);
     }
   };
