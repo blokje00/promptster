@@ -21,8 +21,9 @@ export default function SubscriptionPage() {
 
   const { data: user } = useCurrentUserSettings();
 
-  // DEFINITIVE: Read directly from User entity
-  const showTierAdvisor = user?.tier_advisor_subscription_enabled === true;
+  // Show for admin OR if explicitly enabled for regular users
+  const isAdmin = user?.role === 'admin';
+  const showTierAdvisor = isAdmin || user?.tier_advisor_subscription_enabled === true;
 
   // No UserProfile fetch needed - using auth.me() directly
 

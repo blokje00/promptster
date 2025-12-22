@@ -64,8 +64,9 @@ function FeaturesPage() {
   
   const { data: currentUser } = useCurrentUserSettings();
 
-  // DEFINITIVE: Read directly from User entity
-  const showTierAdvisor = currentUser?.tier_advisor_features_enabled === true;
+  // Show for admin OR if explicitly enabled for regular users
+  const isAdmin = currentUser?.role === 'admin';
+  const showTierAdvisor = isAdmin || currentUser?.tier_advisor_features_enabled === true;
 
   const { data: blocks = [] } = useQuery({
     queryKey: ['featureContentBlocks'],
