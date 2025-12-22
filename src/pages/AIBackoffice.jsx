@@ -417,7 +417,13 @@ export default function AIBackoffice() {
                   isDirty={personalPrefsHook.isDirty}
                   defaultExample={DEFAULT_PERSONAL_PREFERENCES}
                 />
-                <TierAdvisorToggles />
+                <TierAdvisorToggles onDirtyChange={(isDirty) => {
+                  // TierAdvisor toggles contribute to AIBackoffice dirty state
+                  if (isDirty) {
+                    // Force re-render to update save button state
+                    setSavedAIValues(prev => ({ ...prev }));
+                  }
+                }} />
                 <Card id="retry-message">
                   <CardHeader>
                     <CardTitle className="text-lg">Retry Task Message</CardTitle>

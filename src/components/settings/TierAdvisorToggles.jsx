@@ -11,11 +11,12 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-export default function TierAdvisorToggles() {
+export default function TierAdvisorToggles({ onDirtyChange }) {
   const queryClient = useQueryClient();
   const { data: currentUser } = useCurrentUserSettings();
   const [showOnFeatures, setShowOnFeatures] = useState(false);
   const [showOnSubscription, setShowOnSubscription] = useState(false);
+  const [savedValues, setSavedValues] = useState({ features: false, subscription: false });
 
   // New wrapper form state
   const [showWrapperForm, setShowWrapperForm] = useState(false);
@@ -59,10 +60,24 @@ export default function TierAdvisorToggles() {
 
   useEffect(() => {
     if (currentUser) {
-      setShowOnFeatures(currentUser.tier_advisor_features_enabled || false);
-      setShowOnSubscription(currentUser.tier_advisor_subscription_enabled || false);
+      const features = currentUser.tier_advisor_features_enabled || false;
+      const subscription = currentUser.tier_advisor_subscription_enabled || false;
+      setShowOnFeatures(features);
+      setShowOnSubscription(subscription);
+      setSavedValues({ features, subscription });
     }
   }, [currentUser]);
+
+  // Track dirty state
+  const isDirty = 
+    showOnFeatures !== savedValues.features || 
+    showOnSubscription !== savedValues.subscription;
+
+  useEffect(() => {
+    if (onDirtyChange) {
+      onDirtyChange(isDirty);
+    }
+  }, [isDirty, onDirtyChange]);
 
   // Admin only - MUST be after ALL hooks
   if (currentUser?.role !== 'admin') return null;
@@ -96,6 +111,12 @@ export default function TierAdvisorToggles() {
       
       // Invalidate to trigger refetch with fresh server data
       await queryClient.invalidateQueries({ queryKey: ['currentUserSettings'] });
+      
+      // Update saved baseline
+      setSavedValues({
+        features: payload.tier_advisor_features_enabled,
+        subscription: payload.tier_advisor_subscription_enabled
+      });
       
       toast.success("✅ Tier Advisor settings saved!");
     } catch (error) {
@@ -149,9 +170,10 @@ export default function TierAdvisorToggles() {
 
           <Button
             onClick={handleSave}
+            disabled={!isDirty}
             className="w-full"
           >
-            Save Tier Advisor Settings
+            {isDirty ? "Save Tier Advisor Settings" : "No changes"}
           </Button>
         </div>
 
