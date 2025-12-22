@@ -13,6 +13,7 @@ export default function AIInstructionForm({
   setModelPreference, 
   onSave, 
   isSaving,
+  isDirty = false,
   onReset 
 }) {
   const handleSave = async () => {
@@ -58,7 +59,7 @@ export default function AIInstructionForm({
         <div className="flex gap-2">
           <Button 
             onClick={handleSave} 
-            disabled={isSaving}
+            disabled={isSaving || !isDirty}
             className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
           >
             {isSaving ? (

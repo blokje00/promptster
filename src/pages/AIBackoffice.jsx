@@ -183,6 +183,12 @@ export default function AIBackoffice() {
   const [enableContextSuggestions, setEnableContextSuggestions] = useState(true);
   const [settingsId, setSettingsId] = useState(null);
   const [exampleIndex, setExampleIndex] = useState(0);
+  const [isSavingAI, setIsSavingAI] = useState(false);
+  const [savedAIValues, setSavedAIValues] = useState({
+    instruction: "",
+    modelPreference: "default",
+    enableContextSuggestions: true
+  });
 
   // Fetch currentUser FIRST (no dependencies)
   const { data: currentUser } = useQuery({
@@ -272,10 +278,20 @@ export default function AIBackoffice() {
   useEffect(() => {
     if (settings.length > 0 && !settingsId) {
       const dbInstruction = settings[0].improve_prompt_instruction;
+      const dbModelPref = settings[0].model_preference || "default";
+      const dbContextSuggestions = settings[0].enable_context_suggestions !== false;
+      
       if (dbInstruction) setInstruction(dbInstruction);
-      setModelPreference(settings[0].model_preference || "default");
-      setEnableContextSuggestions(settings[0].enable_context_suggestions !== false);
+      setModelPreference(dbModelPref);
+      setEnableContextSuggestions(dbContextSuggestions);
       setSettingsId(settings[0].id);
+      
+      // Set saved values for dirty tracking
+      setSavedAIValues({
+        instruction: dbInstruction || getDefaultInstruction(),
+        modelPreference: dbModelPref,
+        enableContextSuggestions: dbContextSuggestions
+      });
     }
   }, [settings, settingsId]);
 
@@ -284,25 +300,51 @@ export default function AIBackoffice() {
 
 
   const handleSave = async () => {
+    // Guard: prevent double-click / multiple saves in flight
+    if (isSavingAI) return;
+    
+    setIsSavingAI(true);
+    
     try {
+      // Normalize payload
       const payload = {
-        improve_prompt_instruction: instruction,
-        model_preference: modelPreference,
-        enable_context_suggestions: enableContextSuggestions
+        improve_prompt_instruction: (instruction || "").trim(),
+        model_preference: modelPreference || "default",
+        enable_context_suggestions: !!enableContextSuggestions
       };
 
+      let saved;
       if (settingsId) {
-        await base44.entities.AISettings.update(settingsId, payload);
+        saved = await base44.entities.AISettings.update(settingsId, payload);
       } else {
-        const created = await base44.entities.AISettings.create(payload);
-        setSettingsId(created.id);
+        saved = await base44.entities.AISettings.create(payload);
+        setSettingsId(saved.id);
       }
 
-      queryClient.invalidateQueries({ queryKey: ['aiSettings'] });
+      // Optimistic cache update
+      queryClient.setQueryData(['aiSettings', currentUser?.email], (old = []) => {
+        const idx = old.findIndex((s) => s.id === saved.id);
+        if (idx === -1) return [saved, ...old];
+        const next = [...old];
+        next[idx] = saved;
+        return next;
+      });
+
+      // Invalidate for consistency
+      queryClient.invalidateQueries({ queryKey: ['aiSettings', currentUser?.email] });
+
+      // Update saved values (reset dirty state)
+      setSavedAIValues({
+        instruction: payload.improve_prompt_instruction,
+        modelPreference: payload.model_preference,
+        enableContextSuggestions: payload.enable_context_suggestions
+      });
+
       toast.success("AI settings saved");
-      resetInstruction();
     } catch (error) {
       toast.error("Failed to save: " + error.message);
+    } finally {
+      setIsSavingAI(false);
     }
   };
 
@@ -404,7 +446,12 @@ export default function AIBackoffice() {
                   modelPreference={modelPreference}
                   setModelPreference={setModelPreference}
                   onSave={handleSave}
-                  isSaving={false}
+                  isSaving={isSavingAI}
+                  isDirty={
+                    instruction !== savedAIValues.instruction ||
+                    modelPreference !== savedAIValues.modelPreference ||
+                    enableContextSuggestions !== savedAIValues.enableContextSuggestions
+                  }
                   onReset={() => setInstruction(getDefaultInstruction())}
                 />
               </div>
