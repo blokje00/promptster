@@ -283,7 +283,11 @@ export class UltimateSaveButton {
 
   closeContainer() {
     const el = this.config.containerToClose;
-    if (!el) return;
+    if (!el) {
+      // No container to close, just call onClose directly
+      if (this.config.onClose) this.config.onClose();
+      return;
+    }
 
     el.classList.add("ps-fade-out");
     setTimeout(() => {
@@ -297,22 +301,24 @@ export class UltimateSaveButton {
     const btn = this.config.buttonElement;
     if (!btn) return;
 
-    // If we used textContent, any child nodes were wiped. Re-add once.
-    if (!btn.querySelector(".ps-save-spinner")) {
-      const spinner = document.createElement("span");
-      spinner.className = "ps-save-spinner";
-      spinner.innerHTML = "⟳";
-      spinner.style.display = "none";
-      btn.appendChild(spinner);
-    }
+    // Remove any existing icons first to prevent duplicates
+    const existingSpinner = btn.querySelector(".ps-save-spinner");
+    const existingCheck = btn.querySelector(".ps-save-check");
+    if (existingSpinner) existingSpinner.remove();
+    if (existingCheck) existingCheck.remove();
 
-    if (!btn.querySelector(".ps-save-check")) {
-      const check = document.createElement("span");
-      check.className = "ps-save-check";
-      check.innerHTML = "✓";
-      check.style.display = "none";
-      btn.appendChild(check);
-    }
+    // Add fresh icons
+    const spinner = document.createElement("span");
+    spinner.className = "ps-save-spinner";
+    spinner.innerHTML = "⟳";
+    spinner.style.display = "none";
+    btn.appendChild(spinner);
+
+    const check = document.createElement("span");
+    check.className = "ps-save-check";
+    check.innerHTML = "✓";
+    check.style.display = "none";
+    btn.appendChild(check);
   }
 
   async safeJson(response) {

@@ -179,6 +179,7 @@ export default function AdminSubscription() {
       },
 
       onClose: () => {
+        console.log("[AdminSubscription] onClose called - closing dialog");
         setDialogOpen(false);
         resetForm();
       },
