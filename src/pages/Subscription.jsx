@@ -439,9 +439,9 @@ export default function SubscriptionPage() {
                     Contact
                   </Button>
                 )
-              ) : !plan.is_active ? (
-                <Button disabled variant="outline" className="text-slate-400">
-                  {isPurchasable ? 'Not Available' : 'Coming Soon'}
+              ) : !isPurchasable ? (
+                <Button disabled variant="outline" className="text-yellow-600 border-yellow-600">
+                  Coming Soon
                 </Button>
               ) : plan.trial_days > 0 && !plan.is_credit_card_required_for_trial ? (
                 <Button 
