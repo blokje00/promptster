@@ -121,10 +121,15 @@ export default function AdminSubscription() {
   // UltimateSaveButton refs
   const saveButtonRef = useRef(null);
   const modalContainerRef = useRef(null);
+  const saveInstanceRef = useRef(null);
   
-  // Initialize UltimateSaveButton when dialog opens
+  // Initialize UltimateSaveButton when dialog opens (STABLE - no formData dependency)
   useEffect(() => {
-    if (!dialogOpen || !saveButtonRef.current) return;
+    if (!dialogOpen) return;
+    if (!saveButtonRef.current) return;
+    
+    // Prevent double init
+    if (saveInstanceRef.current) return;
 
     const getPayload = () => ({
       ...formData,
@@ -141,13 +146,14 @@ export default function AdminSubscription() {
       return { valid: true };
     };
 
-    const saveBtn = new UltimateSaveButton({
+    saveInstanceRef.current = new UltimateSaveButton({
       apiEndpoint: "__DIRECT__", // Skip fetch, use onBeforeSave only
       buttonElement: saveButtonRef.current,
       containerToClose: modalContainerRef.current,
       validate,
       
       onBeforeSave: async () => {
+        console.log("[AdminSubscription] onBeforeSave fired");
         const payload = getPayload();
         const planId = isEditing && currentPlan ? currentPlan.id : null;
 
@@ -185,8 +191,13 @@ export default function AdminSubscription() {
       }
     });
 
-    return () => saveBtn.destroy();
-  }, [dialogOpen, isEditing, currentPlan?.id, queryClient]);
+    return () => {
+      if (saveInstanceRef.current) {
+        saveInstanceRef.current.destroy();
+        saveInstanceRef.current = null;
+      }
+    };
+  }, [dialogOpen, isEditing, currentPlan?.id]);
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -365,7 +376,7 @@ export default function AdminSubscription() {
                   />
                 </div>
               </div>
-              <button ref={saveButtonRef} type="button" className="w-full">
+              <button ref={saveButtonRef} type="button" className="ps-save-btn w-full">
                 Save Plan
               </button>
             </div>

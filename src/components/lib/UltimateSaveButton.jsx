@@ -60,6 +60,7 @@ export class UltimateSaveButton {
     // Keep handler refs for cleanup
     this._onClick = (e) => {
       e?.preventDefault?.();
+      console.log("[USB] click detected");
       this.handleSave();
     };
     this._onKeyDown = (e) => {
@@ -82,6 +83,8 @@ export class UltimateSaveButton {
       console.warn("[UltimateSaveButton] No buttonElement provided.");
       return;
     }
+
+    console.log("[USB] init", { hasBtn: !!btn, label: btn?.textContent });
 
     this.ensureBaseStylesOnce();
     this.ensureIconNodes();
