@@ -1,14 +1,21 @@
 /**
- * UltimateToggle Pattern
+ * UltimateToggle Pattern (v2.0)
  * 
  * Simpelste en meest robuuste toggle pattern voor React + shadcn/ui Switch
  * 
- * Regels:
- * 1. Controlled input (formData is single source of truth)
- * 2. Gebruik setFormData(prev => ...) om stale state te voorkomen
+ * CORE PRINCIPLES:
+ * 1. Controlled input (formData/state is single source of truth)
+ * 2. Functional setState: setFormData(() => value) - ALTIJD voor booleans
  * 3. Geen effects, refs of DOM listeners
  * 4. Clear dependent fields wanneer toggle uit gaat
  * 5. Normaliseer booleans in payload (!! operator)
+ * 6. Switches van Radix UI geven checked direct als boolean door
+ * 
+ * WAAROM FUNCTIONAL setState:
+ * - Radix Switch onCheckedChange geeft de nieuwe boolean waarde
+ * - setToggle(checked) werkt, maar () => checked is explicieter en veiliger
+ * - Voorkomt stale closure issues als toggle in callback zit
+ * - Consistent met rest van de app (zie UltimateSaveButton pattern)
  */
 
 import { Switch } from "@/components/ui/switch";
@@ -17,6 +24,8 @@ import { Input } from "@/components/ui/input";
 
 /**
  * BASIC TOGGLE (zonder dependent fields)
+ * 
+ * VERSIE 1: Met object spread (gebruik dit voor forms met meerdere velden)
  */
 function BasicToggleExample({ formData, setFormData }) {
   return (
@@ -28,6 +37,27 @@ function BasicToggleExample({ formData, setFormData }) {
         } 
       />
       <Label>Active</Label>
+    </div>
+  );
+}
+
+/**
+ * VERSIE 2: Single state toggle (gebruik dit voor losse toggles)
+ * 
+ * Dit is de pattern uit AIContextToggle en TierAdvisorToggles:
+ * - Direct functional setState zonder prev spread
+ * - Simpelste vorm, gebruik dit als toggle niet in een form zit
+ */
+function SingleStateToggleExample() {
+  const [isEnabled, setIsEnabled] = useState(false);
+  
+  return (
+    <div className="flex items-center gap-2">
+      <Switch 
+        checked={!!isEnabled} 
+        onCheckedChange={(checked) => setIsEnabled(() => checked)} 
+      />
+      <Label>Enable Feature</Label>
     </div>
   );
 }
@@ -202,14 +232,79 @@ export function CompleteToggleExample() {
 }
 
 /**
- * WHY THIS WORKS:
+ * REAL-WORLD VOORBEELDEN UIT PROMPTSTER
+ */
+
+// 1) AIContextToggle - Single state met functional setState
+function AIContextTogglePattern({ enableContextSuggestions, setEnableContextSuggestions }) {
+  return (
+    <Switch
+      checked={!!enableContextSuggestions}
+      onCheckedChange={(checked) => setEnableContextSuggestions(() => checked)}
+      disabled={!isAdmin}
+    />
+  );
+}
+
+// 2) TierAdvisorToggles - Multiple states met functional setState
+function TierAdvisorPattern() {
+  const [showOnFeatures, setShowOnFeatures] = useState(false);
+  const [showOnSubscription, setShowOnSubscription] = useState(false);
+
+  return (
+    <>
+      <Switch
+        checked={!!showOnFeatures}
+        onCheckedChange={(checked) => setShowOnFeatures(() => checked)}
+      />
+      <Switch
+        checked={!!showOnSubscription}
+        onCheckedChange={(checked) => setShowOnSubscription(() => checked)}
+      />
+    </>
+  );
+}
+
+// 3) AdminSubscription - Form state met dependent fields
+function AdminSubscriptionPattern({ formData, setFormData }) {
+  return (
+    <div className="space-y-3">
+      <Switch 
+        checked={!!formData.show_trial_badge} 
+        onCheckedChange={(checked) => 
+          setFormData((p) => ({ 
+            ...p, 
+            show_trial_badge: checked,
+            trial_badge_text: checked ? p.trial_badge_text : ""
+          }))
+        } 
+      />
+      {formData.show_trial_badge && (
+        <Input 
+          value={formData.trial_badge_text} 
+          onChange={(e) => setFormData((p) => ({ ...p, trial_badge_text: e.target.value }))} 
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * WHY THIS WORKS (v2.0):
  * 
- * ✅ Controlled: checked is altijd boolean (!!formData.x)
- * ✅ No stale state: setFormData(prev => ...) gebruikt altijd fresh state
+ * ✅ Controlled: checked is altijd boolean (!!formData.x of !!state)
+ * ✅ Functional setState: () => checked voorkomt stale closures en is expliciet
+ * ✅ No stale state: setFormData(prev => ...) gebruikt altijd fresh state voor forms
  * ✅ Auto-cleanup: dependent fields worden gecleared bij toggle off
  * ✅ Conditional render: {formData.x && <Input />} zorgt voor clean UI
  * ✅ Normalized save: !! en .trim() voorkomen undefined/null in DB
  * ✅ No side effects: geen useEffect, refs, of DOM listeners nodig
+ * ✅ Direct value: Radix Switch geeft boolean, geen event object
+ * 
+ * WANNEER WELKE VERSIE:
+ * - Single state toggle: setToggle(() => checked)
+ * - Form toggle zonder deps: setFormData(p => ({ ...p, field: checked }))
+ * - Form toggle met deps: setFormData(p => ({ ...p, field: checked, dep: checked ? p.dep : "" }))
  * 
  * Deze pattern is identiek aan UltimateSaveButton (React onClick + state),
  * simpel, voorspelbaar, en altijd betrouwbaar.
