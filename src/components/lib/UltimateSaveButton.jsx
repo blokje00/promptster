@@ -132,8 +132,14 @@ export class UltimateSaveButton {
         }
       }
 
-      // 6) call API with retry
-      const result = await this.saveWithRetry(data);
+      // 6) call API with retry (unless in direct mode)
+      let result;
+      if (this.config.apiEndpoint === "__DIRECT__") {
+        // Direct mode: onBeforeSave handled everything, no fetch needed
+        result = { ok: true };
+      } else {
+        result = await this.saveWithRetry(data);
+      }
 
       // 7) success
       this.setState("success");

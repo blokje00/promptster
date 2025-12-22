@@ -142,6 +142,7 @@ export default function AdminSubscription() {
     };
 
     const saveBtn = new UltimateSaveButton({
+      apiEndpoint: "__DIRECT__", // Skip fetch, use onBeforeSave only
       buttonElement: saveButtonRef.current,
       containerToClose: modalContainerRef.current,
       validate,
