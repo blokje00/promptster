@@ -148,7 +148,7 @@ export default function AdminSubscription() {
         const idx = old.findIndex((p) => p.id === saved.id);
         if (idx === -1) return [saved, ...old];
         const next = [...old];
-        next[idx] = { ...old[idx], ...saved };
+        next[idx] = saved; // Complete replacement, niet mergen
         return next;
       });
 
@@ -391,12 +391,16 @@ export default function AdminSubscription() {
                   {plan.annual_price_id && <span className="text-xs text-slate-400">({plan.annual_price_id})</span>}
                   {plan.show_max_tasks_badge && (
                     <span className="font-medium text-indigo-600">
-                      {plan.max_tasks_badge_text || `Max Tasks: ${plan.max_thoughts || 10}`}
+                      {(plan.max_tasks_badge_text && plan.max_tasks_badge_text.trim()) 
+                        ? plan.max_tasks_badge_text 
+                        : `Max Tasks: ${plan.max_thoughts || 10}`}
                     </span>
                   )}
                   {plan.show_trial_badge && plan.trial_days > 0 && (
                     <span className="font-medium text-green-600">
-                      {plan.trial_badge_text || `Trial: ${plan.trial_days} dagen ${plan.is_credit_card_required_for_trial ? '(CC vereist)' : '(CC-free)'}`}
+                      {(plan.trial_badge_text && plan.trial_badge_text.trim())
+                        ? plan.trial_badge_text 
+                        : `Trial: ${plan.trial_days} dagen ${plan.is_credit_card_required_for_trial ? '(CC vereist)' : '(CC-free)'}`}
                     </span>
                   )}
                 </div>
