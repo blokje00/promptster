@@ -201,7 +201,7 @@ export default function AdminSubscription() {
               New Plan
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-auto">
+          <DialogContent ref={modalContainerRef} className="max-w-lg max-h-[90vh] overflow-auto">
             <DialogHeader>
               <DialogTitle>{isEditing ? "Edit Plan" : "New Plan"}</DialogTitle>
             </DialogHeader>
