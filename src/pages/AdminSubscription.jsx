@@ -341,10 +341,14 @@ export default function AdminSubscription() {
                   {plan.monthly_price_id && <span className="text-xs text-slate-400">({plan.monthly_price_id})</span>}
                   <span>Year: €{plan.annual_price_amount}</span>
                   {plan.annual_price_id && <span className="text-xs text-slate-400">({plan.annual_price_id})</span>}
-                  <span className="font-medium text-indigo-600">Max Tasks: {plan.max_thoughts || 10}</span>
-                  {plan.trial_days > 0 && (
+                  {plan.show_max_tasks_badge && (
+                    <span className="font-medium text-indigo-600">
+                      {plan.max_tasks_badge_text || `Max Tasks: ${plan.max_thoughts || 10}`}
+                    </span>
+                  )}
+                  {plan.show_trial_badge && plan.trial_days > 0 && (
                     <span className="font-medium text-green-600">
-                      Trial: {plan.trial_days} dagen {plan.is_credit_card_required_for_trial ? '(CC vereist)' : '(CC-free)'}
+                      {plan.trial_badge_text || `Trial: ${plan.trial_days} dagen ${plan.is_credit_card_required_for_trial ? '(CC vereist)' : '(CC-free)'}`}
                     </span>
                   )}
                 </div>
