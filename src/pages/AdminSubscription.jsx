@@ -143,7 +143,7 @@ export default function AdminSubscription() {
 
     const saveBtn = new UltimateSaveButton({
       buttonElement: saveButtonRef.current,
-      containerToClose: null, // we handle close manually
+      containerToClose: modalContainerRef.current,
       validate,
       
       onBeforeSave: async () => {
@@ -151,37 +151,29 @@ export default function AdminSubscription() {
         const planId = isEditing && currentPlan ? currentPlan.id : null;
 
         // DB call
-        const result = await savePlan(planId, payload);
+        const saved = await savePlan(planId, payload);
 
-        // Optimistic cache update
-        queryClient.setQueryData(qk.subscriptionPlans, (old) => {
-          if (!old) return old;
-          const arr = Array.isArray(old) ? old : [];
-          
-          if (planId) {
-            // Update existing
-            const next = arr.map((p) => (p.id === result.id ? { ...p, ...result } : p));
-            return next;
-          } else {
-            // Add new
-            return [...arr, result];
-          }
+        // ✅ Optimistic update: plans array direct patchen
+        queryClient.setQueryData(qk.subscriptionPlans, (old = []) => {
+          const idx = old.findIndex((p) => p.id === saved.id);
+          if (idx === -1) return [saved, ...old];     // nieuw plan vooraan
+          const next = [...old];
+          next[idx] = { ...old[idx], ...saved };      // bestaand plan updaten
+          return next;
         });
 
         // Set individual plan cache
-        queryClient.setQueryData(qk.subscriptionPlan(result.id), result);
+        queryClient.setQueryData(qk.subscriptionPlan(saved.id), saved);
 
-        // Safety refetch
+        // ✅ Safety refetch: blijft alles consistent
         queryClient.invalidateQueries({ queryKey: qk.subscriptionPlans });
 
         return true;
       },
 
-      onSuccess: () => {
-        setTimeout(() => {
-          setDialogOpen(false);
-          resetForm();
-        }, 600);
+      onClose: () => {
+        setDialogOpen(false);
+        resetForm();
       },
 
       labels: {
