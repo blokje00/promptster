@@ -16,7 +16,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { UltimateSaveButton } from "@/components/lib/UltimateSaveButton";
 import { qk } from "@/components/lib/queryKeys";
 
 export default function AdminSubscription() {
@@ -24,6 +23,7 @@ export default function AdminSubscription() {
   const [isEditing, setIsEditing] = useState(false);
   const [currentPlan, setCurrentPlan] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const { data: plans = [], isLoading } = useQuery({
     queryKey: qk.subscriptionPlans,
@@ -118,87 +118,46 @@ export default function AdminSubscription() {
     setDialogOpen(true);
   };
 
-  // UltimateSaveButton refs
-  const saveButtonRef = useRef(null);
-  const modalContainerRef = useRef(null);
-  const saveInstanceRef = useRef(null);
-  
-  // Initialize UltimateSaveButton - MUST cleanup and re-init on every modal open/plan change
-  useEffect(() => {
-    // Cleanup old instance first
-    if (saveInstanceRef.current) {
-      saveInstanceRef.current.destroy();
-      saveInstanceRef.current = null;
+  const handleSave = async () => {
+    if (!formData.name?.trim()) {
+      toast.error("Plan name is required");
+      return;
+    }
+    if (!formData.monthly_price_amount || formData.monthly_price_amount <= 0) {
+      toast.error("Monthly price must be greater than 0");
+      return;
     }
 
-    if (!dialogOpen) return;
-    if (!saveButtonRef.current) return;
+    setSaving(true);
+    
+    try {
+      const payload = {
+        ...formData,
+        features: formData.features.filter(f => f.trim())
+      };
+      const planId = isEditing && currentPlan ? currentPlan.id : null;
+      const saved = await savePlan(planId, payload);
 
-    const getPayload = () => ({
-      ...formData,
-      features: formData.features.filter(f => f.trim())
-    });
+      queryClient.setQueryData(qk.subscriptionPlans, (old = []) => {
+        const idx = old.findIndex((p) => p.id === saved.id);
+        if (idx === -1) return [saved, ...old];
+        const next = [...old];
+        next[idx] = { ...old[idx], ...saved };
+        return next;
+      });
 
-    const validate = () => {
-      if (!formData.name?.trim()) {
-        return { valid: false, message: "Plan name is required" };
-      }
-      if (!formData.monthly_price_amount || formData.monthly_price_amount <= 0) {
-        return { valid: false, message: "Monthly price must be greater than 0" };
-      }
-      return { valid: true };
-    };
+      queryClient.setQueryData(qk.subscriptionPlan(saved.id), saved);
+      queryClient.invalidateQueries({ queryKey: qk.subscriptionPlans });
 
-    console.log("[AdminSubscription] Initializing UltimateSaveButton", { dialogOpen, isEditing, planId: currentPlan?.id });
-
-    saveInstanceRef.current = new UltimateSaveButton({
-      apiEndpoint: "__DIRECT__",
-      buttonElement: saveButtonRef.current,
-      containerToClose: modalContainerRef.current,
-      validate,
-      
-      onBeforeSave: async () => {
-        console.log("[AdminSubscription] onBeforeSave fired");
-        const payload = getPayload();
-        const planId = isEditing && currentPlan ? currentPlan.id : null;
-
-        const saved = await savePlan(planId, payload);
-
-        queryClient.setQueryData(qk.subscriptionPlans, (old = []) => {
-          const idx = old.findIndex((p) => p.id === saved.id);
-          if (idx === -1) return [saved, ...old];
-          const next = [...old];
-          next[idx] = { ...old[idx], ...saved };
-          return next;
-        });
-
-        queryClient.setQueryData(qk.subscriptionPlan(saved.id), saved);
-        queryClient.invalidateQueries({ queryKey: qk.subscriptionPlans });
-
-        return true;
-      },
-
-      onClose: () => {
-        console.log("[AdminSubscription] onClose called - closing dialog");
-        setDialogOpen(false);
-        resetForm();
-      },
-
-      labels: {
-        idle: "Save Plan",
-        saving: "Saving…",
-        success: "Saved ✓",
-        error: "Save failed"
-      }
-    });
-
-    return () => {
-      if (saveInstanceRef.current) {
-        saveInstanceRef.current.destroy();
-        saveInstanceRef.current = null;
-      }
-    };
-  }, [dialogOpen, isEditing, currentPlan?.id, queryClient]);
+      toast.success("Plan saved");
+      setDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      toast.error(error.message || "Failed to save plan");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -214,7 +173,7 @@ export default function AdminSubscription() {
               New Plan
             </Button>
           </DialogTrigger>
-          <DialogContent ref={modalContainerRef} className="max-w-lg max-h-[90vh] overflow-auto">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-auto">
             <DialogHeader>
               <DialogTitle>{isEditing ? "Edit Plan" : "New Plan"}</DialogTitle>
             </DialogHeader>
@@ -377,9 +336,13 @@ export default function AdminSubscription() {
                   />
                 </div>
               </div>
-              <button ref={saveButtonRef} type="button" className="ps-save-btn w-full">
-                Save Plan
-              </button>
+              <Button 
+                onClick={handleSave} 
+                disabled={saving}
+                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+              >
+                {saving ? "Saving…" : "Save Plan"}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
