@@ -249,7 +249,14 @@ export default function Multiprompt() {
     if (!newThoughtInput.newThoughtContent.trim() && newThoughtInput.newThoughtScreenshots.length === 0) return;
     
     if (isLimitReached) {
-      toast.error(`Limit reached: Max ${maxThoughts} tasks allowed`);
+      toast.error(`⚠️ Task limit reached: Maximum ${maxThoughts} tasks for your plan`, {
+        description: 'Delete tasks or upgrade to PRO for more capacity',
+        action: {
+          label: 'View Plans',
+          onClick: () => navigate(createPageUrl('Subscription'))
+        },
+        duration: 6000
+      });
       return;
     }
 
