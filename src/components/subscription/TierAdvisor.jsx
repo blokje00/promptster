@@ -208,10 +208,13 @@ export default function TierAdvisor() {
             value={wrapperCredits}
             onChange={(e) => setWrapperCredits(e.target.value)}
             placeholder="e.g. 244"
-            className="w-full border rounded p-2 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200"
+            disabled={!hasProAccess}
+            className="w-full border rounded p-2 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Find this in your {selectedWrapperData.name} dashboard
+            {hasProAccess 
+              ? `Find this in your ${selectedWrapperData.name} dashboard`
+              : 'Upgrade to PRO to use Tier Advisor calculator'}
           </p>
         </div>
 
