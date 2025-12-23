@@ -35,12 +35,22 @@ export default function SubscriptionPage() {
   const isTrialing = user?.subscription_status === 'trialing';
   const isActive = user?.subscription_status === 'active';
 
-  // Show plans based on visibility_status (fallback to is_active for backwards compatibility)
+  // Show plans based on visibility_status + available_from date
   const displayPlans = isActive 
     ? [] 
     : plans.filter(plan => {
         const status = plan.visibility_status || (plan.is_active ? 'visible_purchasable' : 'hidden');
-        return status !== 'hidden';
+        if (status === 'hidden') return false;
+        
+        // Check available_from date
+        if (plan.available_from) {
+          const availableDate = new Date(plan.available_from);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0); // Compare dates only
+          if (availableDate > today) return false;
+        }
+        
+        return true;
       });
 
   const handleSubscribe = async (plan) => {
