@@ -9,6 +9,7 @@ import { FolderTree, Settings } from "lucide-react";
 import AccessGuard from "../components/auth/AccessGuard";
 import { useAutosaveField } from "@/components/hooks/useAutosaveField";
 import { useReliableSaveButton } from "@/components/hooks/useReliableSaveButton";
+import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
 import UPSEPanel from "../components/upse/UPSEPanel";
 import MaintenanceTools from "../components/settings/MaintenanceTools";
 import AIInstructionForm from "../components/settings/AIInstructionForm";
@@ -191,12 +192,8 @@ export default function AIBackoffice() {
     enableContextSuggestions: true
   });
 
-  // Fetch currentUser FIRST (no dependencies)
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: async () => await base44.auth.me(),
-    staleTime: 30_000,
-  });
+  // UNIFIED: Use same hook as TierAdvisorToggles, Features, Subscription
+  const { data: currentUser } = useCurrentUserSettings();
 
   // HARDENED: AISettings can fail without blocking page
   const { data: settings = [] } = useQuery({

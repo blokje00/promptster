@@ -12,7 +12,12 @@ export function useCurrentUserSettings() {
     queryFn: async () => {
       try {
         const user = await base44.auth.me();
-        return user;
+        // Ensure tier_advisor fields have explicit defaults (false, not undefined)
+        return {
+          ...user,
+          tier_advisor_features_enabled: user?.tier_advisor_features_enabled ?? false,
+          tier_advisor_subscription_enabled: user?.tier_advisor_subscription_enabled ?? false,
+        };
       } catch (error) {
         console.warn('[useCurrentUserSettings] Auth failed:', error.message);
         return null;

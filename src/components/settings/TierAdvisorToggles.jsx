@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
@@ -17,6 +17,8 @@ export default function TierAdvisorToggles({ onDirtyChange }) {
   const [showOnFeatures, setShowOnFeatures] = useState(false);
   const [showOnSubscription, setShowOnSubscription] = useState(false);
   const [savedValues, setSavedValues] = useState({ features: false, subscription: false });
+  const [isSaving, setIsSaving] = useState(false);
+  const hasInitializedRef = useRef(false);
 
   // New wrapper form state
   const [showWrapperForm, setShowWrapperForm] = useState(false);
@@ -59,12 +61,19 @@ export default function TierAdvisorToggles({ onDirtyChange }) {
   });
 
   useEffect(() => {
-    if (currentUser) {
+    // GUARD: Only initialize ONCE, not after every save/refetch
+    // This prevents the "jumping back to OFF" problem
+    if (currentUser && !hasInitializedRef.current) {
       const features = currentUser.tier_advisor_features_enabled || false;
       const subscription = currentUser.tier_advisor_subscription_enabled || false;
+      
+      console.log('[TierAdvisor] 🔄 Initializing from server:', { features, subscription });
+      console.log('[TierAdvisor] currentUser:', currentUser);
+      
       setShowOnFeatures(features);
       setShowOnSubscription(subscription);
       setSavedValues({ features, subscription });
+      hasInitializedRef.current = true;
     }
   }, [currentUser]);
 
@@ -170,10 +179,10 @@ export default function TierAdvisorToggles({ onDirtyChange }) {
 
           <Button
             onClick={handleSave}
-            disabled={!isDirty}
+            disabled={!isDirty || isSaving}
             className="w-full"
           >
-            {isDirty ? "Save Tier Advisor Settings" : "No changes"}
+            {isSaving ? "Saving..." : isDirty ? "Save Tier Advisor Settings" : "No changes"}
           </Button>
         </div>
 
