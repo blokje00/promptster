@@ -330,6 +330,8 @@ export default function Multiprompt() {
     }, {
       onSuccess: (newItem) => {
         if (newItem?.id) {
+          // TASK-5: Clear preview after save
+          promptGeneration.setImprovedPrompt("");
           navigate(createPageUrl("Checks"));
           toast.success("Prompt saved! Sent to Vault Checks.");
         }
