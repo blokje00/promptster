@@ -2,10 +2,8 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
-import { useTierAdvisorSettings } from "@/components/hooks/useTierAdvisorSettings";
 import PromptsterStory from "@/components/features/PromptsterStory.jsx";
 import InlineEditableText from "@/components/features/InlineEditableText";
-import TierAdvisor from "@/components/subscription/TierAdvisor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,19 +62,8 @@ function FeaturesPage() {
   const [editMode, setEditMode] = useState(false);
   
   const { data: currentUser } = useCurrentUserSettings();
-  const { data: tierSettings = [] } = useTierAdvisorSettings();
 
   const isAdmin = currentUser?.role === 'admin';
-  // Read from TierAdvisorSettings entity (global setting)
-  const showTierAdvisor = isAdmin || (tierSettings && tierSettings.length > 0 && tierSettings[0]?.show_on_features_page === true);
-  console.log('[FeaturesPage] 🔍 TierAdvisor Debug:', { 
-    isAdmin, 
-    tierSettings, 
-    settingsLength: tierSettings?.length,
-    firstSetting: tierSettings[0],
-    showOnFeaturesPage: tierSettings[0]?.show_on_features_page, 
-    finalShowTierAdvisor: showTierAdvisor 
-  });
 
   const { data: blocks = [] } = useQuery({
     queryKey: ['featureContentBlocks'],
@@ -196,13 +183,6 @@ function FeaturesPage() {
             />
           </p>
         </div>
-
-        {/* Tier Advisor - Admin or enabled for users */}
-        {showTierAdvisor && (
-          <div className="mb-12">
-            <TierAdvisor />
-          </div>
-        )}
 
         {/* Story Section - Pass resolved blocks and edit state */}
         <PromptsterStory 
