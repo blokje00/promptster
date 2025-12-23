@@ -184,6 +184,7 @@ export default function AIBackoffice() {
   const [settingsId, setSettingsId] = useState(null);
   const [exampleIndex, setExampleIndex] = useState(0);
   const [isSavingAI, setIsSavingAI] = useState(false);
+  const [tierAdvisorDirty, setTierAdvisorDirty] = useState(false);
   const [savedAIValues, setSavedAIValues] = useState({
     instruction: "",
     modelPreference: "default",
@@ -295,6 +296,13 @@ export default function AIBackoffice() {
     }
   }, [settings, settingsId]);
 
+  // Centralized dirty state calculation
+  const isAIDirty = 
+    instruction !== savedAIValues.instruction ||
+    modelPreference !== savedAIValues.modelPreference ||
+    enableContextSuggestions !== savedAIValues.enableContextSuggestions ||
+    tierAdvisorDirty;
+
 
   
 
@@ -349,6 +357,9 @@ export default function AIBackoffice() {
 
       // Reset autosave baseline to prevent unexpected jumps
       resetInstruction(payload.improve_prompt_instruction);
+
+      // Reset TierAdvisor dirty flag (if applicable)
+      setTierAdvisorDirty(false);
 
       toast.success("AI settings saved");
     } catch (error) {
@@ -417,13 +428,7 @@ export default function AIBackoffice() {
                   isDirty={personalPrefsHook.isDirty}
                   defaultExample={DEFAULT_PERSONAL_PREFERENCES}
                 />
-                <TierAdvisorToggles onDirtyChange={(isDirty) => {
-                  // TierAdvisor toggles contribute to AIBackoffice dirty state
-                  if (isDirty) {
-                    // Force re-render to update save button state
-                    setSavedAIValues(prev => ({ ...prev }));
-                  }
-                }} />
+                <TierAdvisorToggles onDirtyChange={setTierAdvisorDirty} />
                 <Card id="retry-message">
                   <CardHeader>
                     <CardTitle className="text-lg">Retry Task Message</CardTitle>
@@ -463,11 +468,7 @@ export default function AIBackoffice() {
                   setModelPreference={setModelPreference}
                   onSave={handleSave}
                   isSaving={isSavingAI}
-                  isDirty={
-                    instruction !== savedAIValues.instruction ||
-                    modelPreference !== savedAIValues.modelPreference ||
-                    enableContextSuggestions !== savedAIValues.enableContextSuggestions
-                  }
+                  isDirty={isAIDirty}
                   onReset={() => setInstruction(getDefaultInstruction())}
                 />
               </div>
