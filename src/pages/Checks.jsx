@@ -418,22 +418,11 @@ export default function Checks() {
                                            >
                                                <CheckCircle2 className="w-8 h-8 text-green-600 drop-shadow-sm" strokeWidth={2.5} />
                                            </div>
-                                       </TooltipTrigger>
-                                       <TooltipContent>Click to reopen</TooltipContent>
-                                   </Tooltip>
-                               </TooltipProvider>
-                           ) : task.status === 'retried' ? (
-                               <TooltipProvider>
-                                 <Tooltip>
-                                   <TooltipTrigger asChild>
-                                     <div className="cursor-not-allowed opacity-80">
-                                       <XCircle className="w-8 h-8 text-red-500" strokeWidth={2.5} />
-                                     </div>
-                                   </TooltipTrigger>
-                                   <TooltipContent>Task has been retried</TooltipContent>
-                                 </Tooltip>
-                               </TooltipProvider>
-                           ) : (
+                                           </TooltipTrigger>
+                                           <TooltipContent>Click to reopen</TooltipContent>
+                                           </Tooltip>
+                                               </TooltipProvider>
+                                           ) : (
                                <>
                                    <TooltipProvider>
                                        <Tooltip>
@@ -454,13 +443,13 @@ export default function Checks() {
                                                <Button 
                                                    size="icon" 
                                                    variant="ghost" 
-                                                   className={`h-8 w-8 ${task.status === 'failed' ? 'text-red-600 bg-red-50' : 'text-slate-300 hover:text-red-600 hover:bg-red-50'}`}
-                                                   onClick={() => updateTaskStatus(task, 'failed')}
+                                                   className="h-8 w-8 text-slate-300 hover:text-orange-600 hover:bg-orange-50"
+                                                   onClick={() => updateTaskStatus(task, 'retry')}
                                                >
-                                                   <XCircle className="w-6 h-6" />
+                                                   <RotateCcw className="w-6 h-6" />
                                                </Button>
                                            </TooltipTrigger>
-                                           <TooltipContent>Mark as Failed</TooltipContent>
+                                           <TooltipContent>Retry</TooltipContent>
                                        </Tooltip>
                                        <Tooltip>
                                            <TooltipTrigger asChild>
