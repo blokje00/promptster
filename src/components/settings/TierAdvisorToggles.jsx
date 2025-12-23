@@ -97,8 +97,19 @@ export default function TierAdvisorToggles({ onDirtyChange }) {
       return;
     }
 
+    // GUARD: Prevent double-click / multiple saves
+    if (isSaving) {
+      console.log('[TierAdvisor] ⏸️ Save already in progress, ignoring');
+      return;
+    }
+    setIsSaving(true);
+
     try {
       console.log('[TierAdvisor] 💾 Saving settings for user:', currentUser.email);
+      console.log('[TierAdvisor] hasInitializedRef:', hasInitializedRef.current);
+      console.log('[TierAdvisor] showOnFeatures:', showOnFeatures);
+      console.log('[TierAdvisor] showOnSubscription:', showOnSubscription);
+      console.log('[TierAdvisor] savedValues:', savedValues);
       
       const payload = {
         tier_advisor_features_enabled: !!showOnFeatures,
@@ -107,30 +118,33 @@ export default function TierAdvisorToggles({ onDirtyChange }) {
 
       console.log('[TierAdvisor] 📦 Payload:', payload);
 
-      // Save ONLY to auth.updateMe (single source of truth matching auth.me load)
-      const result = await base44.auth.updateMe(payload);
-      
-      console.log('[TierAdvisor] ✅ Save result:', result);
+      // Save to auth.updateMe (single source of truth)
+      await base44.auth.updateMe(payload);
 
-      // CRITICAL: Null-safe cache update for instant UI feedback
-      queryClient.setQueryData(['currentUserSettings'], (old) => ({
-        ...(old || {}),
-        ...payload
-      }));
-      
-      // Invalidate to trigger refetch with fresh server data
-      await queryClient.invalidateQueries({ queryKey: ['currentUserSettings'] });
-      
-      // Update saved baseline
+      // CRITICAL: Update local state baseline BEFORE any cache operations
+      // This ensures dirty=false immediately
       setSavedValues({
         features: payload.tier_advisor_features_enabled,
         subscription: payload.tier_advisor_subscription_enabled
       });
+
+      console.log('[TierAdvisor] ✅ Save complete, updating caches...');
+
+      // CRITICAL: Update ALL relevant caches for instant UI feedback
+      const newUserData = { ...(currentUser || {}), ...payload };
+      queryClient.setQueryData(['currentUserSettings'], newUserData);
+      queryClient.setQueryData(['currentUser'], newUserData); // Also update legacy key if used
+      
+      // Invalidate for background consistency (won't re-init due to hasInitializedRef)
+      queryClient.invalidateQueries({ queryKey: ['currentUserSettings'] });
+      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
       
       toast.success("✅ Tier Advisor settings saved!");
     } catch (error) {
       console.error('[TierAdvisor] ❌ Save failed:', error);
       toast.error("Failed to save: " + error.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
