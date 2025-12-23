@@ -502,6 +502,7 @@ export default function Checks() {
           task={selectedRetryTask}
           onConfirm={handleRetryConfirm}
           projectId={selectedRetryTask?.projectId}
+          currentUser={currentUser}
         />
       </div>
     </AccessGuard>

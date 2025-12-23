@@ -17,7 +17,8 @@ export default function RetryModal({
   onClose, 
   task, 
   onConfirm,
-  projectId
+  projectId,
+  currentUser
 }) {
   const [screenshots, setScreenshots] = useState([]);
   const [userExplanation, setUserExplanation] = useState("");
@@ -39,35 +40,64 @@ export default function RetryModal({
     if (screenshots.length > 0 && !visionAnalysis && !isAnalyzing) {
       analyzeScreenshots();
     }
-  }, [screenshots]);
+  }, [screenshots, visionAnalysis, isAnalyzing]);
 
   const analyzeScreenshots = async () => {
     if (screenshots.length === 0) return;
     
     setIsAnalyzing(true);
     try {
-      const results = [];
-      for (const url of screenshots) {
-        console.log('[RetryModal] Analyzing screenshot (with cache):', url);
-        const response = await base44.functions.invoke('analyzeScreenshotWithCache', {
-          screenshotUrl: url,
-          level: 'full'
-        });
-        
-        if (response.data?.ok) {
-          results.push(response.data);
-          console.log('[RetryModal] ✓ Analysis', response.data.cached ? 'from cache' : 'completed');
-        }
-      }
+      // Parallelize screenshot analysis with Promise.all
+      const results = await Promise.all(
+        screenshots.map(async (url) => {
+          try {
+            console.log('[RetryModal] Analyzing screenshot (with cache):', url);
+            const response = await base44.functions.invoke('analyzeScreenshotWithCache', {
+              screenshotUrl: url,
+              level: 'full'
+            });
+            
+            if (response.data?.ok) {
+              console.log('[RetryModal] ✓ Analysis', response.data.cached ? 'from cache' : 'completed');
+              return response.data;
+            }
+            
+            // Retry once on failure
+            console.log('[RetryModal] Retrying analysis for:', url);
+            const retryResponse = await base44.functions.invoke('analyzeScreenshotWithCache', {
+              screenshotUrl: url,
+              level: 'full'
+            });
+            
+            if (retryResponse.data?.ok) {
+              console.log('[RetryModal] ✓ Retry successful');
+              return retryResponse.data;
+            }
+            
+            return { status: 'failed', url };
+          } catch (error) {
+            console.error('[RetryModal] Analysis failed for', url, error);
+            return { status: 'failed', url, error: error.message };
+          }
+        })
+      );
       
-      if (results.length > 0) {
-        setVisionAnalysis(results);
+      const successfulResults = results.filter(r => r.status !== 'failed');
+      
+      if (successfulResults.length > 0) {
+        setVisionAnalysis(successfulResults);
         toast.success('📸 Screenshot analysis complete', {
-          description: results[0].cached ? 'Using cached analysis' : 'Fresh analysis saved'
+          description: `${successfulResults.length}/${screenshots.length} analyzed successfully`
+        });
+      } else {
+        setVisionAnalysis([{ status: 'failed' }]);
+        toast.warning('⚠️ Screenshot analysis failed', {
+          description: 'Will retry when submitting'
         });
       }
     } catch (error) {
       console.error('[RetryModal] Vision analysis failed:', error);
+      setVisionAnalysis([{ status: 'failed' }]);
       toast.error('⚠️ Screenshot analysis failed', {
         description: 'Will use screenshot without analysis'
       });
@@ -84,8 +114,12 @@ export default function RetryModal({
     const hasScreenshot = screenshots.length > 0;
     const hasExplanation = userExplanation.trim().length > 0;
 
+    if (isAnalyzing) {
+      return "⏳ Analysis pending... Please wait for screenshot analysis to complete.";
+    }
+
     if (!hasScreenshot && !hasExplanation) {
-      return "⚠️ Please add screenshot and explanation to generate preview";
+      return "⚠️ Please add explanation (and screenshot if UI-related) to generate preview";
     }
 
     // Include OCR vision analysis if available
@@ -103,6 +137,15 @@ export default function RetryModal({
       // Build structured screenshots payload with OCR vision data
       screenshotsPayload = screenshots.map((url, idx) => {
         const analysisData = visionAnalysis[idx] || visionAnalysis[0];
+        if (analysisData?.status === 'failed') {
+          return {
+            id: url,
+            pageHint: task?.target_page || "Checks page",
+            componentHint: task?.target_component || "Failed task",
+            domain: task?.target_domain || "UI",
+            ocrVision: { status: 'failed' }
+          };
+        }
         return {
           id: url,
           pageHint: task?.target_page || "Checks page",
@@ -121,13 +164,13 @@ export default function RetryModal({
         };
       });
     } else {
-      // Fallback without OCR vision
+      // Fallback without OCR vision (failed or pending)
       screenshotsPayload = screenshots.map(url => ({
         id: url,
         pageHint: task?.target_page || "Checks page",
         componentHint: task?.target_component || "Failed task",
         domain: task?.target_domain || "UI",
-        ocrVision: "PENDING_ANALYSIS"
+        ocrVision: visionAnalysis?.[0]?.status === 'failed' ? { status: 'failed' } : "PENDING_ANALYSIS"
       }));
     }
 
@@ -179,9 +222,28 @@ ${JSON.stringify({ screenshots: screenshotsPayload }, null, 2)}
   };
 
   const handleConfirm = async () => {
-    // Screenshots are now optional
+    const requiresScreenshot = task?.target_domain === 'UI' || task?.target_page;
+    
+    // Validate minimum explanation length
+    if (userExplanation.trim().length < 50) {
+      toast.error('⚠️ Explanation too short', {
+        description: 'Please provide at least 50 characters explaining the issue',
+        duration: 6000
+      });
+      return;
+    }
+    
+    // Validate screenshot requirement for UI tasks
+    if (requiresScreenshot && screenshots.length === 0) {
+      toast.error('⚠️ Screenshot required', {
+        description: 'UI-related tasks require visual evidence',
+        duration: 6000
+      });
+      return;
+    }
+
+    // Verify all screenshot URLs are valid if provided
     if (screenshots.length > 0) {
-      // Verify all screenshot URLs are valid if provided
       const invalidUrls = screenshots.filter(url => !url || !url.startsWith('http'));
       if (invalidUrls.length > 0) {
         console.error('[RetryModal] Invalid screenshot URLs detected:', invalidUrls);
@@ -202,7 +264,7 @@ ${JSON.stringify({ screenshots: screenshotsPayload }, null, 2)}
       // Build screenshots payload with OCR vision
       const screenshotsPayload = screenshots.map((url, idx) => {
         const analysisData = visionAnalysis?.[idx] || visionAnalysis?.[0];
-        if (analysisData) {
+        if (analysisData && analysisData.status !== 'failed') {
           return {
             id: url,
             pageHint: task?.target_page || "Checks page",
@@ -224,7 +286,8 @@ ${JSON.stringify({ screenshots: screenshotsPayload }, null, 2)}
           id: url,
           pageHint: task?.target_page || "Checks page",
           componentHint: task?.target_component || "Failed task",
-          domain: task?.target_domain || "UI"
+          domain: task?.target_domain || "UI",
+          ocrVision: { status: 'failed' }
         };
       });
       
@@ -234,22 +297,26 @@ ${JSON.stringify({ screenshots: screenshotsPayload }, null, 2)}
         screenshotsPayload: screenshotsPayload,
         visionAnalysis: visionAnalysis,
         originalTask: task,
-        userExplanation: userExplanation.trim()
+        userExplanation: userExplanation.trim(),
+        created_by: currentUser?.email,
+        created_date: new Date().toISOString(),
+        updated_date: new Date().toISOString(),
+        removeOriginal: true
       });
       toast.success('✓ Retry task created successfully');
       onClose();
     } catch (error) {
       console.error('[RetryModal] Error creating retry:', error);
-      toast.error('Failed to create retry task', {
-        description: error.message || 'Please try again',
+      setIsSubmitting(false); // Keep modal open on failure
+      toast.error('❌ Retry failed - please try again or cancel', {
+        description: error.message || 'Changes not saved',
         duration: 8000
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  const canSubmit = userExplanation.trim().length > 0;
+  const requiresScreenshot = task?.target_domain === 'UI' || task?.target_page;
+  const canSubmit = userExplanation.trim().length >= 50 && (!requiresScreenshot || screenshots.length > 0);
   const previewPrompt = generateRetryPrompt();
 
   return (
@@ -273,18 +340,21 @@ ${JSON.stringify({ screenshots: screenshotsPayload }, null, 2)}
             </p>
           </div>
 
-          {/* Step 1: Screenshot - OPTIONAL */}
+          {/* Step 1: Screenshot - Conditional Requirement */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Label className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                1. Screenshot Evidence <span className="text-slate-400">(optional)</span>
+                1. Screenshot Evidence {requiresScreenshot && <span className="text-red-500">*</span>}
+                {!requiresScreenshot && <span className="text-slate-400">(optional)</span>}
               </Label>
               {screenshots.length > 0 && (
                 <CheckCircle2 className="w-4 h-4 text-green-600" />
               )}
             </div>
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              Upload a screenshot if visual evidence would help (recommended for UI issues).
+              {requiresScreenshot 
+                ? 'Screenshot required for UI-related tasks to show visual issues.'
+                : 'Upload a screenshot if visual evidence would help (recommended for UI issues).'}
             </p>
             <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50/50 dark:bg-slate-950/50">
               <ScreenshotUploader
@@ -337,9 +407,21 @@ ${JSON.stringify({ screenshots: screenshotsPayload }, null, 2)}
               className="min-h-[100px] dark:bg-slate-800 dark:border-slate-700"
               maxLength={500}
             />
-            <p className="text-xs text-slate-500 dark:text-slate-400 text-right">
-              {userExplanation.length}/500 characters
-            </p>
+            <div className="flex items-center justify-between text-xs">
+              {userExplanation.trim().length < 50 && userExplanation.trim().length > 0 && (
+                <p className="text-red-500 font-medium">
+                  ⚠️ Minimum 50 characters required ({50 - userExplanation.trim().length} more needed)
+                </p>
+              )}
+              {userExplanation.trim().length >= 50 && (
+                <p className="text-green-600 font-medium">
+                  ✓ Meets minimum length
+                </p>
+              )}
+              <p className="text-slate-500 dark:text-slate-400 ml-auto">
+                {userExplanation.length}/500 characters
+              </p>
+            </div>
           </div>
 
           {/* Step 3: Generated Preview */}
@@ -368,10 +450,11 @@ ${JSON.stringify({ screenshots: screenshotsPayload }, null, 2)}
             </Button>
             <Button
               onClick={handleConfirm}
-              disabled={!canSubmit || isSubmitting}
+              disabled={!canSubmit || isSubmitting || isAnalyzing}
               className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
-              {isSubmitting ? "Creating Retry..." : "Confirm Retry"}
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              {isAnalyzing ? "Analyzing..." : isSubmitting ? "Creating Retry..." : "Confirm Retry"}
             </Button>
           </div>
         </div>
