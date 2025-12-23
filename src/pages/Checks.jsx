@@ -24,7 +24,6 @@ function CollapsibleTaskContent({ taskName, fullDescription, status }) {
 
   const statusClasses = 
     status === 'success' ? 'text-slate-400 dark:text-slate-500 line-through' : 
-    status === 'retried' ? 'text-slate-500 dark:text-slate-400 line-through decoration-red-500/50' : 
     'text-slate-900 dark:text-slate-100';
 
   return (
@@ -181,6 +180,13 @@ export default function Checks() {
     const item = items.find(i => i.id === task.itemId);
     if (!item) return;
 
+    // If retry is triggered, open modal instead
+    if (newStatus === 'retry') {
+      setSelectedRetryTask(task);
+      setRetryModalOpen(true);
+      return;
+    }
+
     const newChecks = [...item.task_checks];
     const now = new Date().toISOString();
     
@@ -198,13 +204,6 @@ export default function Checks() {
 
     // Calculate parent item status
     const parentStatus = newChecks.some(c => c.status !== 'success') ? 'open' : 'success';
-
-    // If failed, show retry modal BEFORE updating (prevents status flicker)
-    if (newStatus === 'failed') {
-      setSelectedRetryTask({ ...task, originalStatus: task.status || 'open' });
-      setRetryModalOpen(true);
-      return; // Don't update yet - wait for retry modal confirmation
-    }
 
     try {
       await base44.entities.Item.update(item.id, {
@@ -227,64 +226,81 @@ export default function Checks() {
   };
 
   const handleRetryConfirm = async (retryData) => {
-    try {
-      const task = selectedRetryTask;
-      const item = items.find(i => i.id === task.itemId);
-      if (!item) return;
+    if (!selectedRetryTask) return;
 
-      // Optimistic update: immediately remove from UI
-      queryClient.setQueryData(['items', currentUser?.email], (old) => {
-        if (!old) return old;
-        return old.map(it => {
-          if (it.id === item.id) {
-            const updatedChecks = [...it.task_checks];
-            updatedChecks[task.index] = {
-              ...updatedChecks[task.index],
-              status: 'retried',
-              updated_date: new Date().toISOString()
-            };
-            return { ...it, task_checks: updatedChecks };
-          }
-          return it;
-        });
-      });
-
-      // Close modal immediately for instant feedback
+    const task = selectedRetryTask;
+    const item = items.find(i => i.id === task.itemId);
+    if (!item) {
+      toast.error("Item not found");
       setRetryModalOpen(false);
-      setSelectedRetryTask(null);
+      return;
+    }
 
-      // Create the structured retry Thought
-      await base44.entities.Thought.create({
+    let newThought = null;
+    try {
+      // Create new Thought with retry reference and user ownership
+      newThought = await base44.entities.Thought.create({
         content: retryData.content,
         screenshot_ids: retryData.screenshots,
-        project_id: task.projectId,
+        project_id: task.projectId || null,
         is_selected: true,
         is_deleted: false,
         retry_from_item_id: task.itemId,
         focus_type: 'both',
+        created_by: currentUser.email,
+        created_date: new Date().toISOString(),
+        updated_date: new Date().toISOString(),
         vision_analysis: retryData.screenshots && retryData.screenshots.length > 0 ? { status: 'pending', results: [] } : undefined
       });
 
-      // Update task status to retried (blijft weg uit Checks)
-      const newChecks = [...item.task_checks];
-      newChecks[task.index] = { 
-        ...newChecks[task.index], 
-        status: 'retried',
-        updated_date: new Date().toISOString()
-      };
-      await base44.entities.Item.update(item.id, { task_checks: newChecks });
+      // Remove task from item's task_checks array
+      const newChecks = item.task_checks.filter((_, idx) => idx !== task.index);
 
-      toast.success("Retry task created in Multi-Task!");
-      
-      // Final refetch to ensure data consistency
+      // Optimistic UI update - remove task from list
+      queryClient.setQueryData(['items', currentUser?.email], (oldData) => {
+        if (!oldData) return oldData;
+        
+        // If no tasks left, remove entire item
+        if (newChecks.length === 0) {
+          return oldData.filter(i => i.id !== item.id);
+        }
+        
+        // Otherwise update with filtered tasks
+        return oldData.map((i) =>
+          i.id === item.id ? { ...i, task_checks: newChecks } : i
+        );
+      });
+
+      // Update or delete item based on remaining tasks
+      if (newChecks.length === 0) {
+        await base44.entities.Item.delete(item.id);
+      } else {
+        await base44.entities.Item.update(item.id, { task_checks: newChecks });
+      }
+
+      setRetryModalOpen(false);
+      setSelectedRetryTask(null);
+
       queryClient.invalidateQueries({ queryKey: ['items'] });
-      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+      queryClient.invalidateQueries({ queryKey: ['activeThoughts'] });
       queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] });
       queryClient.invalidateQueries({ queryKey: ['openTasksCount'] });
+
+      toast.success("✓ Retry task created and original removed! Check Multiprompt page.");
     } catch (error) {
-      // Rollback optimistic update on error
+      console.error("Retry failed:", error);
+      
+      // Rollback: delete the created Thought if item update failed
+      if (newThought?.id) {
+        try {
+          await base44.entities.Thought.delete(newThought.id);
+        } catch (deleteError) {
+          console.error("Failed to rollback Thought creation:", deleteError);
+        }
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['items'] });
-      toast.error("Failed to create retry task");
+      toast.error("Failed to complete retry - changes rolled back");
     }
   };
 
@@ -324,8 +340,6 @@ export default function Checks() {
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="open">Open</SelectItem>
                   <SelectItem value="success">Success</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                  <SelectItem value="retried">Retried</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -481,21 +495,7 @@ export default function Checks() {
         {/* Retry Modal */}
         <RetryModal
           isOpen={retryModalOpen}
-          onClose={async () => {
-            // Revert task status to original if user cancels
-            if (selectedRetryTask) {
-              const item = items.find(i => i.id === selectedRetryTask.itemId);
-              if (item) {
-                const newChecks = [...item.task_checks];
-                newChecks[selectedRetryTask.index] = {
-                  ...newChecks[selectedRetryTask.index],
-                  status: selectedRetryTask.originalStatus || 'open',
-                  updated_date: new Date().toISOString()
-                };
-                await base44.entities.Item.update(item.id, { task_checks: newChecks });
-                queryClient.invalidateQueries({ queryKey: ['items'] });
-              }
-            }
+          onClose={() => {
             setRetryModalOpen(false);
             setSelectedRetryTask(null);
           }}
