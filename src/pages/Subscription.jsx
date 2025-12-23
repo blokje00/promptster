@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
+import { useTierAdvisorSettings } from "@/components/hooks/useTierAdvisorSettings";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, RefreshCw } from "lucide-react";
@@ -20,10 +21,11 @@ export default function SubscriptionPage() {
   const navigate = useNavigate();
 
   const { data: user } = useCurrentUserSettings();
+  const { data: tierSettings = [] } = useTierAdvisorSettings();
 
-  // Show for admin OR if explicitly enabled for regular users
   const isAdmin = user?.role === 'admin';
-  const showTierAdvisor = isAdmin || user?.tier_advisor_subscription_enabled === true;
+  // Read from TierAdvisorSettings entity (global setting)
+  const showTierAdvisor = isAdmin || (tierSettings[0]?.show_on_subscription_page === true);
 
   // No UserProfile fetch needed - using auth.me() directly
 

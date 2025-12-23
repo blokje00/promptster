@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
+import { useTierAdvisorSettings } from "@/components/hooks/useTierAdvisorSettings";
 import PromptsterStory from "@/components/features/PromptsterStory.jsx";
 import InlineEditableText from "@/components/features/InlineEditableText";
 import TierAdvisor from "@/components/subscription/TierAdvisor";
@@ -63,10 +64,11 @@ function FeaturesPage() {
   const [editMode, setEditMode] = useState(false);
   
   const { data: currentUser } = useCurrentUserSettings();
+  const { data: tierSettings = [] } = useTierAdvisorSettings();
 
-  // Show for admin OR if explicitly enabled for regular users
   const isAdmin = currentUser?.role === 'admin';
-  const showTierAdvisor = isAdmin || currentUser?.tier_advisor_features_enabled === true;
+  // Read from TierAdvisorSettings entity (global setting)
+  const showTierAdvisor = isAdmin || (tierSettings[0]?.show_on_features_page === true);
 
   const { data: blocks = [] } = useQuery({
     queryKey: ['featureContentBlocks'],

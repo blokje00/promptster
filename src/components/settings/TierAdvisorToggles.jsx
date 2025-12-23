@@ -18,7 +18,23 @@ export default function TierAdvisorToggles({ onDirtyChange }) {
   const [showOnSubscription, setShowOnSubscription] = useState(false);
   const [savedValues, setSavedValues] = useState({ features: false, subscription: false });
   const [isSaving, setIsSaving] = useState(false);
+  const [settingsId, setSettingsId] = useState(null);
   const hasInitializedRef = useRef(false);
+
+  // CRITICAL: Fetch from TierAdvisorSettings entity (GLOBAL settings, not per-user)
+  const { data: tierSettings = [] } = useQuery({
+    queryKey: ['tierAdvisorSettings'],
+    queryFn: async () => {
+      try {
+        const settings = await base44.entities.TierAdvisorSettings.list();
+        return settings || [];
+      } catch (error) {
+        console.warn('[TierAdvisor] Settings fetch failed:', error.message);
+        return [];
+      }
+    },
+    staleTime: 30_000,
+  });
 
   // New wrapper form state
   const [showWrapperForm, setShowWrapperForm] = useState(false);
@@ -60,22 +76,22 @@ export default function TierAdvisorToggles({ onDirtyChange }) {
     },
   });
 
+  // Initialize from TierAdvisorSettings (ONLY ONCE)
   useEffect(() => {
-    // GUARD: Only initialize ONCE, not after every save/refetch
-    // This prevents the "jumping back to OFF" problem
-    if (currentUser && !hasInitializedRef.current) {
-      const features = currentUser.tier_advisor_features_enabled || false;
-      const subscription = currentUser.tier_advisor_subscription_enabled || false;
-      
-      console.log('[TierAdvisor] 🔄 Initializing from server:', { features, subscription });
-      console.log('[TierAdvisor] currentUser:', currentUser);
+    if (tierSettings.length > 0 && !hasInitializedRef.current) {
+      const settings = tierSettings[0];
+      const features = settings.show_on_features_page || false;
+      const subscription = settings.show_on_subscription_page || false;
       
       setShowOnFeatures(features);
       setShowOnSubscription(subscription);
       setSavedValues({ features, subscription });
+      setSettingsId(settings.id);
       hasInitializedRef.current = true;
+      
+      console.log('[TierAdvisor] 🔄 Initialized from TierAdvisorSettings DB:', { features, subscription, id: settings.id });
     }
-  }, [currentUser]);
+  }, [tierSettings]);
 
   // Track dirty state
   const isDirty = 
@@ -92,12 +108,7 @@ export default function TierAdvisorToggles({ onDirtyChange }) {
   if (currentUser?.role !== 'admin') return null;
 
   const handleSave = async () => {
-    if (!currentUser?.id || !currentUser?.email) {
-      toast.error("User not loaded");
-      return;
-    }
-
-    // GUARD: Prevent double-click / multiple saves
+    // Guard: prevent double-click
     if (isSaving) {
       console.log('[TierAdvisor] ⏸️ Save already in progress, ignoring');
       return;
@@ -105,39 +116,40 @@ export default function TierAdvisorToggles({ onDirtyChange }) {
     setIsSaving(true);
 
     try {
-      console.log('[TierAdvisor] 💾 Saving settings for user:', currentUser.email);
-      console.log('[TierAdvisor] hasInitializedRef:', hasInitializedRef.current);
+      console.log('[TierAdvisor] 💾 Saving to TierAdvisorSettings entity...');
       console.log('[TierAdvisor] showOnFeatures:', showOnFeatures);
       console.log('[TierAdvisor] showOnSubscription:', showOnSubscription);
-      console.log('[TierAdvisor] savedValues:', savedValues);
       
       const payload = {
-        tier_advisor_features_enabled: !!showOnFeatures,
-        tier_advisor_subscription_enabled: !!showOnSubscription,
+        show_on_features_page: !!showOnFeatures,
+        show_on_subscription_page: !!showOnSubscription,
       };
 
       console.log('[TierAdvisor] 📦 Payload:', payload);
 
-      // Save to auth.updateMe (single source of truth)
-      await base44.auth.updateMe(payload);
+      let savedRecord;
+      if (settingsId) {
+        // UPDATE existing record
+        savedRecord = await base44.entities.TierAdvisorSettings.update(settingsId, payload);
+        console.log('[TierAdvisor] ✅ Updated existing record:', savedRecord);
+      } else {
+        // CREATE new record (first time)
+        savedRecord = await base44.entities.TierAdvisorSettings.create(payload);
+        setSettingsId(savedRecord.id);
+        console.log('[TierAdvisor] ✅ Created new record:', savedRecord);
+      }
 
-      // CRITICAL: Update local state baseline BEFORE any cache operations
-      // This ensures dirty=false immediately
-      setSavedValues({
-        features: payload.tier_advisor_features_enabled,
-        subscription: payload.tier_advisor_subscription_enabled
-      });
-
-      console.log('[TierAdvisor] ✅ Save complete, updating caches...');
-
-      // CRITICAL: Update ALL relevant caches for instant UI feedback
-      const newUserData = { ...(currentUser || {}), ...payload };
-      queryClient.setQueryData(['currentUserSettings'], newUserData);
-      queryClient.setQueryData(['currentUser'], newUserData); // Also update legacy key if used
+      // Update cache with the saved data
+      queryClient.setQueryData(['tierAdvisorSettings'], [savedRecord]);
       
-      // Invalidate for background consistency (won't re-init due to hasInitializedRef)
-      queryClient.invalidateQueries({ queryKey: ['currentUserSettings'] });
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+      // Update saved baseline BEFORE invalidate (prevent useEffect overwrite)
+      setSavedValues({
+        features: payload.show_on_features_page,
+        subscription: payload.show_on_subscription_page
+      });
+      
+      // Invalidate for consistency across app
+      await queryClient.invalidateQueries({ queryKey: ['tierAdvisorSettings'] });
       
       toast.success("✅ Tier Advisor settings saved!");
     } catch (error) {
