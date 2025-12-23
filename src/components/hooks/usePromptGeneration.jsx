@@ -36,7 +36,7 @@ export const usePromptGeneration = ({
 
   const generatedPrompt = useMemo(() => {
     const selectedItems = thoughts.filter(t => selectedThoughtIds.includes(t.id));
-    if (selectedItems.length === 0 && !startTemplateId && !endTemplateId) return "";
+    if (selectedItems.length === 0 && !startTemplateId && !endTemplateId && !includePersonalPrefs && !includeProjectConfig) return "";
 
     const parts = [];
 
@@ -142,7 +142,7 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
     if (endTmpl) parts.push(endTmpl.content);
 
     return parts.join("\n\n---\n\n");
-  }, [thoughts, selectedThoughtIds, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, currentUser, selectedProject, templates]);
+  }, [thoughts, selectedThoughtIds, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, currentUser, selectedProject, templates, selectedProjectId]);
 
   const handleImprovePrompt = useCallback(async (isUndo = false) => {
     // Undo: clear improved prompt
