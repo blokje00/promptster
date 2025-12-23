@@ -15,7 +15,6 @@ import MaintenanceTools from "../components/settings/MaintenanceTools";
 import AIInstructionForm from "../components/settings/AIInstructionForm";
 import PersonalPreferencesForm from "../components/settings/PersonalPreferencesForm";
 import AIContextToggle from "../components/settings/AIContextToggle";
-import TierAdvisorToggles from "../components/settings/TierAdvisorToggles";
 import { toast } from "sonner";
 
 const getDefaultInstruction = () => `You are optimizing a multi-task prompt that may include screenshots and OCR vision data.
@@ -185,7 +184,6 @@ export default function AIBackoffice() {
   const [settingsId, setSettingsId] = useState(null);
   const [exampleIndex, setExampleIndex] = useState(0);
   const [isSavingAI, setIsSavingAI] = useState(false);
-  const [tierAdvisorDirty, setTierAdvisorDirty] = useState(false);
   const [savedAIValues, setSavedAIValues] = useState({
     instruction: "",
     modelPreference: "default",
@@ -297,8 +295,7 @@ export default function AIBackoffice() {
   const isAIDirty = 
     instruction !== savedAIValues.instruction ||
     modelPreference !== savedAIValues.modelPreference ||
-    enableContextSuggestions !== savedAIValues.enableContextSuggestions ||
-    tierAdvisorDirty;
+    enableContextSuggestions !== savedAIValues.enableContextSuggestions;
 
 
   
@@ -354,9 +351,6 @@ export default function AIBackoffice() {
 
       // Reset autosave baseline to prevent unexpected jumps
       resetInstruction(payload.improve_prompt_instruction);
-
-      // Reset TierAdvisor dirty flag (if applicable)
-      setTierAdvisorDirty(false);
 
       toast.success("AI settings saved");
     } catch (error) {
@@ -425,7 +419,6 @@ export default function AIBackoffice() {
                   isDirty={personalPrefsHook.isDirty}
                   defaultExample={DEFAULT_PERSONAL_PREFERENCES}
                 />
-                <TierAdvisorToggles onDirtyChange={setTierAdvisorDirty} />
                 <Card id="retry-message">
                   <CardHeader>
                     <CardTitle className="text-lg">Retry Task Message</CardTitle>

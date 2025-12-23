@@ -2,13 +2,11 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
-import { useTierAdvisorSettings } from "@/components/hooks/useTierAdvisorSettings";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import TierAdvisor from "@/components/subscription/TierAdvisor";
 import { createPageUrl } from "@/utils";
 import { hasValidAccess, hasValidLatch } from "@/components/lib/subscriptionUtils";
 
@@ -21,19 +19,6 @@ export default function SubscriptionPage() {
   const navigate = useNavigate();
 
   const { data: user } = useCurrentUserSettings();
-  const { data: tierSettings = [] } = useTierAdvisorSettings();
-
-  const isAdmin = user?.role === 'admin';
-  // Read from TierAdvisorSettings entity (global setting)
-  const showTierAdvisor = isAdmin || (tierSettings && tierSettings.length > 0 && tierSettings[0]?.show_on_subscription_page === true);
-  console.log('[SubscriptionPage] 🔍 TierAdvisor Debug:', { 
-    isAdmin, 
-    tierSettings, 
-    settingsLength: tierSettings?.length,
-    firstSetting: tierSettings[0],
-    showOnSubPage: tierSettings[0]?.show_on_subscription_page, 
-    finalShowTierAdvisor: showTierAdvisor 
-  });
 
   // No UserProfile fetch needed - using auth.me() directly
 
@@ -293,13 +278,6 @@ export default function SubscriptionPage() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-slate-900">Subscriptions</h1>
       </div>
-
-      {/* Tier Advisor - Admin or enabled for users */}
-      {showTierAdvisor && (
-        <div className="mb-8">
-          <TierAdvisor />
-        </div>
-      )}
 
       {isSyncing && (
         <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
