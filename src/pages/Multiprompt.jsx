@@ -199,7 +199,24 @@ export default function Multiprompt() {
     return subscriptionPlans.find(p => p.id === currentUser.plan_id) || {};
   }, [currentUser, subscriptionPlans]);
   
-  const maxThoughts = currentPlan.max_thoughts || 10;
+  // TASK-1: Trial users get PRO limit (20), after trial falls back to plan limit
+  const maxThoughts = useMemo(() => {
+    if (currentUser?.role === 'admin') return Infinity;
+    
+    // During trial: use trial plan's limit (usually PRO = 20)
+    if (currentUser?.subscription_status === 'trialing') {
+      return currentPlan.max_thoughts || 20;
+    }
+    
+    // After trial or active: use actual plan limit
+    // No subscription = 0, Starter = 10, PRO = 20
+    if (!currentUser?.subscription_status || currentUser.subscription_status === 'none') {
+      return 0;
+    }
+    
+    return currentPlan.max_thoughts || 10;
+  }, [currentUser, currentPlan]);
+  
   const isLimitReached = currentUser?.role !== 'admin' && thoughts.length >= maxThoughts;
   const enableContextSuggestions = aiSettings[0]?.enable_context_suggestions !== false;
 
