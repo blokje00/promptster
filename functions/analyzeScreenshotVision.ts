@@ -21,25 +21,46 @@ Deno.serve(async (req) => {
       }, { status: 401 });
     }
 
-    // ✅ TRIAL/SUBSCRIPTION CHECK
+    // ✅ PRO FEATURE CHECK
+    // Vision OCR is PRO-only (or Starter during 14-day trial)
+    const monthlyPrice = user.monthly_price_amount || 0;
     const subscriptionStatus = user.subscription_status;
-    const trialEnd = user.trial_end ? new Date(user.trial_end) : null;
+    const trialEnd = user.trial_ends_at || user.trial_end;
     const now = new Date();
-
-    const hasActiveSubscription = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
-    const hasActiveTrial = subscriptionStatus === 'trial' && trialEnd && trialEnd > now;
-
-    if (!hasActiveSubscription && !hasActiveTrial) {
-      console.log('[analyzeScreenshotVision] ❌ Access denied - no active trial/subscription');
+    
+    let hasProAccess = false;
+    
+    // Admin bypass
+    if (user.role === 'admin') {
+      hasProAccess = true;
+    }
+    // PRO plan (€19.95): always access
+    else if (monthlyPrice >= 1995) {
+      hasProAccess = true;
+    }
+    // Starter plan (€9.95): only during trial
+    else if ((monthlyPrice === 995 || monthlyPrice === 999) && subscriptionStatus === 'trialing') {
+      if (trialEnd && new Date(trialEnd) > now) {
+        hasProAccess = true;
+      }
+    }
+    
+    if (!hasProAccess) {
+      console.log('[analyzeScreenshotVision] ❌ PRO feature access denied:', {
+        monthlyPrice,
+        subscriptionStatus,
+        trialEnd,
+        isAdmin: user.role === 'admin'
+      });
       return Response.json({ 
         ok: false,
-        error: 'Vision analysis requires an active trial or subscription',
-        subscription_status: subscriptionStatus,
-        trial_expired: trialEnd ? trialEnd < now : false
+        error: 'Vision OCR is only available in PRO plan or during Starter trial',
+        requires_upgrade: true,
+        subscription_status: subscriptionStatus
       }, { status: 403 });
     }
 
-    console.log('[analyzeScreenshotVision] ✓ Access granted - trial/subscription active');
+    console.log('[analyzeScreenshotVision] ✓ PRO feature access granted');
 
     const body = await req.json();
     console.log('[analyzeScreenshotVision] Request:', JSON.stringify(body, null, 2));

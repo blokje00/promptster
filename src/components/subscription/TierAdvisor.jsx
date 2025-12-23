@@ -5,12 +5,21 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calculator, Zap, TrendingDown, Layers } from "lucide-react";
+import { Calculator, Zap, TrendingDown, Layers, Lock } from "lucide-react";
+import { hasProFeatureAccess } from "@/components/lib/subscriptionUtils";
 
 export default function TierAdvisor() {
   const [wrapperCredits, setWrapperCredits] = useState('');
   const [selectedWrapper, setSelectedWrapper] = useState('base44');
   const [usesImages, setUsesImages] = useState(false);
+  
+  // Check PRO feature access
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+  });
+  
+  const hasProAccess = hasProFeatureAccess(currentUser);
 
   // Fetch subscription plans (real Stripe prices)
   const { data: subscriptionPlans = [] } = useQuery({
@@ -142,7 +151,15 @@ export default function TierAdvisor() {
   }, [wrapperCredits, selectedWrapper, selectedWrapperData, usesImages, subscriptionPlans]);
 
   return (
-    <Card className="p-6 bg-gradient-to-br from-slate-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700">
+    <Card className="p-6 bg-gradient-to-br from-slate-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 relative">
+      {!hasProAccess && (
+        <div className="absolute top-4 right-4">
+          <Badge className="bg-amber-500 text-white flex items-center gap-1">
+            <Lock className="w-3 h-3" />
+            PRO Feature
+          </Badge>
+        </div>
+      )}
       <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-900 dark:text-slate-100">
         <Calculator className="text-indigo-600 dark:text-indigo-400" />
         Find Your Perfect Tier
@@ -204,7 +221,8 @@ export default function TierAdvisor() {
               type="checkbox"
               checked={usesImages}
               onChange={(e) => setUsesImages(e.target.checked)}
-              className="rounded"
+              disabled={!hasProAccess}
+              className="rounded disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
               I work with screenshots/images (need OCR)

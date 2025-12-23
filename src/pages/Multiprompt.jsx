@@ -529,6 +529,10 @@ export default function Multiprompt() {
                     {...promptGeneration}
                     setImprovedPrompt={promptGeneration.setImprovedPrompt}
                     onImprove={promptGeneration.handleImprovePrompt}
+                    onRefresh={() => {
+                      promptGeneration.setImprovedPrompt("");
+                      toast.info("Prompt refreshed - re-reading all tasks");
+                    }}
                     saveSuccess={saveSuccess}
                     onQuickSave={handleQuickSave}
                   />
