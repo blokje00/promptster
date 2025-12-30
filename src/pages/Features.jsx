@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
 import PromptsterStory from "@/components/features/PromptsterStory.jsx";
 import InlineEditableText from "@/components/features/InlineEditableText";
@@ -60,6 +61,7 @@ const iconMap = {
 
 function FeaturesPage() {
   const [editMode, setEditMode] = useState(false);
+  const { navigateToLogin } = useAuth();
   
   const { data: currentUser } = useCurrentUserSettings();
 
@@ -140,11 +142,7 @@ function FeaturesPage() {
               </div>
             </div>
             <Button 
-              onClick={() => {
-                const params = new URLSearchParams(window.location.search);
-                const nextRoute = params.get('next') || createPageUrl('Multiprompt');
-                base44.auth.redirectToLogin(nextRoute);
-              }}
+              onClick={() => navigateToLogin()}
               size="lg"
               className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold shadow-xl"
             >

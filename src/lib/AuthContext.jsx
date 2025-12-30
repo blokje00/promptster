@@ -124,8 +124,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const navigateToLogin = () => {
-    // Use the SDK's redirectToLogin method
-    base44.auth.redirectToLogin(window.location.href);
+    // For development, use localhost. For production, use the live app URL.
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
+    const returnUrl = isLocalhost 
+      ? window.location.href 
+      : `https://${appParams.appId}.base44.app${window.location.pathname}`;
+    
+    const loginUrl = `${appParams.serverUrl}/login?from_url=${encodeURIComponent(returnUrl)}&app_id=${appParams.appId}`;
+    window.location.href = loginUrl;
   };
 
   return (
