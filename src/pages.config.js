@@ -15,7 +15,6 @@ import Subscription from './pages/Subscription';
 import Support from './pages/Support';
 import ViewItem from './pages/ViewItem';
 import index from './pages/index';
-import ExampleAnalytics from './pages/ExampleAnalytics';
 import Features from './pages/Features';
 import __Layout from './Layout.jsx';
 
@@ -38,7 +37,6 @@ export const PAGES = {
     "Support": Support,
     "ViewItem": ViewItem,
     "index": index,
-    "ExampleAnalytics": ExampleAnalytics,
     "Features": Features,
 }
 

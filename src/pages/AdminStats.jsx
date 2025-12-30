@@ -1,8 +1,12 @@
 import React, { useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { SEOHead } from '@/components/shared/SEOHead';
+import { SocialShare } from '@/components/shared/SocialShare';
+import { useViewportTracking, useTimeTracking, useClickTracking } from '@/components/hooks/useAnalytics';
 import { BarChart, Users, FolderOpen, Sparkles, FileText, Loader2, Calendar, Clock, CreditCard, ArrowUpDown, ArrowUp, ArrowDown, Eye, MousePointerClick, TrendingUp } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -41,6 +45,12 @@ function SortableHeader({ field, label, sortField, sortDirection, onSort }) {
 export default function AdminStats() {
   const [sortField, setSortField] = React.useState(null);
   const [sortDirection, setSortDirection] = React.useState('asc');
+  
+  // Analytics tracking
+  useTimeTracking('admin_stats_page');
+  const { trackClick } = useClickTracking();
+  const { ref: analyticsRef, inView: analyticsInView } = useViewportTracking('analytics_demo_section');
+  const { ref: ctaRef, inView: ctaInView } = useViewportTracking('analytics_cta_section');
 
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
@@ -279,8 +289,19 @@ export default function AdminStats() {
     },
   ];
 
+  const handleAnalyticsCTAClick = () => {
+    trackClick('admin_analytics_cta', { location: 'admin_stats' });
+  };
+
   return (
-    <div className="p-4 md:p-8">
+    <>
+      <SEOHead
+        title="Admin Dashboard"
+        description="Admin statistics and analytics overview"
+        keywords={['admin', 'analytics', 'dashboard']}
+      />
+      
+      <div className="p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-2">
@@ -511,7 +532,155 @@ export default function AdminStats() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Analytics & Social Sharing Demo Section */}
+          <div ref={analyticsRef} className="mt-12 space-y-8">
+            <div className="border-t border-slate-200 pt-8">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                  Analytics & Social Sharing Demo
+                </h2>
+                <p className="text-slate-600">
+                  This section demonstrates all installed analytics libraries
+                </p>
+                {analyticsInView && (
+                  <p className="text-sm text-green-600 mt-2">
+                    ✓ Analytics section viewed - tracked!
+                  </p>
+                )}
+              </div>
+
+              {/* Features Grid */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>📊 PostHog Analytics</CardTitle>
+                    <CardDescription>Automatic event tracking</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <p>Events automatically tracked:</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      <li>Page views</li>
+                      <li>Button clicks</li>
+                      <li>Time on page</li>
+                      <li>Element visibility</li>
+                      <li>Custom events</li>
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>🔍 SEO & Meta Tags</CardTitle>
+                    <CardDescription>react-helmet-async</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <p>Dynamic meta tags for:</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      <li>Open Graph (Facebook)</li>
+                      <li>Twitter Cards</li>
+                      <li>Page titles</li>
+                      <li>Descriptions</li>
+                      <li>Canonical URLs</li>
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>📱 Social Sharing</CardTitle>
+                    <CardDescription>react-share</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="mb-4">Share on social media:</p>
+                    <SocialShare
+                      url={window.location.href}
+                      title="Check out Promptster Admin Dashboard!"
+                      description="AI-powered prompt management platform - Admin Panel"
+                    />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>👁️ Viewport Tracking</CardTitle>
+                    <CardDescription>react-intersection-observer</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <p>Track when users see content:</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      <li>Scroll depth</li>
+                      <li>Element visibility</li>
+                      <li>Content engagement</li>
+                      <li>A/B test exposure</li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* CTA Section */}
+              <section ref={ctaRef} className="text-center space-y-6 py-12">
+                <h3 className="text-2xl font-bold">Test Analytics Tracking</h3>
+                <p className="text-slate-600">
+                  Click below to test click tracking
+                </p>
+                <Button size="lg" onClick={handleAnalyticsCTAClick} className="bg-indigo-600 hover:bg-indigo-700">
+                  Track This Click
+                </Button>
+                {ctaInView && (
+                  <p className="text-sm text-green-600">
+                    ✓ CTA section viewed - tracked!
+                  </p>
+                )}
+              </section>
+
+              {/* Usage Instructions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>🚀 How to Use Analytics</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-2">1. Add environment variable:</h3>
+                    <pre className="bg-slate-100 p-4 rounded text-sm overflow-x-auto">
+                      VITE_POSTHOG_KEY=your_posthog_project_api_key
+                    </pre>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-2">2. Use SEO component in pages:</h3>
+                    <pre className="bg-slate-100 p-4 rounded text-sm overflow-x-auto">
+{`<SEOHead 
+  title="Your Page" 
+  description="Page description"
+  image="/og-image.png"
+/>`}
+                    </pre>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-2">3. Add social sharing:</h3>
+                    <pre className="bg-slate-100 p-4 rounded text-sm overflow-x-auto">
+{`<SocialShare 
+  url={window.location.href}
+  title="Share title"
+/>`}
+                    </pre>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold mb-2">4. Track viewport visibility:</h3>
+                    <pre className="bg-slate-100 p-4 rounded text-sm overflow-x-auto">
+{`const { ref, inView } = useViewportTracking('section_name');
+<div ref={ref}>Content</div>`}
+                    </pre>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
+    </>
   );
 }
