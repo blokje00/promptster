@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
+import { hasProFeatureAccess } from "@/components/lib/subscriptionUtils";
 
 export const usePromptGeneration = ({
   thoughts,
@@ -35,7 +36,7 @@ export const usePromptGeneration = ({
 
   const generatedPrompt = useMemo(() => {
     const selectedItems = thoughts.filter(t => selectedThoughtIds.includes(t.id));
-    if (selectedItems.length === 0 && !startTemplateId && !endTemplateId) return "";
+    if (selectedItems.length === 0 && !startTemplateId && !endTemplateId && !includePersonalPrefs && !includeProjectConfig) return "";
 
     const parts = [];
 
@@ -141,7 +142,7 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
     if (endTmpl) parts.push(endTmpl.content);
 
     return parts.join("\n\n---\n\n");
-  }, [thoughts, selectedThoughtIds, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, currentUser, selectedProject, templates]);
+  }, [thoughts, selectedThoughtIds, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, currentUser, selectedProject, templates, selectedProjectId]);
 
   const handleImprovePrompt = useCallback(async (isUndo = false) => {
     // Undo: clear improved prompt
@@ -152,6 +153,33 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
     }
 
     if (!generatedPrompt) return;
+    
+    // PRO feature check
+    if (!hasProFeatureAccess(currentUser)) {
+      const isTrialing = currentUser?.subscription_status === 'trialing';
+      const trialEnd = currentUser?.trial_ends_at || currentUser?.trial_end;
+      
+      if (isTrialing && trialEnd) {
+        const daysLeft = Math.ceil((new Date(trialEnd) - new Date()) / (1000 * 60 * 60 * 24));
+        toast.error(`AI Improvement requires PRO plan. Trial ends in ${daysLeft} days.`, {
+          description: 'Upgrade to PRO for unlimited AI features',
+          action: {
+            label: 'Upgrade',
+            onClick: () => window.location.href = '/Subscription'
+          }
+        });
+      } else {
+        toast.error('Upgrade to PRO to use AI Prompt Improvement', {
+          description: 'This feature is only available in PRO plan',
+          action: {
+            label: 'View Plans',
+            onClick: () => window.location.href = '/Subscription'
+          }
+        });
+      }
+      return;
+    }
+    
     setIsImproving(true);
     try {
       const selectedItems = thoughts.filter(t => selectedThoughtIds.includes(t.id));

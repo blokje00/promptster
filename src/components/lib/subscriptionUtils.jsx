@@ -198,3 +198,63 @@ export function getSubscriptionState(user) {
   // CRITICAL: This prevents Stripe sync timing issues from blocking the app
   return { tier: 'free', isValidAccess: false, trialEnd: null };
 }
+
+/**
+ * Check if user has access to PRO features (Vision OCR, AI Improvement, etc.)
+ * 
+ * RULES:
+ * - PRO plan: ALWAYS access
+ * - Starter plan + DURING trial: access
+ * - Starter plan + AFTER trial: NO access
+ * - Admin: ALWAYS access
+ * 
+ * @param {Object} user - User from base44.auth.me()
+ * @returns {boolean}
+ */
+export function hasProFeatureAccess(user) {
+  if (!user) {
+    debugLog('[subscriptionUtils] PRO check: DENIED - No user');
+    return false;
+  }
+  
+  // Admin bypass
+  if (user.role === 'admin') {
+    debugLog('[subscriptionUtils] PRO check: GRANTED - Admin');
+    return true;
+  }
+  
+  // Use price amount to determine plan (995 = Starter, 1995 = PRO)
+  // This works because Stripe webhook sets these values on UserProfile
+  const monthlyPrice = user.monthly_price_amount || 0;
+  
+  debugLog('[subscriptionUtils] PRO check:', {
+    monthlyPrice,
+    status: user.subscription_status,
+    trial_ends_at: user.trial_ends_at
+  });
+  
+  // PRO plan (€19.95/month): always access
+  if (monthlyPrice >= 1995) {
+    debugLog('[subscriptionUtils] PRO check: GRANTED - PRO plan');
+    return true;
+  }
+  
+  // Starter plan (€9.95/month): only during trial
+  if (monthlyPrice === 995 || monthlyPrice === 999) {
+    if (user.subscription_status === 'trialing') {
+      const trialEnd = user.trial_ends_at || user.trial_end;
+      if (trialEnd && new Date(trialEnd) > new Date()) {
+        debugLog('[subscriptionUtils] PRO check: GRANTED - Starter with active trial');
+        return true;
+      }
+      debugLog('[subscriptionUtils] PRO check: DENIED - Starter trial expired');
+      return false;
+    }
+    debugLog('[subscriptionUtils] PRO check: DENIED - Starter without trial');
+    return false;
+  }
+  
+  // No valid plan or unknown price = no access
+  debugLog('[subscriptionUtils] PRO check: DENIED - No valid plan');
+  return false;
+}

@@ -119,15 +119,22 @@ export default function TaskInputArea({
         </div>
       )}
 
+      {isLimitReached && (
+        <div className="px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800">
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+            ⚠️ Task limit reached: {maxThoughts} tasks maximum for your plan
+          </p>
+        </div>
+      )}
       <Textarea
         ref={textareaRef}
-        placeholder={isLimitReached ? `Plan limit of ${maxThoughts} tasks reached.` : "Type task... (Cmd+V to paste images)"}
+        placeholder={isLimitReached ? `⚠️ Limit reached: Max ${maxThoughts} tasks. Upgrade or delete tasks to continue.` : "Type task... (Cmd+V to paste images)"}
         value={newThoughtContent}
         onChange={(e) => onContentChange(e.target.value)}
         onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), !isLimitReached && onAddThought())}
         onPaste={handleTextareaPaste}
         disabled={isLimitReached}
-        className="min-h-[60px] border-0 focus-visible:ring-0 resize-none dark:bg-slate-900 dark:text-slate-100"
+        className="min-h-[60px] border-0 focus-visible:ring-0 resize-none dark:bg-slate-900 dark:text-slate-100 disabled:opacity-60"
       />
 
       <div className="flex items-center gap-2 px-3 py-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 rounded-b-lg">

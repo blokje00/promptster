@@ -199,7 +199,24 @@ export default function Multiprompt() {
     return subscriptionPlans.find(p => p.id === currentUser.plan_id) || {};
   }, [currentUser, subscriptionPlans]);
   
-  const maxThoughts = currentPlan.max_thoughts || 10;
+  // TASK-1: Trial users get PRO limit (20), after trial falls back to plan limit
+  const maxThoughts = useMemo(() => {
+    if (currentUser?.role === 'admin') return Infinity;
+    
+    // During trial: use trial plan's limit (usually PRO = 20)
+    if (currentUser?.subscription_status === 'trialing') {
+      return currentPlan.max_thoughts || 20;
+    }
+    
+    // After trial or active: use actual plan limit
+    // No subscription = 0, Starter = 10, PRO = 20
+    if (!currentUser?.subscription_status || currentUser.subscription_status === 'none') {
+      return 0;
+    }
+    
+    return currentPlan.max_thoughts || 10;
+  }, [currentUser, currentPlan]);
+  
   const isLimitReached = currentUser?.role !== 'admin' && thoughts.length >= maxThoughts;
   const enableContextSuggestions = aiSettings[0]?.enable_context_suggestions !== false;
 
@@ -249,7 +266,14 @@ export default function Multiprompt() {
     if (!newThoughtInput.newThoughtContent.trim() && newThoughtInput.newThoughtScreenshots.length === 0) return;
     
     if (isLimitReached) {
-      toast.error(`Limit reached: Max ${maxThoughts} tasks allowed`);
+      toast.error(`⚠️ Task limit reached: Maximum ${maxThoughts} tasks for your plan`, {
+        description: 'Delete tasks or upgrade to PRO for more capacity',
+        action: {
+          label: 'View Plans',
+          onClick: () => navigate(createPageUrl('Subscription'))
+        },
+        duration: 6000
+      });
       return;
     }
 
@@ -306,6 +330,8 @@ export default function Multiprompt() {
     }, {
       onSuccess: (newItem) => {
         if (newItem?.id) {
+          // TASK-5: Clear preview after save
+          promptGeneration.setImprovedPrompt("");
           navigate(createPageUrl("Checks"));
           toast.success("Prompt saved! Sent to Vault Checks.");
         }
@@ -529,6 +555,10 @@ export default function Multiprompt() {
                     {...promptGeneration}
                     setImprovedPrompt={promptGeneration.setImprovedPrompt}
                     onImprove={promptGeneration.handleImprovePrompt}
+                    onRefresh={() => {
+                      promptGeneration.setImprovedPrompt("");
+                      toast.info("Prompt refreshed - re-reading all tasks");
+                    }}
                     saveSuccess={saveSuccess}
                     onQuickSave={handleQuickSave}
                   />

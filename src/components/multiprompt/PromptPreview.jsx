@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, Copy, CheckCircle, Cog } from "lucide-react";
+import { Loader2, Sparkles, Copy, CheckCircle, Cog, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { createPageUrl } from "@/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ export default function PromptPreview({
   onImprove,
   saveSuccess,
   onQuickSave,
+  onRefresh,
   selectedThoughts = []
 }) {
   const displayPrompt = improvedPrompt || generatedPrompt;
@@ -44,6 +45,15 @@ export default function PromptPreview({
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <CardTitle>Preview</CardTitle>
         <div className="flex gap-2">
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            onClick={onRefresh}
+            className="text-slate-500 hover:text-slate-700"
+            title="Refresh prompt - re-read all tasks"
+          >
+            <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+          </Button>
           {improvedPrompt && (
             <Button 
               size="sm" 

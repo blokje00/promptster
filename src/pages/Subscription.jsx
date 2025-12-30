@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { Loader2, CheckCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import TierAdvisor from "@/components/subscription/TierAdvisor";
 import { createPageUrl } from "@/utils";
 import { hasValidAccess, hasValidLatch } from "@/components/lib/subscriptionUtils";
 
@@ -20,10 +19,6 @@ export default function SubscriptionPage() {
   const navigate = useNavigate();
 
   const { data: user } = useCurrentUserSettings();
-
-  // Show for admin OR if explicitly enabled for regular users
-  const isAdmin = user?.role === 'admin';
-  const showTierAdvisor = isAdmin || user?.tier_advisor_subscription_enabled === true;
 
   // No UserProfile fetch needed - using auth.me() directly
 
@@ -40,13 +35,24 @@ export default function SubscriptionPage() {
   const isTrialing = user?.subscription_status === 'trialing';
   const isActive = user?.subscription_status === 'active';
 
-  // Show plans based on visibility_status (fallback to is_active for backwards compatibility)
+  // Show ALL plans (visible ones), but control button availability
   const displayPlans = isActive 
     ? [] 
     : plans.filter(plan => {
         const status = plan.visibility_status || (plan.is_active ? 'visible_purchasable' : 'hidden');
         return status !== 'hidden';
       });
+  
+  // Helper: Check if plan is available for purchase based on date
+  const isPlanAvailable = (plan) => {
+    if (!plan.available_from) return true;
+    
+    const availableDate = new Date(plan.available_from);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return availableDate <= today;
+  };
 
   const handleSubscribe = async (plan) => {
     setIsProcessing(true);
@@ -284,13 +290,6 @@ export default function SubscriptionPage() {
         <h1 className="text-3xl font-bold text-slate-900">Subscriptions</h1>
       </div>
 
-      {/* Tier Advisor - Admin or enabled for users */}
-      {showTierAdvisor && (
-        <div className="mb-8">
-          <TierAdvisor />
-        </div>
-      )}
-
       {isSyncing && (
         <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-3">
           <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
@@ -358,15 +357,22 @@ export default function SubscriptionPage() {
       <div className="grid gap-6">
         {displayPlans.map((plan) => {
         const isPurchasable = (plan.visibility_status || 'visible_purchasable') === 'visible_purchasable';
+        const isAvailable = isPlanAvailable(plan);
+        const canPurchase = isPurchasable && isAvailable;
 
         return (
-        <Card key={plan.id} className={`border-l-4 ${isPurchasable ? 'border-l-green-500' : 'border-l-yellow-500'}`}>
+        <Card key={plan.id} className={`border-l-4 ${canPurchase ? 'border-l-green-500' : 'border-l-yellow-500'}`}>
           <CardContent className="p-6 flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-1">
                 <h3 className="text-xl font-semibold">{plan.name}</h3>
                 {!isPurchasable && (
                   <span className="text-xs bg-yellow-100 px-2 py-1 rounded text-yellow-700">Coming Soon</span>
+                )}
+                {!isAvailable && (
+                  <span className="text-xs bg-blue-100 px-2 py-1 rounded text-blue-700">
+                    Available from {new Date(plan.available_from).toLocaleDateString('nl-NL')}
+                  </span>
                 )}
                 {plan.show_trial_badge && plan.trial_days > 0 && (
                   <span className={`text-xs px-2 py-1 rounded font-medium ${
@@ -414,7 +420,7 @@ export default function SubscriptionPage() {
                   <Button disabled className="bg-blue-500 hover:bg-blue-600 text-white">
                     Scheduled ✓
                   </Button>
-                ) : plan.payment_link ? (
+                ) : plan.payment_link && isAvailable ? (
                   <>
                     <Button 
                       onClick={() => handleSubscribe(plan)} 
@@ -434,6 +440,10 @@ export default function SubscriptionPage() {
                       After Trial
                     </Button>
                   </>
+                ) : !isAvailable ? (
+                  <Button disabled variant="outline" className="text-blue-600 border-blue-600">
+                    Available Soon
+                  </Button>
                 ) : (
                   <Button disabled variant="outline">
                     Contact
@@ -442,6 +452,10 @@ export default function SubscriptionPage() {
               ) : !isPurchasable ? (
                 <Button disabled variant="outline" className="text-yellow-600 border-yellow-600">
                   Coming Soon
+                </Button>
+              ) : !isAvailable ? (
+                <Button disabled variant="outline" className="text-blue-600 border-blue-600">
+                  Available Soon
                 </Button>
               ) : plan.trial_days > 0 && !plan.is_credit_card_required_for_trial ? (
                 <Button 

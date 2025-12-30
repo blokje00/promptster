@@ -90,7 +90,19 @@ export default function TemplatesManager({ templates = [], projects = [], select
 
   // Render Helpers
   const renderTemplateList = (type, title, colorClass) => {
-    const filtered = templates.filter(t => t.type === type && (!selectedProjectId || !t.project_id || t.project_id === selectedProjectId));
+    // TASK-4 FIX: Show templates for selected project OR no project (global)
+    // Hide templates from other projects entirely
+    const filtered = templates.filter(t => {
+      if (t.type !== type) return false;
+      
+      // If project selected: show project templates + global templates (no project_id)
+      if (selectedProjectId) {
+        return t.project_id === selectedProjectId || !t.project_id;
+      }
+      
+      // If no project selected: show only global templates
+      return !t.project_id;
+    });
     
     return (
       <Card className={selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : ''}>

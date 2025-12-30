@@ -4,7 +4,6 @@ import { base44 } from "@/api/base44Client";
 import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
 import PromptsterStory from "@/components/features/PromptsterStory.jsx";
 import InlineEditableText from "@/components/features/InlineEditableText";
-import TierAdvisor from "@/components/subscription/TierAdvisor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,9 +63,7 @@ function FeaturesPage() {
   
   const { data: currentUser } = useCurrentUserSettings();
 
-  // Show for admin OR if explicitly enabled for regular users
   const isAdmin = currentUser?.role === 'admin';
-  const showTierAdvisor = isAdmin || currentUser?.tier_advisor_features_enabled === true;
 
   const { data: blocks = [] } = useQuery({
     queryKey: ['featureContentBlocks'],
@@ -186,13 +183,6 @@ function FeaturesPage() {
             />
           </p>
         </div>
-
-        {/* Tier Advisor - Admin or enabled for users */}
-        {showTierAdvisor && (
-          <div className="mb-12">
-            <TierAdvisor />
-          </div>
-        )}
 
         {/* Story Section - Pass resolved blocks and edit state */}
         <PromptsterStory 

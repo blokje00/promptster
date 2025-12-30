@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Save, X } from "lucide-react";
 import {
@@ -67,7 +68,8 @@ export default function AdminSubscription() {
     show_trial_badge: true,
     trial_badge_text: "",
     show_max_tasks_badge: true,
-    max_tasks_badge_text: ""
+    max_tasks_badge_text: "",
+    available_from: ""
   });
 
   const resetForm = () => {
@@ -89,7 +91,8 @@ export default function AdminSubscription() {
       show_trial_badge: true,
       trial_badge_text: "",
       show_max_tasks_badge: true,
-      max_tasks_badge_text: ""
+      max_tasks_badge_text: "",
+      available_from: ""
     });
     setIsEditing(false);
     setCurrentPlan(null);
@@ -114,7 +117,8 @@ export default function AdminSubscription() {
       show_trial_badge: plan.show_trial_badge !== undefined ? plan.show_trial_badge : true,
       trial_badge_text: plan.trial_badge_text || "",
       show_max_tasks_badge: plan.show_max_tasks_badge !== undefined ? plan.show_max_tasks_badge : true,
-      max_tasks_badge_text: plan.max_tasks_badge_text || ""
+      max_tasks_badge_text: plan.max_tasks_badge_text || "",
+      available_from: plan.available_from || ""
     });
     setCurrentPlan(plan);
     setIsEditing(true);
@@ -382,6 +386,19 @@ export default function AdminSubscription() {
                     onChange={(e) => setFormData({...formData, order: parseInt(e.target.value)})} 
                   />
                 </div>
+              </div>
+              
+              <div className="border-t pt-4">
+                <Label>Available From (Optional)</Label>
+                <Input 
+                  type="date"
+                  value={formData.available_from}
+                  onChange={(e) => setFormData({...formData, available_from: e.target.value})}
+                  placeholder="YYYY-MM-DD"
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  Plan only shows to users after this date. Leave empty for immediate availability.
+                </p>
               </div>
               <Button 
                 onClick={handleSave} 

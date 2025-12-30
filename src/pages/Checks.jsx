@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle, RotateCcw, Loader2, XCircle, ArrowUpDown, Search, Filter, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle2, Circle, RotateCcw, Loader2, XCircle, ArrowUpDown, Search, Filter, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 /**
@@ -24,7 +24,6 @@ function CollapsibleTaskContent({ taskName, fullDescription, status }) {
 
   const statusClasses = 
     status === 'success' ? 'text-slate-400 dark:text-slate-500 line-through' : 
-    status === 'retried' ? 'text-slate-500 dark:text-slate-400 line-through decoration-red-500/50' : 
     'text-slate-900 dark:text-slate-100';
 
   return (
@@ -139,31 +138,7 @@ export default function Checks() {
       });
     }
 
-    result.sort((a, b) => {
-      if (sortConfig.key === "updated_date") {
-        const dateA = new Date(a.updated_date || 0);
-        const dateB = new Date(b.updated_date || 0);
-        return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
-      }
-      if (sortConfig.key === "status") {
-        const statusA = a.status || "open";
-        const statusB = b.status || "open";
-        return sortConfig.direction === "asc" ? statusA.localeCompare(statusB) : statusB.localeCompare(statusA);
-      }
-      if (sortConfig.key === "task_name") {
-        // TASK-4 FIX: Sort by full_description, fall back to task_name
-        const textA = (a.full_description || a.task_name || "").toLowerCase();
-        const textB = (b.full_description || b.task_name || "").toLowerCase();
-        return sortConfig.direction === "asc" ? textA.localeCompare(textB) : textB.localeCompare(textA);
-      }
-      if (sortConfig.key === "project") {
-        const projectA = projects.find(p => p.id === a.projectId)?.name || "";
-        const projectB = projects.find(p => p.id === b.projectId)?.name || "";
-        return sortConfig.direction === "asc" ? projectA.localeCompare(projectB) : projectB.localeCompare(projectA);
-      }
-      return 0;
-    });
-
+    // No sorting - keep insertion order (chronological)
     return result;
   }, [allTasks, searchQuery, statusFilter, sortConfig]);
 
@@ -174,9 +149,43 @@ export default function Checks() {
     }));
   };
 
+  const deleteTaskMutation = useMutation({
+    mutationFn: async ({ itemId, taskIndex }) => {
+      const item = items.find(i => i.id === itemId);
+      if (!item) throw new Error("Item not found");
+      
+      const newChecks = item.task_checks.filter((_, idx) => idx !== taskIndex);
+      
+      // If no tasks left, delete the entire item
+      if (newChecks.length === 0) {
+        await base44.entities.Item.delete(itemId);
+        return { deleted: true };
+      }
+      
+      // Otherwise just remove this check
+      await base44.entities.Item.update(itemId, { task_checks: newChecks });
+      return { deleted: false };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: ['openTasksCount'] });
+      toast.success(result.deleted ? "Item deleted (no tasks left)" : "Task deleted");
+    },
+    onError: () => {
+      toast.error("Failed to delete task");
+    }
+  });
+
   const updateTaskStatus = async (task, newStatus) => {
     const item = items.find(i => i.id === task.itemId);
     if (!item) return;
+
+    // If retry is triggered, open modal instead
+    if (newStatus === 'retry') {
+      setSelectedRetryTask(task);
+      setRetryModalOpen(true);
+      return;
+    }
 
     const newChecks = [...item.task_checks];
     const now = new Date().toISOString();
@@ -195,13 +204,6 @@ export default function Checks() {
 
     // Calculate parent item status
     const parentStatus = newChecks.some(c => c.status !== 'success') ? 'open' : 'success';
-
-    // If failed, show retry modal BEFORE updating (prevents status flicker)
-    if (newStatus === 'failed') {
-      setSelectedRetryTask({ ...task, originalStatus: task.status || 'open' });
-      setRetryModalOpen(true);
-      return; // Don't update yet - wait for retry modal confirmation
-    }
 
     try {
       await base44.entities.Item.update(item.id, {
@@ -224,64 +226,81 @@ export default function Checks() {
   };
 
   const handleRetryConfirm = async (retryData) => {
-    try {
-      const task = selectedRetryTask;
-      const item = items.find(i => i.id === task.itemId);
-      if (!item) return;
+    if (!selectedRetryTask) return;
 
-      // Optimistic update: immediately remove from UI
-      queryClient.setQueryData(['items', currentUser?.email], (old) => {
-        if (!old) return old;
-        return old.map(it => {
-          if (it.id === item.id) {
-            const updatedChecks = [...it.task_checks];
-            updatedChecks[task.index] = {
-              ...updatedChecks[task.index],
-              status: 'retried',
-              updated_date: new Date().toISOString()
-            };
-            return { ...it, task_checks: updatedChecks };
-          }
-          return it;
-        });
-      });
-
-      // Close modal immediately for instant feedback
+    const task = selectedRetryTask;
+    const item = items.find(i => i.id === task.itemId);
+    if (!item) {
+      toast.error("Item not found");
       setRetryModalOpen(false);
-      setSelectedRetryTask(null);
+      return;
+    }
 
-      // Create the structured retry Thought
-      await base44.entities.Thought.create({
+    let newThought = null;
+    try {
+      // Create new Thought with retry reference and user ownership
+      newThought = await base44.entities.Thought.create({
         content: retryData.content,
         screenshot_ids: retryData.screenshots,
-        project_id: task.projectId,
+        project_id: task.projectId || null,
         is_selected: true,
         is_deleted: false,
         retry_from_item_id: task.itemId,
         focus_type: 'both',
+        created_by: currentUser.email,
+        created_date: new Date().toISOString(),
+        updated_date: new Date().toISOString(),
         vision_analysis: retryData.screenshots && retryData.screenshots.length > 0 ? { status: 'pending', results: [] } : undefined
       });
 
-      // Update task status to retried (blijft weg uit Checks)
-      const newChecks = [...item.task_checks];
-      newChecks[task.index] = { 
-        ...newChecks[task.index], 
-        status: 'retried',
-        updated_date: new Date().toISOString()
-      };
-      await base44.entities.Item.update(item.id, { task_checks: newChecks });
+      // Remove task from item's task_checks array
+      const newChecks = item.task_checks.filter((_, idx) => idx !== task.index);
 
-      toast.success("Retry task created in Multi-Task!");
-      
-      // Final refetch to ensure data consistency
+      // Optimistic UI update - remove task from list
+      queryClient.setQueryData(['items', currentUser?.email], (oldData) => {
+        if (!oldData) return oldData;
+        
+        // If no tasks left, remove entire item
+        if (newChecks.length === 0) {
+          return oldData.filter(i => i.id !== item.id);
+        }
+        
+        // Otherwise update with filtered tasks
+        return oldData.map((i) =>
+          i.id === item.id ? { ...i, task_checks: newChecks } : i
+        );
+      });
+
+      // Update or delete item based on remaining tasks
+      if (newChecks.length === 0) {
+        await base44.entities.Item.delete(item.id);
+      } else {
+        await base44.entities.Item.update(item.id, { task_checks: newChecks });
+      }
+
+      setRetryModalOpen(false);
+      setSelectedRetryTask(null);
+
       queryClient.invalidateQueries({ queryKey: ['items'] });
-      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
+      queryClient.invalidateQueries({ queryKey: ['activeThoughts'] });
       queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] });
       queryClient.invalidateQueries({ queryKey: ['openTasksCount'] });
+
+      toast.success("✓ Retry task created and original removed! Check Multiprompt page.");
     } catch (error) {
-      // Rollback optimistic update on error
+      console.error("Retry failed:", error);
+      
+      // Rollback: delete the created Thought if item update failed
+      if (newThought?.id) {
+        try {
+          await base44.entities.Thought.delete(newThought.id);
+        } catch (deleteError) {
+          console.error("Failed to rollback Thought creation:", deleteError);
+        }
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['items'] });
-      toast.error("Failed to create retry task");
+      toast.error("Failed to complete retry - changes rolled back");
     }
   };
 
@@ -321,8 +340,6 @@ export default function Checks() {
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="open">Open</SelectItem>
                   <SelectItem value="success">Success</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                  <SelectItem value="retried">Retried</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -339,25 +356,16 @@ export default function Checks() {
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-medium">
                  <tr>
-                   <th className="px-6 py-3 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('task_name')}>
-                     <div className="flex items-center gap-2">
-                       Task
-                       <ArrowUpDown className={`w-3 h-3 ${sortConfig.key === 'task_name' ? 'font-bold stroke-[3]' : ''}`} />
-                     </div>
+                   <th className="px-6 py-3">
+                     Task
                    </th>
-                   <th className="px-6 py-3 w-[160px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('project')}>
-                     <div className="flex items-center gap-2">
-                       Project
-                       <ArrowUpDown className={`w-3 h-3 ${sortConfig.key === 'project' ? 'font-bold stroke-[3]' : ''}`} />
-                     </div>
+                   <th className="px-6 py-3 w-[160px]">
+                     Project
                    </th>
-                   <th className="px-6 py-3 w-[140px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => handleSort('updated_date')}>
-                     <div className="flex items-center gap-2">
-                       Updated
-                       <ArrowUpDown className={`w-3 h-3 ${sortConfig.key === 'updated_date' ? 'font-bold stroke-[3]' : ''}`} />
-                     </div>
+                   <th className="px-6 py-3 w-[140px]">
+                     Updated
                    </th>
-                   <th className="px-6 py-3 w-[120px] text-right">Actions</th>
+                   <th className="px-6 py-3 w-[180px] text-right">Actions</th>
                  </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -413,65 +421,67 @@ export default function Checks() {
                           {task.updated_date ? format(new Date(task.updated_date), 'dd-MM-yyyy HH:mm') : '-'}
                         </td>
                         <td className="px-6 py-4 align-top text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            {task.status === 'success' ? (
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <div 
-                                              onClick={() => updateTaskStatus(task, 'open')} 
-                                              className="cursor-pointer hover:scale-110 transition-transform shrink-0"
-                                            >
-                                                <CheckCircle2 className="w-8 h-8 text-green-600 drop-shadow-sm" strokeWidth={2.5} />
-                                            </div>
-                                        </TooltipTrigger>
-                                        <TooltipContent>Click to reopen</TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            ) : task.status === 'retried' ? (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <div className="cursor-not-allowed opacity-80">
-                                        <XCircle className="w-8 h-8 text-red-500" strokeWidth={2.5} />
-                                      </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Task has been retried</TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                            ) : (
-                                <>
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button 
-                                                    size="icon" 
-                                                    variant="ghost" 
-                                                    className={`h-8 w-8 ${task.status === 'success' ? 'text-green-600' : 'text-slate-300 hover:text-green-600 hover:bg-green-50'}`}
-                                                    onClick={() => updateTaskStatus(task, 'success')}
-                                                >
-                                                    <CheckCircle2 className="w-6 h-6" />
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>Mark as Success</TooltipContent>
-                                        </Tooltip>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button 
-                                                    size="icon" 
-                                                    variant="ghost" 
-                                                    className={`h-8 w-8 ${task.status === 'failed' ? 'text-red-600 bg-red-50' : 'text-slate-300 hover:text-red-600 hover:bg-red-50'}`}
-                                                    onClick={() => updateTaskStatus(task, 'failed')}
-                                                >
-                                                    <XCircle className="w-6 h-6" />
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>Mark as Failed</TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                </>
-                            )}
-                          </div>
+                         <div className="flex items-center justify-end gap-2">
+                           {task.status === 'success' ? (
+                               <TooltipProvider>
+                                   <Tooltip>
+                                       <TooltipTrigger asChild>
+                                           <div 
+                                             onClick={() => updateTaskStatus(task, 'open')} 
+                                             className="cursor-pointer hover:scale-110 transition-transform shrink-0"
+                                           >
+                                               <CheckCircle2 className="w-8 h-8 text-green-600 drop-shadow-sm" strokeWidth={2.5} />
+                                           </div>
+                                           </TooltipTrigger>
+                                           <TooltipContent>Click to reopen</TooltipContent>
+                                           </Tooltip>
+                                               </TooltipProvider>
+                                           ) : (
+                               <>
+                                   <TooltipProvider>
+                                       <Tooltip>
+                                           <TooltipTrigger asChild>
+                                               <Button 
+                                                   size="icon" 
+                                                   variant="ghost" 
+                                                   className={`h-8 w-8 ${task.status === 'success' ? 'text-green-600' : 'text-slate-300 hover:text-green-600 hover:bg-green-50'}`}
+                                                   onClick={() => updateTaskStatus(task, 'success')}
+                                               >
+                                                   <CheckCircle2 className="w-6 h-6" />
+                                               </Button>
+                                           </TooltipTrigger>
+                                           <TooltipContent>Mark as Success</TooltipContent>
+                                       </Tooltip>
+                                       <Tooltip>
+                                           <TooltipTrigger asChild>
+                                               <Button 
+                                                   size="icon" 
+                                                   variant="ghost" 
+                                                   className="h-8 w-8 text-slate-300 hover:text-orange-600 hover:bg-orange-50"
+                                                   onClick={() => updateTaskStatus(task, 'retry')}
+                                               >
+                                                   <RotateCcw className="w-6 h-6" />
+                                               </Button>
+                                           </TooltipTrigger>
+                                           <TooltipContent>Retry</TooltipContent>
+                                       </Tooltip>
+                                       <Tooltip>
+                                           <TooltipTrigger asChild>
+                                               <Button 
+                                                   size="icon" 
+                                                   variant="ghost" 
+                                                   className="h-8 w-8 text-slate-300 hover:text-slate-700 hover:bg-slate-100 dark:hover:text-slate-300"
+                                                   onClick={() => deleteTaskMutation.mutate({ itemId: task.itemId, taskIndex: task.index })}
+                                               >
+                                                   <Trash2 className="w-5 h-5" />
+                                               </Button>
+                                           </TooltipTrigger>
+                                           <TooltipContent>Delete Task</TooltipContent>
+                                       </Tooltip>
+                                   </TooltipProvider>
+                               </>
+                           )}
+                         </div>
                         </td>
                       </tr>);
                     })
@@ -485,27 +495,14 @@ export default function Checks() {
         {/* Retry Modal */}
         <RetryModal
           isOpen={retryModalOpen}
-          onClose={async () => {
-            // Revert task status to original if user cancels
-            if (selectedRetryTask) {
-              const item = items.find(i => i.id === selectedRetryTask.itemId);
-              if (item) {
-                const newChecks = [...item.task_checks];
-                newChecks[selectedRetryTask.index] = {
-                  ...newChecks[selectedRetryTask.index],
-                  status: selectedRetryTask.originalStatus || 'open',
-                  updated_date: new Date().toISOString()
-                };
-                await base44.entities.Item.update(item.id, { task_checks: newChecks });
-                queryClient.invalidateQueries({ queryKey: ['items'] });
-              }
-            }
+          onClose={() => {
             setRetryModalOpen(false);
             setSelectedRetryTask(null);
           }}
           task={selectedRetryTask}
           onConfirm={handleRetryConfirm}
           projectId={selectedRetryTask?.projectId}
+          currentUser={currentUser}
         />
       </div>
     </AccessGuard>
