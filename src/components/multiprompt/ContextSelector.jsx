@@ -1,0 +1,333 @@
+import React, { useState, useEffect, useMemo } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Sparkles, X, CheckCircle, Plus } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
+import { 
+  DEFAULT_PAGE_COMPONENT_MAP, 
+  DEFAULT_PAGES, 
+  DEFAULT_DOMAINS,
+  predictContext 
+} from "./contextPrediction";
+import AddCustomItemDialog from "./AddCustomItemDialog";
+
+export default function ContextSelector({ 
+  value = {}, 
+  onChange, 
+  thoughtText = "",
+  compact = false,
+  selectedProject = null,
+  enableAISuggestions = true
+}) {
+  const { t } = useLanguage();
+  const [prediction, setPrediction] = useState(null);
+  const [showPrediction, setShowPrediction] = useState(false);
+  
+  // Custom items state - persist to localStorage per project
+  const storageKey = `context_custom_${selectedProject?.id || 'default'}`;
+  const [customPages, setCustomPages] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`${storageKey}_pages`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [customComponents, setCustomComponents] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`${storageKey}_components`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isAddingItem, setIsAddingItem] = useState(null); // 'page' or 'component'
+  const [newItemName, setNewItemName] = useState("");
+
+  // Save custom items to localStorage when they change
+  useEffect(() => {
+    if (customPages.length > 0) {
+      localStorage.setItem(`${storageKey}_pages`, JSON.stringify(customPages));
+    }
+  }, [customPages, storageKey]);
+
+  useEffect(() => {
+    if (customComponents.length > 0) {
+      localStorage.setItem(`${storageKey}_components`, JSON.stringify(customComponents));
+    }
+  }, [customComponents, storageKey]);
+
+  const { target_page, target_component, target_domain } = value;
+
+  // TASK-5: Track usage counts
+  const [pageUsage, setPageUsage] = useState({});
+  const [componentUsage, setComponentUsage] = useState({});
+
+  // Update usage when value changes
+  useEffect(() => {
+    if (value.target_page) {
+      setPageUsage(prev => ({ ...prev, [value.target_page]: (prev[value.target_page] || 0) + 1 }));
+    }
+    if (value.target_component) {
+      setComponentUsage(prev => ({ ...prev, [value.target_component]: (prev[value.target_component] || 0) + 1 }));
+    }
+  }, [value.target_page, value.target_component]);
+
+  // Get pages list - sorted by usage then alphabetically
+  const availablePages = useMemo(() => {
+    let pages = DEFAULT_PAGES;
+    if (selectedProject?.component_mapping && Object.keys(selectedProject.component_mapping).length > 0) {
+      pages = Object.keys(selectedProject.component_mapping);
+    }
+    const allPages = [...new Set([...pages, ...customPages])];
+    
+    // Sort: most used first, then alphabetically
+    return allPages.sort((a, b) => {
+      const usageA = pageUsage[a] || 0;
+      const usageB = pageUsage[b] || 0;
+      if (usageA !== usageB) return usageB - usageA;
+      return a.localeCompare(b);
+    });
+  }, [selectedProject, customPages, pageUsage]);
+
+  // Available components based on selected page - sorted by usage then alphabetically
+  const availableComponents = useMemo(() => {
+    if (!target_page) return [];
+    let comps = DEFAULT_PAGE_COMPONENT_MAP[target_page] || [];
+    // Check if project has custom mapping
+    if (selectedProject?.component_mapping && selectedProject.component_mapping[target_page]) {
+      comps = selectedProject.component_mapping[target_page];
+    }
+    const allComps = [...new Set([...comps, ...customComponents])];
+    
+    // Sort: most used first, then alphabetically
+    return allComps.sort((a, b) => {
+      const usageA = componentUsage[a] || 0;
+      const usageB = componentUsage[b] || 0;
+      if (usageA !== usageB) return usageB - usageA;
+      return a.localeCompare(b);
+    });
+  }, [target_page, selectedProject, customComponents, componentUsage]);
+
+  const handleAddItem = (name) => {
+    if (isAddingItem === 'page') {
+      setCustomPages(prev => [...prev, name]);
+      handlePageChange(name);
+    } else if (isAddingItem === 'component') {
+      setCustomComponents(prev => [...prev, name]);
+      handleComponentChange(name);
+    }
+    setIsAddingItem(null);
+  };
+
+  // Get domains - use project domains if available
+  const availableDomains = useMemo(() => {
+    if (selectedProject?.domains && selectedProject.domains.length > 0) {
+      return selectedProject.domains;
+    }
+    return DEFAULT_DOMAINS;
+  }, [selectedProject]);
+
+  // AI Prediction on text change - disabled for all users (admin feature)
+  // Debounced AI prediction effect
+  useEffect(() => {
+    // Always disabled - admin feature only
+    setPrediction(null);
+    setShowPrediction(false);
+  }, [thoughtText, enableAISuggestions]);
+
+  const handlePageChange = (newPage) => {
+    // Reset component if it doesn't belong to new page
+    const projectMapping = selectedProject?.component_mapping || {};
+    const newComponents = projectMapping[newPage] || DEFAULT_PAGE_COMPONENT_MAP[newPage] || [];
+    const newComponent = newComponents.includes(target_component) ? target_component : null;
+    
+    onChange({
+      ...value,
+      target_page: newPage,
+      target_component: newComponent
+    });
+  };
+
+  const handleComponentChange = (newComponent) => {
+    onChange({
+      ...value,
+      target_component: newComponent
+    });
+  };
+
+  const handleDomainChange = (newDomain) => {
+    onChange({
+      ...value,
+      target_domain: newDomain
+    });
+  };
+
+  const handleAcceptPrediction = () => {
+    if (!prediction) return;
+    
+    const newValue = { ...value };
+    const projectMapping = selectedProject?.component_mapping || {};
+    
+    if (prediction.predictedPages[0]) {
+      newValue.target_page = prediction.predictedPages[0].name;
+    }
+    if (prediction.predictedComponents[0]) {
+      // Check if component belongs to predicted page
+      const pageComps = projectMapping[newValue.target_page] || DEFAULT_PAGE_COMPONENT_MAP[newValue.target_page] || [];
+      if (pageComps.includes(prediction.predictedComponents[0].name)) {
+        newValue.target_component = prediction.predictedComponents[0].name;
+      }
+    }
+    if (prediction.predictedDomains && prediction.predictedDomains[0]) {
+      newValue.target_domain = prediction.predictedDomains[0].name;
+    }
+    
+    newValue.ai_prediction = prediction;
+    
+    onChange(newValue);
+    setShowPrediction(false);
+  };
+
+  const clearSelection = () => {
+    onChange({
+      target_page: null,
+      target_component: null,
+      target_domain: null,
+      ai_prediction: null
+    });
+  };
+
+  const hasSelection = target_page || target_component || target_domain;
+
+  return (
+    <div className={`flex items-center gap-1.5 flex-wrap ${compact ? '' : 'w-full'}`}>
+      {/* Selection badges - show inline with dropdowns */}
+      {hasSelection && (
+        <button
+          type="button"
+          onClick={clearSelection}
+          className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-0.5"
+          aria-label={t("clearSelection") || "Wis selectie"}
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+      
+      {/* Selectors - Page first, then Component, then Domain (Design+Logic moved elsewhere) */}
+      <Select 
+        value={target_page || ""} 
+        onValueChange={handlePageChange}
+      >
+        <SelectTrigger 
+          className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
+          aria-label={t("selectPage") || "Selecteer pagina"}
+        >
+          <SelectValue placeholder={t("page") || "Pagina"} />
+        </SelectTrigger>
+        <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+          {availablePages.map(page => (
+            <SelectItem key={page} value={page} className="text-xs text-slate-700 dark:text-slate-300">
+              {page}
+            </SelectItem>
+          ))}
+          <div 
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsAddingItem('page');
+            }}
+            className="flex items-center gap-2 px-2 py-1.5 text-xs cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border-t border-slate-200 dark:border-slate-700"
+          >
+            <Plus className="w-3 h-3" />
+            {t("addPage") || "Nieuwe pagina"}
+          </div>
+        </SelectContent>
+      </Select>
+
+      <Select 
+        value={target_component || ""} 
+        onValueChange={handleComponentChange}
+      >
+        <SelectTrigger 
+          className="h-7 text-xs w-auto min-w-[90px] border-dashed bg-white dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
+          aria-label={t("selectComponent") || "Selecteer component"}
+        >
+          <SelectValue placeholder={t("component") || "Component"} />
+        </SelectTrigger>
+        <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+          {availableComponents.length > 0 ? (
+            availableComponents.map(comp => (
+              <SelectItem key={comp} value={comp} className="text-xs text-slate-700 dark:text-slate-300">
+                {comp}
+              </SelectItem>
+            ))
+          ) : (
+            <SelectItem value="_none" disabled className="text-xs text-slate-400 dark:text-slate-500">
+              {t("choosePageFirst") || "Kies eerst pagina"}
+            </SelectItem>
+          )}
+          <div 
+            onClick={(e) => {
+              e.stopPropagation();
+              if (target_page) setIsAddingItem('component');
+            }}
+            className={`flex items-center gap-2 px-2 py-1.5 text-xs cursor-pointer border-t border-slate-200 dark:border-slate-700 ${
+              target_page 
+                ? 'hover:bg-indigo-50 dark:hover:bg-indigo-950 text-indigo-600 dark:text-indigo-400' 
+                : 'text-slate-400 dark:text-slate-500 cursor-not-allowed'
+            }`}
+          >
+            <Plus className="w-3 h-3" />
+            {t("addComponent") || "Nieuw component"}
+          </div>
+        </SelectContent>
+      </Select>
+
+      <Select 
+        value={target_domain || ""} 
+        onValueChange={handleDomainChange}
+      >
+        <SelectTrigger 
+          className="h-7 text-xs w-auto min-w-[80px] border-dashed bg-white dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700"
+          aria-label={t("selectDomain") || "Selecteer domein"}
+        >
+          <SelectValue placeholder={t("domain") || "Domein"} />
+        </SelectTrigger>
+        <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+          {availableDomains.map(domain => (
+            <SelectItem key={domain} value={domain} className="text-xs text-slate-700 dark:text-slate-300">
+              {domain}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* AI Prediction - inline */}
+      {showPrediction && prediction && enableAISuggestions && (
+        <div className="flex items-center gap-1 text-xs bg-purple-50 rounded px-2 py-1 border border-purple-200">
+          <Sparkles className="w-3 h-3 text-purple-500" />
+          {prediction.predictedPages[0] && (
+            <span className="text-purple-600">{prediction.predictedPages[0].name}</span>
+          )}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={handleAcceptPrediction}
+            className="h-5 px-1.5 text-xs text-purple-700 hover:bg-purple-100"
+          >
+            <CheckCircle className="w-3 h-3" />
+          </Button>
+        </div>
+      )}
+
+      {/* Add Item Dialog */}
+      <AddCustomItemDialog
+        isOpen={!!isAddingItem}
+        onClose={() => setIsAddingItem(null)}
+        type={isAddingItem}
+        onAdd={handleAddItem}
+      />
+    </div>
+  );
+}
