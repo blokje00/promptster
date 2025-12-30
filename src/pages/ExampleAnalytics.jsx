@@ -19,8 +19,8 @@ export default function ExampleAnalyticsPage() {
         </p>
       </section>
 
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-2 gap-6">
+      {/* Features Grid */}
+      <div className="grid md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
               <CardTitle>📊 PostHog Analytics</CardTitle>
@@ -86,10 +86,10 @@ export default function ExampleAnalyticsPage() {
               </ul>
             </CardContent>
           </Card>
-        </div>
+      </div>
 
-        {/* CTA Section */}
-        <section className="text-center space-y-6 py-12">
+      {/* CTA Section */}
+      <section className="text-center space-y-6 py-12">
           <h2 className="text-3xl font-bold">Ready to Get Started?</h2>
           <p className="text-slate-600">
             Click below to see click tracking in action
@@ -97,10 +97,10 @@ export default function ExampleAnalyticsPage() {
           <Button size="lg" onClick={handleCTAClick}>
             Track This Click
           </Button>
-        </section>
+      </section>
 
-        {/* Usage Instructions */}
-        <Card>
+      {/* Usage Instructions */}
+      <Card>
           <CardHeader>
             <CardTitle>🚀 How to Use</CardTitle>
           </CardHeader>
@@ -141,8 +141,7 @@ export default function ExampleAnalyticsPage() {
               </pre>
             </div>
           </CardContent>
-        </Card>
-      </div>
+      </Card>
     </div>
   );
 }
