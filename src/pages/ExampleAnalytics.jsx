@@ -1,23 +1,44 @@
 import React from 'react';
+import { SEOHead } from '@/components/shared/SEOHead';
+import { SocialShare } from '@/components/shared/SocialShare';
+import { useViewportTracking, useTimeTracking, useClickTracking } from '@/components/hooks/useAnalytics';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function ExampleAnalyticsPage() {
+  useTimeTracking('example_page');
+  const { trackClick } = useClickTracking();
+  const { ref: heroRef, inView: heroInView } = useViewportTracking('hero_section');
+  const { ref: ctaRef, inView: ctaInView } = useViewportTracking('cta_section');
+
   const handleCTAClick = () => {
-    console.log('CTA clicked');
+    trackClick('main_cta', { location: 'hero' });
   };
 
   return (
-    <div className="container mx-auto py-8 space-y-12">
-      {/* Hero Section */}
-      <section className="text-center space-y-4">
-        <h1 className="text-4xl font-bold">
-          Analytics & Social Sharing Demo
-        </h1>
-        <p className="text-slate-600 text-lg">
-          This page demonstrates all installed libraries
-        </p>
-      </section>
+    <>
+      <SEOHead
+        title="Analytics Example"
+        description="See how analytics and social sharing work in action"
+        keywords={['analytics', 'tracking', 'social media']}
+        image="/example-og-image.png"
+      />
+
+      <div className="container mx-auto py-8 space-y-12">
+        {/* Hero Section */}
+        <section ref={heroRef} className="text-center space-y-4">
+          <h1 className="text-4xl font-bold">
+            Analytics & Social Sharing Demo
+          </h1>
+          <p className="text-slate-600 text-lg">
+            This page demonstrates all installed libraries
+          </p>
+          {heroInView && (
+            <p className="text-sm text-green-600">
+              ✓ Hero section viewed - tracked!
+            </p>
+          )}
+        </section>
 
       {/* Features Grid */}
       <div className="grid md:grid-cols-2 gap-6">
@@ -61,13 +82,12 @@ export default function ExampleAnalyticsPage() {
               <CardDescription>react-share</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="mb-4">Share buttons available with react-share library</p>
-              <ul className="list-disc list-inside text-sm space-y-1">
-                <li>Facebook</li>
-                <li>Twitter</li>
-                <li>LinkedIn</li>
-                <li>WhatsApp</li>
-              </ul>
+              <p className="mb-4">Share on social media:</p>
+              <SocialShare
+                url={window.location.href}
+                title="Check out Promptster!"
+                description="AI-powered prompt management platform"
+              />
             </CardContent>
           </Card>
 
@@ -89,14 +109,19 @@ export default function ExampleAnalyticsPage() {
       </div>
 
       {/* CTA Section */}
-      <section className="text-center space-y-6 py-12">
-          <h2 className="text-3xl font-bold">Ready to Get Started?</h2>
-          <p className="text-slate-600">
-            Click below to see click tracking in action
+      <section ref={ctaRef} className="text-center space-y-6 py-12">
+        <h2 className="text-3xl font-bold">Ready to Get Started?</h2>
+        <p className="text-slate-600">
+          Click below to see click tracking in action
+        </p>
+        <Button size="lg" onClick={handleCTAClick}>
+          Track This Click
+        </Button>
+        {ctaInView && (
+          <p className="text-sm text-green-600">
+            ✓ CTA section viewed - tracked!
           </p>
-          <Button size="lg" onClick={handleCTAClick}>
-            Track This Click
-          </Button>
+        )}
       </section>
 
       {/* Usage Instructions */}
@@ -141,7 +166,8 @@ export default function ExampleAnalyticsPage() {
               </pre>
             </div>
           </CardContent>
-      </Card>
-    </div>
+        </Card>
+      </div>
+    </>
   );
 }
