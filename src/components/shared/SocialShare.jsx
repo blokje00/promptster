@@ -13,7 +13,7 @@ import {
   TelegramIcon,
   EmailIcon,
 } from 'react-share';
-import { trackEvent } from '@/lib/analytics';
+import { trackEvent } from '@/components/lib/analytics';
 
 /**
  * Social Share Component
