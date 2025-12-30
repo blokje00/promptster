@@ -1,0 +1,80 @@
+# CodeRabbit Configuration
+# Visit https://docs.coderabbit.ai/guides/configure-coderabbit for more information
+
+language: "en-US"
+
+# Review settings
+reviews:
+  profile: "chill" # Options: "chill", "assertive"
+  request_changes_workflow: false
+  high_level_summary: true
+  high_level_summary_placeholder: "@coderabbitai summary"
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  
+  # Auto review configuration
+  auto_review:
+    enabled: true
+    drafts: false # Set to true if you want reviews on draft PRs
+    base_branches:
+      - main
+      - master
+      - develop
+  
+  # Path-based instructions for specific areas of the codebase
+  path_instructions:
+    - path: "functions/**"
+      instructions: |
+        - Focus on serverless best practices
+        - Check for proper error handling
+        - Verify rate limiting implementation
+        - Review security considerations for API endpoints
+    
+    - path: "src/components/**"
+      instructions: |
+        - Review component composition and reusability
+        - Check for proper prop types and validation
+        - Verify accessibility attributes
+        - Look for performance optimizations (memoization, lazy loading)
+    
+    - path: "src/tests/**"
+      instructions: |
+        - Verify test coverage
+        - Check for edge cases
+        - Review test organization and naming
+        - Ensure tests are maintainable
+    
+    - path: "src/api/**"
+      instructions: |
+        - Review API error handling
+        - Check for proper request/response types
+        - Verify authentication and authorization
+        - Look for security vulnerabilities
+
+# Chat settings
+chat:
+  auto_reply: true
+
+# Knowledge base settings
+knowledge_base:
+  opt_out: false # Set to true to opt out of the knowledge base
+  learnings:
+    scope: "auto" # Options: "auto", "global", "project"
+
+# Tools configuration
+tools:
+  # Enable/disable specific review tools
+  github-checks:
+    timeout_ms: 90000
+  
+  # Ignore patterns
+  ignore:
+    - "**/*.min.js"
+    - "**/*.bundle.js"
+    - "**/node_modules/**"
+    - "**/dist/**"
+    - "**/build/**"
+    - "**/*.lock"
+    - "package-lock.json"
+    - "yarn.lock"
