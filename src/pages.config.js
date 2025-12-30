@@ -7,7 +7,6 @@ import AdminSupportTickets from './pages/AdminSupportTickets';
 import Checks from './pages/Checks';
 import Dashboard from './pages/Dashboard';
 import EditItem from './pages/EditItem';
-import Layout from './pages/Layout';
 import Legal from './pages/Legal';
 import Multiprompt from './pages/Multiprompt';
 import NoCodeRanking from './pages/NoCodeRanking';
@@ -31,7 +30,6 @@ export const PAGES = {
     "Checks": Checks,
     "Dashboard": Dashboard,
     "EditItem": EditItem,
-    "Layout": Layout,
     "Legal": Legal,
     "Multiprompt": Multiprompt,
     "NoCodeRanking": NoCodeRanking,
