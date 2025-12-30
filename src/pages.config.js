@@ -16,6 +16,7 @@ import Support from './pages/Support';
 import ViewItem from './pages/ViewItem';
 import index from './pages/index';
 import Features from './pages/Features';
+import AnalyticsTest from './pages/AnalyticsTest';
 import __Layout from './Layout.jsx';
 
 
@@ -38,6 +39,7 @@ export const PAGES = {
     "ViewItem": ViewItem,
     "index": index,
     "Features": Features,
+    "AnalyticsTest": AnalyticsTest,
 }
 
 export const pagesConfig = {
