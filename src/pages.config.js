@@ -4,9 +4,11 @@ import AdminAnalytics from './pages/AdminAnalytics';
 import AdminStats from './pages/AdminStats';
 import AdminSubscription from './pages/AdminSubscription';
 import AdminSupportTickets from './pages/AdminSupportTickets';
+import AnalyticsTest from './pages/AnalyticsTest';
 import Checks from './pages/Checks';
 import Dashboard from './pages/Dashboard';
 import EditItem from './pages/EditItem';
+import Features from './pages/Features';
 import Legal from './pages/Legal';
 import Multiprompt from './pages/Multiprompt';
 import NoCodeRanking from './pages/NoCodeRanking';
@@ -15,8 +17,6 @@ import Subscription from './pages/Subscription';
 import Support from './pages/Support';
 import ViewItem from './pages/ViewItem';
 import index from './pages/index';
-import Features from './pages/Features';
-import AnalyticsTest from './pages/AnalyticsTest';
 import __Layout from './Layout.jsx';
 
 
@@ -27,9 +27,11 @@ export const PAGES = {
     "AdminStats": AdminStats,
     "AdminSubscription": AdminSubscription,
     "AdminSupportTickets": AdminSupportTickets,
+    "AnalyticsTest": AnalyticsTest,
     "Checks": Checks,
     "Dashboard": Dashboard,
     "EditItem": EditItem,
+    "Features": Features,
     "Legal": Legal,
     "Multiprompt": Multiprompt,
     "NoCodeRanking": NoCodeRanking,
@@ -38,8 +40,6 @@ export const PAGES = {
     "Support": Support,
     "ViewItem": ViewItem,
     "index": index,
-    "Features": Features,
-    "AnalyticsTest": AnalyticsTest,
 }
 
 export const pagesConfig = {
