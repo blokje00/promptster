@@ -383,7 +383,7 @@ export default function Multiprompt() {
             <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
               Multi-Task Builder
             </h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-2">Collect tasks and build comprehensive multi-task prompts</p>
+            <p className="text-slate-600 dark:text-slate-400 mt-2">Collect thoughts and build comprehensive multi-task prompts</p>
           </div>
 
           <ProjectSelector

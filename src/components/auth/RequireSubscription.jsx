@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { hasValidAccess } from '@/components/lib/subscriptionUtils';
@@ -9,7 +8,6 @@ import { hasValidAccess } from '@/components/lib/subscriptionUtils';
 export default function RequireSubscription({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { navigateToLogin } = useAuth();
   
   const { data: user, isLoading } = useQuery({
     queryKey: ['currentUser'],
@@ -20,7 +18,7 @@ export default function RequireSubscription({ children }) {
   useEffect(() => {
     if (!isLoading) {
       if (!user) {
-         navigateToLogin();
+         base44.auth.redirectToLogin(location.pathname);
       } else {
          // Check trial or subscription using centralized utility
          if (!hasValidAccess(user)) {

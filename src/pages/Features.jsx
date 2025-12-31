@@ -63,15 +63,6 @@ function FeaturesPage() {
   
   const { data: currentUser } = useCurrentUserSettings();
 
-  const handleStartPrompting = async () => {
-    const isAuth = await base44.auth.isAuthenticated();
-    if (isAuth) {
-      window.location.href = createPageUrl('Multiprompt');
-    } else {
-      base44.auth.redirectToLogin(createPageUrl('Multiprompt'));
-    }
-  };
-
   const isAdmin = currentUser?.role === 'admin';
 
   const { data: blocks = [] } = useQuery({
@@ -149,7 +140,11 @@ function FeaturesPage() {
               </div>
             </div>
             <Button 
-              onClick={handleStartPrompting}
+              onClick={() => {
+                const params = new URLSearchParams(window.location.search);
+                const nextRoute = params.get('next') || createPageUrl('Multiprompt');
+                base44.auth.redirectToLogin(nextRoute);
+              }}
               size="lg"
               className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold shadow-xl"
             >

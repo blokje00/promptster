@@ -4,7 +4,6 @@ import AdminAnalytics from './pages/AdminAnalytics';
 import AdminStats from './pages/AdminStats';
 import AdminSubscription from './pages/AdminSubscription';
 import AdminSupportTickets from './pages/AdminSupportTickets';
-import AnalyticsTest from './pages/AnalyticsTest';
 import Checks from './pages/Checks';
 import Dashboard from './pages/Dashboard';
 import EditItem from './pages/EditItem';
@@ -16,7 +15,6 @@ import RecycleBin from './pages/RecycleBin';
 import Subscription from './pages/Subscription';
 import Support from './pages/Support';
 import ViewItem from './pages/ViewItem';
-import index from './pages/index';
 import __Layout from './Layout.jsx';
 
 
@@ -27,7 +25,6 @@ export const PAGES = {
     "AdminStats": AdminStats,
     "AdminSubscription": AdminSubscription,
     "AdminSupportTickets": AdminSupportTickets,
-    "AnalyticsTest": AnalyticsTest,
     "Checks": Checks,
     "Dashboard": Dashboard,
     "EditItem": EditItem,
@@ -39,7 +36,6 @@ export const PAGES = {
     "Subscription": Subscription,
     "Support": Support,
     "ViewItem": ViewItem,
-    "index": index,
 }
 
 export const pagesConfig = {
