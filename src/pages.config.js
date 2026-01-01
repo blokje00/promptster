@@ -8,6 +8,7 @@ import Checks from './pages/Checks';
 import Dashboard from './pages/Dashboard';
 import EditItem from './pages/EditItem';
 import Features from './pages/Features';
+import Layout from './pages/Layout';
 import Legal from './pages/Legal';
 import Multiprompt from './pages/Multiprompt';
 import NoCodeRanking from './pages/NoCodeRanking';
@@ -15,6 +16,7 @@ import RecycleBin from './pages/RecycleBin';
 import Subscription from './pages/Subscription';
 import Support from './pages/Support';
 import ViewItem from './pages/ViewItem';
+import index from './pages/index';
 import __Layout from './Layout.jsx';
 
 
@@ -29,6 +31,7 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "EditItem": EditItem,
     "Features": Features,
+    "Layout": Layout,
     "Legal": Legal,
     "Multiprompt": Multiprompt,
     "NoCodeRanking": NoCodeRanking,
@@ -36,6 +39,7 @@ export const PAGES = {
     "Subscription": Subscription,
     "Support": Support,
     "ViewItem": ViewItem,
+    "index": index,
 }
 
 export const pagesConfig = {

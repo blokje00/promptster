@@ -1,11 +1,14 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart, Users, FolderOpen, Sparkles, FileText, Loader2, Calendar, Clock, CreditCard, ArrowUpDown, ArrowUp, ArrowDown, Eye, MousePointerClick, TrendingUp } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { BarChart, Users, FolderOpen, Sparkles, FileText, Loader2, Calendar, Clock, CreditCard, ArrowUpDown, ArrowUp, ArrowDown, Eye, MousePointerClick, TrendingUp, Filter } from "lucide-react";
+import { format, differenceInDays, startOfDay, endOfDay, subDays } from "date-fns";
 import { nl } from "date-fns/locale";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
 /**
  * Sortable table header component
@@ -41,6 +44,12 @@ function SortableHeader({ field, label, sortField, sortDirection, onSort }) {
 export default function AdminStats() {
   const [sortField, setSortField] = React.useState(null);
   const [sortDirection, setSortDirection] = React.useState('asc');
+  
+  // TASK-2: Date range filter state
+  const [dateRange, setDateRange] = useState({
+    from: subDays(new Date(), 30), // Default: last 30 days
+    to: new Date()
+  });
 
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
@@ -93,9 +102,22 @@ export default function AdminStats() {
   });
 
   const { data: pageViews = [], isLoading: loadingViews } = useQuery({
-    queryKey: ['pageViews'],
+    queryKey: ['pageViews', dateRange],
     queryFn: async () => {
-      return await base44.entities.PageView.list('-created_date', 1000);
+      const allViews = await base44.entities.PageView.list('-created_date', 5000);
+      
+      // TASK-2: Filter by date range
+      if (dateRange.from && dateRange.to) {
+        const fromDate = startOfDay(dateRange.from);
+        const toDate = endOfDay(dateRange.to);
+        
+        return allViews.filter(pv => {
+          const viewDate = new Date(pv.created_date);
+          return viewDate >= fromDate && viewDate <= toDate;
+        });
+      }
+      
+      return allViews;
     },
     enabled: currentUser?.role === 'admin'
   });
@@ -283,15 +305,75 @@ export default function AdminStats() {
     <div className="p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">
-            <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                Admin Dashboard
-              </h1>
-              <Badge variant="outline" className="bg-red-100 text-red-700 border-red-300">
-                ADMIN ONLY
-              </Badge>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    Admin Dashboard
+                  </h1>
+                  <Badge variant="outline" className="bg-red-100 text-red-700 border-red-300">
+                    ADMIN ONLY
+                  </Badge>
+                </div>
+                <p className="text-slate-600">Analytics, gebruikers & app statistieken (admin data gefilterd)</p>
+              </div>
+              
+              {/* TASK-2: Date Range Picker */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Filter className="w-4 h-4" />
+                    {dateRange.from && dateRange.to ? (
+                      <>
+                        {format(dateRange.from, 'd MMM', { locale: nl })} - {format(dateRange.to, 'd MMM yyyy', { locale: nl })}
+                      </>
+                    ) : (
+                      <span>Filter dates</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <div className="p-3 border-b">
+                    <p className="text-sm font-medium">Select date range</p>
+                  </div>
+                  <div className="p-3 space-y-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full justify-start"
+                      onClick={() => setDateRange({ from: subDays(new Date(), 7), to: new Date() })}
+                    >
+                      Last 7 days
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full justify-start"
+                      onClick={() => setDateRange({ from: subDays(new Date(), 30), to: new Date() })}
+                    >
+                      Last 30 days
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full justify-start"
+                      onClick={() => setDateRange({ from: subDays(new Date(), 90), to: new Date() })}
+                    >
+                      Last 90 days
+                    </Button>
+                  </div>
+                  <div className="border-t p-3">
+                    <CalendarComponent
+                      mode="range"
+                      selected={dateRange}
+                      onSelect={(range) => range && setDateRange(range)}
+                      numberOfMonths={2}
+                      className="border-0"
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
-            <p className="text-slate-600">Analytics, gebruikers & app statistieken (admin data gefilterd)</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

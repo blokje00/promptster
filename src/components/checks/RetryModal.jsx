@@ -183,6 +183,9 @@ ${hasExplanation ? `User observation: ${userExplanation.trim()}` : ""}
 
 **2. Original task description**
 ${originalTask}
+\`\`\`
+${originalTask}
+\`\`\`
 
 **3. What was expected**
 • The task should have produced the following elements, functions, or UI changes:
