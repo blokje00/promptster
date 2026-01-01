@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { isInAppBrowser } from "@/components/lib/isInAppBrowser";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, ExternalLink } from "lucide-react";
+import { AlertCircle, ExternalLink, Copy, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
 
 /**
  * Blocks Google OAuth in in-app browsers (LinkedIn, Facebook, etc.)
@@ -10,6 +11,19 @@ import { AlertCircle, ExternalLink } from "lucide-react";
  */
 export default function InAppBrowserGuard({ children }) {
   const blocked = isInAppBrowser();
+  const [copied, setCopied] = useState(false);
+  const url = "https://promptster.app";
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast.success("Link gekopieerd! Open Safari en plak de link.");
+      setTimeout(() => setCopied(false), 3000);
+    } catch (error) {
+      toast.error("Kopiëren mislukt. Houd de knop ingedrukt en kies 'Kopieer link'.");
+    }
+  };
 
   if (!blocked) return <>{children}</>;
 
@@ -31,18 +45,18 @@ export default function InAppBrowserGuard({ children }) {
             Google staat hier geen veilige login toe.
           </p>
 
-          <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg">
-            <p className="font-semibold text-slate-900 dark:text-slate-100 mb-2">
-              ✅ Oplossing:
+          <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg space-y-2">
+            <p className="font-semibold text-slate-900 dark:text-slate-100">
+              ✅ Methode 1: LinkedIn menu
             </p>
-            <p>
-              Open Promptster in <strong>Safari</strong> of <strong>Chrome</strong> om veilig in te loggen.
+            <p className="text-sm">
+              Tik rechtsboven op <strong>⋯</strong> (drie puntjes) → kies <strong>"Open in browser"</strong>
             </p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <a 
-              href="https://promptster.app" 
+              href={url}
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center justify-center w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg shadow-lg transition-colors"
@@ -51,8 +65,27 @@ export default function InAppBrowserGuard({ children }) {
               Open in browser
             </a>
             
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleCopyLink}
+            >
+              {copied ? (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                  Link gekopieerd!
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 mr-2" />
+                  Kopieer link
+                </>
+              )}
+            </Button>
+            
             <p className="text-xs text-center text-slate-500 dark:text-slate-400">
-              Of kopieer de URL en plak in Safari/Chrome
+              <strong>Methode 2:</strong> Gebruik "Kopieer link" en plak in Safari/Chrome
             </p>
           </div>
         </CardContent>
