@@ -1,5 +1,5 @@
 import React from "react";
-import { isInAppBrowser } from "@/utils/isInAppBrowser";
+import { isInAppBrowser } from "@/components/lib/isInAppBrowser";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, ExternalLink } from "lucide-react";

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Zap, Shield, Database, Code, Sparkles, ArrowRight, Edit, Eye } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import AccessGuard from "../components/auth/AccessGuard";
+import InAppBrowserGuard from "../components/auth/InAppBrowserGuard";
 
 // Complete default content fallbacks for ALL text on Features page
 const defaultContent = {
@@ -248,7 +249,9 @@ function FeaturesPage() {
 export default function Features() {
   return (
     <AccessGuard pageType="public">
-      <FeaturesPage />
+      <InAppBrowserGuard>
+        <FeaturesPage />
+      </InAppBrowserGuard>
     </AccessGuard>
   );
 }
