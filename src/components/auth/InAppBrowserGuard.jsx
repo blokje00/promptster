@@ -41,16 +41,15 @@ export default function InAppBrowserGuard({ children }) {
           </div>
 
           <div className="space-y-2">
-            <Button
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-              onClick={() => {
-                // Force open in external browser
-                window.location.href = "https://promptster.app";
-              }}
+            <a 
+              href="https://promptster.app" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center justify-center w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-lg shadow-lg transition-colors"
             >
               <ExternalLink className="w-4 h-4 mr-2" />
               Open in browser
-            </Button>
+            </a>
             
             <p className="text-xs text-center text-slate-500 dark:text-slate-400">
               Of kopieer de URL en plak in Safari/Chrome
