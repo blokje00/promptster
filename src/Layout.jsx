@@ -3,6 +3,7 @@ import Header from "./components/layout/Header";
 import { LanguageProvider } from "./components/i18n/LanguageContext";
 import { ThemeProvider } from "./components/theme/ThemeProvider";
 import CookieConsent from "./components/auth/CookieConsent";
+import PageViewTracker from "./components/analytics/PageViewTracker";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -32,6 +33,7 @@ export default function Layout({ children }) {
   return (
     <ThemeProvider>
       <LanguageProvider>
+        <PageViewTracker />
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 transition-colors">
           <style>{`
             :root {
