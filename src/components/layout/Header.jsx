@@ -318,7 +318,7 @@ export default function Header() {
               }`}
             >
               <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">Multi-Task</span>
+              <span className="hidden sm:inline">Multi-Prompt</span>
               {allThoughtsCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-purple-500 text-[10px] text-white">
                   {allThoughtsCount}
