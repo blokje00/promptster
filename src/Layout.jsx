@@ -4,6 +4,7 @@ import { LanguageProvider } from "./components/i18n/LanguageContext";
 import { ThemeProvider } from "./components/theme/ThemeProvider";
 import CookieConsent from "./components/auth/CookieConsent";
 import PageViewTracker from "./components/analytics/PageViewTracker";
+import StripeTestModeIndicator from "./components/stripe/StripeTestModeIndicator";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -42,6 +43,7 @@ export default function Layout({ children }) {
             }
           `}</style>
 
+          <StripeTestModeIndicator />
           <Header />
 
           <main>
