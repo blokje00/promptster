@@ -344,41 +344,8 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {/* Show specific banners for different subscription states */}
-      {!userHasAccess && !isSyncing && user?.subscription_status === 'past_due' && (
-        <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div>
-            <h3 className="font-semibold text-red-900">⚠️ Payment Failed</h3>
-            <p className="text-sm text-red-700">Your last payment couldn't be processed. Please update your payment method to continue using Promptster.</p>
-          </div>
-          <Button 
-            onClick={handleManageSubscription} 
-            className="mt-3 bg-red-600 hover:bg-red-700"
-          >
-            Update Payment Method
-          </Button>
-        </div>
-      )}
-
-      {!userHasAccess && !isSyncing && user?.subscription_status === 'canceled' && (
-        <div className="mb-8 p-4 bg-slate-50 border border-slate-200 rounded-lg">
-          <div>
-            <h3 className="font-semibold text-slate-900">Subscription Canceled</h3>
-            <p className="text-sm text-slate-700">Your subscription has been canceled. Choose a plan below to reactivate.</p>
-          </div>
-        </div>
-      )}
-
-      {!userHasAccess && !isSyncing && user?.subscription_status === 'incomplete_expired' && (
-        <div className="mb-8 p-4 bg-orange-50 border border-orange-200 rounded-lg">
-          <div>
-            <h3 className="font-semibold text-orange-900">Payment Incomplete</h3>
-            <p className="text-sm text-orange-700">Your previous payment attempt expired. Please try subscribing again.</p>
-          </div>
-        </div>
-      )}
-
-      {!userHasAccess && !isSyncing && (!user?.subscription_status || ['none', 'unpaid'].includes(user?.subscription_status)) && (
+      {/* Only show "no subscription" if status is truly invalid/missing */}
+      {!userHasAccess && !isSyncing && (!user?.subscription_status || ['none', 'canceled', 'incomplete_expired', 'unpaid'].includes(user?.subscription_status)) && (
         <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <div>
             <h3 className="font-semibold text-yellow-900">No active subscription found</h3>

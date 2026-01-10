@@ -9,7 +9,6 @@ import { format, differenceInDays, startOfDay, endOfDay, subDays } from "date-fn
 import { nl } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import SubscriptionStatusLegend from "@/components/admin/SubscriptionStatusLegend";
 
 /**
  * Sortable table header component
@@ -409,9 +408,7 @@ export default function AdminStats() {
             ))}
           </div>
 
-          <SubscriptionStatusLegend />
-
-          <Card className="mt-6">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart className="w-5 h-5 text-indigo-600" />
@@ -470,18 +467,16 @@ export default function AdminStats() {
                       
                       // Status labels matching Stripe subscription status
                       const statusConfig = {
-                        'none': { label: 'None', color: 'bg-slate-100 text-slate-700', icon: null },
+                        'none': { label: 'Free', color: 'bg-slate-100 text-slate-700', icon: null },
                         'trialing': { 
                           label: trialEnd && trialEnd > now ? `Trial (${daysRemaining}d left)` : 'Trial Expired', 
                           color: trialEnd && trialEnd > now ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700',
                           icon: Clock
                         },
-                        'active': { label: 'Active', color: 'bg-green-100 text-green-700', icon: CreditCard },
+                        'active': { label: 'Active Paid', color: 'bg-green-100 text-green-700', icon: CreditCard },
                         'past_due': { label: 'Past Due', color: 'bg-orange-100 text-orange-700', icon: null },
                         'canceled': { label: 'Canceled', color: 'bg-red-100 text-red-700', icon: null },
-                        'incomplete': { label: 'Incomplete', color: 'bg-yellow-100 text-yellow-700', icon: null },
-                        'incomplete_expired': { label: 'Incomplete Expired', color: 'bg-slate-100 text-slate-700', icon: null },
-                        'unpaid': { label: 'Unpaid', color: 'bg-red-100 text-red-700', icon: null }
+                        'incomplete': { label: 'Incomplete', color: 'bg-yellow-100 text-yellow-700', icon: null }
                       };
                       
                       const currentStatus = statusConfig[subscriptionStatus] || statusConfig['none'];
