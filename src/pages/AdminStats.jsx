@@ -122,6 +122,15 @@ export default function AdminStats() {
     enabled: currentUser?.role === 'admin'
   });
 
+  const { data: allScreenshots = [], isLoading: loadingScreenshots } = useQuery({
+    queryKey: ['allScreenshots'],
+    queryFn: async () => {
+      const screenshots = await base44.entities.ScreenshotAsset.list();
+      return screenshots || [];
+    },
+    enabled: currentUser?.role === 'admin',
+  });
+
   const handleSort = (field) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -158,22 +167,44 @@ export default function AdminStats() {
     [allThoughts]
   );
 
+  const filteredScreenshots = useMemo(() =>
+    allScreenshots.filter(s => s.created_by !== 'patrick.van.zandvoort@gmail.com'),
+    [allScreenshots]
+  );
+
   // Prepare user data with calculated fields
   const usersWithData = React.useMemo(() => {
     return filteredUsers.map(user => {
       const userItems = filteredItems.filter(i => i.created_by === user.email);
       const userProjects = filteredProjects.filter(p => p.created_by === user.email);
+      const userThoughts = filteredThoughts.filter(t => t.created_by === user.email);
+      const userScreenshots = filteredScreenshots.filter(s => s.created_by === user.email);
+      const userPageViews = filteredPageViews.filter(pv => pv.user_email === user.email);
       const userProfile = allUserProfiles.find(p => p.email === user.email);
+      
+      // Calculate last activity
+      const allDates = [
+        ...userItems.map(i => new Date(i.created_date)),
+        ...userThoughts.map(t => new Date(t.created_date)),
+        ...userPageViews.map(pv => new Date(pv.created_date))
+      ].filter(d => !isNaN(d));
+      const lastActivity = allDates.length > 0 ? new Date(Math.max(...allDates)) : null;
+      
       return {
         ...user,
         itemsCount: userItems.length,
         projectsCount: userProjects.length,
+        thoughtsCount: userThoughts.length,
+        screenshotsCount: userScreenshots.length,
+        pageViewsCount: userPageViews.length,
+        lastActivity,
         userItems,
         userProjects,
+        userThoughts,
         profile: userProfile
       };
     });
-  }, [filteredUsers, filteredItems, filteredProjects, allUserProfiles]);
+  }, [filteredUsers, filteredItems, filteredProjects, filteredThoughts, filteredScreenshots, filteredPageViews, allUserProfiles]);
 
   // Analytics stats
   const analyticsStats = useMemo(() => {
@@ -223,6 +254,22 @@ export default function AdminStats() {
           aVal = a.projectsCount;
           bVal = b.projectsCount;
           break;
+        case 'thoughts':
+          aVal = a.thoughtsCount;
+          bVal = b.thoughtsCount;
+          break;
+        case 'screenshots':
+          aVal = a.screenshotsCount;
+          bVal = b.screenshotsCount;
+          break;
+        case 'pageviews':
+          aVal = a.pageViewsCount;
+          bVal = b.pageViewsCount;
+          break;
+        case 'last_activity':
+          aVal = a.lastActivity ? new Date(a.lastActivity) : new Date(0);
+          bVal = b.lastActivity ? new Date(b.lastActivity) : new Date(0);
+          break;
         default:
           return 0;
       }
@@ -245,7 +292,7 @@ export default function AdminStats() {
     );
   }
 
-  const isLoading = loadingUsers || loadingItems || loadingProjects || loadingThoughts || loadingViews || loadingProfiles;
+  const isLoading = loadingUsers || loadingItems || loadingProjects || loadingThoughts || loadingViews || loadingProfiles || loadingScreenshots;
 
   if (isLoading) {
     return (
@@ -526,6 +573,11 @@ export default function AdminStats() {
 
                       const safeDiv = (num, den) => den === 0 ? 0 : Math.round((num / den) * 100);
 
+                      // Calculate days since last activity
+                      const daysSinceActive = user.lastActivity 
+                        ? differenceInDays(now, user.lastActivity) 
+                        : null;
+
                       return (
                         <tr key={user.id} className="hover:bg-slate-50">
                           <td className="py-3">{user.full_name || "—"}</td>
@@ -549,37 +601,36 @@ export default function AdminStats() {
                               {currentStatus.label}
                             </Badge>
                           </td>
-                          <td className="py-3 text-sm text-slate-600">
-                            {trialEnd ? (
-                              <div className="space-y-0.5">
-                                {trialStart && <div className="text-xs">Start: {format(trialStart, 'dd-MM-yyyy')}</div>}
-                                <div className="text-xs font-medium">
-                                  End: {format(trialEnd, 'dd-MM-yyyy')}
-                                </div>
-                                {subscriptionStatus === 'trialing' && trialEnd > now && (
-                                  <div className="text-xs text-blue-600 font-semibold">
-                                    {daysRemaining} dagen over
-                                  </div>
-                                )}
+                          <td className="py-3 text-center">{userItems.length}</td>
+                          <td className="py-3 text-center">{user.projectsCount}</td>
+                          <td className="py-3 text-center">{user.thoughtsCount}</td>
+                          <td className="py-3 text-center">{user.screenshotsCount}</td>
+                          <td className="py-3 text-center">{user.pageViewsCount}</td>
+                          <td className="py-3 text-xs">
+                            {user.lastActivity ? (
+                              <div className="flex flex-col items-start">
+                                <span className="text-slate-700 font-medium">
+                                  {format(user.lastActivity, "d MMM yyyy", { locale: nl })}
+                                </span>
+                                <span className={`text-xs ${
+                                  daysSinceActive === 0 ? "text-green-600" :
+                                  daysSinceActive <= 7 ? "text-blue-600" :
+                                  daysSinceActive <= 30 ? "text-yellow-600" :
+                                  "text-red-600"
+                                }`}>
+                                  {daysSinceActive === 0 ? "Vandaag" : `${daysSinceActive}d geleden`}
+                                </span>
                               </div>
                             ) : (
-                              <span className="text-slate-400">-</span>
+                              <span className="text-slate-400">Nooit</span>
                             )}
-                          </td>
-                          <td className="py-3">{userItems.length}</td>
-                          <td className="py-3">{userProjects.length}</td>
-                          <td className="py-3 text-xs">
-                             <div className="flex flex-col gap-1">
-                               <span className={promptGrowth > 0 ? "text-green-600" : "text-slate-500"}>Prompts: {promptGrowth > 0 ? '+' : ''}{promptGrowth}%</span>
-                               <span className={multiGrowth > 0 ? "text-green-600" : "text-slate-500"}>Multi: {multiGrowth > 0 ? '+' : ''}{multiGrowth}%</span>
-                             </div>
                           </td>
                           <td className="py-3 text-xs">
                              {totalChecks > 0 ? (
                                <div className="flex flex-col gap-1">
-                                 <span className="text-green-600">Good: {safeDiv(successChecks, totalChecks)}%</span>
-                                 <span className="text-red-500">Bad: {safeDiv(failedChecks, totalChecks)}%</span>
-                                 <span className="text-orange-500">Retry: {safeDiv(retryChecks, totalChecks)}%</span>
+                                 <span className="text-green-600">✓ {safeDiv(successChecks, totalChecks)}%</span>
+                                 <span className="text-red-500">✗ {safeDiv(failedChecks, totalChecks)}%</span>
+                                 <span className="text-orange-500">↻ {safeDiv(retryChecks, totalChecks)}%</span>
                                </div>
                              ) : (
                                <span className="text-slate-400">-</span>
