@@ -492,6 +492,7 @@ export default function AdminStats() {
                     {sortedUsers.map((user) => {
                       const userItems = user.userItems;
                       const userProjects = user.userProjects;
+                      const userThoughts = user.userThoughts || [];
                       
                       // Get subscription data from UserProfile
                       const profile = user.profile;
