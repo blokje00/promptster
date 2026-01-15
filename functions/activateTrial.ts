@@ -87,20 +87,32 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const planId = body.planId;
 
+    console.log('[activateTrial] Request body:', { planId });
+
     if (!planId) {
       return Response.json({ error: 'planId is required' }, { status: 400 });
     }
 
     // Verify plan exists
-    const plan = await base44.asServiceRole.entities.SubscriptionPlan.list();
-    const selectedPlan = plan.find(p => p.id === planId);
+    const allPlans = await base44.asServiceRole.entities.SubscriptionPlan.list();
+    console.log('[activateTrial] All plans:', allPlans.map(p => ({ id: p.id, name: p.name, monthly_price_id: p.monthly_price_id })));
+    
+    const selectedPlan = allPlans.find(p => p.id === planId);
     
     if (!selectedPlan) {
-      return Response.json({ error: 'Invalid plan ID' }, { status: 400 });
+      return Response.json({ 
+        error: 'Invalid plan ID', 
+        available_plans: allPlans.map(p => ({ id: p.id, name: p.name }))
+      }, { status: 400 });
     }
 
+    console.log('[activateTrial] Selected plan:', { id: selectedPlan.id, name: selectedPlan.name, monthly_price_id: selectedPlan.monthly_price_id });
+
     if (!selectedPlan.monthly_price_id) {
-      return Response.json({ error: 'Plan has no Stripe price ID configured' }, { status: 400 });
+      return Response.json({ 
+        error: 'Plan heeft geen Stripe price ID. Configureer dit eerst in Admin → Subscription Management.',
+        plan_name: selectedPlan.name 
+      }, { status: 400 });
     }
 
     // Step 1: Create or retrieve Stripe Customer
