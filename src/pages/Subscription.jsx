@@ -467,9 +467,15 @@ export default function SubscriptionPage() {
                 </Button>
               ) : plan.trial_days > 0 && !plan.is_credit_card_required_for_trial ? (
                 <Button 
-                  onClick={() => handleStartFreeTrial(plan)} 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('[Subscription Button] 🖱️ Click event captured');
+                    handleStartFreeTrial(plan);
+                  }} 
                   disabled={isProcessing}
                   className="bg-green-600 hover:bg-green-700"
+                  type="button"
                 >
                   {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                   Start Free Trial
