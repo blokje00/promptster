@@ -367,6 +367,17 @@ export default function SubscriptionPage() {
         const isPurchasable = (plan.visibility_status || 'visible_purchasable') === 'visible_purchasable';
         const isAvailable = isPlanAvailable(plan);
         const canPurchase = isPurchasable && isAvailable;
+        
+        // DEBUG: Log button rendering logic
+        console.log('[Subscription Render] Plan:', plan.name, {
+          subscription_status: user?.subscription_status,
+          isPurchasable,
+          isAvailable,
+          trial_days: plan.trial_days,
+          is_credit_card_required: plan.is_credit_card_required_for_trial,
+          payment_link: plan.payment_link,
+          show_free_trial_button: plan.trial_days > 0 && !plan.is_credit_card_required_for_trial
+        });
 
         return (
         <Card key={plan.id} className={`border-l-4 ${canPurchase ? 'border-l-green-500' : 'border-l-yellow-500'}`}>
