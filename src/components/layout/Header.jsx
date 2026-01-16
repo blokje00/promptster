@@ -480,6 +480,15 @@ export default function Header() {
                     <span>Manage Subscription</span>
                   </Link>
                 </DropdownMenuItem>
+                
+                {user?.role === 'admin' && (
+                  <DropdownMenuItem asChild className="hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <Link to={createPageUrl("AdminSettings")} className="cursor-pointer text-purple-600 dark:text-purple-400 font-medium">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>⚙️ App Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
                 <DropdownMenuItem asChild className="hover:bg-slate-100 dark:hover:bg-slate-800">
                   <Link to={createPageUrl("RecycleBin")} className="cursor-pointer text-slate-700 dark:text-slate-300">
