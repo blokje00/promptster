@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Loader2, Settings, AlertTriangle, Users, Calendar } from "lucide-react";
 import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
+import AdminSettingsHelp from "@/components/admin/AdminSettingsHelp";
 
 export default function AdminSettingsPage() {
   const { data: user } = useCurrentUserSettings();
@@ -89,12 +90,15 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
-          <Settings className="w-8 h-8" />
-          App Settings
-        </h1>
-        <p className="text-slate-600 mt-2">Global configuration for the application</p>
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
+            <Settings className="w-8 h-8" />
+            App Settings
+          </h1>
+          <p className="text-slate-600 mt-2">Global configuration for the application</p>
+        </div>
+        <AdminSettingsHelp />
       </div>
 
       {isLoading ? (
