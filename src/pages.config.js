@@ -7,6 +7,7 @@ import AdminSupportTickets from './pages/AdminSupportTickets';
 import Checks from './pages/Checks';
 import Dashboard from './pages/Dashboard';
 import EditItem from './pages/EditItem';
+import Features from './pages/Features';
 import Layout from './pages/Layout';
 import Legal from './pages/Legal';
 import Multiprompt from './pages/Multiprompt';
@@ -16,7 +17,6 @@ import Subscription from './pages/Subscription';
 import Support from './pages/Support';
 import ViewItem from './pages/ViewItem';
 import index from './pages/index';
-import Features from './pages/Features';
 import __Layout from './Layout.jsx';
 
 
@@ -30,6 +30,7 @@ export const PAGES = {
     "Checks": Checks,
     "Dashboard": Dashboard,
     "EditItem": EditItem,
+    "Features": Features,
     "Layout": Layout,
     "Legal": Legal,
     "Multiprompt": Multiprompt,
@@ -39,7 +40,6 @@ export const PAGES = {
     "Support": Support,
     "ViewItem": ViewItem,
     "index": index,
-    "Features": Features,
 }
 
 export const pagesConfig = {

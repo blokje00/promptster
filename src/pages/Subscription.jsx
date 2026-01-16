@@ -107,7 +107,15 @@ export default function SubscriptionPage() {
 
   // Handler for no-CC trials (uses activateTrial backend, not Stripe)
   const handleStartFreeTrial = async (plan) => {
-    console.log('[Subscription] 🎯 Start Free Trial clicked');
+    console.log('[Subscription] 🎯 Start Free Trial clicked for plan:', plan);
+    console.log('[Subscription] 🎯 Plan ID:', plan.id);
+    console.log('[Subscription] 🎯 isProcessing:', isProcessing);
+    
+    if (isProcessing) {
+      console.log('[Subscription] ⚠️ Already processing, skipping...');
+      return;
+    }
+    
     toast.info('Trial activatie gestart...');
     setIsProcessing(true);
 
