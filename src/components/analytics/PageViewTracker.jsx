@@ -71,14 +71,14 @@ function getPageName(pathname) {
 /**
  * Record page view to database
  */
-async function recordPageView(pageName, timeOnPage) {
+async function recordPageView(pageName, timeOnPage, sessionIdValue) {
   try {
     const user = await base44.auth.me().catch(() => null);
     
     await base44.entities.PageView.create({
       user_id: user?.id || null,
       user_email: user?.email || null,
-      session_id: sessionId.current,
+      session_id: sessionIdValue,
       page_name: pageName,
       page_url: window.location.href,
       referrer: document.referrer,
