@@ -48,6 +48,24 @@ export function hasValidAccess(user, appSettings = null) {
     debugLog('[subscriptionUtils] GRANTED: Admin bypass');
     return true;
   }
+
+  // Rule 2: GRANDFATHERED USERS - users registered before cutoff date get free access
+  if (appSettings?.grandfathered_before_date && user.created_date) {
+    try {
+      const cutoffDate = new Date(appSettings.grandfathered_before_date);
+      const userCreatedDate = new Date(user.created_date);
+      
+      if (userCreatedDate < cutoffDate) {
+        debugLog('[subscriptionUtils] GRANTED: Grandfathered user', {
+          created: userCreatedDate.toISOString(),
+          cutoff: cutoffDate.toISOString()
+        });
+        return true;
+      }
+    } catch (error) {
+      console.warn('[subscriptionUtils] Invalid grandfathering date format:', error);
+    }
+  }
   
   // Rule 2: Use central isPaidOrTrial helper
   if (isPaidOrTrial(user.subscription_status)) {
