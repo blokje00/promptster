@@ -25,9 +25,9 @@ export default function PageViewTracker() {
     const currentPage = getPageName(location.pathname);
     
     // Record time spent on previous page
-    if (pageStartTime.current && lastPageName.current) {
+    if (pageStartTime.current && lastPageName.current && sessionId.current) {
       const timeOnPage = Math.floor((Date.now() - pageStartTime.current) / 1000);
-      recordPageView(lastPageName.current, timeOnPage);
+      recordPageView(lastPageName.current, timeOnPage, sessionId.current);
     }
 
     // Set new page start time
