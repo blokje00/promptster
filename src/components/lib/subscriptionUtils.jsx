@@ -27,13 +27,20 @@ export function isPaidOrTrial(status) {
  * 5. Deterministic - same input = same output
  * 
  * @param {Object} user - User object from base44.auth.me()
+ * @param {Object} appSettings - Global app settings (optional)
  * @returns {boolean} - true if user has valid access
  */
-export function hasValidAccess(user) {
+export function hasValidAccess(user, appSettings = null) {
   // Defensive: null/undefined check
   if (!user) {
     debugLog('[subscriptionUtils] DENIED: No user object');
     return false;
+  }
+
+  // Rule 0: APP-WIDE ACCESS OVERRIDE (highest priority)
+  if (appSettings?.app_wide_access_enabled) {
+    debugLog('[subscriptionUtils] GRANTED: App-wide access enabled');
+    return true;
   }
 
   // Rule 1: ADMIN BYPASS - admins always have access

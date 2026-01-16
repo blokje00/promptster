@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import StartTrialModal from "./StartTrialModal";
 import { hasValidAccess, hasValidLatch } from "@/components/lib/subscriptionUtils";
+import { useAppSettings } from "@/components/hooks/useAppSettings";
 
 /**
  * AccessGuard - HARDENED subscription gate
@@ -25,6 +26,9 @@ export default function AccessGuard({ children, pageType = "protected" }) {
   const location = useLocation();
   const [showTrialModal, setShowTrialModal] = useState(false);
 
+  // Fetch global app settings
+  const { settings: appSettings, isLoading: settingsLoading } = useAppSettings();
+
   // ONLY auth.me() - NO entity queries allowed
   const { data: currentUser, isLoading: isUserLoading, error: authError } = useQuery({
     queryKey: ['currentUser'],
@@ -40,7 +44,7 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     staleTime: 30000, // 30s cache to prevent flicker
   });
 
-  const isLoading = isUserLoading;
+  const isLoading = isUserLoading || settingsLoading;
 
   // Render StartTrialModal consistently at the bottom
   const renderWithModal = (content) => (
@@ -107,14 +111,15 @@ export default function AccessGuard({ children, pageType = "protected" }) {
       return;
     }
 
-    // Rule 4: Check subscription access (pure function, no async) OR local latch
-    const hasActiveSubscription = hasValidAccess(currentUser) || hasValidLatch();
+    // Rule 4: Check subscription access (pure function, no async) OR local latch OR app-wide access
+    const hasActiveSubscription = hasValidAccess(currentUser, appSettings) || hasValidLatch();
     debugLog('[AccessGuard] Subscription check:', {
       hasAccess: hasActiveSubscription,
       isAdmin: currentUser?.role === 'admin',
       status: currentUser?.subscription_status,
       trialValid: currentUser?.trial_ends_at ? new Date(currentUser.trial_ends_at) > new Date() : false,
-      hasLatch: hasValidLatch()
+      hasLatch: hasValidLatch(),
+      appWideAccess: appSettings?.app_wide_access_enabled
     });
 
     // Rule 5: No subscription → redirect to Subscription page
@@ -176,8 +181,8 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     return children;
   }
 
-  // Check subscription using ONLY auth.me() data (pure, sync) OR local latch
-  const hasActiveSubscription = hasValidAccess(currentUser) || hasValidLatch();
+  // Check subscription using ONLY auth.me() data (pure, sync) OR local latch OR app-wide access
+  const hasActiveSubscription = hasValidAccess(currentUser, appSettings) || hasValidLatch();
 
   if (!hasActiveSubscription) {
     // No valid subscription - show spinner while redirect happens
