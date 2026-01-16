@@ -1,9 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
-import Stripe from 'npm:stripe@17.5.0';
+import Stripe from 'npm:stripe@14.5.0';
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'), {
-  apiVersion: '2024-12-18.acacia',
-});
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
 
 // Helper: Get or create UserProfile
 async function getOrCreateProfile(base44Client, authUser) {
@@ -136,27 +134,44 @@ Deno.serve(async (req) => {
 
     // Step 2: Calculate trial end (14 days from now)
     const now = new Date();
-    const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const trialEnd = new Date(now.getTime() + selectedPlan.trial_days * 24 * 60 * 60 * 1000);
     const trialEndUnix = Math.floor(trialEnd.getTime() / 1000);
 
-    // Step 3: Create Stripe Subscription in trialing status
-    console.log('[activateTrial] Creating Stripe Subscription...');
-    const subscription = await stripe.subscriptions.create({
-      customer: stripeCustomerId,
-      items: [{ price: selectedPlan.monthly_price_id }],
-      trial_end: trialEndUnix,
-      payment_behavior: 'default_incomplete',
-      payment_settings: {
-        save_default_payment_method: 'on_subscription'
-      },
-      metadata: {
-        user_id: user.id,
-        plan_id: planId,
-        trial_type: 'no_cc_required'
-      }
-    });
+    console.log('[activateTrial] Trial period:', selectedPlan.trial_days, 'days, ends at:', trialEnd.toISOString());
 
-    console.log('[activateTrial] Stripe Subscription created:', subscription.id, 'Status:', subscription.status);
+    // Step 3: Create Stripe Subscription in trialing status
+    console.log('[activateTrial] Creating Stripe Subscription with:', {
+      customer: stripeCustomerId,
+      price: selectedPlan.monthly_price_id,
+      trial_end: trialEndUnix
+    });
+    
+    let subscription;
+    try {
+      subscription = await stripe.subscriptions.create({
+        customer: stripeCustomerId,
+        items: [{ price: selectedPlan.monthly_price_id }],
+        trial_end: trialEndUnix,
+        payment_behavior: 'default_incomplete',
+        payment_settings: {
+          save_default_payment_method: 'on_subscription'
+        },
+        metadata: {
+          user_id: user.id,
+          plan_id: planId,
+          trial_type: 'no_cc_required'
+        }
+      });
+      console.log('[activateTrial] ✅ Stripe Subscription created:', subscription.id, 'Status:', subscription.status);
+    } catch (stripeError) {
+      console.error('[activateTrial] ❌ Stripe subscription creation failed:', stripeError.message);
+      console.error('[activateTrial] Stripe error code:', stripeError.code);
+      console.error('[activateTrial] Stripe error type:', stripeError.type);
+      return Response.json({ 
+        error: 'Stripe subscription creation failed: ' + stripeError.message,
+        stripe_error_code: stripeError.code
+      }, { status: 500 });
+    }
 
     // Step 4: Update BOTH UserProfile AND User entity with Stripe data
     const updatePayload = {
