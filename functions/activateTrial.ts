@@ -185,7 +185,11 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('[activateTrial] Error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('[activateTrial] Critical error:', error.message);
+    console.error('[activateTrial] Stack trace:', error.stack);
+    return Response.json({ 
+      error: error.message,
+      details: error.toString()
+    }, { status: 500 });
   }
 });
