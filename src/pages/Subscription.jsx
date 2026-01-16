@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
+import { useAppSettings } from "@/components/hooks/useAppSettings";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, CheckCircle, RefreshCw } from "lucide-react";
@@ -19,6 +20,7 @@ export default function SubscriptionPage() {
   const navigate = useNavigate();
 
   const { data: user } = useCurrentUserSettings();
+  const { settings: appSettings } = useAppSettings();
 
   // No UserProfile fetch needed - using auth.me() directly
 
@@ -291,6 +293,32 @@ export default function SubscriptionPage() {
   }, [user]);
 
 
+
+  // If Stripe is disabled, show message instead of plans
+  if (!appSettings?.stripe_enabled) {
+    return (
+      <div className="p-8 max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-slate-900">Subscriptions</h1>
+        </div>
+
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-2xl font-bold text-blue-900 mb-4">🎉 Free Access Mode</h2>
+            <p className="text-blue-800 mb-6">
+              Subscription payments are currently disabled. You have full access to all features!
+            </p>
+            <Button 
+              onClick={() => navigate(createPageUrl('Multiprompt'))}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Go to App
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 max-w-6xl mx-auto">

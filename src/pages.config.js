@@ -17,6 +17,7 @@ import Subscription from './pages/Subscription';
 import Support from './pages/Support';
 import ViewItem from './pages/ViewItem';
 import index from './pages/index';
+import AdminSettings from './pages/AdminSettings';
 import __Layout from './Layout.jsx';
 
 
@@ -40,6 +41,7 @@ export const PAGES = {
     "Support": Support,
     "ViewItem": ViewItem,
     "index": index,
+    "AdminSettings": AdminSettings,
 }
 
 export const pagesConfig = {
