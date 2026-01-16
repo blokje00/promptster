@@ -19,7 +19,7 @@ export function useCurrentUserSettings() {
           tier_advisor_subscription_enabled: user?.tier_advisor_subscription_enabled ?? false,
         };
       } catch (error) {
-        console.warn('[useCurrentUserSettings] Auth failed:', error.message);
+        // Silent fail for public pages - this is expected behavior
         return null;
       }
     },
