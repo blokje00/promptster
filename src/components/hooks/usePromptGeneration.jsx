@@ -158,6 +158,11 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
 
     if (!generatedPrompt) return;
     
+    // Check if Reasoning Transparency is enabled - auto-generate reasoning
+    if (!reasoningSteps && currentUser?.enable_reasoning_transparency) {
+      handleToggleReasoning();
+    }
+    
     // PRO feature check
     if (!hasProFeatureAccess(currentUser)) {
       const isTrialing = currentUser?.subscription_status === 'trialing';
@@ -243,9 +248,29 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
         }
       }
 
+      // Check if Verbalized Sampling is enabled
+      const verbalizedSamplingEnabled = currentUser?.enable_verbalized_sampling || false;
+      
+      let improvePromptInstruction = `Improve and optimize this multi-task prompt for better clarity and execution:\n\n${enrichedPromptWithVision}\n\nIMPORTANT: Return ONLY the improved prompt content, keeping the JSON structure and all screenshot data intact.`;
+      
+      if (verbalizedSamplingEnabled) {
+        improvePromptInstruction = `You are using Verbalized Sampling to improve this prompt with maximum diversity.
+
+ORIGINAL PROMPT:
+${enrichedPromptWithVision}
+
+TASK: Generate ONE improved version that takes an atypical, creative approach (avoid the most obvious solution). Consider:
+- Alternative execution strategies
+- Different levels of detail
+- Unconventional but effective structures
+- Novel perspectives on the tasks
+
+IMPORTANT: Return ONLY the improved prompt content, keeping the JSON structure and all screenshot data intact. Be creative but maintain functionality.`;
+      }
+      
       // Call backend function with rate limiting - DON'T send file_urls (AI can't access them anyway)
       const response = await base44.functions.invoke('runPrompt', {
-        prompt: `Improve and optimize this multi-task prompt for better clarity and execution:\n\n${enrichedPromptWithVision}\n\nIMPORTANT: Return ONLY the improved prompt content, keeping the JSON structure and all screenshot data intact.`
+        prompt: improvePromptInstruction
       });
 
       const data = response.data;
@@ -263,7 +288,7 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
     } finally {
       setIsImproving(false);
     }
-  }, [generatedPrompt, thoughts, selectedThoughtIds]);
+  }, [generatedPrompt, thoughts, selectedThoughtIds, currentUser]);
 
   const handleGenerateVariants = useCallback(async () => {
     if (!generatedPrompt) return;
@@ -326,18 +351,28 @@ RULES:
         return;
       }
 
-      // Parse JSON response
+      // Parse JSON response - handle markdown code fences
       try {
-        const parsed = JSON.parse(data.result);
+        let cleanResult = data.result.trim();
+        // Remove markdown code fences if present
+        cleanResult = cleanResult.replace(/^```json\s*\n?/i, '').replace(/\n?```\s*$/i, '');
+        
+        const parsed = JSON.parse(cleanResult);
         if (parsed.variants && Array.isArray(parsed.variants) && parsed.variants.length > 0) {
           setPromptVariants(parsed.variants);
-          toast.success(`Generated ${parsed.variants.length} prompt variants`);
+          toast.success(`✨ Generated ${parsed.variants.length} prompt variants`);
         } else {
           throw new Error("Invalid variants format");
         }
       } catch (parseError) {
-        console.error("Failed to parse variants:", parseError);
-        toast.error("Failed to parse variants response");
+        console.error("Failed to parse variants:", parseError, "Raw response:", data.result);
+        // Fallback: show raw response as single variant
+        setPromptVariants([{
+          content: data.result,
+          probability: 0.5,
+          approach: "Generated variant"
+        }]);
+        toast.warning("Variants generated but format may be irregular");
       }
     } catch (error) {
       console.error("Variant generation error:", error);
@@ -391,7 +426,10 @@ Return your reasoning as clear, numbered steps (max 200 words).`;
       if (response.status === 200 && !data.error) {
         setReasoningSteps(data.result);
         setShowReasoning(true);
-        toast.success("Reasoning steps generated");
+        // Only show toast if manually triggered
+        if (showReasoning === false && !reasoningSteps) {
+          toast.success("Reasoning steps generated");
+        }
       } else {
         toast.error("Failed to generate reasoning");
       }
