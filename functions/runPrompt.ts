@@ -82,31 +82,64 @@ Deno.serve(async (req) => {
     }
 
     // Execute prompt
-    const body = await req.json();
+    console.log('[runPrompt] Parsing request body...');
+    let body;
+    try {
+      body = await req.json();
+      console.log('[runPrompt] ✓ Body parsed, keys:', Object.keys(body));
+    } catch (parseError) {
+      console.error('[runPrompt] ❌ Failed to parse request body:', parseError.message);
+      return Response.json({ error: 'Invalid JSON body' }, { status: 400 });
+    }
+    
     const { prompt, file_urls } = body;
+    console.log('[runPrompt] Prompt length:', prompt?.length || 0);
+    console.log('[runPrompt] File URLs:', file_urls ? `${file_urls.length} files` : 'none');
 
     if (!prompt) {
-      console.log('[runPrompt] ❌ Missing prompt');
+      console.log('[runPrompt] ❌ Missing prompt in body');
       return Response.json({ error: 'Missing prompt' }, { status: 400 });
     }
 
-    console.log('[runPrompt] 📡 Calling InvokeLLM with prompt length:', prompt.length);
+    console.log('[runPrompt] 📡 Calling InvokeLLM via service role...');
+    console.log('[runPrompt] Base44 object type:', typeof base44);
+    console.log('[runPrompt] Has asServiceRole?:', !!base44.asServiceRole);
+    console.log('[runPrompt] Has integrations?:', !!base44.asServiceRole?.integrations);
+    console.log('[runPrompt] Has Core?:', !!base44.asServiceRole?.integrations?.Core);
+    
+    let result;
+    try {
+      result = await base44.asServiceRole.integrations.Core.InvokeLLM({
+        prompt,
+        file_urls: file_urls || undefined
+      });
+      console.log('[runPrompt] ✅ InvokeLLM returned successfully');
+      console.log('[runPrompt] Result type:', typeof result);
+      console.log('[runPrompt] Result length:', result?.length || 0);
+    } catch (llmError) {
+      console.error('[runPrompt] ❌ InvokeLLM failed:', llmError.message);
+      console.error('[runPrompt] LLM Error stack:', llmError.stack);
+      throw llmError;
+    }
 
-    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt,
-      file_urls: file_urls || undefined
-    });
-
-    console.log('[runPrompt] ✅ InvokeLLM success, result length:', result?.length || 0);
-
+    console.log('[runPrompt] Returning success response...');
     return Response.json({
       result,
       credits_used: 1
     });
 
   } catch (error) {
-    console.error('[runPrompt] ❌ Error:', error.message);
-    console.error('[runPrompt] Stack:', error.stack);
-    return Response.json({ error: error.message || 'Internal server error' }, { status: 500 });
+    console.error('[runPrompt] ========== ERROR CAUGHT ==========');
+    console.error('[runPrompt] Error name:', error.name);
+    console.error('[runPrompt] Error message:', error.message);
+    console.error('[runPrompt] Error stack:', error.stack);
+    console.error('[runPrompt] Error constructor:', error.constructor.name);
+    console.error('[runPrompt] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    return Response.json({ 
+      error: error.message || 'Internal server error',
+      error_type: error.name || 'UnknownError'
+    }, { status: 500 });
+  } finally {
+    console.log('[runPrompt] ========== REQUEST END ==========');
   }
 });
