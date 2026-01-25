@@ -15,6 +15,7 @@ import MaintenanceTools from "../components/settings/MaintenanceTools";
 import AIInstructionForm from "../components/settings/AIInstructionForm";
 import PersonalPreferencesForm from "../components/settings/PersonalPreferencesForm";
 import AIContextToggle from "../components/settings/AIContextToggle";
+import FeedbackInsights from "../components/settings/FeedbackInsights";
 import { toast } from "sonner";
 
 const getDefaultInstruction = () => `You are optimizing a multi-task prompt that may include screenshots and OCR vision data.
@@ -425,6 +426,7 @@ export default function AIBackoffice() {
             <TabsContent value="settings" className="space-y-6">
               <div className="max-w-3xl space-y-6">
                 <MaintenanceTools currentUser={currentUser} />
+                <FeedbackInsights currentUser={currentUser} />
                 <PersonalPreferencesForm
                   personalPreferences={personalPrefsHook.draft}
                   setPersonalPreferences={personalPrefsHook.setDraft}

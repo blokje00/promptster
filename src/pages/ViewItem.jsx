@@ -368,7 +368,16 @@ export default function ViewItem() {
           </CardContent>
         </Card>
       </div>
-    </div>
-    </AccessGuard>
-  );
-}
+      </div>
+
+      <PromptFeedbackDialog
+      open={showFeedbackDialog}
+      onClose={() => setShowFeedbackDialog(false)}
+      item={item}
+      promptUsed={item?.content || ""}
+      projectId={item?.project_id}
+      usedTemplates={[item?.start_template_id, item?.end_template_id].filter(Boolean)}
+      />
+      </AccessGuard>
+      );
+      }

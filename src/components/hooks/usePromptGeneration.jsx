@@ -291,18 +291,10 @@ IMPORTANT: Return ONLY the improved prompt content, keeping the JSON structure a
   }, [generatedPrompt, thoughts, selectedThoughtIds, currentUser]);
 
   const handleGenerateVariants = useCallback(async () => {
-    console.log('[usePromptGeneration] 🚀 handleGenerateVariants called');
-    console.log('[usePromptGeneration] generatedPrompt:', generatedPrompt?.substring(0, 100));
-    
-    if (!generatedPrompt) {
-      console.log('[usePromptGeneration] ❌ No generatedPrompt');
-      return;
-    }
+    if (!generatedPrompt) return;
     
     // PRO feature check
-    console.log('[usePromptGeneration] Checking PRO access...');
     if (!hasProFeatureAccess(currentUser)) {
-      console.log('[usePromptGeneration] ❌ No PRO access');
       toast.error('Upgrade to PRO to use Verbalized Sampling', {
         description: 'Generate multiple diverse prompt variants',
         action: {
@@ -313,10 +305,9 @@ IMPORTANT: Return ONLY the improved prompt content, keeping the JSON structure a
       return;
     }
     
-    console.log('[usePromptGeneration] ✅ PRO access granted, starting generation...');
     setIsGeneratingVariants(true);
     try {
-      // Verbalized Sampling prompt: ask LLM to generate 3 variants with probabilities
+      // Verbalized Sampling: generate 3 diverse variants
       const vsPrompt = `You are a prompt engineering expert. Generate exactly 3 diverse variants of the following multi-task prompt, each taking a different strategic approach. For each variant, estimate its "typicality probability" (0.0-1.0, where higher = more typical/conventional).
 
 ORIGINAL PROMPT:
@@ -349,59 +340,25 @@ RULES:
 - Ensure at least one variant is "atypical" (probability < 0.4)
 - Return ONLY valid JSON, no markdown fences`;
 
-      console.log('[usePromptGeneration] 📡 Calling runPrompt backend...');
-      const response = await base44.functions.invoke('runPrompt', {
+      const response = await base44.integrations.Core.InvokeLLM({
         prompt: vsPrompt
       });
 
-      console.log('[usePromptGeneration] 📥 Response received:', response);
-      const data = response.data;
-
-      if (response.status !== 200 || data.error) {
-        console.error('[usePromptGeneration] ❌ Backend error:', data.error);
-        toast.error(data.error || "Variant generation failed");
-        return;
-      }
-
-      console.log('[usePromptGeneration] 📦 Raw result:', data.result);
-
-      // Parse JSON response - handle markdown code fences
-      try {
-        let cleanResult = data.result.trim();
-        console.log('[usePromptGeneration] 🧹 Cleaning result...');
-        // Remove markdown code fences if present
-        cleanResult = cleanResult.replace(/^```json\s*\n?/i, '').replace(/\n?```\s*$/i, '');
-        
-        console.log('[usePromptGeneration] 🔍 Parsing JSON...');
-        const parsed = JSON.parse(cleanResult);
-        console.log('[usePromptGeneration] ✅ Parsed variants:', parsed);
-        
-        if (parsed.variants && Array.isArray(parsed.variants) && parsed.variants.length > 0) {
-          console.log('[usePromptGeneration] 💾 Setting variants state:', parsed.variants.length);
-          setPromptVariants(parsed.variants);
-          toast.success(`✨ Generated ${parsed.variants.length} prompt variants`);
-        } else {
-          throw new Error("Invalid variants format");
-        }
-      } catch (parseError) {
-        console.error("[usePromptGeneration] ❌ Parse error:", parseError, "Raw response:", data.result);
-        // Fallback: show raw response as single variant
-        const fallbackVariant = {
-          content: data.result,
-          probability: 0.5,
-          approach: "Generated variant"
-        };
-        console.log('[usePromptGeneration] 🔄 Using fallback variant:', fallbackVariant);
-        setPromptVariants([fallbackVariant]);
-        toast.warning("Variants generated but format may be irregular");
+      // Parse JSON response
+      let cleanResult = response.trim();
+      cleanResult = cleanResult.replace(/^```json\s*\n?/i, '').replace(/\n?```\s*$/i, '');
+      
+      const parsed = JSON.parse(cleanResult);
+      
+      if (parsed.variants && Array.isArray(parsed.variants) && parsed.variants.length > 0) {
+        setPromptVariants(parsed.variants);
+        toast.success(`✨ Generated ${parsed.variants.length} prompt variants`);
+      } else {
+        throw new Error("Invalid variants format");
       }
     } catch (error) {
-      console.error("[usePromptGeneration] Variant generation error:", error);
-      console.error("[usePromptGeneration] Error response data:", error.response?.data);
-      console.error("[usePromptGeneration] Error response status:", error.response?.status);
-
-      const errorMsg = error.response?.data?.error || error.message || "Variant generation failed";
-      toast.error(errorMsg);
+      console.error("Variant generation error:", error);
+      toast.error("Variant generation failed");
     } finally {
       setIsGeneratingVariants(false);
     }
