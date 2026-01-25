@@ -6,9 +6,14 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
  */
 
 Deno.serve(async (req) => {
+  console.log('[runPrompt] ========== REQUEST START ==========');
+  console.log('[runPrompt] Method:', req.method);
+  console.log('[runPrompt] URL:', req.url);
+  
   try {
     // CORS
     if (req.method === "OPTIONS") {
+      console.log('[runPrompt] Handling OPTIONS (CORS preflight)');
       return new Response(null, {
         headers: {
           "Access-Control-Allow-Origin": "*",
@@ -18,15 +23,22 @@ Deno.serve(async (req) => {
       });
     }
 
+    console.log('[runPrompt] Creating SDK client from request...');
     const base44 = createClientFromRequest(req);
+    console.log('[runPrompt] SDK client created');
+    
+    console.log('[runPrompt] Authenticating user...');
     const user = await base44.auth.me();
+    console.log('[runPrompt] Auth response:', user ? 'SUCCESS' : 'NULL');
 
     if (!user) {
-      console.log('[runPrompt] ❌ Unauthorized');
+      console.log('[runPrompt] ❌ Unauthorized - no user');
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     console.log('[runPrompt] ✓ User authenticated:', user.email);
+    console.log('[runPrompt] User role:', user.role);
+    console.log('[runPrompt] User subscription status:', user.subscription_status);
 
     // ✅ PRO FEATURE CHECK
     // AI Prompt Improvement is PRO-only (or Starter during 14-day trial)
