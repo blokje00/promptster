@@ -190,7 +190,10 @@ export default function Multiprompt() {
     endTemplateId: templateSelection.endTemplateId,
     includePersonalPrefs: templateSelection.includePersonalPrefs,
     includeProjectConfig: templateSelection.includeProjectConfig,
-    currentUser, selectedProject, templates, selectedProjectId
+    currentUser: { ...currentUser, ...aiSettings[0] }, 
+    selectedProject, 
+    templates, 
+    selectedProjectId
   });
 
   // --- Derived State ---
