@@ -561,6 +561,12 @@ export default function Multiprompt() {
                     }}
                     saveSuccess={saveSuccess}
                     onQuickSave={handleQuickSave}
+                    promptVariants={promptGeneration.promptVariants}
+                    isGeneratingVariants={promptGeneration.isGeneratingVariants}
+                    onGenerateVariants={promptGeneration.handleGenerateVariants}
+                    reasoningSteps={promptGeneration.reasoningSteps}
+                    showReasoning={promptGeneration.showReasoning}
+                    onToggleReasoning={promptGeneration.handleToggleReasoning}
                   />
                 </div>
               </div>

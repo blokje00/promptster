@@ -17,6 +17,10 @@ export const usePromptGeneration = ({
 }) => {
   const [improvedPrompt, setImprovedPrompt] = useState("");
   const [isImproving, setIsImproving] = useState(false);
+  const [promptVariants, setPromptVariants] = useState([]);
+  const [isGeneratingVariants, setIsGeneratingVariants] = useState(false);
+  const [reasoningSteps, setReasoningSteps] = useState(null);
+  const [showReasoning, setShowReasoning] = useState(false);
 
   // Autosave improved prompt
   useEffect(() => {
@@ -261,11 +265,153 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
     }
   }, [generatedPrompt, thoughts, selectedThoughtIds]);
 
+  const handleGenerateVariants = useCallback(async () => {
+    if (!generatedPrompt) return;
+    
+    // PRO feature check
+    if (!hasProFeatureAccess(currentUser)) {
+      toast.error('Upgrade to PRO to use Verbalized Sampling', {
+        description: 'Generate multiple diverse prompt variants',
+        action: {
+          label: 'View Plans',
+          onClick: () => window.location.href = '/Subscription'
+        }
+      });
+      return;
+    }
+    
+    setIsGeneratingVariants(true);
+    try {
+      // Verbalized Sampling prompt: ask LLM to generate 3 variants with probabilities
+      const vsPrompt = `You are a prompt engineering expert. Generate exactly 3 diverse variants of the following multi-task prompt, each taking a different strategic approach. For each variant, estimate its "typicality probability" (0.0-1.0, where higher = more typical/conventional).
+
+ORIGINAL PROMPT:
+${generatedPrompt}
+
+OUTPUT FORMAT (strict JSON):
+{
+  "variants": [
+    {
+      "content": "Full prompt variant 1...",
+      "probability": 0.8,
+      "approach": "Conservative - minimal changes"
+    },
+    {
+      "content": "Full prompt variant 2...",
+      "probability": 0.5,
+      "approach": "Balanced - moderate restructuring"
+    },
+    {
+      "content": "Full prompt variant 3...",
+      "probability": 0.2,
+      "approach": "Creative - novel approach"
+    }
+  ]
+}
+
+RULES:
+- Each variant must be a complete, executable prompt (keep JSON structure intact)
+- Variants should differ in: tone, structure, level of detail, or execution strategy
+- Ensure at least one variant is "atypical" (probability < 0.4)
+- Return ONLY valid JSON, no markdown fences`;
+
+      const response = await base44.functions.invoke('runPrompt', {
+        prompt: vsPrompt
+      });
+
+      const data = response.data;
+
+      if (response.status !== 200 || data.error) {
+        toast.error(data.error || "Variant generation failed");
+        return;
+      }
+
+      // Parse JSON response
+      try {
+        const parsed = JSON.parse(data.result);
+        if (parsed.variants && Array.isArray(parsed.variants) && parsed.variants.length > 0) {
+          setPromptVariants(parsed.variants);
+          toast.success(`Generated ${parsed.variants.length} prompt variants`);
+        } else {
+          throw new Error("Invalid variants format");
+        }
+      } catch (parseError) {
+        console.error("Failed to parse variants:", parseError);
+        toast.error("Failed to parse variants response");
+      }
+    } catch (error) {
+      console.error("Variant generation error:", error);
+      toast.error("Variant generation failed");
+    } finally {
+      setIsGeneratingVariants(false);
+    }
+  }, [generatedPrompt, currentUser]);
+
+  const handleToggleReasoning = useCallback(async () => {
+    if (showReasoning) {
+      setShowReasoning(false);
+      return;
+    }
+
+    // If reasoning already generated, just show it
+    if (reasoningSteps) {
+      setShowReasoning(true);
+      return;
+    }
+
+    // Generate reasoning steps
+    if (!generatedPrompt) return;
+
+    try {
+      const selectedItems = thoughts.filter(t => selectedThoughtIds.includes(t.id));
+      const reasoningPrompt = `You are analyzing how you would interpret and execute the following multi-task prompt. Explain your reasoning process in 3-5 concise steps:
+
+1. **Interpretation**: How do you understand the tasks and their context?
+2. **Planning**: What is your execution strategy?
+3. **Prioritization**: Which tasks are most critical and why?
+4. **Dependencies**: Are there any task dependencies or order requirements?
+5. **Context Usage**: How would you use templates, preferences, and project config?
+
+PROMPT TO ANALYZE:
+${generatedPrompt}
+
+SELECTED TASKS: ${selectedItems.length}
+- Templates: ${startTemplateId ? 'Start' : ''} ${endTemplateId ? 'End' : ''}
+- Personal Prefs: ${includePersonalPrefs ? 'Yes' : 'No'}
+- Project Config: ${includeProjectConfig ? 'Yes' : 'No'}
+
+Return your reasoning as clear, numbered steps (max 200 words).`;
+
+      const response = await base44.functions.invoke('runPrompt', {
+        prompt: reasoningPrompt
+      });
+
+      const data = response.data;
+
+      if (response.status === 200 && !data.error) {
+        setReasoningSteps(data.result);
+        setShowReasoning(true);
+        toast.success("Reasoning steps generated");
+      } else {
+        toast.error("Failed to generate reasoning");
+      }
+    } catch (error) {
+      console.error("Reasoning generation error:", error);
+      toast.error("Reasoning generation failed");
+    }
+  }, [generatedPrompt, thoughts, selectedThoughtIds, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, showReasoning, reasoningSteps]);
+
   return {
     generatedPrompt,
     improvedPrompt,
     setImprovedPrompt,
     isImproving,
-    handleImprovePrompt
+    handleImprovePrompt,
+    promptVariants,
+    isGeneratingVariants,
+    handleGenerateVariants,
+    reasoningSteps,
+    showReasoning,
+    handleToggleReasoning
   };
 };
