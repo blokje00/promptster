@@ -181,6 +181,8 @@ export default function AIBackoffice() {
   const queryClient = useQueryClient();
   const [modelPreference, setModelPreference] = useState("default");
   const [enableContextSuggestions, setEnableContextSuggestions] = useState(true);
+  const [enableVerbalizedSampling, setEnableVerbalizedSampling] = useState(false);
+  const [enableReasoningTransparency, setEnableReasoningTransparency] = useState(false);
   const [settingsId, setSettingsId] = useState(null);
   const [exampleIndex, setExampleIndex] = useState(0);
   const [isSavingAI, setIsSavingAI] = useState(false);
@@ -276,17 +278,23 @@ export default function AIBackoffice() {
       const dbInstruction = settings[0].improve_prompt_instruction;
       const dbModelPref = settings[0].model_preference || "default";
       const dbContextSuggestions = settings[0].enable_context_suggestions !== false;
-      
+      const dbVerbalizedSampling = settings[0].enable_verbalized_sampling || false;
+      const dbReasoningTransparency = settings[0].enable_reasoning_transparency || false;
+
       if (dbInstruction) setInstruction(dbInstruction);
       setModelPreference(dbModelPref);
       setEnableContextSuggestions(dbContextSuggestions);
+      setEnableVerbalizedSampling(dbVerbalizedSampling);
+      setEnableReasoningTransparency(dbReasoningTransparency);
       setSettingsId(settings[0].id);
-      
+
       // Set saved values for dirty tracking
       setSavedAIValues({
         instruction: dbInstruction || getDefaultInstruction(),
         modelPreference: dbModelPref,
-        enableContextSuggestions: dbContextSuggestions
+        enableContextSuggestions: dbContextSuggestions,
+        enableVerbalizedSampling: dbVerbalizedSampling,
+        enableReasoningTransparency: dbReasoningTransparency
       });
     }
   }, [settings, settingsId]);
@@ -295,7 +303,9 @@ export default function AIBackoffice() {
   const isAIDirty = 
     instruction !== savedAIValues.instruction ||
     modelPreference !== savedAIValues.modelPreference ||
-    enableContextSuggestions !== savedAIValues.enableContextSuggestions;
+    enableContextSuggestions !== savedAIValues.enableContextSuggestions ||
+    enableVerbalizedSampling !== savedAIValues.enableVerbalizedSampling ||
+    enableReasoningTransparency !== savedAIValues.enableReasoningTransparency;
 
 
   
@@ -319,6 +329,8 @@ export default function AIBackoffice() {
         improve_prompt_instruction: (instruction || "").trim(),
         model_preference: modelPreference || "default",
         enable_context_suggestions: !!enableContextSuggestions,
+        enable_verbalized_sampling: !!enableVerbalizedSampling,
+        enable_reasoning_transparency: !!enableReasoningTransparency,
         created_by: currentUser.email
       };
 
@@ -346,7 +358,9 @@ export default function AIBackoffice() {
       setSavedAIValues({
         instruction: payload.improve_prompt_instruction,
         modelPreference: payload.model_preference,
-        enableContextSuggestions: payload.enable_context_suggestions
+        enableContextSuggestions: payload.enable_context_suggestions,
+        enableVerbalizedSampling: payload.enable_verbalized_sampling,
+        enableReasoningTransparency: payload.enable_reasoning_transparency
       });
 
       // Reset autosave baseline to prevent unexpected jumps
@@ -451,6 +465,56 @@ export default function AIBackoffice() {
                   enableContextSuggestions={enableContextSuggestions}
                   setEnableContextSuggestions={setEnableContextSuggestions}
                 />
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Advanced AI Features</CardTitle>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                      Experimental features gebaseerd op recente AI research
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-start gap-3 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                      <div className="flex items-center h-6">
+                        <input
+                          type="checkbox"
+                          checked={enableVerbalizedSampling}
+                          onChange={(e) => setEnableVerbalizedSampling(e.target.checked)}
+                          className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="font-semibold text-slate-900 dark:text-slate-100 cursor-pointer block mb-1">
+                          Verbalized Sampling (Diversiteit +60-110%)
+                        </label>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                          Genereert meerdere diverse antwoorden met waarschijnlijkheden. Vermindert "mode collapse" en verhoogt creativiteit.
+                          <br />
+                          <span className="text-xs italic">Based on: arXiv:2510.01171</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                      <div className="flex items-center h-6">
+                        <input
+                          type="checkbox"
+                          checked={enableReasoningTransparency}
+                          onChange={(e) => setEnableReasoningTransparency(e.target.checked)}
+                          className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="font-semibold text-slate-900 dark:text-slate-100 cursor-pointer block mb-1">
+                          AI Reasoning Transparency
+                        </label>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                          Toont hoe de AI jouw thoughts interpreteert en waarom bepaalde keuzes worden gemaakt. Helpt bij leren en optimalisatie.
+                          <br />
+                          <span className="text-xs italic">Based on: arXiv:2601.12538 (Agentic Reasoning)</span>
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
                 <AIInstructionForm
                   instruction={instruction}
                   setInstruction={setInstruction}

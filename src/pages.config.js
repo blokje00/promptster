@@ -1,6 +1,7 @@
 import AIBackoffice from './pages/AIBackoffice';
 import AddItem from './pages/AddItem';
 import AdminAnalytics from './pages/AdminAnalytics';
+import AdminSettings from './pages/AdminSettings';
 import AdminStats from './pages/AdminStats';
 import AdminSubscription from './pages/AdminSubscription';
 import AdminSupportTickets from './pages/AdminSupportTickets';
@@ -17,7 +18,6 @@ import Subscription from './pages/Subscription';
 import Support from './pages/Support';
 import ViewItem from './pages/ViewItem';
 import index from './pages/index';
-import AdminSettings from './pages/AdminSettings';
 import __Layout from './Layout.jsx';
 
 
@@ -25,6 +25,7 @@ export const PAGES = {
     "AIBackoffice": AIBackoffice,
     "AddItem": AddItem,
     "AdminAnalytics": AdminAnalytics,
+    "AdminSettings": AdminSettings,
     "AdminStats": AdminStats,
     "AdminSubscription": AdminSubscription,
     "AdminSupportTickets": AdminSupportTickets,
@@ -41,7 +42,6 @@ export const PAGES = {
     "Support": Support,
     "ViewItem": ViewItem,
     "index": index,
-    "AdminSettings": AdminSettings,
 }
 
 export const pagesConfig = {
