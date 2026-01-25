@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckSquare, Square, Trash2, MoreHorizontal, GripVertical, Upload, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckSquare, Square, Trash2, MoreHorizontal, GripVertical, Upload, ChevronDown, ChevronUp, Split } from "lucide-react";
 import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
@@ -78,6 +78,7 @@ export default function ThoughtCard({
   onUpdateScreenshots,
   onUpdateFocus,
   onUpdateContext,
+  onDecompose,
   dragHandleProps,
   showDragHandle = true,
   onDebugScreenshot
@@ -312,6 +313,15 @@ export default function ThoughtCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {onDecompose && (
+                <DropdownMenuItem 
+                  onClick={() => onDecompose(thought)}
+                  className="text-indigo-600 focus:text-indigo-600 focus:bg-indigo-50"
+                >
+                  <Split className="w-4 h-4 mr-2" />
+                  Decompose into Subtasks
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem 
                 onClick={() => onDelete(thought.id)}
                 className="text-red-600 focus:text-red-600 focus:bg-red-50"
