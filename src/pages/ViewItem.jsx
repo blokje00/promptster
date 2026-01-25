@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Edit, Copy, CheckCircle, Star, MessageSquare, Image as ImageIcon, ZoomIn, FileArchive, Download, GitBranch, Calendar, ClipboardCheck, ClipboardPaste, Save, Loader2, ListChecks, AlertCircle, RotateCcw, CheckCircle2, XCircle, Circle } from "lucide-react";
 import FileChangesFeedback from "../components/items/FileChangesFeedback";
 import ScreenshotThumb from "../components/media/ScreenshotThumb";
+import PromptFeedbackDialog from "../components/vault/PromptFeedbackDialog";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,7 @@ export default function ViewItem() {
   const [feedbackText, setFeedbackText] = useState("");
   const [isSavingFeedback, setIsSavingFeedback] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
 
   const { data: item, isLoading, error } = useQuery({
     queryKey: ['item', itemId],
@@ -214,6 +216,14 @@ export default function ViewItem() {
                 Paste PKF
               </Button>
             )}
+            <Button
+              variant="outline"
+              onClick={() => setShowFeedbackDialog(true)}
+              className="border-purple-300 text-purple-700 hover:bg-purple-50"
+            >
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Give Feedback
+            </Button>
             <Link to={createPageUrl(`EditItem?id=${itemId}`)}>
               <Button className="bg-indigo-600 hover:bg-indigo-700">
                 <Edit className="w-4 h-4 mr-2" />
@@ -371,13 +381,13 @@ export default function ViewItem() {
       </div>
 
       <PromptFeedbackDialog
-      open={showFeedbackDialog}
-      onClose={() => setShowFeedbackDialog(false)}
-      item={item}
-      promptUsed={item?.content || ""}
-      projectId={item?.project_id}
-      usedTemplates={[item?.start_template_id, item?.end_template_id].filter(Boolean)}
+        open={showFeedbackDialog}
+        onClose={() => setShowFeedbackDialog(false)}
+        item={item}
+        promptUsed={item?.content || ""}
+        projectId={item?.project_id}
+        usedTemplates={[item?.start_template_id, item?.end_template_id].filter(Boolean)}
       />
-      </AccessGuard>
-      );
-      }
+    </AccessGuard>
+  );
+}
