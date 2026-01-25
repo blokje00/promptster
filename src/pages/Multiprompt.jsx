@@ -34,6 +34,7 @@ import TemplateSelector from "@/components/multiprompt/TemplateSelector";
 import PromptPreview from "@/components/multiprompt/PromptPreview";
 import SuccessBanner from "@/components/multiprompt/SuccessBanner";
 import TrialBanner from "@/components/dashboard/TrialBanner";
+import BrainstormPanel from "@/components/multiprompt/BrainstormPanel";
 import { projectColors, projectBorderColors } from "@/components/lib/constants";
 import AccessGuard from "../components/auth/AccessGuard";
 
@@ -403,11 +404,19 @@ export default function Multiprompt() {
               <CardContent className="pt-4 pb-2">
             <TabsList className="bg-slate-100 dark:bg-slate-800">
               <TabsTrigger value="build" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-slate-700 dark:text-slate-300"><Layers className="w-4 h-4 mr-2" /> Build Prompt</TabsTrigger>
+              <TabsTrigger value="brainstorm" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-slate-700 dark:text-slate-300"><Lightbulb className="w-4 h-4 mr-2" /> Brainstorm</TabsTrigger>
               <TabsTrigger value="templates" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-slate-700 dark:text-slate-300"><FileText className="w-4 h-4 mr-2" /> Templates</TabsTrigger>
               <TabsTrigger value="projects" className="data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 text-slate-700 dark:text-slate-300"><FolderOpen className="w-4 h-4 mr-2" /> My Projects</TabsTrigger>
             </TabsList>
               </CardContent>
             </Card>
+
+            <TabsContent value="brainstorm">
+              <BrainstormPanel 
+                currentUser={currentUser}
+                selectedProjectId={selectedProjectId}
+              />
+            </TabsContent>
 
             <TabsContent value="build">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
