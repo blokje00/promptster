@@ -396,8 +396,12 @@ RULES:
         toast.warning("Variants generated but format may be irregular");
       }
     } catch (error) {
-      console.error("Variant generation error:", error);
-      toast.error("Variant generation failed");
+      console.error("[usePromptGeneration] Variant generation error:", error);
+      console.error("[usePromptGeneration] Error response data:", error.response?.data);
+      console.error("[usePromptGeneration] Error response status:", error.response?.status);
+
+      const errorMsg = error.response?.data?.error || error.message || "Variant generation failed";
+      toast.error(errorMsg);
     } finally {
       setIsGeneratingVariants(false);
     }
