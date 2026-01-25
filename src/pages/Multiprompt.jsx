@@ -501,6 +501,7 @@ export default function Multiprompt() {
                           } 
                         })}
                         onDragEnd={onDragEnd}
+                        currentUser={currentUser}
                       />
                     </CardContent>
                   </Card>
