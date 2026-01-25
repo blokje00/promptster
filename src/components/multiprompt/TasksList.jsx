@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Loader2 } from "lucide-react";
 import ThoughtCard from "./ThoughtCard";
+import TaskDecomposer from "./TaskDecomposer";
 
 export default function TasksList({
   thoughts,
@@ -15,8 +16,10 @@ export default function TasksList({
   onUpdateFocus,
   onUpdateContext,
   onDragEnd,
-  onDebugScreenshot
+  onDebugScreenshot,
+  currentUser
 }) {
+  const [decomposingThought, setDecomposingThought] = useState(null);
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <Droppable droppableId="thoughts-list">
@@ -42,6 +45,7 @@ export default function TasksList({
                       onUpdateScreenshots={onUpdateScreenshots}
                       onUpdateFocus={onUpdateFocus}
                       onUpdateContext={onUpdateContext}
+                      onDecompose={setDecomposingThought}
                       dragHandleProps={provided.dragHandleProps}
                       onDebugScreenshot={onDebugScreenshot}
                       />
@@ -56,6 +60,13 @@ export default function TasksList({
           </div>
         )}
       </Droppable>
+
+      <TaskDecomposer
+        open={!!decomposingThought}
+        onClose={() => setDecomposingThought(null)}
+        thought={decomposingThought}
+        currentUser={currentUser}
+      />
     </DragDropContext>
   );
 }
