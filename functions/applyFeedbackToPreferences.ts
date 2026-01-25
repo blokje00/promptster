@@ -37,11 +37,25 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Get project info if project_id exists
+    let projectContext = "";
+    if (feedbackItem.project_id) {
+      try {
+        const projects = await base44.entities.Project.filter({ id: feedbackItem.project_id });
+        if (projects.length > 0) {
+          const project = projects[0];
+          projectContext = `\nPROJECT: ${project.name}`;
+        }
+      } catch (error) {
+        console.warn('Could not fetch project:', error);
+      }
+    }
+
     // Get current preferences
     const currentPrefs = user.personal_preferences_markdown || "";
 
-    // Generate learning summary using AI
-    const learningPrompt = `Based on this user feedback about a prompt result, extract key learnings to add to their personal preferences:
+    // Generate learning summary using AI - PROJECT-AWARE
+    const learningPrompt = `Based on this user feedback about a prompt result, extract key learnings to add to their personal preferences:${projectContext}
 
 FEEDBACK:
 Rating: ${feedbackItem.rating}
@@ -54,10 +68,11 @@ ${currentPrefs}
 
 TASK: Extract 2-3 SHORT bullet points of actionable learnings that should be added to their preferences. 
 Focus on specific patterns, preferences, or approaches that worked or should be avoided.
+${feedbackItem.project_id ? 'Include the project name in the bullet point to make it project-specific.' : ''}
 Return ONLY the bullet points, no introduction.
 
 Example output:
-- Prefer detailed task breakdowns over high-level descriptions
+${feedbackItem.project_id ? '- [ProjectName] Prefer detailed task breakdowns over high-level descriptions' : '- Prefer detailed task breakdowns over high-level descriptions'}
 - Avoid technical jargon when describing UI changes
 - Always include specific file paths in instructions`;
 
@@ -65,8 +80,13 @@ Example output:
       prompt: learningPrompt
     });
 
-    // Append learnings to preferences
-    const updatedPrefs = currentPrefs.trim() + "\n\n## Learned from Experience\n" + learnings.trim();
+    // Append learnings to preferences - organized by project
+    let updatedPrefs = currentPrefs.trim();
+    if (feedbackItem.project_id) {
+      updatedPrefs += `\n\n## Project-Specific Learnings\n${learnings.trim()}`;
+    } else {
+      updatedPrefs += `\n\n## General Learnings\n${learnings.trim()}`;
+    }
 
     // Update user preferences
     await base44.auth.updateMe({
