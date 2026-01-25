@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 /**
  * Run a prompt through InvokeLLM with rate limiting
@@ -22,8 +22,11 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
 
     if (!user) {
+      console.log('[runPrompt] ❌ Unauthorized');
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    console.log('[runPrompt] ✓ User authenticated:', user.email);
 
     // ✅ PRO FEATURE CHECK
     // AI Prompt Improvement is PRO-only (or Starter during 14-day trial)
@@ -37,15 +40,18 @@ Deno.serve(async (req) => {
     // Admin bypass
     if (user.role === 'admin') {
       hasProAccess = true;
+      console.log('[runPrompt] ✓ Admin bypass granted');
     }
     // PRO plan (€19.95): always access
     else if (monthlyPrice >= 1995) {
       hasProAccess = true;
+      console.log('[runPrompt] ✓ PRO plan access granted');
     }
     // Starter plan (€9.95): only during trial
     else if ((monthlyPrice === 995 || monthlyPrice === 999) && subscriptionStatus === 'trialing') {
       if (trialEnd && new Date(trialEnd) > now) {
         hasProAccess = true;
+        console.log('[runPrompt] ✓ Starter trial access granted');
       }
     }
     
@@ -63,69 +69,32 @@ Deno.serve(async (req) => {
       }, { status: 403 });
     }
 
-    console.log('[runPrompt] ✓ PRO feature access granted');
-
-    // Rate limiting check (optional - can be removed if not needed)
-    const limitKey = 'run_prompt';
-    const windowMs = 60 * 1000; // 1 minute
-    const maxRequests = 10;
-
-    const limits = await base44.entities.RateLimit.filter({
-      user_id: user.id,
-      limit_key: limitKey
-    });
-
-    if (limits && limits.length > 0) {
-      const limit = limits[0];
-      const windowStart = new Date(limit.window_start);
-      const elapsed = now - windowStart;
-
-      if (elapsed < windowMs) {
-        if (limit.count >= maxRequests) {
-          return Response.json({ 
-            error: `Rate limit exceeded. Max ${maxRequests} requests per minute.`,
-            retry_after: Math.ceil((windowMs - elapsed) / 1000)
-          }, { status: 429 });
-        }
-        
-        await base44.entities.RateLimit.update(limit.id, {
-          count: limit.count + 1
-        });
-      } else {
-        await base44.entities.RateLimit.update(limit.id, {
-          window_start: now.toISOString(),
-          count: 1
-        });
-      }
-    } else {
-      await base44.entities.RateLimit.create({
-        user_id: user.id,
-        limit_key: limitKey,
-        window_start: now.toISOString(),
-        count: 1
-      });
-    }
-
     // Execute prompt
     const body = await req.json();
     const { prompt, file_urls } = body;
 
     if (!prompt) {
+      console.log('[runPrompt] ❌ Missing prompt');
       return Response.json({ error: 'Missing prompt' }, { status: 400 });
     }
+
+    console.log('[runPrompt] 📡 Calling InvokeLLM with prompt length:', prompt.length);
 
     const result = await base44.integrations.Core.InvokeLLM({
       prompt,
       file_urls: file_urls || undefined
     });
 
+    console.log('[runPrompt] ✅ InvokeLLM success, result length:', result?.length || 0);
+
     return Response.json({
       result,
-      credits_used: 1 // Placeholder - adjust based on actual token usage
+      credits_used: 1
     });
 
   } catch (error) {
-    console.error('[runPrompt] Error:', error);
-    return Response.json({ error: error.message }, { status: 500 });
+    console.error('[runPrompt] ❌ Error:', error.message);
+    console.error('[runPrompt] Stack:', error.stack);
+    return Response.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 });
