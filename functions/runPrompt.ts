@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
 
     console.log('[runPrompt] 📡 Calling InvokeLLM with prompt length:', prompt.length);
 
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await base44.asServiceRole.integrations.Core.InvokeLLM({
       prompt,
       file_urls: file_urls || undefined
     });
