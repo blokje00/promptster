@@ -52,6 +52,21 @@ export const usePromptGeneration = ({
       parts.push(selectedProject.technical_config_markdown);
     }
 
+    // TIER 3 FEATURE: Include active learned patterns for this project
+    if (selectedProject?.learnedPatterns && Array.isArray(selectedProject.learnedPatterns)) {
+      const activePatterns = selectedProject.learnedPatterns.filter(p => p.is_active);
+      if (activePatterns.length > 0) {
+        const patternsBlock = `[LEARNED_PATTERNS]
+AI heeft de volgende patterns geleerd uit eerdere feedback:
+
+${activePatterns.map(p => p.pattern_text).join('\n\n')}
+
+Gebruik deze insights bij het uitvoeren van taken.
+[/LEARNED_PATTERNS]`;
+        parts.push(patternsBlock);
+      }
+    }
+
     // TASK-2: Add project-specific LLM Response Parser instruction
     if (selectedProject?.llm_response_parser_instruction) {
       parts.push(`[LLM_RESPONSE_PARSER]\n${selectedProject.llm_response_parser_instruction}\n[/LLM_RESPONSE_PARSER]`);
