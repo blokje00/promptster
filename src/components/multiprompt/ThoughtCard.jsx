@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import ContextSelector from "./ContextSelector";
 import ScreenshotUploader from "../media/ScreenshotUploader";
+import TaskDecomposerDialog from "../learning/TaskDecomposerDialog";
 
 /**
  * CollapsibleContent - Shows task content with auto-collapse for long text
@@ -87,6 +88,7 @@ export default function ThoughtCard({
   const [editedContent, setEditedContent] = useState(thought.content || "");
   const [isDropActive, setIsDropActive] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [showDecomposer, setShowDecomposer] = useState(false);
 
   // TASK-1: Handle paste in textarea during editing
   const handleTextareaPaste = async (e) => {
@@ -313,15 +315,13 @@ export default function ThoughtCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {onDecompose && (
-                <DropdownMenuItem 
-                  onClick={() => onDecompose(thought)}
-                  className="text-indigo-600 focus:text-indigo-600 focus:bg-indigo-50"
-                >
-                  <Split className="w-4 h-4 mr-2" />
-                  Decompose into Subtasks
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuItem 
+                onClick={() => setShowDecomposer(true)}
+                className="text-indigo-600 focus:text-indigo-600 focus:bg-indigo-50"
+              >
+                <Split className="w-4 h-4 mr-2" />
+                AI Decompose Task
+              </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => onDelete(thought.id)}
                 className="text-red-600 focus:text-red-600 focus:bg-red-50"
@@ -403,6 +403,17 @@ export default function ThoughtCard({
           />
         </div>
       </div>
+
+      {/* Task Decomposer Dialog */}
+      <TaskDecomposerDialog
+        isOpen={showDecomposer}
+        onClose={() => setShowDecomposer(false)}
+        taskContent={thought.content}
+        projectId={thought.project_id}
+        onSelectVariant={(variantText) => {
+          onUpdateContent(thought.id, variantText);
+        }}
+      />
     </div>
   );
 }
