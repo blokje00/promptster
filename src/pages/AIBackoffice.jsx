@@ -437,7 +437,7 @@ export default function AIBackoffice() {
 
             <TabsContent value="settings" className="space-y-6">
               <div className="max-w-3xl space-y-6">
-                <ResearchDocumentation />
+                <ResearchDocumentation currentUser={currentUser} />
                 <MaintenanceTools currentUser={currentUser} />
                 <FeedbackInsights currentUser={currentUser} />
                 <LearnedPatternsPanel projectId={selectedProjectId} />

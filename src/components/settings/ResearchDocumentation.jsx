@@ -1,7 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, BookOpen, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ExternalLink, BookOpen, Sparkles, Download, CheckCircle2 } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 
 const researchPapers = [
   {
@@ -66,7 +70,68 @@ const researchPapers = [
   }
 ];
 
-export default function ResearchDocumentation() {
+export default function ResearchDocumentation({ currentUser }) {
+  const [downloadingPaper, setDownloadingPaper] = useState(null);
+
+  // Check which papers are already downloaded
+  const { data: downloadedPapers = {}, refetch } = useQuery({
+    queryKey: ['downloadedPapers'],
+    queryFn: async () => {
+      const papers = {};
+      for (const paper of researchPapers) {
+        try {
+          const result = await base44.functions.invoke('getResearchPaperUrl', {
+            arxivId: paper.arxivId
+          });
+          if (result.data.success) {
+            papers[paper.arxivId] = true;
+          }
+        } catch (error) {
+          papers[paper.arxivId] = false;
+        }
+      }
+      return papers;
+    },
+    enabled: Boolean(currentUser?.email)
+  });
+
+  const handleDownloadPaper = async (arxivId) => {
+    setDownloadingPaper(arxivId);
+    try {
+      const result = await base44.functions.invoke('downloadResearchPaper', {
+        arxivId
+      });
+
+      if (result.data.success) {
+        toast.success(`Paper ${arxivId} downloaded to server`);
+        refetch();
+      } else {
+        toast.error(result.data.error || 'Download failed');
+      }
+    } catch (error) {
+      toast.error('Failed to download paper: ' + error.message);
+    } finally {
+      setDownloadingPaper(null);
+    }
+  };
+
+  const handleOpenPaper = async (arxivId, fallbackUrl) => {
+    try {
+      const result = await base44.functions.invoke('getResearchPaperUrl', {
+        arxivId
+      });
+
+      if (result.data.success) {
+        window.open(result.data.signed_url, '_blank');
+      } else {
+        // Fallback to arXiv
+        window.open(fallbackUrl, '_blank');
+      }
+    } catch (error) {
+      window.open(fallbackUrl, '_blank');
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -96,15 +161,32 @@ export default function ResearchDocumentation() {
                   <span>{paper.date}</span>
                 </div>
               </div>
-              <a
-                href={paper.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50 rounded-lg border border-indigo-200 dark:border-indigo-800 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors"
-              >
-                <ExternalLink className="w-3 h-3" />
-                Paper
-              </a>
+              <div className="flex items-center gap-2">
+                {downloadedPapers[paper.arxivId] && (
+                  <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleOpenPaper(paper.arxivId, paper.url)}
+                  className="h-7 text-xs"
+                >
+                  <ExternalLink className="w-3 h-3 mr-1" />
+                  {downloadedPapers[paper.arxivId] ? 'Open (Local)' : 'Open (arXiv)'}
+                </Button>
+                {currentUser?.role === 'admin' && !downloadedPapers[paper.arxivId] && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDownloadPaper(paper.arxivId)}
+                    disabled={downloadingPaper === paper.arxivId}
+                    className="h-7 text-xs"
+                  >
+                    <Download className="w-3 h-3 mr-1" />
+                    {downloadingPaper === paper.arxivId ? 'Downloading...' : 'Download'}
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Implemented Features */}
