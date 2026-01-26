@@ -16,6 +16,7 @@ import AIInstructionForm from "../components/settings/AIInstructionForm";
 import PersonalPreferencesForm from "../components/settings/PersonalPreferencesForm";
 import AIContextToggle from "../components/settings/AIContextToggle";
 import FeedbackInsights from "../components/settings/FeedbackInsights";
+import LearnedPatternsPanel from "../components/learning/LearnedPatternsPanel";
 import { toast } from "sonner";
 
 const getDefaultInstruction = () => `You are optimizing a multi-task prompt that may include screenshots and OCR vision data.
@@ -233,6 +234,16 @@ export default function AIBackoffice() {
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const currentProjectStructure = projectStructures.find(ps => ps.project_id === selectedProjectId);
 
+  // Load learned patterns for selected project
+  const { data: learnedPatterns = [] } = useQuery({
+    queryKey: ['learnedPatterns', selectedProjectId],
+    queryFn: async () => {
+      if (!selectedProjectId) return [];
+      return await base44.entities.LearnedPattern.filter({ project_id: selectedProjectId });
+    },
+    enabled: Boolean(selectedProjectId)
+  });
+
   const structureMutation = useMutation({
     mutationFn: async (data) => {
       const existing = projectStructures.find(ps => ps.project_id === data.project_id);
@@ -424,9 +435,10 @@ export default function AIBackoffice() {
             </TabsList>
 
             <TabsContent value="settings" className="space-y-6">
-              <div className="max-w-3xl space-y-6">
-                <MaintenanceTools currentUser={currentUser} />
-                <FeedbackInsights currentUser={currentUser} />
+            <div className="max-w-3xl space-y-6">
+              <MaintenanceTools currentUser={currentUser} />
+              <FeedbackInsights currentUser={currentUser} />
+              <LearnedPatternsPanel projectId={selectedProjectId} />
                 <PersonalPreferencesForm
                   personalPreferences={personalPrefsHook.draft}
                   setPersonalPreferences={personalPrefsHook.setDraft}
