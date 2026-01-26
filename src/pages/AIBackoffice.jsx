@@ -17,6 +17,7 @@ import PersonalPreferencesForm from "../components/settings/PersonalPreferencesF
 import AIContextToggle from "../components/settings/AIContextToggle";
 import FeedbackInsights from "../components/settings/FeedbackInsights";
 import LearnedPatternsPanel from "../components/learning/LearnedPatternsPanel";
+import ResearchDocumentation from "../components/settings/ResearchDocumentation";
 import { toast } from "sonner";
 
 const getDefaultInstruction = () => `You are optimizing a multi-task prompt that may include screenshots and OCR vision data.
@@ -435,10 +436,11 @@ export default function AIBackoffice() {
             </TabsList>
 
             <TabsContent value="settings" className="space-y-6">
-            <div className="max-w-3xl space-y-6">
-              <MaintenanceTools currentUser={currentUser} />
-              <FeedbackInsights currentUser={currentUser} />
-              <LearnedPatternsPanel projectId={selectedProjectId} />
+              <div className="max-w-3xl space-y-6">
+                <ResearchDocumentation />
+                <MaintenanceTools currentUser={currentUser} />
+                <FeedbackInsights currentUser={currentUser} />
+                <LearnedPatternsPanel projectId={selectedProjectId} />
                 <PersonalPreferencesForm
                   personalPreferences={personalPrefsHook.draft}
                   setPersonalPreferences={personalPrefsHook.setDraft}
