@@ -15,18 +15,17 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'arxivId required' }, { status: 400 });
     }
 
-    // Retrieve metadata from AppSetting
-    const metadataKey = `research_paper_${arxivId}`;
-    const settings = await base44.asServiceRole.entities.AppSetting.filter({ key: metadataKey });
+    // Retrieve metadata from ResearchPaper entity
+    const papers = await base44.asServiceRole.entities.ResearchPaper.filter({ arxiv_id: arxivId });
 
-    if (settings.length === 0) {
+    if (papers.length === 0) {
       return Response.json({ 
         error: 'Paper not downloaded yet',
         fallback_url: `https://arxiv.org/abs/${arxivId}`
       }, { status: 404 });
     }
 
-    const metadata = JSON.parse(settings[0].value);
+    const metadata = papers[0];
 
     // Create signed URL for the private file (valid for 1 hour)
     const signedUrlResult = await base44.asServiceRole.integrations.Core.CreateFileSignedUrl({

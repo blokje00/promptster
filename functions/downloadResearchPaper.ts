@@ -44,27 +44,21 @@ Deno.serve(async (req) => {
 
     console.log(`[downloadResearchPaper] ✓ Uploaded ${fileName} to private storage`);
 
-    // Store metadata in AppSetting for easy retrieval
-    const metadataKey = `research_paper_${arxivId}`;
-    const existingSettings = await base44.asServiceRole.entities.AppSetting.filter({ key: metadataKey });
+    // Store metadata in ResearchPaper entity
+    const existingPapers = await base44.asServiceRole.entities.ResearchPaper.filter({ arxiv_id: arxivId });
     
-    const metadata = {
+    const paperData = {
       arxiv_id: arxivId,
       file_uri: uploadResult.file_uri,
       downloaded_at: new Date().toISOString(),
-      file_name: fileName
+      file_name: fileName,
+      title: `Research Paper ${arxivId}`
     };
 
-    if (existingSettings.length > 0) {
-      await base44.asServiceRole.entities.AppSetting.update(existingSettings[0].id, {
-        value: JSON.stringify(metadata)
-      });
+    if (existingPapers.length > 0) {
+      await base44.asServiceRole.entities.ResearchPaper.update(existingPapers[0].id, paperData);
     } else {
-      await base44.asServiceRole.entities.AppSetting.create({
-        key: metadataKey,
-        value: JSON.stringify(metadata),
-        description: `Research paper ${arxivId} metadata`
-      });
+      await base44.asServiceRole.entities.ResearchPaper.create(paperData);
     }
 
     return Response.json({ 
