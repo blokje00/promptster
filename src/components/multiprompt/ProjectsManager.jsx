@@ -101,8 +101,9 @@ export default function ProjectsManager({ projects = [] }) {
       queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] });
       queryClient.invalidateQueries({ queryKey: ['thoughts'] });
       queryClient.invalidateQueries({ queryKey: ['templates'] });
-      console.log('[ProjectsManager] ✓ Project + templates + tasks deleted');
-      toast.success("Project, templates, and tasks deleted");
+      queryClient.invalidateQueries({ queryKey: ['projectStructures'] });
+      console.log('[ProjectsManager] ✓ Project + templates + tasks + structures deleted');
+      toast.success("Project deleted with all associated data");
     }
   });
 
