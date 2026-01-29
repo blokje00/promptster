@@ -96,11 +96,11 @@ export default function Dashboard() {
           </div>
           <Link to={createPageUrl("AddItem")}>
             <Button 
-              className={`${
+              className={
                 selectedProjectId !== "all" && projects.find(p => p.id === selectedProjectId)
                   ? projectColors[projects.find(p => p.id === selectedProjectId).color]
-                  : "bg-indigo-600"
-              } hover:opacity-90 transition-opacity`}
+                  : "bg-indigo-600 hover:bg-indigo-700"
+              }
             >
               <Plus className="w-5 h-5 mr-2" />
               Add Item
