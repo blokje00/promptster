@@ -64,15 +64,16 @@ export default function ProjectsManager({ projects = [] }) {
 
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      // TASK-4: Cascade delete - delete thoughts, templates, and configs
-      const [thoughts, templates] = await Promise.all([
+      // TASK-2: Cascade delete - delete thoughts, templates, and project structures
+      const [thoughts, templates, projectStructures] = await Promise.all([
         base44.entities.Thought.filter({ project_id: id }),
-        base44.entities.PromptTemplate.filter({ project_id: id })
+        base44.entities.PromptTemplate.filter({ project_id: id }),
+        base44.entities.ProjectStructure.filter({ project_id: id })
       ]);
       
-      console.log(`[ProjectsManager] Deleting project with ${thoughts.length} tasks and ${templates.length} templates`);
+      console.log(`[ProjectsManager] Deleting project with ${thoughts.length} tasks, ${templates.length} templates, and ${projectStructures.length} structures`);
       
-      // Mark thoughts as deleted
+      // Mark thoughts as deleted (soft delete)
       await Promise.all(
         thoughts.map(thought => base44.entities.Thought.update(thought.id, { 
           is_deleted: true,
@@ -80,12 +81,17 @@ export default function ProjectsManager({ projects = [] }) {
         }))
       );
       
-      // Delete templates
+      // Delete templates (hard delete)
       await Promise.all(
         templates.map(template => base44.entities.PromptTemplate.delete(template.id))
       );
       
-      // Then delete the project
+      // Delete project structures (hard delete)
+      await Promise.all(
+        projectStructures.map(structure => base44.entities.ProjectStructure.delete(structure.id))
+      );
+      
+      // Finally delete the project itself
       await base44.entities.Project.delete(id);
     },
     onSuccess: () => {
