@@ -8,8 +8,6 @@ import AdminAnalytics from "./AdminAnalytics";
 
 import AdminStats from "./AdminStats";
 
-import AdminSubscription from "./AdminSubscription";
-
 import AdminSupportTickets from "./AdminSupportTickets";
 
 import Checks from "./Checks";
@@ -24,11 +22,7 @@ import Legal from "./Legal";
 
 import Multiprompt from "./Multiprompt";
 
-import NoCodeRanking from "./NoCodeRanking";
-
 import RecycleBin from "./RecycleBin";
-
-import Subscription from "./Subscription";
 
 import Support from "./Support";
 
@@ -46,8 +40,6 @@ const PAGES = {
     
     AdminStats: AdminStats,
     
-    AdminSubscription: AdminSubscription,
-    
     AdminSupportTickets: AdminSupportTickets,
     
     Checks: Checks,
@@ -62,11 +54,7 @@ const PAGES = {
     
     Multiprompt: Multiprompt,
     
-    NoCodeRanking: NoCodeRanking,
-    
     RecycleBin: RecycleBin,
-    
-    Subscription: Subscription,
     
     Support: Support,
     
@@ -107,8 +95,6 @@ function PagesContent() {
                 
                 <Route path="/AdminStats" element={<AdminStats />} />
                 
-                <Route path="/AdminSubscription" element={<AdminSubscription />} />
-                
                 <Route path="/AdminSupportTickets" element={<AdminSupportTickets />} />
                 
                 <Route path="/Checks" element={<Checks />} />
@@ -123,11 +109,7 @@ function PagesContent() {
                 
                 <Route path="/Multiprompt" element={<Multiprompt />} />
                 
-                <Route path="/NoCodeRanking" element={<NoCodeRanking />} />
-                
                 <Route path="/RecycleBin" element={<RecycleBin />} />
-                
-                <Route path="/Subscription" element={<Subscription />} />
                 
                 <Route path="/Support" element={<Support />} />
                 
