@@ -131,7 +131,7 @@ export default function ProjectsManager({ projects = [] }) {
       setEditColor(project.color);
       setEditDesc(project.description || "");
       setEditConfig(project.technical_config_markdown || "");
-      setPastedJSON("");
+      setPastedJSON(project.llm_response_parser_instruction || "");
       setEditComponentMapping(project.component_mapping || {});
       setEditDomains(project.domains || []);
     }, 0);
