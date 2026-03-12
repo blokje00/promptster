@@ -148,9 +148,12 @@ export default function ProjectsManager({ projects = [] }) {
     }
     
     try {
+      // Extract JSON from markdown code blocks or raw JSON
       const jsonMatch = pastedJSON.match(/```json\n([\s\S]*?)\n```/) || pastedJSON.match(/\{[\s\S]*\}/);
       const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : pastedJSON;
       const data = JSON.parse(jsonStr);
+      
+      console.log('[ProjectsManager] Parsing LLM response:', data);
       
       // Basis velden
       if (data.name) setEditName(data.name);
@@ -158,34 +161,43 @@ export default function ProjectsManager({ projects = [] }) {
       if (data.technical_config_markdown) setEditConfig(data.technical_config_markdown);
       
       // Bouw component_mapping uit pages array (voor Page->Component dropdowns)
+      const mapping = {};
       if (data.pages && Array.isArray(data.pages)) {
-        const mapping = {};
         data.pages.forEach(page => {
           if (page.name) {
-            mapping[page.name] = page.components || [];
+            mapping[page.name] = Array.isArray(page.components) ? page.components : [];
           }
         });
-        setEditComponentMapping(mapping);
       }
       
-      // Of gebruik direct component_mapping als die er is
+      // Of gebruik direct component_mapping als die er is (overschrijft pages)
       if (data.component_mapping && typeof data.component_mapping === 'object') {
-        setEditComponentMapping(data.component_mapping);
+        Object.assign(mapping, data.component_mapping);
       }
       
-      // Domains uit entities halen of directe domains array
+      if (Object.keys(mapping).length > 0) {
+        setEditComponentMapping(mapping);
+        console.log('[ProjectsManager] Component mapping set:', mapping);
+      }
+      
+      // Domains uit verschillende bronnen
+      let domains = [];
       if (data.domains && Array.isArray(data.domains)) {
-        setEditDomains(data.domains);
+        domains = data.domains;
       } else if (data.entities && Array.isArray(data.entities)) {
         // Maak domains van entity names
-        const domainNames = data.entities.map(e => e.name || e).filter(Boolean);
-        setEditDomains(domainNames);
+        domains = data.entities.map(e => e.name || e).filter(Boolean);
       }
       
-      toast.success("Auto-parsed project structure!");
+      if (domains.length > 0) {
+        setEditDomains(domains);
+        console.log('[ProjectsManager] Domains set:', domains);
+      }
+      
+      toast.success(`✓ Parsed: ${Object.keys(mapping).length} pages, ${domains.length} domains`);
     } catch (e) {
       toast.error("Invalid JSON format");
-      console.error("JSON parse error:", e);
+      console.error('[ProjectsManager] JSON parse error:', e);
     }
   };
 
