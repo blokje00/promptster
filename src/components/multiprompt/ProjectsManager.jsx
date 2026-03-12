@@ -202,6 +202,7 @@ export default function ProjectsManager({ projects = [] }) {
       color: editColor,
       description: editDesc,
       technical_config_markdown: editConfig,
+      llm_response_parser_instruction: pastedJSON.trim() || null,
       component_mapping: editComponentMapping,
       domains: editDomains
     };
