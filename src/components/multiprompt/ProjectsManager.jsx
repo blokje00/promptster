@@ -386,8 +386,8 @@ Be thorough - include ALL pages, components, buttons, forms, and key functionali
                    onClick={handleJSONImport}
                    disabled={!pastedJSON.trim()}
                  >
-                   <Save className="w-4 h-4 mr-2" />
-                   Save
+                   <Sparkles className="w-4 h-4 mr-2" />
+                   Import Structure
                  </Button>
                </div>
             </div>
