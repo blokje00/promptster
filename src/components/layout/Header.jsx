@@ -9,8 +9,7 @@ import ThemeToggleButton from "@/components/theme/ThemeToggleButton";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../i18n/LanguageContext";
-import StartTrialModal from "../auth/StartTrialModal";
-import { hasValidAccess } from "@/components/lib/subscriptionUtils";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +27,6 @@ export default function Header() {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [showExport, setShowExport] = useState(false);
-  const [showTrialModal, setShowTrialModal] = useState(false);
   
   const { data: user, isLoading: isUserLoading } = useQuery({
     queryKey: ['currentUser'],
@@ -208,22 +206,14 @@ export default function Header() {
     else if (isChecks) localStorage.setItem('lastMainPage', 'Checks');
   }, [isVault, isAddItem, isMultiprompt, isChecks]);
 
-  // Redirect on initial load - HARDENED: no auth = Features, auth + access = Multiprompt
+  // Redirect on initial load
   useEffect(() => {
     if (currentPath === "/" || currentPath === "") {
       if (user === null) {
-        // Not loading anymore, definitely no user → Features
         navigate(createPageUrl('Features'), { replace: true });
       } else if (user) {
-        // User loaded, check access
-        const hasAccess = hasValidAccess(user);
-        if (hasAccess) {
-          navigate(createPageUrl('Multiprompt'), { replace: true });
-        } else {
-          navigate(createPageUrl('Subscription'), { replace: true });
-        }
+        navigate(createPageUrl('Multiprompt'), { replace: true });
       }
-      // else: user still loading, wait
     }
   }, [currentPath, navigate, user]);
 
@@ -232,21 +222,16 @@ export default function Header() {
     const seedForNewUser = async () => {
       if (!user || !user.email) return;
       
-      // PERFORMANCE: Only seed for users with valid access
-      if (!hasValidAccess(user)) {
-        return;
-      }
-      
       // Check localStorage to prevent infinite loop
       const seedKey = `demo_seeded_${user.id}`;
       if (localStorage.getItem(seedKey)) {
-        return; // Already attempted seeding
+        return;
       }
       
       // Check if demo_seeded_at is null (new user)
       if (user.demo_seeded_at === null || user.demo_seeded_at === undefined) {
         console.log('[Header] 🆕 New user detected, auto-seeding demo data...');
-        localStorage.setItem(seedKey, 'true'); // Mark as attempted
+        localStorage.setItem(seedKey, 'true');
         
         try {
           const response = await base44.functions.invoke('seedDemoData', { force: false });
@@ -254,10 +239,8 @@ export default function Header() {
           if (response.data?.status === 'success') {
             console.log('[Header] ✨ Demo data auto-seeded successfully');
             
-            // Fetch updated user data to get demo preferences
             const updatedUser = await base44.auth.me();
             
-            // Set default project and templates in localStorage
             if (updatedUser.demo_default_project_id) {
               localStorage.setItem('lastSelectedProjectId', updatedUser.demo_default_project_id);
             }
@@ -268,19 +251,14 @@ export default function Header() {
               localStorage.setItem('lastEndTemplateId', updatedUser.demo_end_template_id);
             }
             
-            console.log('[Header] ✅ Demo preferences set in localStorage');
-            
-            // Reload once to show demo data
             setTimeout(() => {
               window.location.reload();
             }, 800);
           }
         } catch (error) {
           console.error('[Header] ❌ Auto-seed failed:', error);
-          // Silent fail - user can still use app
         }
       } else {
-        // User already has demo data, mark as completed
         localStorage.setItem(seedKey, 'true');
       }
     };
@@ -474,12 +452,7 @@ export default function Header() {
                     <span>Legal & Privacy</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild className="hover:bg-slate-100 dark:hover:bg-slate-800">
-                  <Link to={createPageUrl("Subscription")} className="cursor-pointer text-slate-700 dark:text-slate-300">
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    <span>Manage Subscription</span>
-                  </Link>
-                </DropdownMenuItem>
+
                 
                 {user?.role === 'admin' && (
                   <DropdownMenuItem asChild className="hover:bg-slate-100 dark:hover:bg-slate-800">
@@ -531,12 +504,7 @@ export default function Header() {
             </DialogContent>
           </Dialog>
 
-          {/* Trial Activation Modal */}
-          <StartTrialModal 
-            isOpen={showTrialModal}
-            onClose={() => setShowTrialModal(false)}
-            redirectTo="Multiprompt"
-          />
+
         </div>
       </div>
     </header>
