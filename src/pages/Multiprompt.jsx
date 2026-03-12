@@ -33,7 +33,7 @@ import TasksList from "@/components/multiprompt/TasksList";
 import TemplateSelector from "@/components/multiprompt/TemplateSelector";
 import PromptPreview from "@/components/multiprompt/PromptPreview";
 import SuccessBanner from "@/components/multiprompt/SuccessBanner";
-import TrialBanner from "@/components/dashboard/TrialBanner";
+
 import BrainstormPanel from "@/components/multiprompt/BrainstormPanel";
 import { projectColors, projectBorderColors } from "@/components/lib/constants";
 import AccessGuard from "../components/auth/AccessGuard";
@@ -99,19 +99,7 @@ export default function Multiprompt() {
     retry: false,
   });
 
-  const { data: subscriptionPlans = [] } = useQuery({
-    queryKey: ['subscriptionPlans'],
-    queryFn: async () => {
-      try {
-        return await base44.entities.SubscriptionPlan.list();
-      } catch (error) {
-        console.warn('[Multiprompt] SubscriptionPlan fetch failed (non-blocking):', error.message);
-        return [];
-      }
-    },
-    retry: false,
-    staleTime: 10 * 60 * 1000, // Cache 10min (rarely changes)
-  });
+
 
   // --- Custom Hooks ---
   const { selectedProjectId, setSelectedProjectId, selectedProject } = useProjectSelection(projects);
@@ -128,37 +116,7 @@ export default function Multiprompt() {
     }
   }, [projects, selectedProjectId, setSelectedProjectId]);
 
-  // Handle Stripe checkout success and verify session
-  useEffect(() => {
-    const verifyStripeCheckout = async () => {
-      const params = new URLSearchParams(window.location.search);
-      const sessionId = params.get("session_id");
-      
-      if (sessionId) {
-        try {
-          const result = await base44.functions.invoke("verifyStripeSession", { sessionId });
-          if (result.data?.success) {
-            const status = result.data.status;
-            const message = status === 'trialing' 
-              ? "✅ Free trial activated! Welcome to Promptster."
-              : "✅ Subscription activated! Welcome to Promptster.";
-            
-            toast.success(message);
-            
-            // Refresh user data
-            await queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-            
-            // Clean URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-        } catch (error) {
-          console.error("Stripe verification error:", error);
-        }
-      }
-    };
 
-    verifyStripeCheckout();
-  }, [queryClient]);
 
   const {
     thoughts, allThoughts, isLoading, selectedThoughtIds, setSelectedThoughtIds,
@@ -198,30 +156,9 @@ export default function Multiprompt() {
   });
 
   // --- Derived State ---
-  const currentPlan = useMemo(() => {
-    if (!currentUser) return {};
-    return subscriptionPlans.find(p => p.id === currentUser.plan_id) || {};
-  }, [currentUser, subscriptionPlans]);
-  
-  // TASK-1: Trial users get PRO limit (20), after trial falls back to plan limit
-  const maxThoughts = useMemo(() => {
-    if (currentUser?.role === 'admin') return Infinity;
-    
-    // During trial: use trial plan's limit (usually PRO = 20)
-    if (currentUser?.subscription_status === 'trialing') {
-      return currentPlan.max_thoughts || 20;
-    }
-    
-    // After trial or active: use actual plan limit
-    // No subscription = 0, Starter = 10, PRO = 20
-    if (!currentUser?.subscription_status || currentUser.subscription_status === 'none') {
-      return 0;
-    }
-    
-    return currentPlan.max_thoughts || 10;
-  }, [currentUser, currentPlan]);
-  
-  const isLimitReached = currentUser?.role !== 'admin' && thoughts.length >= maxThoughts;
+  // App is now fully free - no limits
+  const maxThoughts = Infinity;
+  const isLimitReached = false;
   const enableContextSuggestions = aiSettings[0]?.enable_context_suggestions !== false;
 
   // --- Local UI State ---
@@ -269,17 +206,7 @@ export default function Multiprompt() {
     
     if (!newThoughtInput.newThoughtContent.trim() && newThoughtInput.newThoughtScreenshots.length === 0) return;
     
-    if (isLimitReached) {
-      toast.error(`⚠️ Task limit reached: Maximum ${maxThoughts} tasks for your plan`, {
-        description: 'Delete tasks or upgrade to PRO for more capacity',
-        action: {
-          label: 'View Plans',
-          onClick: () => navigate(createPageUrl('Subscription'))
-        },
-        duration: 6000
-      });
-      return;
-    }
+
 
     createThought.mutate({
       content: newThoughtInput.newThoughtContent.trim(),
@@ -380,7 +307,6 @@ export default function Multiprompt() {
     <AccessGuard pageType="protected">
     <div className="p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
-          <TrialBanner />
           <SuccessBanner show={showBanner} />
 
           <div className="mb-8">
@@ -446,8 +372,8 @@ export default function Multiprompt() {
                         enableContextSuggestions={enableContextSuggestions}
                       />
                       <div className="flex gap-2">
-                        <Button onClick={handleAddThought} disabled={isLimitReached} className={`flex-1 ${!selectedProjectId ? 'bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600' : selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'}`}>
-                          <Plus className="w-4 h-4 mr-2" /> {isLimitReached ? `Limit Reached (${maxThoughts})` : 'Task'}
+                        <Button onClick={handleAddThought} className={`flex-1 ${!selectedProjectId ? 'bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600' : selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'}`}>
+                          <Plus className="w-4 h-4 mr-2" /> Task
                         </Button>
                       </div>
                       <div className="flex items-center justify-between gap-3 px-1 flex-wrap">
