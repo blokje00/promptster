@@ -16,7 +16,7 @@ import InAppBrowserGuard from "../components/auth/InAppBrowserGuard";
 const defaultContent = {
   // Hero section
   "features.hero.title": "Promptster Features",
-  "features.hero.subtitle": "Everything you need to accelerate your development workflow",
+  "features.hero.subtitle": "Stop burning tokens on repeated mistakes — build smarter prompts, ship faster, and verify every change with a post-deploy checklist.",
   
   // CTA Banner
   "features.cta.banner.title": "Start Your Free 14-Day Trial",
