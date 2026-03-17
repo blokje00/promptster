@@ -176,32 +176,6 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
       handleToggleReasoning();
     }
     
-    // PRO feature check
-    if (!hasProFeatureAccess(currentUser)) {
-      const isTrialing = currentUser?.subscription_status === 'trialing';
-      const trialEnd = currentUser?.trial_ends_at || currentUser?.trial_end;
-      
-      if (isTrialing && trialEnd) {
-        const daysLeft = Math.ceil((new Date(trialEnd) - new Date()) / (1000 * 60 * 60 * 24));
-        toast.error(`AI Improvement requires PRO plan. Trial ends in ${daysLeft} days.`, {
-          description: 'Upgrade to PRO for unlimited AI features',
-          action: {
-            label: 'Upgrade',
-            onClick: () => window.location.href = '/Subscription'
-          }
-        });
-      } else {
-        toast.error('Upgrade to PRO to use AI Prompt Improvement', {
-          description: 'This feature is only available in PRO plan',
-          action: {
-            label: 'View Plans',
-            onClick: () => window.location.href = '/Subscription'
-          }
-        });
-      }
-      return;
-    }
-    
     setIsImproving(true);
     try {
       const selectedItems = thoughts.filter(t => selectedThoughtIds.includes(t.id));
@@ -305,18 +279,6 @@ IMPORTANT: Return ONLY the improved prompt content, keeping the JSON structure a
 
   const handleGenerateVariants = useCallback(async () => {
     if (!generatedPrompt) return;
-    
-    // PRO feature check
-    if (!hasProFeatureAccess(currentUser)) {
-      toast.error('Upgrade to PRO to use Verbalized Sampling', {
-        description: 'Generate multiple diverse prompt variants',
-        action: {
-          label: 'View Plans',
-          onClick: () => window.location.href = '/Subscription'
-        }
-      });
-      return;
-    }
     
     setIsGeneratingVariants(true);
     try {
