@@ -198,7 +198,7 @@ export default function AddItem() {
 
           <form onSubmit={handleSubmit}>
             <Card className={`shadow-lg border-2 ${selectedProject ? projectColors[selectedProject.color].replace('bg-', 'border-') : 'border-slate-200'}`}>
-              <CardHeader className={`border-b ${selectedProject ? projectColors[selectedProject.color].replace('bg-', 'border-').replace('hover:', '') + ' bg-opacity-5' : 'border-slate-100'}`}>
+              <CardHeader className="border-b border-slate-100 dark:border-slate-700">
                 <CardTitle>Item Details</CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
