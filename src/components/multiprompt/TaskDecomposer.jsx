@@ -7,8 +7,6 @@ import { base44 } from "@/api/base44Client";
 import { Loader2, Split, Plus, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { hasProFeatureAccess } from "@/components/lib/subscriptionUtils";
-
 /**
  * Multi-Agent Task Decomposition - TIER 2 Feature #6
  * Splitst complexe tasks in subtaken met AI

@@ -7,8 +7,6 @@ import { base44 } from "@/api/base44Client";
 import { Lightbulb, Loader2, Plus, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { hasProFeatureAccess } from "@/components/lib/subscriptionUtils";
-
 /**
  * Creative Brainstorm Tool - TIER 2 Feature #4
  * Genereert diverse ideeën met Verbalized Sampling
