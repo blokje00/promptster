@@ -57,7 +57,6 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { projectColors } from "@/components/lib/constants";
 import RetryModal from "@/components/checks/RetryModal";
-import TrialBanner from "@/components/dashboard/TrialBanner";
 import AccessGuard from "../components/auth/AccessGuard";
 
 
@@ -310,7 +309,6 @@ export default function Checks() {
     <AccessGuard pageType="protected">
     <div className="p-4 md:p-8 min-h-screen bg-slate-50/50 dark:bg-slate-900/50">
         <div className="max-w-7xl mx-auto">
-          <TrialBanner />
           <div className="mb-8">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
               Checks
