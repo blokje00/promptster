@@ -40,18 +40,6 @@ export default function TaskDecomposer({ open, onClose, thought, currentUser }) 
   });
 
   const handleDecompose = async () => {
-    // PRO feature check
-    if (!hasProFeatureAccess(currentUser)) {
-      toast.error('Upgrade to PRO to use Task Decomposition', {
-        description: 'Break down complex tasks with AI',
-        action: {
-          label: 'View Plans',
-          onClick: () => window.location.href = '/Subscription'
-        }
-      });
-      return;
-    }
-
     setIsDecomposing(true);
     try {
       const decomposePrompt = `You are a task planning expert. Decompose this complex task into 3-5 specific, actionable subtasks.

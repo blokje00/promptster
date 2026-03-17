@@ -31,18 +31,6 @@ export default function BrainstormPanel({ currentUser, selectedProjectId }) {
       return;
     }
 
-    // PRO feature check
-    if (!hasProFeatureAccess(currentUser)) {
-      toast.error('Upgrade to PRO to use Creative Brainstorm', {
-        description: 'Generate diverse ideas with AI',
-        action: {
-          label: 'View Plans',
-          onClick: () => window.location.href = '/Subscription'
-        }
-      });
-      return;
-    }
-
     setIsGenerating(true);
     try {
       const brainstormPrompt = `You are a creative brainstorming assistant. Generate exactly 7 diverse, actionable ideas based on this concept. For each idea, provide a uniqueness score (0.0-1.0, where higher = more conventional).
