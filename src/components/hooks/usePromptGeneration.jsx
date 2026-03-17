@@ -1,8 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
-import { hasProFeatureAccess } from "@/components/lib/subscriptionUtils";
-
 export const usePromptGeneration = ({
   thoughts,
   selectedThoughtIds,
