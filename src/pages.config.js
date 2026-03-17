@@ -52,7 +52,6 @@ import AddItem from './pages/AddItem';
 import AdminAnalytics from './pages/AdminAnalytics';
 import AdminSettings from './pages/AdminSettings';
 import AdminStats from './pages/AdminStats';
-import AdminSubscription from './pages/AdminSubscription';
 import AdminSupportTickets from './pages/AdminSupportTickets';
 import Checks from './pages/Checks';
 import Dashboard from './pages/Dashboard';
@@ -61,9 +60,7 @@ import Features from './pages/Features';
 import Layout from './pages/Layout';
 import Legal from './pages/Legal';
 import Multiprompt from './pages/Multiprompt';
-import NoCodeRanking from './pages/NoCodeRanking';
 import RecycleBin from './pages/RecycleBin';
-import Subscription from './pages/Subscription';
 import Support from './pages/Support';
 import ViewItem from './pages/ViewItem';
 import index from './pages/index';
@@ -76,7 +73,6 @@ export const PAGES = {
     "AdminAnalytics": AdminAnalytics,
     "AdminSettings": AdminSettings,
     "AdminStats": AdminStats,
-    "AdminSubscription": AdminSubscription,
     "AdminSupportTickets": AdminSupportTickets,
     "Checks": Checks,
     "Dashboard": Dashboard,
@@ -85,9 +81,7 @@ export const PAGES = {
     "Layout": Layout,
     "Legal": Legal,
     "Multiprompt": Multiprompt,
-    "NoCodeRanking": NoCodeRanking,
     "RecycleBin": RecycleBin,
-    "Subscription": Subscription,
     "Support": Support,
     "ViewItem": ViewItem,
     "index": index,
