@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, X, Star, GitBranch } from "lucide-react";
+import { ArrowLeft, Save, X, Star, GitBranch, Copy, CheckCircle } from "lucide-react";
 import FileChangesFeedback from "../components/items/FileChangesFeedback";
 import TaskChecklist from "../components/items/TaskChecklist";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,6 +28,13 @@ export default function EditItem() {
 
   const [formData, setFormData] = useState(null);
   const [tagInput, setTagInput] = useState("");
+  const [contentCopied, setContentCopied] = useState(false);
+
+  const handleCopyContent = () => {
+    navigator.clipboard.writeText(formData?.content || '');
+    setContentCopied(true);
+    setTimeout(() => setContentCopied(false), 2000);
+  };
 
   const { data: item, isLoading } = useQuery({
     queryKey: ['item', itemId],
