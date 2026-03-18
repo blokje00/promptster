@@ -90,6 +90,8 @@ export const AuthProvider = ({ children }) => {
       });
       setIsLoadingPublicSettings(false);
       setIsLoadingAuth(false);
+    } finally {
+      clearTimeout(timeout);
     }
   };
 
