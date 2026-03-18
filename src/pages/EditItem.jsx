@@ -198,7 +198,23 @@ export default function EditItem() {
 
               <div className="space-y-2" id="content-section">
                 <Label htmlFor="content">Content *</Label>
-                <Textarea id="content" value={formData.content} onChange={(e) => handleInputChange('content', e.target.value)} required className="min-h-[300px] font-mono text-sm" />
+                <div className="relative">
+                  <Textarea
+                    id="content"
+                    value={formData.content}
+                    onChange={(e) => handleInputChange('content', e.target.value)}
+                    required
+                    className="min-h-[300px] font-mono text-sm bg-slate-900 text-white border-slate-700 placeholder:text-slate-500 focus:border-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCopyContent}
+                    className="absolute top-2 right-2 p-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
+                    title="Copy content"
+                  >
+                    {contentCopied ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
