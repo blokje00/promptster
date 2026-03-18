@@ -275,7 +275,15 @@ export default function ItemCard({ item, project }) {
             </div>
           )}
 
-          <div className="bg-slate-900 dark:bg-slate-950 rounded-xl p-4 max-h-48 overflow-auto flex-grow">
+          <div className="relative bg-slate-900 dark:bg-slate-950 rounded-xl p-4 max-h-48 overflow-auto flex-grow group">
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="absolute top-2 right-2 p-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+              title="Copy"
+            >
+              {copied ? <CheckCircle className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+            </button>
             <pre className="text-xs text-slate-300 dark:text-slate-400 font-mono whitespace-pre-wrap break-all">
               {item.content.substring(0, 300)}
               {item.content.length > 300 && '...'}
