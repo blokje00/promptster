@@ -18,6 +18,12 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAppState = async () => {
+    // Safety timeout: never hang longer than 8 seconds
+    const timeout = setTimeout(() => {
+      setIsLoadingPublicSettings(false);
+      setIsLoadingAuth(false);
+    }, 8000);
+
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
