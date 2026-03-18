@@ -38,6 +38,9 @@ const AuthenticatedApp = () => {
       // Redirect to login automatically
       navigateToLogin();
       return null;
+    } else {
+      // Unknown errors: don't block the app, just render normally
+      // (e.g. network timeouts on public-settings shouldn't block the UI)
     }
   }
 
