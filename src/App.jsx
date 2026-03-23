@@ -34,14 +34,9 @@ const AuthenticatedApp = () => {
   if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
-    } else {
-      // Unknown errors: don't block the app, just render normally
-      // (e.g. network timeouts on public-settings shouldn't block the UI)
     }
+    // For auth_required and other errors: render app normally.
+    // Pages that need auth will handle it individually.
   }
 
   // Render the main app - filter out subscription pages
