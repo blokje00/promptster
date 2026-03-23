@@ -52,11 +52,7 @@ const AuthenticatedApp = () => {
 
   return (
     <Routes>
-      <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
-        </LayoutWrapper>
-      } />
+      <Route path="/" element={<Navigate to="/Multiprompt" replace />} />
       {filteredPages.map(([path, Page]) => (
         <Route
           key={path}
