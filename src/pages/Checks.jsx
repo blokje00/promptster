@@ -502,6 +502,5 @@ export default function Checks() {
           currentUser={currentUser}
         />
       </div>
-    </div>
   );
 }

@@ -377,7 +377,6 @@ export default function ViewItem() {
           </CardContent>
         </Card>
       </div>
-      </div>
 
       <PromptFeedbackDialog
         open={showFeedbackDialog}
