@@ -36,7 +36,7 @@ import SuccessBanner from "@/components/multiprompt/SuccessBanner";
 
 import BrainstormPanel from "@/components/multiprompt/BrainstormPanel";
 import { projectColors, projectBorderColors } from "@/components/lib/constants";
-
+import AccessGuard from "../components/auth/AccessGuard";
 
 export default function Multiprompt() {
   const navigate = useNavigate();
@@ -304,6 +304,7 @@ export default function Multiprompt() {
 
   // --- Render ---
   return (
+    <AccessGuard pageType="protected">
     <div className="p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
           <SuccessBanner show={showBanner} />
@@ -529,5 +530,6 @@ export default function Multiprompt() {
           />
         )}
       </div>
+    </AccessGuard>
   );
 }

@@ -88,7 +88,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "Multiprompt",
+    mainPage: "Features",
     Pages: PAGES,
     Layout: __Layout,
 };

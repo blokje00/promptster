@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { FolderTree, Settings } from "lucide-react";
-
+import AccessGuard from "../components/auth/AccessGuard";
 import { useAutosaveField } from "@/components/hooks/useAutosaveField";
 import { useReliableSaveButton } from "@/components/hooks/useReliableSaveButton";
 import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
@@ -413,7 +413,8 @@ export default function AIBackoffice() {
   };
 
   return (
-    <div className="p-4 md:p-8">
+    <AccessGuard>
+      <div className="p-4 md:p-8">
         <div className="max-w-5xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
@@ -554,6 +555,7 @@ export default function AIBackoffice() {
             </TabsContent>
           </Tabs>
         </div>
-    </div>
+      </div>
+    </AccessGuard>
   );
 }

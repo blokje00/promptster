@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import ItemCard from "../components/dashboard/ItemCard";
-
+import AccessGuard from "../components/auth/AccessGuard";
 
 import VaultTableView from "../components/dashboard/VaultTableView";
 import { projectColors } from "@/components/lib/constants";
@@ -83,6 +83,7 @@ export default function Dashboard() {
   // Auto-activate trial moved to AccessGuard - removed from here to prevent duplicate activations
 
   return (
+    <AccessGuard pageType="protected">
     <div className="p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
 
@@ -266,5 +267,6 @@ export default function Dashboard() {
         )}
       </div>
     </div>
+    </AccessGuard>
   );
 }
