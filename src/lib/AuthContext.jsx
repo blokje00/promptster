@@ -135,6 +135,14 @@ export const AuthProvider = ({ children }) => {
       user,
       currentUser: user,
       isAuthenticated,
+      isLoadingAuth,
+      isLoadingPublicSettings,
+      authError,
+      appPublicSettings,
+      logout,
+      navigateToLogin,
+      checkAppState
+    }}>
       {children}
     </AuthContext.Provider>
   );
