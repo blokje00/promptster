@@ -40,7 +40,7 @@ export const useMultipromptData = ({
     enabled: Boolean(currentUser?.email),
     staleTime: 0, // Always fresh
     refetchOnWindowFocus: true, // Refresh when user returns to tab
-    retry: 1,
+    retry: false,
   });
 
   // Filter thoughts: only from active projects OR no project (orphaned)
