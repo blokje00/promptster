@@ -554,7 +554,6 @@ export default function AIBackoffice() {
             </TabsContent>
           </Tabs>
         </div>
-      </div>
     </div>
   );
 }

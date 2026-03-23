@@ -187,7 +187,7 @@ export default function ViewItem() {
   }
 
   return (
-    <div className="p-4 md:p-8">
+    <>
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <Button
@@ -387,6 +387,6 @@ export default function ViewItem() {
         projectId={item?.project_id}
         usedTemplates={[item?.start_template_id, item?.end_template_id].filter(Boolean)}
       />
-    </div>
+    </>
   );
 }
