@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Zap, Shield, Database, Code, Sparkles, ArrowRight, Edit, Eye } from "lucide-react";
 import { createPageUrl } from "@/utils";
-import AccessGuard from "../components/auth/AccessGuard";
+
 import InAppBrowserGuard from "../components/auth/InAppBrowserGuard";
 
 // Complete default content fallbacks for ALL text on Features page
@@ -204,10 +204,8 @@ function FeaturesPage() {
 
 export default function Features() {
   return (
-    <AccessGuard pageType="public">
-      <InAppBrowserGuard>
-        <FeaturesPage />
-      </InAppBrowserGuard>
-    </AccessGuard>
+    <InAppBrowserGuard>
+      <FeaturesPage />
+    </InAppBrowserGuard>
   );
 }

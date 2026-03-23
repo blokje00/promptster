@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import AccessGuard from "../components/auth/AccessGuard";
+
 
 export default function ViewItem() {
   const navigate = useNavigate();
@@ -187,7 +187,6 @@ export default function ViewItem() {
   }
 
   return (
-    <AccessGuard pageType="premium">
     <div className="p-4 md:p-8">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-8">
@@ -388,6 +387,6 @@ export default function ViewItem() {
         projectId={item?.project_id}
         usedTemplates={[item?.start_template_id, item?.end_template_id].filter(Boolean)}
       />
-    </AccessGuard>
+    </div>
   );
 }
