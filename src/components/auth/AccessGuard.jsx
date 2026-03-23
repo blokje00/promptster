@@ -1,52 +1,28 @@
 import React, { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
-import { useNavigate, useLocation } from "react-router-dom";
 
 /**
- * AccessGuard - Simplified authentication guard
- * 
- * RULES:
- * 1. pageType="public" or "free": accessible to everyone
- * 2. pageType="protected": requires authentication only
- * 3. No subscription checks - app is fully free
+ * AccessGuard - Uses AuthContext (already resolved by AuthenticatedApp)
+ * No extra auth query — zero flash, zero race condition.
  */
 export default function AccessGuard({ children, pageType = "protected" }) {
-  const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated, isLoadingAuth } = useAuth();
 
-  // Check authentication only
-  const { data: currentUser, isLoading: isUserLoading } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: async () => {
-      try {
-        return await base44.auth.me();
-      } catch (error) {
-        console.warn('[AccessGuard] Auth failed:', error.message);
-        return null;
-      }
-    },
-    retry: false,
-    staleTime: 30000,
-  });
-
-  // Handle redirects
+  // Handle redirects only after auth is resolved
   useEffect(() => {
-    if (isUserLoading) return;
-
-    // Public pages = always allow
+    if (isLoadingAuth) return;
     if (pageType === "free" || pageType === "public") return;
-
-    // Protected page without auth → redirect to login
-    if (!currentUser) {
-      console.log('[AccessGuard] Not authenticated, redirecting to login');
+    if (!isAuthenticated) {
       base44.auth.redirectToLogin(location.pathname);
-      return;
     }
-  }, [currentUser, isUserLoading, pageType, navigate, location]);
+  }, [isAuthenticated, isLoadingAuth, pageType, location.pathname]);
 
-  // Loading state
-  if (isUserLoading) {
+  // AuthenticatedApp already waits for isLoadingAuth=false before rendering routes,
+  // so this spinner should almost never be visible.
+  if (isLoadingAuth) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -54,13 +30,13 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     );
   }
 
-  // Public pages
+  // Public/free pages — always render
   if (pageType === "free" || pageType === "public") {
     return children;
   }
 
-  // Protected pages - show spinner while redirect happens if not authenticated
-  if (!currentUser) {
+  // Protected but not authenticated — show spinner while redirect fires
+  if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -68,6 +44,5 @@ export default function AccessGuard({ children, pageType = "protected" }) {
     );
   }
 
-  // Authenticated - render content
   return children;
 }
