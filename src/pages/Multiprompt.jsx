@@ -37,17 +37,15 @@ import SuccessBanner from "@/components/multiprompt/SuccessBanner";
 import BrainstormPanel from "@/components/multiprompt/BrainstormPanel";
 import { projectColors, projectBorderColors } from "@/components/lib/constants";
 import AccessGuard from "../components/auth/AccessGuard";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function Multiprompt() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
 
-  // --- Data Queries ---
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
+  // --- Auth (from context — no extra API call) ---
+  const { currentUser } = useAuth();
 
   // HARDENED: Entity queries can fail without affecting access
   const { data: projects = [] } = useQuery({
