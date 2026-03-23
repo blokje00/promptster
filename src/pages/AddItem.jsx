@@ -13,7 +13,7 @@ import StatusSelector from "../components/items/StatusSelector";
 import ContentSection from "../components/items/ContentSection";
 import PublishVersionSection from "../components/items/PublishVersionSection";
 import { projectColors } from "@/components/lib/constants";
-import AccessGuard from "../components/auth/AccessGuard";
+
 
 export default function AddItem() {
   const navigate = useNavigate();
@@ -150,119 +150,6 @@ export default function AddItem() {
   };
 
   return (
-    <AccessGuard pageType="protected">
     <div className="p-4 md:p-8">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="icon" onClick={() => navigate(createPageUrl("Dashboard"))} className="rounded-xl">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  Add New Item
-                </h1>
-                <p className="text-slate-600 mt-1">Add a new prompt or code snippet</p>
-              </div>
-            </div>
-            <Button onClick={handleSubmit} disabled={createMutation.isPending} className="bg-indigo-600 hover:bg-indigo-700">
-              <Save className="w-4 h-4 mr-2" />
-              {createMutation.isPending ? 'Saving...' : 'Save'}
-            </Button>
-          </div>
-
-          <div className="mb-6">
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={!selectedProjectId ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleProjectChange("")}
-                className={!selectedProjectId ? "bg-slate-700" : ""}
-              >
-                No Project
-              </Button>
-              {projects.map(project => (
-                <Button
-                  key={project.id}
-                  variant={selectedProjectId === project.id ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handleProjectChange(project.id)}
-                  className={`${selectedProjectId === project.id ? `${projectColors[project.color]} border-0` : ""}`}
-                >
-                  <div className={`w-3 h-3 rounded-full ${projectColors[project.color]} mr-2 border border-white/50`} />
-                  {project.name}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            <Card className="shadow-lg border-2 border-slate-200 bg-white dark:bg-slate-900">
-              <CardHeader className="border-b border-slate-100 dark:border-slate-700">
-                <CardTitle>Item Details</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <ItemDetailsForm formData={formData} onChange={setFormData} />
-                <StatusSelector status={formData.status} onChange={(status) => setFormData({...formData, status})} />
-                <ContentSection
-                  content={formData.content}
-                  notes={formData.notes}
-                  tags={formData.tags}
-                  tagInput={tagInput}
-                  onContentChange={(content) => setFormData({...formData, content})}
-                  onNotesChange={(notes) => setFormData({...formData, notes})}
-                  onTagInputChange={setTagInput}
-                  onAddTag={addTag}
-                  onRemoveTag={removeTag}
-                  onContentPaste={handleContentPaste}
-                />
-
-                <div className="space-y-2">
-                  <ScreenshotUploader
-                    screenshotIds={formData.screenshot_ids}
-                    onChange={(ids) => setFormData({...formData, screenshot_ids: ids})}
-                    projectId={formData.project_id}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">ZIP Files (Code)</label>
-                  <ZipUploadZone
-                    zipFiles={formData.zip_files}
-                    onZipFilesChange={(files) => setFormData({...formData, zip_files: files})}
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant={formData.is_favorite ? "default" : "outline"}
-                    onClick={() => setFormData({...formData, is_favorite: !formData.is_favorite})}
-                    className={formData.is_favorite ? "bg-yellow-500 hover:bg-yellow-600" : ""}
-                  >
-                    <Star className={`w-4 h-4 mr-2 ${formData.is_favorite ? 'fill-white' : ''}`} />
-                    {formData.is_favorite ? 'Favorite' : 'Mark as favorite'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="mt-6">
-              <PublishVersionSection formData={formData} onChange={setFormData} />
-            </div>
-
-            <div className="flex justify-end gap-3 mt-6">
-              <Button type="button" variant="outline" onClick={() => navigate(createPageUrl("Dashboard"))}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={createMutation.isPending} className="bg-indigo-600 hover:bg-indigo-700">
-                <Save className="w-4 h-4 mr-2" />
-                {createMutation.isPending ? 'Saving...' : 'Save'}
-              </Button>
-            </div>
-          </form>
-          </div>
-          </div>
-          </AccessGuard>
-          );
           }

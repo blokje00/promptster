@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Zap, Shield, Database, Code, Sparkles, ArrowRight, Edit, Eye } from "lucide-react";
 import { createPageUrl } from "@/utils";
-import AccessGuard from "../components/auth/AccessGuard";
+
 import InAppBrowserGuard from "../components/auth/InAppBrowserGuard";
 
 // Complete default content fallbacks for ALL text on Features page
@@ -115,52 +115,6 @@ function FeaturesPage() {
         </div>
       )}
 
-      {/* Get Started CTA - Top Banner */}
-      {!currentUser && (
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 px-4 sticky top-0 z-40 shadow-lg">
-          <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              <Sparkles className="w-6 h-6 flex-shrink-0" />
-              <div>
-                <h3 className="font-bold text-lg">
-                  <InlineEditableText
-                    blockKey="features.cta.banner.title"
-                    value={getContent('features.cta.banner.title')}
-                    isAdmin={isAdmin}
-                    editMode={editMode}
-                  />
-                </h3>
-                <p className="text-sm text-indigo-100">
-                  <InlineEditableText
-                    blockKey="features.cta.banner.subtitle"
-                    value={getContent('features.cta.banner.subtitle')}
-                    isAdmin={isAdmin}
-                    editMode={editMode}
-                  />
-                </p>
-              </div>
-            </div>
-            <Button 
-              onClick={() => {
-                const params = new URLSearchParams(window.location.search);
-                const nextRoute = params.get('next') || createPageUrl('Multiprompt');
-                base44.auth.redirectToLogin(nextRoute);
-              }}
-              size="lg"
-              className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold shadow-xl"
-            >
-              <InlineEditableText
-                blockKey="features.cta.banner.button"
-                value={getContent('features.cta.banner.button')}
-                isAdmin={isAdmin}
-                editMode={editMode}
-              />
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-          </div>
-        </div>
-      )}
-      
       <div className="max-w-6xl mx-auto p-8">
         {/* Hero Section */}
         <div className="text-center mb-12">
@@ -248,10 +202,8 @@ function FeaturesPage() {
 
 export default function Features() {
   return (
-    <AccessGuard pageType="public">
-      <InAppBrowserGuard>
-        <FeaturesPage />
-      </InAppBrowserGuard>
-    </AccessGuard>
+    <InAppBrowserGuard>
+      <FeaturesPage />
+    </InAppBrowserGuard>
   );
 }
