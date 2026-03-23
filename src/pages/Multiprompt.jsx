@@ -529,6 +529,5 @@ export default function Multiprompt() {
           />
         )}
       </div>
-    </div>
   );
 }
