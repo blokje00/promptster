@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/AuthContext";
 import { createPageUrl } from "@/utils";
 import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText, TrendingUp, X, Database, CreditCard } from "lucide-react";
 import ThemeToggleButton from "@/components/theme/ThemeToggleButton";
@@ -28,18 +29,7 @@ export default function Header() {
   const { t } = useLanguage();
   const [showExport, setShowExport] = useState(false);
   
-  const { data: user, isLoading: isUserLoading } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: async () => {
-      try {
-        return await base44.auth.me();
-      } catch (error) {
-        // User not logged in
-        return null;
-      }
-    },
-    retry: false,
-  });
+  const { currentUser: user, isLoadingAuth: isUserLoading } = useAuth();
 
   // HARDENED: Badge counts can fail without affecting navigation
   const { data: deletedCount = 0 } = useQuery({
@@ -98,8 +88,7 @@ export default function Header() {
       }
     },
     enabled: !!user?.email,
-    staleTime: 0, // Always fresh
-    refetchOnWindowFocus: true,
+    staleTime: 30 * 1000,
     retry: false,
   });
   
