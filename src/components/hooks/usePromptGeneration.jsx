@@ -20,6 +20,17 @@ export const usePromptGeneration = ({
   const [reasoningSteps, setReasoningSteps] = useState(null);
   const [showReasoning, setShowReasoning] = useState(false);
 
+  // Shared memos — computed once, reused in generatedPrompt, handleImprovePrompt, handleToggleReasoning
+  const selectedItems = useMemo(
+    () => thoughts.filter(t => selectedThoughtIds.includes(t.id)),
+    [thoughts, selectedThoughtIds]
+  );
+
+  const allScreenshotUrls = useMemo(
+    () => [...new Set(selectedItems.flatMap(t => t.screenshot_ids || []))],
+    [selectedItems]
+  );
+
   // Autosave improved prompt
   useEffect(() => {
     const savedImproved = localStorage.getItem(`promptster:improved:${selectedProjectId || 'all'}`);
@@ -37,7 +48,6 @@ export const usePromptGeneration = ({
   }, [improvedPrompt, selectedProjectId]);
 
   const generatedPrompt = useMemo(() => {
-    const selectedItems = thoughts.filter(t => selectedThoughtIds.includes(t.id));
     if (selectedItems.length === 0 && !startTemplateId && !endTemplateId && !includePersonalPrefs && !includeProjectConfig) return "";
 
     const parts = [];
@@ -159,7 +169,7 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
     if (endTmpl) parts.push(endTmpl.content);
 
     return parts.join("\n\n---\n\n");
-  }, [thoughts, selectedThoughtIds, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, currentUser, selectedProject, templates, selectedProjectId]);
+  }, [selectedItems, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, currentUser, selectedProject, templates, selectedProjectId]);
 
   const handleImprovePrompt = useCallback(async (isUndo = false) => {
     // Undo: clear improved prompt
@@ -178,10 +188,6 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
     
     setIsImproving(true);
     try {
-      const selectedItems = thoughts.filter(t => selectedThoughtIds.includes(t.id));
-      const allScreenshotUrls = selectedItems.flatMap(t => t.screenshot_ids || []);
-
-      // Get cached vision analysis for screenshots and enrich prompt
       let visionContext = '';
       let enrichedPromptWithVision = generatedPrompt;
       
@@ -201,7 +207,6 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
             .filter(d => d?.ok);
           
           if (analyses.length > 0) {
-            
             // Replace "TO_BE_ENRICHED_WITH_CACHE" placeholders with actual OCR data
             enrichedPromptWithVision = generatedPrompt;
             allScreenshotUrls.forEach((url, idx) => {
@@ -273,7 +278,7 @@ IMPORTANT: Return ONLY the improved prompt content, keeping the JSON structure a
     } finally {
       setIsImproving(false);
     }
-  }, [generatedPrompt, thoughts, selectedThoughtIds, currentUser]);
+  }, [generatedPrompt, selectedItems, allScreenshotUrls, currentUser]);
 
   const handleGenerateVariants = useCallback(async () => {
     if (!generatedPrompt) return;
@@ -353,7 +358,6 @@ RULES:
     if (!generatedPrompt) return;
 
     try {
-      const selectedItems = thoughts.filter(t => selectedThoughtIds.includes(t.id));
       const reasoningPrompt = `You are analyzing how you would interpret and execute the following multi-task prompt. Explain your reasoning process in 3-5 concise steps:
 
 1. **Interpretation**: How do you understand the tasks and their context?
@@ -392,7 +396,7 @@ Return your reasoning as clear, numbered steps (max 200 words).`;
       console.error("Reasoning generation error:", error);
       toast.error("Reasoning generation failed");
     }
-  }, [generatedPrompt, thoughts, selectedThoughtIds, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, showReasoning, reasoningSteps]);
+  }, [generatedPrompt, selectedItems, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, showReasoning, reasoningSteps]);
 
   return {
     generatedPrompt,

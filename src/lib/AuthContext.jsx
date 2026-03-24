@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
@@ -6,9 +7,7 @@ import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const queryClient = useQueryClient();
   const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
@@ -17,11 +16,29 @@ export const AuthProvider = ({ children }) => {
     checkAppState();
   }, []);
 
+  const { 
+    data: user = null, 
+    isLoading: isLoadingUser,
+  } = useQuery({
+    queryKey: ['authUser'],
+    queryFn: () => base44.auth.me(),
+    enabled: !!appParams.token && !isLoadingPublicSettings,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
+
+  const isAuthenticated = !!user;
+  const isLoadingAuth = isLoadingUser && !!appParams.token && !isLoadingPublicSettings;
+
+  const refreshUser = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['authUser'] });
+  }, [queryClient]);
+
   const checkAppState = async () => {
     // Safety timeout: never hang longer than 8 seconds
     const timeout = setTimeout(() => {
       setIsLoadingPublicSettings(false);
-      setIsLoadingAuth(false);
     }, 8000);
 
     try {
@@ -42,14 +59,8 @@ export const AuthProvider = ({ children }) => {
       try {
         const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
         setAppPublicSettings(publicSettings);
-        
-        // If we got the app public settings successfully, check if user is authenticated
-        if (appParams.token) {
-          await checkUserAuth();
-        } else {
-          setIsLoadingAuth(false);
-          setIsAuthenticated(false);
-        }
+        // React Query will auto-fetch user once isLoadingPublicSettings becomes false
+        setIsLoadingPublicSettings(false);
         setIsLoadingPublicSettings(false);
       } catch (appError) {
         console.error('App state check failed:', appError);
@@ -80,7 +91,6 @@ export const AuthProvider = ({ children }) => {
           });
         }
         setIsLoadingPublicSettings(false);
-        setIsLoadingAuth(false);
       }
     } catch (error) {
       console.error('Unexpected error:', error);
@@ -89,32 +99,13 @@ export const AuthProvider = ({ children }) => {
         message: error.message || 'An unexpected error occurred'
       });
       setIsLoadingPublicSettings(false);
-      setIsLoadingAuth(false);
     } finally {
       clearTimeout(timeout);
     }
   };
 
-  const checkUserAuth = async () => {
-    try {
-      // Now check if the user is authenticated
-      setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
-      setUser(currentUser);
-      setIsAuthenticated(true);
-      setIsLoadingAuth(false);
-    } catch (error) {
-      console.error('User auth check failed:', error);
-      setIsLoadingAuth(false);
-      setIsAuthenticated(false);
-      
-      // Token expired or invalid — just mark as not authenticated, don't force redirect
-    }
-  };
-
   const logout = (shouldRedirect = true) => {
-    setUser(null);
-    setIsAuthenticated(false);
+    queryClient.removeQueries({ queryKey: ['authUser'] });
     
     if (shouldRedirect) {
       // Use the SDK's logout method which handles token cleanup and redirect
@@ -141,7 +132,8 @@ export const AuthProvider = ({ children }) => {
       appPublicSettings,
       logout,
       navigateToLogin,
-      checkAppState
+      checkAppState,
+      refreshUser
     }}>
       {children}
     </AuthContext.Provider>

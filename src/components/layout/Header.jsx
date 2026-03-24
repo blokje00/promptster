@@ -29,7 +29,7 @@ export default function Header() {
   const { t } = useLanguage();
   const [showExport, setShowExport] = useState(false);
   
-  const { currentUser: user, isLoadingAuth: isUserLoading } = useAuth();
+  const { currentUser: user, isLoadingAuth: isUserLoading, refreshUser } = useAuth();
 
   // HARDENED: Badge counts can fail without affecting navigation
   const { data: deletedCount = 0 } = useQuery({
@@ -196,20 +196,7 @@ export default function Header() {
           const response = await base44.functions.invoke('seedDemoData', { force: false });
           
           if (response.data?.status === 'success') {
-            console.log('[Header] ✨ Demo data auto-seeded successfully');
-            
-            const updatedUser = await base44.auth.me();
-            
-            if (updatedUser.demo_default_project_id) {
-              localStorage.setItem('lastSelectedProjectId', updatedUser.demo_default_project_id);
-            }
-            if (updatedUser.demo_start_template_id) {
-              localStorage.setItem('lastStartTemplateId', updatedUser.demo_start_template_id);
-            }
-            if (updatedUser.demo_end_template_id) {
-              localStorage.setItem('lastEndTemplateId', updatedUser.demo_end_template_id);
-            }
-            
+            refreshUser();
             setTimeout(() => {
               window.location.reload();
             }, 800);

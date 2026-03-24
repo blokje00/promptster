@@ -73,8 +73,8 @@ const AuthenticatedApp = () => {
 function App() {
 
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
+    <QueryClientProvider client={queryClientInstance}>
+      <AuthProvider>
         <Router>
           <NavigationTracker />
           <Suspense fallback={
@@ -87,8 +87,8 @@ function App() {
         </Router>
         <Toaster />
         <VisualEditAgent />
-      </QueryClientProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   )
 }
 
