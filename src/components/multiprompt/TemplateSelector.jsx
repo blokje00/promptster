@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { projectLightColors } from "@/components/lib/constants";
 
-export default function TemplateSelector({
+function TemplateSelector({
   templates,
   startTemplateId,
   onStartTemplateChange,
@@ -57,3 +57,4 @@ export default function TemplateSelector({
     </Card>
   );
 }
+export default React.memo(TemplateSelector);

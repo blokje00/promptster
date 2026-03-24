@@ -80,10 +80,8 @@ export default function Header() {
           created_by: user.email,
           is_deleted: false
         });
-        console.log('[Header] ✓ Fetched active thoughts for badge:', thoughts?.length || 0);
         return thoughts || [];
       } catch (error) {
-        console.warn('[Header] Active thoughts fetch failed (non-blocking):', error.message);
         return [];
       }
     },
@@ -98,37 +96,32 @@ export default function Header() {
     !t.project_id || activeProjectIds.includes(t.project_id)
   );
   const allThoughtsCount = activeThoughts.length;
-  
-  console.log(`[Header] Badge: ${rawThoughts.length} raw → ${activeThoughts.length} filtered (active projects)`);
 
   // HARDENED: Open tasks badge is non-critical UI feature
   const { data: openTasksCount = 0 } = useQuery({
     queryKey: ['openTasksCount', user?.email],
     queryFn: async () => {
       try {
-        if (!user?.email) return 0;
-        const items = await base44.entities.Item.filter({ 
-          created_by: user.email
-        });
-        
-        let count = 0;
-        items.forEach(item => {
-          if (item.task_checks && Array.isArray(item.task_checks)) {
-            item.task_checks.forEach(check => {
-              if (!check.status || check.status === 'open') {
-                count++;
-              }
-            });
-          }
-        });
-        return count;
+        if (!user?.email) return [];
+        return await base44.entities.Item.filter({ created_by: user.email });
       } catch (error) {
-        console.warn('[Header] Open tasks count failed (non-blocking):', error.message);
-        return 0;
+        return [];
       }
+    },
+    select: (items) => {
+      let count = 0;
+      items.forEach(item => {
+        if (item.task_checks && Array.isArray(item.task_checks)) {
+          item.task_checks.forEach(check => {
+            if (!check.status || check.status === 'open') count++;
+          });
+        }
+      });
+      return count;
     },
     enabled: !!user?.email,
     staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     retry: false,
   });
 
@@ -139,46 +132,23 @@ export default function Header() {
   };
 
   const handleSeedDemoData = async () => {
-    console.log('[Header] 🚀 Starting demo seed process (FORCE MODE)...');
-    console.log('[Header] User:', user);
-    
     try {
       toast.info('Creating demo data (force mode)...');
-      console.log('[Header] ⏳ Invoking seedDemoData function with force=true...');
-      
       const response = await base44.functions.invoke('seedDemoData', { force: true });
       
-      console.log('[Header] ✅ Function response received:', response);
-      console.log('[Header] Response status:', response.status);
-      console.log('[Header] Response data:', response.data);
-      
       if (response.data?.status === 'already_seeded') {
-        console.log('[Header] ℹ️ Demo data already exists');
         toast.info('Demo data already exists');
       } else if (response.data?.status === 'success') {
-        console.log('[Header] ✨ Demo created successfully!', response.data);
         toast.success(`Demo created: ${response.data.projects} projects, ${response.data.tasks} tasks!`);
-        
-        // Force full page reload to refresh all caches
-        console.log('[Header] 🔄 Reloading page to show demo data...');
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
+        setTimeout(() => window.location.reload(), 1500);
       } else {
-        console.log('[Header] ⚠️ Unexpected response format:', response);
         toast.success('Demo data created!');
         setTimeout(() => window.location.reload(), 1500);
       }
     } catch (error) {
-      console.error('[Header] ❌ Seed error:', error);
-      console.error('[Header] Error name:', error.name);
-      console.error('[Header] Error message:', error.message);
-      console.error('[Header] Error stack:', error.stack);
-      console.error('[Header] Full error object:', JSON.stringify(error, null, 2));
+      console.error('[Header] Seed error:', error);
       toast.error(`Failed: ${error.message || 'Unknown error'}`);
     }
-    
-    console.log('[Header] 🏁 Demo seed process completed');
   };
   
   const currentPath = location.pathname.toLowerCase();

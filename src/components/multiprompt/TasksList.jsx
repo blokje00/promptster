@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import ThoughtCard from "./ThoughtCard";
 import TaskDecomposer from "./TaskDecomposer";
 
-export default function TasksList({
+function TasksList({
   thoughts,
   projects,
   isLoading,
@@ -70,3 +70,4 @@ export default function TasksList({
     </DragDropContext>
   );
 }
+export default React.memo(TasksList);

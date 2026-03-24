@@ -9,7 +9,7 @@ import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 import { toast } from "sonner";
 import { base44 } from "@/api/base44Client";
 
-export default function TaskInputArea({
+function TaskInputArea({
   selectedProject,
   isDropActive,
   dragHandlers,
@@ -164,3 +164,4 @@ export default function TaskInputArea({
     </div>
   );
 }
+export default React.memo(TaskInputArea);

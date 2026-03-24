@@ -187,7 +187,6 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
       
       if (allScreenshotUrls.length > 0) {
         try {
-          console.log('[usePromptGeneration] Fetching OCR vision for', allScreenshotUrls.length, 'screenshots');
           const visionResults = await Promise.all(
             allScreenshotUrls.map(url => 
               base44.functions.invoke('analyzeScreenshotWithCache', {
@@ -202,7 +201,6 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
             .filter(d => d?.ok);
           
           if (analyses.length > 0) {
-            console.log('[usePromptGeneration] ✓ OCR vision fetched for', analyses.length, 'screenshots');
             
             // Replace "TO_BE_ENRICHED_WITH_CACHE" placeholders with actual OCR data
             enrichedPromptWithVision = generatedPrompt;
@@ -231,7 +229,7 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
             ).join('\n')}\n`;
           }
         } catch (error) {
-          console.warn('[usePromptGeneration] Vision analysis failed:', error);
+          // Vision analysis failed, continue without it
         }
       }
 

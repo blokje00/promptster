@@ -11,7 +11,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 
-export default function ProjectSelector({
+function ProjectSelector({
   projects,
   selectedProjectId,
   selectedProject,
@@ -213,3 +213,4 @@ Format as clear Markdown headers and lists.`;
     </>
   );
 }
+export default React.memo(ProjectSelector);
