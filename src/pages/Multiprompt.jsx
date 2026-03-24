@@ -1,9 +1,8 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { createPageUrl } from "@/utils";
-import OCRDebugModal from "@/components/admin/OCRDebugModal";
 import { useAuth } from "@/lib/AuthContext";
 
 // Custom Hooks
@@ -15,11 +14,6 @@ import { usePromptGeneration } from "@/components/hooks/usePromptGeneration";
 import { useDragDropUpload } from "@/components/hooks/useDragDropUpload";
 
 // UI Components
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Lightbulb, Layers, FileText, FolderOpen } from "lucide-react";
@@ -35,7 +29,6 @@ import TasksColumn from "@/components/multiprompt/TasksColumn";
 import PromptColumn from "@/components/multiprompt/PromptColumn";
 import BrainstormPanel from "@/components/multiprompt/BrainstormPanel";
 import AccessGuard from "../components/auth/AccessGuard";
-import { toast } from "sonner";
 
 // Inner component — only mounts when currentUser is confirmed.
 // This prevents ALL hooks/queries from running unauthenticated.
