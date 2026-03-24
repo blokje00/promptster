@@ -22,7 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Plus, Lightbulb, Layers, FileText, FolderOpen, CheckCircle2 } from "lucide-react";
+import { Lightbulb, Layers, FileText, FolderOpen } from "lucide-react";
 
 // Sub-components
 import TemplatesManager from "@/components/multiprompt/TemplatesManager";
@@ -30,12 +30,12 @@ import ProjectsManager from "@/components/multiprompt/ProjectsManager";
 import ProjectSelector from "@/components/multiprompt/ProjectSelector";
 import TaskInputArea from "@/components/multiprompt/TaskInputArea";
 import TasksList from "@/components/multiprompt/TasksList";
-import TemplateSelector from "@/components/multiprompt/TemplateSelector";
-import PromptPreview from "@/components/multiprompt/PromptPreview";
 import SuccessBanner from "@/components/multiprompt/SuccessBanner";
+import TasksColumn from "@/components/multiprompt/TasksColumn";
+import PromptColumn from "@/components/multiprompt/PromptColumn";
 import BrainstormPanel from "@/components/multiprompt/BrainstormPanel";
-import { projectColors, projectBorderColors } from "@/components/lib/constants";
 import AccessGuard from "../components/auth/AccessGuard";
+import { toast } from "sonner";
 
 // Inner component — only mounts when currentUser is confirmed.
 // This prevents ALL hooks/queries from running unauthenticated.
@@ -129,12 +129,8 @@ function MultipromptContent({ currentUser }) {
   const enableContextSuggestions = aiSettings[0]?.enable_context_suggestions !== false;
 
   // --- Local UI State ---
-  const [groupBy, setGroupBy] = useState("component");
   const [showBanner, setShowBanner] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [showOCRDebug, setShowOCRDebug] = useState(false);
-  const [ocrDebugUrl, setOcrDebugUrl] = useState(null);
-  const [taskSearchQuery, setTaskSearchQuery] = useState("");
 
   const generateChecklist = useCallback(() => {
     return thoughts
@@ -240,22 +236,7 @@ function MultipromptContent({ currentUser }) {
     }
   }, [updateThought]);
 
-  const filteredThoughts = useMemo(() => {
-    let filtered = thoughts;
-    if (taskSearchQuery.trim()) {
-      const query = taskSearchQuery.toLowerCase();
-      filtered = filtered.filter(t =>
-        t.content?.toLowerCase().includes(query) ||
-        t.target_page?.toLowerCase().includes(query) ||
-        t.target_component?.toLowerCase().includes(query)
-      );
-    }
-    return [...filtered].sort((a, b) => {
-      if (groupBy === 'component') return (a.target_component || "").localeCompare(b.target_component || "");
-      if (groupBy === 'page') return (a.target_page || "").localeCompare(b.target_page || "");
-      return 0;
-    });
-  }, [thoughts, groupBy, taskSearchQuery]);
+
 
   return (
     <div className="p-4 md:p-8">
@@ -299,168 +280,37 @@ function MultipromptContent({ currentUser }) {
 
           <TabsContent value="build">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* LEFT COLUMN */}
-              <div className="space-y-4">
-                <Card className={`bg-white dark:bg-slate-800 ${!selectedProjectId ? 'border-2 border-slate-800 dark:border-slate-600' : selectedProject ? `border-2 ${projectBorderColors[selectedProject.color]}` : 'border-slate-200 dark:border-slate-700'}`}>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                      <Lightbulb className="w-5 h-5 text-yellow-500" />
-                      Tasks {selectedProject && <Badge className={projectColors[selectedProject.color]}>{selectedProject.name}</Badge>}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <TaskInputArea
-                      selectedProject={selectedProject}
-                      isDropActive={isDropActive}
-                      dragHandlers={dragHandlers}
-                      isLimitReached={isLimitReached}
-                      maxThoughts={maxThoughts}
-                      {...newThoughtInput}
-                      onContentChange={newThoughtInput.setNewThoughtContent}
-                      onAddThought={handleAddThought}
-                      onScreenshotsChange={newThoughtInput.setNewThoughtScreenshots}
-                      onFocusChange={newThoughtInput.setNewThoughtFocus}
-                      onContextChange={newThoughtInput.setNewThoughtContext}
-                      selectedProjectId={selectedProjectId}
-                      enableContextSuggestions={enableContextSuggestions}
-                    />
-                    <div className="flex gap-2">
-                      <Button onClick={handleAddThought} className={`flex-1 ${!selectedProjectId ? 'bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600' : selectedProject ? projectColors[selectedProject.color] : 'bg-slate-800'}`}>
-                        <Plus className="w-4 h-4 mr-2" /> Task
-                      </Button>
-                    </div>
-                    <div className="flex items-center justify-between gap-3 px-1 flex-wrap">
-                      <div className="flex gap-3 text-xs font-medium text-slate-500 dark:text-slate-400">
-                        <button onClick={() => selectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 dark:hover:text-indigo-400">Select All</button>
-                        <span className="text-slate-300 dark:text-slate-600">|</span>
-                        <button onClick={() => deselectAll(filteredThoughts.map(t => t.id))} className="hover:text-indigo-600 dark:hover:text-indigo-400">Deselect All</button>
-                      </div>
-                      <div className="flex gap-2 items-center">
-                        <input
-                          type="text"
-                          placeholder="Search tasks..."
-                          className="h-8 px-3 text-xs border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 w-[180px]"
-                          onChange={(e) => setTaskSearchQuery(e.target.value)}
-                        />
-                        <Select value={groupBy} onValueChange={setGroupBy}>
-                          <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="date">By Date</SelectItem>
-                            <SelectItem value="page">By Page</SelectItem>
-                            <SelectItem value="component">By Component</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <TasksList
-                      thoughts={filteredThoughts}
-                      projects={projects}
-                      isLoading={isLoading}
-                      selectedThoughtIds={selectedThoughtIds}
-                      onToggleSelect={toggleSelection}
-                      onDelete={deleteThought.mutate}
-                      onUpdateContent={(id, c) => updateThought.mutate({ id, data: { content: c } })}
-                      onUpdateScreenshots={(id, s) => {
-                        updateThought.mutate({ id, data: { screenshot_ids: s } });
-                        if (s && s.length > 0) triggerVisionAnalysis(id, s);
-                      }}
-                      onDebugScreenshot={(url) => {
-                        if (currentUser?.role === 'admin') {
-                          setOcrDebugUrl(url);
-                          setShowOCRDebug(true);
-                        }
-                      }}
-                      onUpdateFocus={(id, f) => updateThought.mutate({ id, data: { focus_type: f } })}
-                      onUpdateContext={(id, ctx) => updateThought.mutate({
-                        id,
-                        data: {
-                          target_page: ctx.target_page,
-                          target_component: ctx.target_component,
-                          target_domain: ctx.target_domain
-                        }
-                      })}
-                      onDragEnd={onDragEnd}
-                      currentUser={currentUser}
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* RIGHT COLUMN */}
-              <div className="space-y-4">
-                <TemplateSelector
-                  templates={templates}
-                  {...templateSelection}
-                  onStartTemplateChange={templateSelection.setStartTemplateId}
-                  onEndTemplateChange={templateSelection.setEndTemplateId}
-                  selectedProject={selectedProject}
-                />
-                <div className="flex gap-4 text-sm px-1">
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <div className={`relative w-5 h-5 rounded border-2 transition-all ${
-                      templateSelection.includePersonalPrefs
-                        ? `${selectedProject ? projectBorderColors[selectedProject.color] : 'border-indigo-600'} ${selectedProject ? projectColors[selectedProject.color] : 'bg-indigo-600'}`
-                        : 'border-slate-300 bg-white group-hover:border-slate-400'
-                    }`}>
-                      {templateSelection.includePersonalPrefs && (
-                        <CheckCircle2 className="absolute inset-0 w-full h-full text-white p-0.5" strokeWidth={3} />
-                      )}
-                    </div>
-                    <Checkbox
-                      checked={templateSelection.includePersonalPrefs}
-                      onCheckedChange={templateSelection.setIncludePersonalPrefs}
-                      className="sr-only"
-                    />
-                    <a
-                      href={createPageUrl("AIBackoffice") + "#personal-preferences"}
-                      className="font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Personal Prefs
-                    </a>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <div className={`relative w-5 h-5 rounded border-2 transition-all ${
-                      templateSelection.includeProjectConfig
-                        ? `${selectedProject ? projectBorderColors[selectedProject.color] : 'border-indigo-600'} ${selectedProject ? projectColors[selectedProject.color] : 'bg-indigo-600'}`
-                        : 'border-slate-300 bg-white group-hover:border-slate-400'
-                    }`}>
-                      {templateSelection.includeProjectConfig && (
-                        <CheckCircle2 className="absolute inset-0 w-full h-full text-white p-0.5" strokeWidth={3} />
-                      )}
-                    </div>
-                    <Checkbox
-                      checked={templateSelection.includeProjectConfig}
-                      onCheckedChange={templateSelection.setIncludeProjectConfig}
-                      className="sr-only"
-                    />
-                    <a
-                      href={createPageUrl("AIBackoffice") + "#project-config"}
-                      className="font-semibold text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Project Config
-                    </a>
-                  </label>
-                </div>
-                <PromptPreview
-                  {...promptGeneration}
-                  setImprovedPrompt={promptGeneration.setImprovedPrompt}
-                  onImprove={promptGeneration.handleImprovePrompt}
-                  onRefresh={() => {
-                    promptGeneration.setImprovedPrompt("");
-                    toast.info("Prompt refreshed - re-reading all tasks");
-                  }}
-                  saveSuccess={saveSuccess}
-                  onQuickSave={handleQuickSave}
-                  promptVariants={promptGeneration.promptVariants}
-                  isGeneratingVariants={promptGeneration.isGeneratingVariants}
-                  onGenerateVariants={promptGeneration.handleGenerateVariants}
-                  reasoningSteps={promptGeneration.reasoningSteps}
-                  showReasoning={promptGeneration.showReasoning}
-                  onToggleReasoning={promptGeneration.handleToggleReasoning}
-                />
-              </div>
+              <TasksColumn
+                thoughts={thoughts}
+                projects={projects}
+                isLoading={isLoading}
+                selectedThoughtIds={selectedThoughtIds}
+                toggleSelection={toggleSelection}
+                selectAll={selectAll}
+                deselectAll={deselectAll}
+                selectedProject={selectedProject}
+                selectedProjectId={selectedProjectId}
+                isDropActive={isDropActive}
+                dragHandlers={dragHandlers}
+                newThoughtInput={newThoughtInput}
+                handleAddThought={handleAddThought}
+                onDragEnd={onDragEnd}
+                deleteThought={deleteThought}
+                updateThought={updateThought}
+                triggerVisionAnalysis={triggerVisionAnalysis}
+                currentUser={currentUser}
+                enableContextSuggestions={enableContextSuggestions}
+                isLimitReached={isLimitReached}
+                maxThoughts={maxThoughts}
+              />
+              <PromptColumn
+                templates={templates}
+                templateSelection={templateSelection}
+                selectedProject={selectedProject}
+                promptGeneration={promptGeneration}
+                saveSuccess={saveSuccess}
+                handleQuickSave={handleQuickSave}
+              />
             </div>
           </TabsContent>
 
@@ -474,13 +324,7 @@ function MultipromptContent({ currentUser }) {
         </Tabs>
       </div>
 
-      {currentUser?.role === 'admin' && (
-        <OCRDebugModal
-          isOpen={showOCRDebug}
-          onClose={() => setShowOCRDebug(false)}
-          screenshotUrl={ocrDebugUrl}
-        />
-      )}
+
     </div>
   );
 }
