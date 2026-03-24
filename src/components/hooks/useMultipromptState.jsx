@@ -29,12 +29,9 @@ export const useMultipromptData = ({
           created_by: currentUser.email,
           is_deleted: false 
         }, "-created_date");
-        
-        console.log('[useMultipromptState] ✓ Fetched active thoughts:', thoughts?.length || 0);
         return thoughts || [];
       } catch (error) {
-        console.warn('[useMultipromptState] Thought fetch failed (non-blocking):', error.message);
-        return []; // Graceful fallback - empty list, not error state
+        return [];
       }
     },
     enabled: Boolean(currentUser?.email),
@@ -54,8 +51,6 @@ export const useMultipromptData = ({
     const filtered = rawThoughts.filter(t => 
       !t.project_id || activeProjectIds.includes(t.project_id)
     );
-    
-    console.log(`[useMultipromptState] Filtered ${rawThoughts.length} → ${filtered.length} (active projects only)`);
     return filtered;
   }, [rawThoughts, activeProjectIds]);
 
@@ -90,7 +85,6 @@ export const useMultipromptData = ({
         queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] }),
         queryClient.invalidateQueries({ queryKey: ['thoughts'] })
       ]);
-      console.log('[useMultipromptState] ✓ Invalidated all thought caches');
     } catch (error) {
       console.error("Invalidate failed:", error);
     }
@@ -109,8 +103,6 @@ export const useMultipromptData = ({
       if (newThought?.id) {
         setSelectedThoughtIds(prev => [...prev, newThought.id]);
       }
-      
-      console.log('[useMultipromptState] ✓ Task created, badge count updated');
     },
     onError: (error) => {
       console.error("Failed to create thought:", error);
@@ -132,8 +124,6 @@ export const useMultipromptData = ({
   const triggerVisionAnalysis = useCallback(async (thoughtId, screenshotUrls) => {
     if (!screenshotUrls || screenshotUrls.length === 0) return;
 
-    console.log('[useMultipromptState] Starting vision analysis for thought:', thoughtId);
-
     // Update status to analyzing
     await base44.entities.Thought.update(thoughtId, {
       vision_analysis: { status: 'analyzing', results: [] }
@@ -145,17 +135,13 @@ export const useMultipromptData = ({
       // Analyze each screenshot using the cached endpoint
       for (const url of screenshotUrls) {
         try {
-          console.log('[useMultipromptState] Analyzing screenshot:', url);
-          const response = await base44.functions.invoke('analyzeScreenshotWithCache', { 
+          const response = await base44.functions.invoke('analyzeScreenshotWithCache', {
             screenshotUrl: url,
             level: 'full'
           });
-          
           if (response.data?.ok) {
-            console.log('[useMultipromptState] ✓ Analysis complete', response.data.cached ? '(cached)' : '(fresh)');
             results.push(response.data);
           } else {
-            console.error('[useMultipromptState] Analysis failed:', response.data);
             results.push({ error: 'Analysis failed', sourceUrl: url });
           }
         } catch (error) {
@@ -168,8 +154,6 @@ export const useMultipromptData = ({
       await base44.entities.Thought.update(thoughtId, {
         vision_analysis: { status: 'completed', results }
       });
-
-      console.log('[useMultipromptState] ✓ Vision analysis saved to thought');
       invalidateAllThoughts();
     } catch (error) {
       console.error('[useMultipromptState] Vision analysis error:', error);
@@ -197,8 +181,6 @@ export const useMultipromptData = ({
       queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
       setSelectedThoughtIds(prev => prev.filter(tid => tid !== id));
       
-      console.log('[useMultipromptState] ✓ Task deleted, badge count updated');
-      
       toast("Task moved to recycle bin", {
         action: {
           label: "Undo",
@@ -206,7 +188,6 @@ export const useMultipromptData = ({
             await base44.entities.Thought.update(id, { is_deleted: false, deleted_at: null });
             invalidateAllThoughts();
             queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
-            console.log('[useMultipromptState] ✓ Task restored, badge count updated');
           }
         },
         duration: 5000
