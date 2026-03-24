@@ -47,23 +47,24 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import AIBackoffice from './pages/AIBackoffice';
-import AddItem from './pages/AddItem';
-import AdminAnalytics from './pages/AdminAnalytics';
-import AdminSettings from './pages/AdminSettings';
-import AdminStats from './pages/AdminStats';
-import AdminSupportTickets from './pages/AdminSupportTickets';
-import Checks from './pages/Checks';
-import Dashboard from './pages/Dashboard';
-import EditItem from './pages/EditItem';
-import Features from './pages/Features';
-import Layout from './pages/Layout';
-import Legal from './pages/Legal';
-import Multiprompt from './pages/Multiprompt';
-import RecycleBin from './pages/RecycleBin';
-import Support from './pages/Support';
-import ViewItem from './pages/ViewItem';
-import index from './pages/index';
+import { lazy } from 'react';
+const AIBackoffice = lazy(() => import('./pages/AIBackoffice'));
+const AddItem = lazy(() => import('./pages/AddItem'));
+const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'));
+const AdminSettings = lazy(() => import('./pages/AdminSettings'));
+const AdminStats = lazy(() => import('./pages/AdminStats'));
+const AdminSupportTickets = lazy(() => import('./pages/AdminSupportTickets'));
+const Checks = lazy(() => import('./pages/Checks'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const EditItem = lazy(() => import('./pages/EditItem'));
+const Features = lazy(() => import('./pages/Features'));
+const Layout = lazy(() => import('./pages/Layout'));
+const Legal = lazy(() => import('./pages/Legal'));
+const Multiprompt = lazy(() => import('./pages/Multiprompt'));
+const RecycleBin = lazy(() => import('./pages/RecycleBin'));
+const Support = lazy(() => import('./pages/Support'));
+const ViewItem = lazy(() => import('./pages/ViewItem'));
+const index = lazy(() => import('./pages/index'));
 import __Layout from './Layout.jsx';
 
 
