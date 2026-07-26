@@ -16,23 +16,17 @@ export const useMultipromptData = ({
   const queryClient = useQueryClient();
   const [selectedThoughtIds, setSelectedThoughtIds] = useState([]);
 
-  // HARDENED: Thought fetch can fail without blocking access
+  // Errors surface via the global query error toast; UI falls back to []
   // CANONICAL QUERY - This is the SINGLE SOURCE OF TRUTH for active tasks
   const { data: rawThoughts = [], isLoading } = useQuery({
     queryKey: ['activeThoughts', currentUser?.email],
     queryFn: async () => {
-      try {
-        if (!currentUser?.email) return [];
-        
-        // Fetch ONLY non-deleted thoughts - server-side filter for performance
-        const thoughts = await base44.entities.Thought.filter({ 
-          created_by: currentUser.email,
-          is_deleted: false 
-        }, "-created_date");
-        return thoughts || [];
-      } catch (error) {
-        return [];
-      }
+      // Fetch ONLY non-deleted thoughts - server-side filter for performance
+      const thoughts = await base44.entities.Thought.filter({
+        created_by: currentUser.email,
+        is_deleted: false
+      }, "-created_date");
+      return thoughts || [];
     },
     enabled: Boolean(currentUser?.email),
     staleTime: 0, // Always fresh

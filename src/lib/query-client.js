@@ -1,7 +1,24 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, QueryCache } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
+// Dedupe: only one toast per query key per 30s window
+const recentErrorToasts = new Map();
+const TOAST_DEDUPE_MS = 30 * 1000;
 
 export const queryClientInstance = new QueryClient({
+	queryCache: new QueryCache({
+		onError: (error, query) => {
+			// Queries can opt out of the global toast via meta.silent
+			if (query.meta?.silent) return;
+			const key = query.queryHash;
+			const now = Date.now();
+			const last = recentErrorToasts.get(key);
+			if (last && now - last < TOAST_DEDUPE_MS) return;
+			recentErrorToasts.set(key, now);
+			console.error('[query]', query.queryKey, error);
+			toast.error('Failed to load data. Please try again.');
+		},
+	}),
 	defaultOptions: {
 		queries: {
 			refetchOnWindowFocus: false,

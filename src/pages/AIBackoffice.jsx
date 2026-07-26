@@ -198,17 +198,11 @@ export default function AIBackoffice() {
   // UNIFIED: Use same hook as TierAdvisorToggles, Features, Subscription
   const { data: currentUser } = useCurrentUserSettings();
 
-  // HARDENED: AISettings can fail without blocking page
+  // AISettings failure surfaces via the global query error toast; page still renders with defaults
   const { data: settings = [] } = useQuery({
     queryKey: ['aiSettings', currentUser?.email],
     queryFn: async () => {
-      try {
-        if (!currentUser?.email) return [];
-        return await base44.entities.AISettings.filter({ created_by: currentUser.email }) || [];
-      } catch (error) {
-        console.warn('[AIBackoffice] AISettings fetch failed (non-blocking):', error.message);
-        return []; // Graceful fallback - use defaults
-      }
+      return await base44.entities.AISettings.filter({ created_by: currentUser.email }) || [];
     },
     enabled: Boolean(currentUser?.email),
     retry: false,

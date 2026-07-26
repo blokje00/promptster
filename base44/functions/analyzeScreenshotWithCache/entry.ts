@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { hasProAccess, proAccessDeniedResponse } from '../utils/entitlements/entry.ts';
 
 /**
  * Smart screenshot analysis with caching
@@ -20,38 +21,10 @@ Deno.serve(async (req) => {
       }, { status: 401 });
     }
 
-    // ✅ PRO FEATURE CHECK — must mirror analyzeScreenshotVision's gate,
-    // otherwise users pass here but get 403 on cache miss when Vision runs.
-    const monthlyPrice = user.monthly_price_amount || 0;
-    const subscriptionStatus = user.subscription_status;
-    const trialEnd = user.trial_ends_at || user.trial_end;
-    const now = new Date();
-
-    let hasProAccess = false;
-
-    // Admin bypass
-    if (user.role === 'admin') {
-      hasProAccess = true;
-    }
-    // PRO plan (€19.95): always access
-    else if (monthlyPrice >= 1995) {
-      hasProAccess = true;
-    }
-    // Starter plan (€9.95): only during trial
-    else if ((monthlyPrice === 995 || monthlyPrice === 999) && subscriptionStatus === 'trialing') {
-      if (trialEnd && new Date(trialEnd) > now) {
-        hasProAccess = true;
-      }
-    }
-
-    if (!hasProAccess) {
+    // ✅ PRO FEATURE CHECK — shared gate (see utils/entitlements)
+    if (!hasProAccess(user)) {
       console.log('[analyzeScreenshotWithCache] ❌ PRO feature access denied');
-      return Response.json({ 
-        ok: false,
-        error: 'Vision OCR is only available in PRO plan or during Starter trial',
-        requires_upgrade: true,
-        subscription_status: subscriptionStatus
-      }, { status: 403 });
+      return proAccessDeniedResponse(user);
     }
 
     console.log('[analyzeScreenshotWithCache] ✓ Access granted');

@@ -68,15 +68,10 @@ function FeaturesPage() {
 
   const { data: blocks = [] } = useQuery({
     queryKey: ['featureContentBlocks'],
-    queryFn: async () => {
-      try {
-        return await base44.entities.FeatureContentBlock.filter({ page: "features" });
-      } catch (error) {
-        console.warn('[Features] FeatureContentBlock fetch failed (non-blocking):', error.message);
-        return [];
-      }
-    },
+    queryFn: () => base44.entities.FeatureContentBlock.filter({ page: "features" }),
     retry: false,
+    // Cosmetic content with hardcoded defaults; skip the global error toast
+    meta: { silent: true },
   });
 
   // Build resolved blocks map: DB values merged with defaults
