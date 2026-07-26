@@ -83,6 +83,8 @@ export default function ScreenshotThumbWithOCR({
             <img 
               src={imageUrl} 
               alt="Screenshot"
+              loading="lazy"
+              decoding="async"
               className="w-20 h-20 rounded border object-cover hover:opacity-90 transition-opacity"
             />
             

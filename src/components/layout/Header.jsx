@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
+import { PrefetchLink } from "@/components/PrefetchLink";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -233,7 +234,7 @@ export default function Header() {
 
         {/* Center: Main Navigation */}
         <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-          <Link to={createPageUrl("Multiprompt")}>
+          <PrefetchLink page="Multiprompt" to={createPageUrl("Multiprompt")}>
             <div 
               className={`relative flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm transition-all ${
                 isMultiprompt 
@@ -249,9 +250,9 @@ export default function Header() {
                 </span>
               )}
             </div>
-          </Link>
+          </PrefetchLink>
 
-          <Link to={createPageUrl("Checks")}>
+          <PrefetchLink page="Checks" to={createPageUrl("Checks")}>
             <div 
               className={`relative flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm transition-all ${
                 isChecks 
@@ -267,9 +268,9 @@ export default function Header() {
                 </span>
               )}
             </div>
-          </Link>
+          </PrefetchLink>
           
-          <Link to={createPageUrl("AddItem")}>
+          <PrefetchLink page="AddItem" to={createPageUrl("AddItem")}>
             <div 
               className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm transition-all ${
                 isAddItem 
@@ -280,9 +281,9 @@ export default function Header() {
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Prompt</span>
             </div>
-          </Link>
+          </PrefetchLink>
           
-          <Link to={createPageUrl("Dashboard")}>
+          <PrefetchLink page="Dashboard" to={createPageUrl("Dashboard")}>
             <div 
               className={`relative flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm transition-all ${
                 isVault 
@@ -293,7 +294,7 @@ export default function Header() {
               <Archive className="w-4 h-4" />
               <span className="hidden sm:inline sm:block">Vault</span>
             </div>
-          </Link>
+          </PrefetchLink>
         </div>
 
         {/* Right side: Settings */}

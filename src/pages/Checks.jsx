@@ -55,6 +55,7 @@ function CollapsibleTaskContent({ taskName, fullDescription, status }) {
 import { format } from "date-fns";
 
 import { toast } from "sonner";
+import { useDebouncedValue } from "@/components/hooks/useDebouncedValue";
 import { projectColors } from "@/components/lib/constants";
 import RetryModal from "@/components/checks/RetryModal";
 import { useUserEntities } from "@/components/hooks/useUserEntities";
@@ -64,6 +65,7 @@ export default function Checks() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebouncedValue(searchQuery);
   const [statusFilter, setStatusFilter] = useState("open");
   const [sortConfig, setSortConfig] = useState({ key: "updated_date", direction: "asc" });
   const [retryModalOpen, setRetryModalOpen] = useState(false);
@@ -112,8 +114,8 @@ export default function Checks() {
   const filteredTasks = useMemo(() => {
     let result = [...allTasks];
 
-    if (searchQuery) {
-      const lowerQuery = searchQuery.toLowerCase();
+    if (debouncedSearch) {
+      const lowerQuery = debouncedSearch.toLowerCase();
       result = result.filter(task => 
         (task.task_name && task.task_name.toLowerCase().includes(lowerQuery)) ||
         (task.full_description && task.full_description.toLowerCase().includes(lowerQuery)) ||
@@ -131,7 +133,7 @@ export default function Checks() {
 
     // No sorting - keep insertion order (chronological)
     return result;
-  }, [allTasks, searchQuery, statusFilter, sortConfig]);
+  }, [allTasks, debouncedSearch, statusFilter, sortConfig]);
 
   const handleSort = (key) => {
     setSortConfig(current => ({
@@ -389,6 +391,8 @@ export default function Checks() {
                                     <img 
                                       src={url} 
                                       alt={`Screenshot ${idx + 1}`}
+                                      loading="lazy"
+                                      decoding="async"
                                       className="w-20 h-20 object-cover rounded border border-slate-200 hover:scale-150 hover:z-50 transition-transform cursor-pointer"
                                     />
                                   </button>

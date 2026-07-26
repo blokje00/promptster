@@ -16,10 +16,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import ItemCard from "../components/dashboard/ItemCard";
 import VaultTableView from "../components/dashboard/VaultTableView";
 import { projectColors } from "@/components/lib/constants";
+import { useDebouncedValue } from "@/components/hooks/useDebouncedValue";
 
 export default function Dashboard() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebouncedValue(searchQuery);
   const [filterType, setFilterType] = useState("all");
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [showZipOnly, setShowZipOnly] = useState(false);
@@ -50,11 +52,11 @@ export default function Dashboard() {
   }), [items]);
 
   const filteredItems = useMemo(() => items.filter(item => {
-    const matchesSearch = !searchQuery || 
-      item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = !debouncedSearch ||
+      item.title?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      item.content?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      item.description?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      item.tags?.some(tag => tag.toLowerCase().includes(debouncedSearch.toLowerCase()));
     
     const matchesType = filterType === "all" || item.type === filterType || (filterType === "multiprompt" && item.type === "multiprompt");
     const matchesFavorites = !showFavoritesOnly || item.is_favorite;
@@ -64,7 +66,7 @@ export default function Dashboard() {
     const matchesProject = selectedProjectId === "all" || item.project_id === selectedProjectId;
     
     return matchesSearch && matchesType && matchesFavorites && matchesZip && matchesPublished && matchesPendingCheck && matchesProject;
-  }), [items, searchQuery, filterType, showFavoritesOnly, showZipOnly, showPublishedOnly, showPendingCheckOnly, selectedProjectId]);
+  }), [items, debouncedSearch, filterType, showFavoritesOnly, showZipOnly, showPublishedOnly, showPendingCheckOnly, selectedProjectId]);
 
   return (
     <div className="p-4 md:p-8">

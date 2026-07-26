@@ -153,6 +153,8 @@ export default function ImageUploadZone({ images, onImagesChange }) {
                             <img
                               src={imageUrl}
                               alt={`Screenshot ${index + 1}`}
+                              loading="lazy"
+                              decoding="async"
                               className="w-32 h-32 object-cover"
                             />
                             <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-40 transition-opacity" />
@@ -182,6 +184,8 @@ export default function ImageUploadZone({ images, onImagesChange }) {
                                   <img
                                     src={imageUrl}
                                     alt={`Screenshot ${index + 1}`}
+                                    loading="lazy"
+                                    decoding="async"
                                     className="w-full h-auto rounded-lg"
                                   />
                                 </DialogContent>

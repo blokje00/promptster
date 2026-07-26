@@ -1,0 +1,17 @@
+{
+  // Deno runtime files — separate TS project so the IDE stops applying
+  // the web/Node config to backend functions (kills fake lint errors).
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "noImplicitAny": false,
+    "useUnknownInCatchVariables": false,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "include": ["./**/*.ts", "./deno.d.ts"]
+}

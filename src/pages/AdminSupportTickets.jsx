@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useDebouncedValue } from "@/components/hooks/useDebouncedValue";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import TicketDetailDialog from "../components/admin/TicketDetailDialog";
 export default function AdminSupportTickets() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebouncedValue(searchQuery);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortField, setSortField] = useState("created_date");
@@ -50,8 +52,8 @@ export default function AdminSupportTickets() {
 
   const filteredTickets = tickets
     .filter(ticket => {
-      const searchLower = searchQuery.toLowerCase();
-      const matchesSearch = !searchQuery || 
+      const searchLower = debouncedSearch.toLowerCase();
+      const matchesSearch = !debouncedSearch || 
         ticket.subject?.toLowerCase().includes(searchLower) ||
         ticket.message?.toLowerCase().includes(searchLower) ||
         ticket.user_email?.toLowerCase().includes(searchLower) ||

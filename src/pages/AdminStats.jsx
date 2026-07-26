@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BarChart, Users, FolderOpen, Sparkles, FileText, Loader2, Calendar, Clock, CreditCard, ArrowUpDown, ArrowUp, ArrowDown, Eye, MousePointerClick, TrendingUp, Filter } from "lucide-react";
+import { BarChart, Users, Sparkles, FileText, Loader2, Calendar, Clock, CreditCard, ArrowUpDown, ArrowUp, ArrowDown, Eye, Filter } from "lucide-react";
 import { format, differenceInDays, startOfDay, endOfDay, subDays } from "date-fns";
 import { nl } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -15,9 +15,9 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
  */
 function SortableHeader({ field, label, sortField, sortDirection, onSort }) {
   const isActive = sortField === field;
-  
+
   return (
-    <th 
+    <th
       className="pb-2 font-semibold text-slate-700 cursor-pointer hover:text-indigo-600 transition-colors select-none"
       onClick={() => onSort(field)}
     >
@@ -39,12 +39,13 @@ function SortableHeader({ field, label, sortField, sortDirection, onSort }) {
 
 /**
  * Admin statistieken pagina - alleen zichtbaar voor admin/superuser.
- * Toont overzicht van app gebruik.
+ * Alle aggregatie gebeurt server-side in de getAdminStats functie;
+ * de browser ontvangt één compacte payload i.p.v. 7 volledige tabellen.
  */
 export default function AdminStats() {
-  const [sortField, setSortField] = React.useState(null);
-  const [sortDirection, setSortDirection] = React.useState('asc');
-  
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc');
+
   // TASK-2: Date range filter state
   const [dateRange, setDateRange] = useState({
     from: subDays(new Date(), 30), // Default: last 30 days
@@ -56,77 +57,18 @@ export default function AdminStats() {
     queryFn: () => base44.auth.me(),
   });
 
-  const { data: allUsers = [], isLoading: loadingUsers } = useQuery({
-    queryKey: ['allUsers'],
+  // Single server-side aggregated query (replaces 7 full-table downloads)
+  const { data: adminData, isLoading } = useQuery({
+    queryKey: ['adminStats', dateRange],
     queryFn: async () => {
-      const users = await base44.entities.User.list();
-      return users || [];
-    },
-    enabled: currentUser?.role === 'admin',
-  });
-
-  const { data: allItems = [], isLoading: loadingItems } = useQuery({
-    queryKey: ['allItems'],
-    queryFn: async () => {
-      const items = await base44.entities.Item.list();
-      return items || [];
-    },
-    enabled: currentUser?.role === 'admin',
-  });
-
-  const { data: allProjects = [], isLoading: loadingProjects } = useQuery({
-    queryKey: ['allProjects'],
-    queryFn: async () => {
-      const projects = await base44.entities.Project.list();
-      return projects || [];
-    },
-    enabled: currentUser?.role === 'admin',
-  });
-
-  const { data: allThoughts = [], isLoading: loadingThoughts } = useQuery({
-    queryKey: ['allThoughts'],
-    queryFn: async () => {
-      const thoughts = await base44.entities.Thought.list();
-      return thoughts || [];
-    },
-    enabled: currentUser?.role === 'admin',
-  });
-
-  const { data: allUserProfiles = [], isLoading: loadingProfiles } = useQuery({
-    queryKey: ['allUserProfiles'],
-    queryFn: async () => {
-      const profiles = await base44.entities.UserProfile.list();
-      return profiles || [];
-    },
-    enabled: currentUser?.role === 'admin',
-  });
-
-  const { data: pageViews = [], isLoading: loadingViews } = useQuery({
-    queryKey: ['pageViews', dateRange],
-    queryFn: async () => {
-      const allViews = await base44.entities.PageView.list('-created_date', 5000);
-      
-      // TASK-2: Filter by date range
-      if (dateRange.from && dateRange.to) {
-        const fromDate = startOfDay(dateRange.from);
-        const toDate = endOfDay(dateRange.to);
-        
-        return allViews.filter(pv => {
-          const viewDate = new Date(pv.created_date);
-          return viewDate >= fromDate && viewDate <= toDate;
-        });
+      const response = await base44.functions.invoke('getAdminStats', {
+        from: dateRange.from ? startOfDay(dateRange.from).toISOString() : null,
+        to: dateRange.to ? endOfDay(dateRange.to).toISOString() : null,
+      });
+      if (!response.data?.ok) {
+        throw new Error(response.data?.error || 'Failed to load admin stats');
       }
-      
-      return allViews;
-    },
-    enabled: currentUser?.role === 'admin'
-  });
-
-  const { data: allScreenshots = [], isLoading: loadingScreenshots } = useQuery({
-    queryKey: ['allScreenshots'],
-    queryFn: async () => {
-      const screenshots = await base44.entities.ScreenshotAsset.list();
-      return screenshots || [];
+      return response.data;
     },
     enabled: currentUser?.role === 'admin',
   });
@@ -140,86 +82,11 @@ export default function AdminStats() {
     }
   };
 
-  // Filter out admin user (patrick.van.zandvoort@gmail.com)
-  const filteredUsers = useMemo(() => 
-    allUsers.filter(u => u.email !== 'patrick.van.zandvoort@gmail.com'),
-    [allUsers]
-  );
-
-  const filteredPageViews = useMemo(() =>
-    pageViews.filter(pv => pv.user_email !== 'patrick.van.zandvoort@gmail.com'),
-    [pageViews]
-  );
-
-  // Filter admin data from items, projects, thoughts (BEFORE using them)
-  const filteredItems = useMemo(() => 
-    allItems.filter(i => i.created_by !== 'patrick.van.zandvoort@gmail.com'),
-    [allItems]
-  );
-
-  const filteredProjects = useMemo(() =>
-    allProjects.filter(p => p.created_by !== 'patrick.van.zandvoort@gmail.com'),
-    [allProjects]
-  );
-
-  const filteredThoughts = useMemo(() =>
-    allThoughts.filter(t => t.created_by !== 'patrick.van.zandvoort@gmail.com'),
-    [allThoughts]
-  );
-
-  const filteredScreenshots = useMemo(() =>
-    allScreenshots.filter(s => s.created_by !== 'patrick.van.zandvoort@gmail.com'),
-    [allScreenshots]
-  );
-
-  // Prepare user data with calculated fields
-  const usersWithData = React.useMemo(() => {
-    return filteredUsers.map(user => {
-      const userItems = filteredItems.filter(i => i.created_by === user.email);
-      const userProjects = filteredProjects.filter(p => p.created_by === user.email);
-      const userThoughts = filteredThoughts.filter(t => t.created_by === user.email);
-      const userScreenshots = filteredScreenshots.filter(s => s.created_by === user.email);
-      const userPageViews = filteredPageViews.filter(pv => pv.user_email === user.email);
-      const userProfile = allUserProfiles.find(p => p.email === user.email);
-      
-      // Calculate last activity
-      const allDates = [
-        ...userItems.map(i => new Date(i.created_date)),
-        ...userThoughts.map(t => new Date(t.created_date)),
-        ...userPageViews.map(pv => new Date(pv.created_date))
-      ].filter(d => !isNaN(d));
-      const lastActivity = allDates.length > 0 ? new Date(Math.max(...allDates)) : null;
-      
-      return {
-        ...user,
-        itemsCount: userItems.length,
-        projectsCount: userProjects.length,
-        thoughtsCount: userThoughts.length,
-        screenshotsCount: userScreenshots.length,
-        pageViewsCount: userPageViews.length,
-        lastActivity,
-        userItems,
-        userProjects,
-        userThoughts,
-        profile: userProfile
-      };
-    });
-  }, [filteredUsers, filteredItems, filteredProjects, filteredThoughts, filteredScreenshots, filteredPageViews, allUserProfiles]);
-
-  // Analytics stats
-  const analyticsStats = useMemo(() => {
-    const totalViews = filteredPageViews.length;
-    const uniqueSessions = new Set(filteredPageViews.map(pv => pv.session_id)).size;
-    const uniqueUsers = new Set(filteredPageViews.filter(pv => pv.user_id).map(pv => pv.user_id)).size;
-    
-    const totalTime = filteredPageViews.reduce((sum, pv) => sum + (pv.time_on_page || 0), 0);
-    const avgTimePerPage = totalViews > 0 ? Math.round(totalTime / totalViews) : 0;
-
-    return { totalViews, uniqueSessions, uniqueUsers, avgTimePerPage };
-  }, [filteredPageViews]);
+  const usersWithData = adminData?.users || [];
+  const globalStats = adminData?.stats;
 
   // Sort users
-  const sortedUsers = React.useMemo(() => {
+  const sortedUsers = useMemo(() => {
     if (!sortField) return usersWithData;
 
     const sorted = [...usersWithData].sort((a, b) => {
@@ -237,14 +104,6 @@ export default function AdminStats() {
         case 'created_date':
           aVal = new Date(a.created_date || 0);
           bVal = new Date(b.created_date || 0);
-          break;
-        case 'plan_id':
-          aVal = a.plan_id || '';
-          bVal = b.plan_id || '';
-          break;
-        case 'subscription_status':
-          aVal = a.subscription_status || 'none';
-          bVal = b.subscription_status || 'none';
           break;
         case 'items':
           aVal = a.itemsCount;
@@ -292,9 +151,7 @@ export default function AdminStats() {
     );
   }
 
-  const isLoading = loadingUsers || loadingItems || loadingProjects || loadingThoughts || loadingViews || loadingProfiles || loadingScreenshots;
-
-  if (isLoading) {
+  if (isLoading || !globalStats) {
     return (
       <div className="p-8 flex items-center justify-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
@@ -305,46 +162,38 @@ export default function AdminStats() {
   const stats = [
     {
       title: "Totaal Gebruikers",
-      value: filteredUsers.length,
+      value: globalStats.totalUsers,
       icon: Users,
       color: "text-blue-600",
       bgColor: "bg-blue-100"
     },
     {
       title: "Totaal Items",
-      value: filteredItems.length,
+      value: globalStats.totalItems,
       icon: FileText,
       color: "text-green-600",
       bgColor: "bg-green-100",
-      breakdown: {
-        prompts: filteredItems.filter(i => i.type === 'prompt').length,
-        multiprompts: filteredItems.filter(i => i.type === 'multiprompt').length,
-        code: filteredItems.filter(i => i.type === 'code').length,
-        snippets: filteredItems.filter(i => i.type === 'snippet').length,
-      }
+      breakdown: globalStats.itemsBreakdown
     },
     {
       title: "Page Views",
-      value: analyticsStats.totalViews,
+      value: globalStats.analytics.totalViews,
       icon: Eye,
       color: "text-indigo-600",
       bgColor: "bg-indigo-100",
       breakdown: {
-        sessions: analyticsStats.uniqueSessions,
-        users: analyticsStats.uniqueUsers,
-        avgTime: `${analyticsStats.avgTimePerPage}s`
+        sessions: globalStats.analytics.uniqueSessions,
+        users: globalStats.analytics.uniqueUsers,
+        avgTime: `${globalStats.analytics.avgTimePerPage}s`
       }
     },
     {
       title: "Totaal Thoughts",
-      value: filteredThoughts.length,
+      value: globalStats.totalThoughts,
       icon: Sparkles,
       color: "text-yellow-600",
       bgColor: "bg-yellow-100",
-      breakdown: {
-        active: filteredThoughts.filter(t => !t.is_deleted).length,
-        deleted: filteredThoughts.filter(t => t.is_deleted).length,
-      }
+      breakdown: globalStats.thoughtsBreakdown
     },
   ];
 
@@ -364,7 +213,7 @@ export default function AdminStats() {
                 </div>
                 <p className="text-slate-600">Analytics, gebruikers & app statistieken (admin data gefilterd)</p>
               </div>
-              
+
               {/* TASK-2: Date Range Picker */}
               <Popover>
                 <PopoverTrigger asChild>
@@ -384,25 +233,25 @@ export default function AdminStats() {
                     <p className="text-sm font-medium">Select date range</p>
                   </div>
                   <div className="p-3 space-y-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="w-full justify-start"
                       onClick={() => setDateRange({ from: subDays(new Date(), 7), to: new Date() })}
                     >
                       Last 7 days
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="w-full justify-start"
                       onClick={() => setDateRange({ from: subDays(new Date(), 30), to: new Date() })}
                     >
                       Last 30 days
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="w-full justify-start"
                       onClick={() => setDateRange({ from: subDays(new Date(), 90), to: new Date() })}
                     >
@@ -468,56 +317,41 @@ export default function AdminStats() {
                   <thead className="border-b border-slate-200">
                     <tr className="text-left">
                       <SortableHeader field="full_name" label="Naam" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
-                      <th className="pb-2 font-semibold text-slate-700 cursor-pointer hover:text-indigo-600 transition-colors select-none w-48" onClick={() => handleSort('email')}>
-                        <div className="flex items-center gap-1">
-                          Email
-                          {sortField === 'email' ? (
-                            sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 text-indigo-600" /> : <ArrowDown className="w-3 h-3 text-indigo-600" />
-                          ) : (
-                            <ArrowUpDown className="w-3 h-3 text-slate-400" />
-                          )}
-                        </div>
-                      </th>
+                      <SortableHeader field="email" label="Email" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       <SortableHeader field="created_date" label="Lid sinds" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       <th className="pb-2 font-semibold text-slate-700 w-20">Plan</th>
                       <th className="pb-2 font-semibold text-slate-700 w-40">Subscription Status</th>
-                      <th className="pb-2 font-semibold text-slate-700 w-36">Trial Dates</th>
                       <SortableHeader field="items" label="Items" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       <SortableHeader field="projects" label="Projecten" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
-                      <th className="pb-2 font-semibold text-slate-700">Groei %</th>
+                      <SortableHeader field="thoughts" label="Thoughts" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      <SortableHeader field="screenshots" label="Screenshots" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      <SortableHeader field="pageviews" label="Views" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
+                      <SortableHeader field="last_activity" label="Laatst actief" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       <th className="pb-2 font-semibold text-slate-700">Actions %</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {sortedUsers.map((user) => {
-                      const userItems = user.userItems;
-                      const userProjects = user.userProjects;
-                      const userThoughts = user.userThoughts || [];
-                      
-                      // Get subscription data from UserProfile
+                      // Get subscription data from server-aggregated profile
                       const profile = user.profile;
                       const subscriptionStatus = profile?.subscription_status || 'none';
                       const trialEnd = profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null;
                       const planId = profile?.plan_id;
-                      
+
                       const createdDate = user.created_date ? new Date(user.created_date) : null;
+                      const lastActivity = user.lastActivity ? new Date(user.lastActivity) : null;
                       const now = new Date();
-                      
-                      // Calculate trial start (14 days before end if trialing)
-                      const trialStart = trialEnd && subscriptionStatus === 'trialing' 
-                        ? new Date(trialEnd.getTime() - (14 * 24 * 60 * 60 * 1000)) 
-                        : null;
-                      
+
                       // Days remaining in trial
-                      const daysRemaining = trialEnd && trialEnd > now 
+                      const daysRemaining = trialEnd && trialEnd > now
                         ? Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24))
                         : 0;
-                      
+
                       // Status labels matching Stripe subscription status
                       const statusConfig = {
                         'none': { label: 'Free', color: 'bg-slate-100 text-slate-700', icon: null },
-                        'trialing': { 
-                          label: trialEnd && trialEnd > now ? `Trial (${daysRemaining}d left)` : 'Trial Expired', 
+                        'trialing': {
+                          label: trialEnd && trialEnd > now ? `Trial (${daysRemaining}d left)` : 'Trial Expired',
                           color: trialEnd && trialEnd > now ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700',
                           icon: Clock
                         },
@@ -526,57 +360,17 @@ export default function AdminStats() {
                         'canceled': { label: 'Canceled', color: 'bg-red-100 text-red-700', icon: null },
                         'incomplete': { label: 'Incomplete', color: 'bg-yellow-100 text-yellow-700', icon: null }
                       };
-                      
+
                       const currentStatus = statusConfig[subscriptionStatus] || statusConfig['none'];
                       const StatusIcon = currentStatus.icon;
 
-                      // CALCULATE GROWTH AND ACTIONS
-                      const today = new Date();
-                      const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-                      const sixtyDaysAgo = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
-                      
-                      const itemsLast30 = userItems.filter(i => new Date(i.created_date) > thirtyDaysAgo);
-                      const itemsPrev30 = userItems.filter(i => {
-                          const d = new Date(i.created_date);
-                          return d > sixtyDaysAgo && d <= thirtyDaysAgo;
-                      });
-
-                      const calcGrowth = (current, prev) => {
-                          if (prev === 0) return current > 0 ? 100 : 0;
-                          return Math.round(((current - prev) / prev) * 100);
-                      };
-
-                      const promptGrowth = calcGrowth(
-                          itemsLast30.filter(i => i.type === 'prompt').length,
-                          itemsPrev30.filter(i => i.type === 'prompt').length
-                      );
-                      const multiGrowth = calcGrowth(
-                          itemsLast30.filter(i => i.type === 'multiprompt').length,
-                          itemsPrev30.filter(i => i.type === 'multiprompt').length
-                      );
-
-                      // Actions Stats (from task_checks)
-                      let totalChecks = 0;
-                      let successChecks = 0;
-                      let failedChecks = 0;
-                      let retryChecks = 0;
-
-                      userItems.forEach(item => {
-                          if (item.task_checks) {
-                              item.task_checks.forEach(check => {
-                                  totalChecks++;
-                                  if (check.status === 'success') successChecks++;
-                                  if (check.status === 'failed') failedChecks++;
-                                  if (check.status === 'retried') retryChecks++;
-                              });
-                          }
-                      });
-
+                      // Server-aggregated task_checks stats
+                      const checks = user.checks || { total: 0, success: 0, failed: 0, retried: 0 };
                       const safeDiv = (num, den) => den === 0 ? 0 : Math.round((num / den) * 100);
 
                       // Calculate days since last activity
-                      const daysSinceActive = user.lastActivity 
-                        ? differenceInDays(now, user.lastActivity) 
+                      const daysSinceActive = lastActivity
+                        ? differenceInDays(now, lastActivity)
                         : null;
 
                       return (
@@ -602,16 +396,16 @@ export default function AdminStats() {
                               {currentStatus.label}
                             </Badge>
                           </td>
-                          <td className="py-3 text-center">{userItems.length}</td>
+                          <td className="py-3 text-center">{user.itemsCount}</td>
                           <td className="py-3 text-center">{user.projectsCount}</td>
                           <td className="py-3 text-center">{user.thoughtsCount}</td>
                           <td className="py-3 text-center">{user.screenshotsCount}</td>
                           <td className="py-3 text-center">{user.pageViewsCount}</td>
                           <td className="py-3 text-xs">
-                            {user.lastActivity ? (
+                            {lastActivity ? (
                               <div className="flex flex-col items-start">
                                 <span className="text-slate-700 font-medium">
-                                  {format(user.lastActivity, "d MMM yyyy", { locale: nl })}
+                                  {format(lastActivity, "d MMM yyyy", { locale: nl })}
                                 </span>
                                 <span className={`text-xs ${
                                   daysSinceActive === 0 ? "text-green-600" :
@@ -627,11 +421,11 @@ export default function AdminStats() {
                             )}
                           </td>
                           <td className="py-3 text-xs">
-                             {totalChecks > 0 ? (
+                             {checks.total > 0 ? (
                                <div className="flex flex-col gap-1">
-                                 <span className="text-green-600">✓ {safeDiv(successChecks, totalChecks)}%</span>
-                                 <span className="text-red-500">✗ {safeDiv(failedChecks, totalChecks)}%</span>
-                                 <span className="text-orange-500">↻ {safeDiv(retryChecks, totalChecks)}%</span>
+                                 <span className="text-green-600">✓ {safeDiv(checks.success, checks.total)}%</span>
+                                 <span className="text-red-500">✗ {safeDiv(checks.failed, checks.total)}%</span>
+                                 <span className="text-orange-500">↻ {safeDiv(checks.retried, checks.total)}%</span>
                                </div>
                              ) : (
                                <span className="text-slate-400">-</span>

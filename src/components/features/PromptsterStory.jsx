@@ -127,6 +127,8 @@ export default function PromptsterStory({ isAdmin = false, editMode = false, res
           <img 
             src="https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/d21581cf8_1765133423210_0hfsyj_Screenshot_2025_12_07_at_194740.png"
             alt="The Problem"
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover"
           />
           </div>
@@ -172,6 +174,8 @@ export default function PromptsterStory({ isAdmin = false, editMode = false, res
               <img 
                 src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68f4bcd57ca6479c7acf2f47/8b6ef1003_Screenshot2025-12-21at152627.png"
                 alt="Promptster Multi-Step Builder"
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -453,6 +457,8 @@ export default function PromptsterStory({ isAdmin = false, editMode = false, res
         <img 
           src="https://base44.app/api/apps/68f4bcd57ca6479c7acf2f47/files/public/68f4bcd57ca6479c7acf2f47/27e95fb3c_1764703710450_8sxj4k_Screenshot_2025_12_02_at_202629.png"
           alt="Workflow"
+          loading="lazy"
+          decoding="async"
           className="w-full h-auto object-cover"
         />
         <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full opacity-20 blur-3xl -mr-16 -mt-16"></div>
