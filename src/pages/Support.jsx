@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { MessageCircle, Send, CheckCircle, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import AccessGuard from "../components/auth/AccessGuard";
 import { useAutosaveField } from "@/components/hooks/useAutosaveField";
 
 export default function Support() {
@@ -81,8 +80,7 @@ export default function Support() {
   };
 
   return (
-    <AccessGuard pageType="public">
-      <div className="p-4 md:p-8">
+    <div className="p-4 md:p-8">
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center gap-4 mb-8">
             <Button
@@ -197,6 +195,5 @@ export default function Support() {
           )}
         </div>
       </div>
-    </AccessGuard>
   );
 }

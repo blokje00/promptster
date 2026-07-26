@@ -20,25 +20,41 @@ Deno.serve(async (req) => {
       }, { status: 401 });
     }
 
-    // ✅ TRIAL/SUBSCRIPTION CHECK
+    // ✅ PRO FEATURE CHECK — must mirror analyzeScreenshotVision's gate,
+    // otherwise users pass here but get 403 on cache miss when Vision runs.
+    const monthlyPrice = user.monthly_price_amount || 0;
     const subscriptionStatus = user.subscription_status;
-    const trialEnd = user.trial_end ? new Date(user.trial_end) : null;
+    const trialEnd = user.trial_ends_at || user.trial_end;
     const now = new Date();
 
-    const hasActiveSubscription = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
-    const hasActiveTrial = subscriptionStatus === 'trial' && trialEnd && trialEnd > now;
+    let hasProAccess = false;
 
-    if (!hasActiveSubscription && !hasActiveTrial) {
-      console.log('[analyzeScreenshotWithCache] ❌ Access denied - no active trial/subscription');
+    // Admin bypass
+    if (user.role === 'admin') {
+      hasProAccess = true;
+    }
+    // PRO plan (€19.95): always access
+    else if (monthlyPrice >= 1995) {
+      hasProAccess = true;
+    }
+    // Starter plan (€9.95): only during trial
+    else if ((monthlyPrice === 995 || monthlyPrice === 999) && subscriptionStatus === 'trialing') {
+      if (trialEnd && new Date(trialEnd) > now) {
+        hasProAccess = true;
+      }
+    }
+
+    if (!hasProAccess) {
+      console.log('[analyzeScreenshotWithCache] ❌ PRO feature access denied');
       return Response.json({ 
         ok: false,
-        error: 'Vision analysis requires an active trial or subscription',
-        subscription_status: subscriptionStatus,
-        trial_expired: trialEnd ? trialEnd < now : false
+        error: 'Vision OCR is only available in PRO plan or during Starter trial',
+        requires_upgrade: true,
+        subscription_status: subscriptionStatus
       }, { status: 403 });
     }
 
-    console.log('[analyzeScreenshotWithCache] ✓ Access granted - trial/subscription active');
+    console.log('[analyzeScreenshotWithCache] ✓ Access granted');
 
     const body = await req.json();
     const { screenshotUrl, level = 'full', forceRefresh = false } = body;

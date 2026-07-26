@@ -57,7 +57,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { projectColors } from "@/components/lib/constants";
 import RetryModal from "@/components/checks/RetryModal";
-import AccessGuard from "../components/auth/AccessGuard";
+import { useUserEntities } from "@/components/hooks/useUserEntities";
 
 
 export default function Checks() {
@@ -74,20 +74,12 @@ export default function Checks() {
     queryFn: () => base44.auth.me(),
   });
 
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: ['items', currentUser?.email],
-    queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.Item.filter({ created_by: currentUser.email }, "-updated_date");
-    },
-    enabled: !!currentUser?.email,
+  const { data: items = [], isLoading } = useUserEntities("Item", {
+    queryKey: "items",
+    sort: "-updated_date",
   });
 
-  const { data: projects = [] } = useQuery({
-    queryKey: ['projects', currentUser?.email],
-    queryFn: async () => currentUser ? await base44.entities.Project.filter({ created_by: currentUser.email }) : [],
-    enabled: !!currentUser
-  });
+  const { data: projects = [] } = useUserEntities("Project", { queryKey: "projects" });
 
   // Flatten tasks with proper screenshot handling
   const allTasks = useMemo(() => {
@@ -306,7 +298,6 @@ export default function Checks() {
 
 
   return (
-    <AccessGuard pageType="protected">
     <div className="p-4 md:p-8 min-h-screen bg-slate-50/50 dark:bg-slate-900/50">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
@@ -503,6 +494,5 @@ export default function Checks() {
           currentUser={currentUser}
         />
       </div>
-    </AccessGuard>
   );
 }

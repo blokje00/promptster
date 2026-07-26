@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/AuthContext";
 // Custom Hooks
 import { useMultipromptData } from "@/components/hooks/useMultipromptState";
 import { useProjectSelection } from "@/components/hooks/useProjectSelection";
+import { useUserEntities } from "@/components/hooks/useUserEntities";
 import { useTemplateSelection } from "@/components/hooks/useTemplateSelection";
 import { useNewThoughtInput } from "@/components/hooks/useNewThoughtInput";
 import { usePromptGeneration } from "@/components/hooks/usePromptGeneration";
@@ -29,7 +30,6 @@ import SuccessBanner from "@/components/multiprompt/SuccessBanner";
 import TasksColumn from "@/components/multiprompt/TasksColumn";
 import PromptColumn from "@/components/multiprompt/PromptColumn";
 import BrainstormPanel from "@/components/multiprompt/BrainstormPanel";
-import AccessGuard from "../components/auth/AccessGuard";
 
 // Inner component — only mounts when currentUser is confirmed.
 // This prevents ALL hooks/queries from running unauthenticated.
@@ -39,37 +39,11 @@ function MultipromptContent({ currentUser }) {
   const queryClient = useQueryClient();
 
   // --- Data Queries ---
-  const { data: projects = [] } = useQuery({
-    queryKey: ['projects', currentUser?.email],
-    queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.Project.filter({ created_by: currentUser.email });
-    },
-    enabled: !!currentUser?.email,
-    retry: false,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: projects = [] } = useUserEntities("Project", { queryKey: "projects" });
 
-  const { data: templates = [] } = useQuery({
-    queryKey: ['templates', currentUser?.email],
-    queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.PromptTemplate.filter({ created_by: currentUser.email });
-    },
-    enabled: !!currentUser?.email,
-    retry: false,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: templates = [] } = useUserEntities("PromptTemplate", { queryKey: "templates" });
 
-  const { data: aiSettings = [] } = useQuery({
-    queryKey: ['aiSettings', currentUser?.email],
-    queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.AISettings.filter({ created_by: currentUser.email });
-    },
-    enabled: !!currentUser?.email,
-    retry: false,
-  });
+  const { data: aiSettings = [] } = useUserEntities("AISettings", { queryKey: "aiSettings" });
 
   // --- Custom Hooks ---
   const { selectedProjectId, setSelectedProjectId, selectedProject } = useProjectSelection(projects);
@@ -323,20 +297,16 @@ function MultipromptContent({ currentUser }) {
   );
 }
 
-// Outer shell — only mounts MultipromptContent when authenticated & user is loaded.
-// Prevents all hooks/queries from ever running without a valid user.
+// Outer shell — only mounts MultipromptContent when the user is loaded.
+// Route-level auth is handled centrally by RouteGuard in App.jsx.
 export default function Multiprompt() {
-  const { currentUser, isAuthenticated, isLoadingAuth } = useAuth();
+  const { currentUser, isLoadingAuth } = useAuth();
 
-  return (
-    <AccessGuard pageType="protected">
-      {isLoadingAuth ? (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-        </div>
-      ) : (
-        <MultipromptContent currentUser={currentUser} />
-      )}
-    </AccessGuard>
+  return isLoadingAuth ? (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+    </div>
+  ) : (
+    <MultipromptContent currentUser={currentUser} />
   );
 }

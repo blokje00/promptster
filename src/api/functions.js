@@ -23,13 +23,7 @@ export const exportUserData = base44.functions.exportUserData;
 
 export const uploadScreenshot = base44.functions.uploadScreenshot;
 
-export const analyzeScreenshot = base44.functions.analyzeScreenshot;
-
 export const analyzeScreenshotVision = base44.functions.analyzeScreenshotVision;
-
-export const utils/rateLimiter = base44.functions.utils/rateLimiter;
-
-export const utils/logger = base44.functions.utils/logger;
 
 export const saveTask = base44.functions.saveTask;
 
@@ -52,12 +46,6 @@ export const runPrompt = base44.functions.runPrompt;
 export const resetDemoStatus = base44.functions.resetDemoStatus;
 
 export const updateNoCodeRanking = base44.functions.updateNoCodeRanking;
-
-export const vision/componentClassifier = base44.functions.vision/componentClassifier;
-
-export const vision/ocrConfig = base44.functions.vision/ocrConfig;
-
-export const vision/semanticAnalyzer = base44.functions.vision/semanticAnalyzer;
 
 export const scheduleUpgradeAfterTrial = base44.functions.scheduleUpgradeAfterTrial;
 

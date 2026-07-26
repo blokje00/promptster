@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useUserEntities } from "@/components/hooks/useUserEntities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
@@ -32,24 +33,11 @@ export default function Dashboard() {
     queryFn: () => base44.auth.me(),
   });
 
-  const { data: projects = [] } = useQuery({
-    queryKey: ['projects', currentUser?.email],
-    queryFn: async () => {
-      if (!currentUser?.email) return [];
-      const result = await base44.entities.Project.filter({ created_by: currentUser.email });
-      return result || [];
-    },
-    enabled: !!currentUser?.email,
-  });
+  const { data: projects = [] } = useUserEntities("Project", { queryKey: "projects" });
 
-  const { data: items, isLoading } = useQuery({
-    queryKey: ['items', currentUser?.email],
-    queryFn: async () => {
-      if (!currentUser?.email) return [];
-      const result = await base44.entities.Item.filter({ created_by: currentUser.email }, "-updated_date");
-      return result || [];
-    },
-    enabled: !!currentUser?.email,
+  const { data: items, isLoading } = useUserEntities("Item", {
+    queryKey: "items",
+    sort: "-updated_date",
     initialData: [],
   });
 

@@ -6,7 +6,9 @@ import { queryClientInstance } from '@/lib/query-client'
 import VisualEditAgent from '@/lib/VisualEditAgent'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { getRouteAccess, isRoutablePage } from './routes.config'
+import RouteGuard from '@/components/auth/RouteGuard';
+import { BrowserRouter as Router, Route, Routes, Outlet, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -15,9 +17,37 @@ const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
 
-const LayoutWrapper = ({ children, currentPageName }) => Layout ?
-  <Layout currentPageName={currentPageName}>{children}</Layout>
-  : <>{children}</>;
+// Computed once at module scope - route metadata lives in routes.config.js
+const filteredPages = Object.entries(Pages).filter(([path]) => isRoutablePage(path));
+
+// Layout route: mounts Layout (providers, header, etc.) once and keeps it
+// mounted across navigations; only the page content in <Outlet /> changes.
+// The inner Suspense keeps the Layout visible while lazy page chunks load.
+const LayoutRoute = () => {
+  const location = useLocation();
+  const segment = location.pathname.split('/').filter(Boolean)[0];
+  const currentPageName = segment
+    ? Object.keys(Pages).find(p => p.toLowerCase() === segment.toLowerCase()) ?? segment
+    : mainPageKey;
+
+  const content = (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+      </div>
+    }>
+      <Outlet />
+    </Suspense>
+  );
+
+  return Layout ? (
+    <Layout currentPageName={currentPageName}>
+      {content}
+    </Layout>
+  ) : (
+    content
+  );
+};
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
@@ -40,30 +70,22 @@ const AuthenticatedApp = () => {
     // Pages that need auth will handle it individually.
   }
 
-  // Render the main app - filter out subscription pages
-  const filteredPages = Object.entries(Pages).filter(([path]) => 
-    !path.toLowerCase().includes('subscription') && 
-    !path.toLowerCase().includes('nocode')
-  );
-
   return (
     <Routes>
-      <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
-        </LayoutWrapper>
-      } />
-      {filteredPages.map(([path, Page]) => (
-        <Route
-          key={path}
-          path={`/${path}`}
-          element={
-            <LayoutWrapper currentPageName={path}>
+      <Route element={<LayoutRoute />}>
+        <Route path="/" element={
+          <RouteGuard access={getRouteAccess(mainPageKey)}>
+            <MainPage />
+          </RouteGuard>
+        } />
+        {filteredPages.map(([path, Page]) => (
+          <Route key={path} path={`/${path}`} element={
+            <RouteGuard access={getRouteAccess(path)}>
               <Page />
-            </LayoutWrapper>
-          }
-        />
-      ))}
+            </RouteGuard>
+          } />
+        ))}
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

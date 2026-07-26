@@ -58,13 +58,11 @@ const Checks = lazy(() => import('./pages/Checks'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const EditItem = lazy(() => import('./pages/EditItem'));
 const Features = lazy(() => import('./pages/Features'));
-const Layout = lazy(() => import('./pages/Layout'));
 const Legal = lazy(() => import('./pages/Legal'));
 const Multiprompt = lazy(() => import('./pages/Multiprompt'));
 const RecycleBin = lazy(() => import('./pages/RecycleBin'));
 const Support = lazy(() => import('./pages/Support'));
 const ViewItem = lazy(() => import('./pages/ViewItem'));
-const index = lazy(() => import('./pages/index'));
 import __Layout from './Layout.jsx';
 
 
@@ -79,13 +77,11 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "EditItem": EditItem,
     "Features": Features,
-    "Layout": Layout,
     "Legal": Legal,
     "Multiprompt": Multiprompt,
     "RecycleBin": RecycleBin,
     "Support": Support,
     "ViewItem": ViewItem,
-    "index": index,
 }
 
 export const pagesConfig = {

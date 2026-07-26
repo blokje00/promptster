@@ -22,14 +22,15 @@ export const AuthProvider = ({ children }) => {
   } = useQuery({
     queryKey: ['authUser'],
     queryFn: () => base44.auth.me(),
-    enabled: !!appParams.token && !isLoadingPublicSettings,
+    // Runs in parallel with the public-settings fetch instead of waiting for it
+    enabled: !!appParams.token,
     retry: false,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
 
   const isAuthenticated = !!user;
-  const isLoadingAuth = isLoadingUser && !!appParams.token && !isLoadingPublicSettings;
+  const isLoadingAuth = isLoadingUser && !!appParams.token;
 
   const refreshUser = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['authUser'] });
@@ -59,8 +60,6 @@ export const AuthProvider = ({ children }) => {
       try {
         const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
         setAppPublicSettings(publicSettings);
-        // React Query will auto-fetch user once isLoadingPublicSettings becomes false
-        setIsLoadingPublicSettings(false);
         setIsLoadingPublicSettings(false);
       } catch (appError) {
         console.error('App state check failed:', appError);

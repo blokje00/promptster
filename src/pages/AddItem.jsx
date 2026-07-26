@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { useUserEntities } from "@/components/hooks/useUserEntities";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -23,14 +24,7 @@ export default function AddItem() {
     queryFn: () => base44.auth.me(),
   });
 
-  const { data: projects = [] } = useQuery({
-    queryKey: ['projects', currentUser?.email],
-    queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.Project.filter({ created_by: currentUser.email }) || [];
-    },
-    enabled: !!currentUser?.email,
-  });
+  const { data: projects = [] } = useUserEntities("Project", { queryKey: "projects" });
 
   const [selectedProjectId, setSelectedProjectId] = useState(() => localStorage.getItem('lastSelectedProjectId') || "");
   
