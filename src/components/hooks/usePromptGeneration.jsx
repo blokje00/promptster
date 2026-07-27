@@ -8,6 +8,8 @@ export const usePromptGeneration = ({
   endTemplateId,
   includePersonalPrefs,
   includeProjectConfig,
+  includeLearnedPatterns = true,
+  includeParserInstruction = true,
   currentUser,
   selectedProject,
   templates,
@@ -60,8 +62,8 @@ export const usePromptGeneration = ({
       parts.push(selectedProject.technical_config_markdown);
     }
 
-    // TIER 3 FEATURE: Include active learned patterns for this project
-    if (selectedProject?.learnedPatterns && Array.isArray(selectedProject.learnedPatterns)) {
+    // TIER 3 FEATURE: Include active learned patterns for this project (TASK-1: now toggleable)
+    if (includeLearnedPatterns && selectedProject?.learnedPatterns && Array.isArray(selectedProject.learnedPatterns)) {
       const activePatterns = selectedProject.learnedPatterns.filter(p => p.is_active);
       if (activePatterns.length > 0) {
         const patternsBlock = `[LEARNED_PATTERNS]
@@ -75,8 +77,8 @@ Gebruik deze insights bij het uitvoeren van taken.
       }
     }
 
-    // TASK-2: Add project-specific LLM Response Parser instruction
-    if (selectedProject?.llm_response_parser_instruction) {
+    // TASK-2: Add project-specific LLM Response Parser instruction (TASK-1: now toggleable)
+    if (includeParserInstruction && selectedProject?.llm_response_parser_instruction) {
       parts.push(`[LLM_RESPONSE_PARSER]\n${selectedProject.llm_response_parser_instruction}\n[/LLM_RESPONSE_PARSER]`);
     }
 
@@ -169,7 +171,7 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
     if (endTmpl) parts.push(endTmpl.content);
 
     return parts.join("\n\n---\n\n");
-  }, [selectedItems, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, currentUser, selectedProject, templates, selectedProjectId]);
+  }, [selectedItems, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, includeLearnedPatterns, includeParserInstruction, currentUser, selectedProject, templates, selectedProjectId]);
 
   const handleImprovePrompt = useCallback(async (isUndo = false) => {
     // Undo: clear improved prompt

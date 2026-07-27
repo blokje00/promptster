@@ -48,15 +48,6 @@ function MultipromptContent({ currentUser }) {
   // --- Custom Hooks ---
   const { selectedProjectId, setSelectedProjectId, selectedProject } = useProjectSelection(projects);
 
-  useEffect(() => {
-    if (!selectedProjectId && projects.length > 0) {
-      const demoProjects = projects.filter(p => p.name?.startsWith('DEMO:'));
-      if (demoProjects.length > 0) {
-        setSelectedProjectId(demoProjects[0].id);
-      }
-    }
-  }, [projects, selectedProjectId, setSelectedProjectId]);
-
   const {
     thoughts, allThoughts, isLoading, selectedThoughtIds, setSelectedThoughtIds,
     createThought, updateThought, deleteThought, toggleSelection, selectAll, deselectAll, triggerVisionAnalysis
@@ -85,6 +76,8 @@ function MultipromptContent({ currentUser }) {
     endTemplateId: templateSelection.endTemplateId,
     includePersonalPrefs: templateSelection.includePersonalPrefs,
     includeProjectConfig: templateSelection.includeProjectConfig,
+    includeLearnedPatterns: templateSelection.includeLearnedPatterns,
+    includeParserInstruction: templateSelection.includeParserInstruction,
     currentUser: { ...currentUser, ...aiSettings[0] },
     selectedProject,
     templates,
@@ -278,6 +271,8 @@ function MultipromptContent({ currentUser }) {
                 promptGeneration={promptGeneration}
                 saveSuccess={saveSuccess}
                 handleQuickSave={handleQuickSave}
+                currentUser={currentUser}
+                selectedTaskCount={selectedThoughtIds.length}
               />
             </div>
           </TabsContent>

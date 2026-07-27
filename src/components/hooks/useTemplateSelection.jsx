@@ -6,6 +6,9 @@ export const useTemplateSelection = (selectedProjectId, selectedProject) => {
   const [endTemplateId, setEndTemplateId] = useState("");
   const [includePersonalPrefs, setIncludePersonalPrefs] = useState(true);
   const [includeProjectConfig, setIncludeProjectConfig] = useState(true);
+  // TASK-1: previously always-on blocks, now toggleable in the Prompt Recipe
+  const [includeLearnedPatterns, setIncludeLearnedPatterns] = useState(true);
+  const [includeParserInstruction, setIncludeParserInstruction] = useState(true);
 
   // Load templates on project change
   useEffect(() => {
@@ -52,6 +55,10 @@ export const useTemplateSelection = (selectedProjectId, selectedProject) => {
     includePersonalPrefs,
     setIncludePersonalPrefs,
     includeProjectConfig,
-    setIncludeProjectConfig
+    setIncludeProjectConfig,
+    includeLearnedPatterns,
+    setIncludeLearnedPatterns,
+    includeParserInstruction,
+    setIncludeParserInstruction
   };
 };
