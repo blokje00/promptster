@@ -4,12 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { FolderOpen, Plus, Copy, Sparkles } from "lucide-react";
-import { projectColors, projectBorderColors } from "@/components/lib/constants";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Plus, MoreVertical, CheckCircle2, Settings, GitCommit, Trash2 } from "lucide-react";
+import { projectColors } from "@/components/lib/constants";
+import { AiToolIcon } from "@/components/lib/aiTools";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
+import ProjectEditDialog from "./ProjectEditDialog";
+import { useDeleteProject } from "@/components/hooks/useDeleteProject";
 
 function ProjectSelector({
   projects,
@@ -20,38 +29,45 @@ function ProjectSelector({
   getProjectCount
 }) {
   const queryClient = useQueryClient();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newColor, setNewColor] = useState("blue");
-  const [newDesc, setNewDesc] = useState("");
-  const [newConfig, setNewConfig] = useState("");
 
-  // Create project mutation
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Project.create(data),
+  // TASK-4: dialogs driven from the per-project actions menu
+  const [editDialogProject, setEditDialogProject] = useState(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState("edit");
+  const [pushLogProject, setPushLogProject] = useState(null);
+  const [pushMessage, setPushMessage] = useState("");
+  const [confirmDeleteProject, setConfirmDeleteProject] = useState(null);
+
+  const deleteMutation = useDeleteProject();
+
+  // TASK-3: quick "log push" without opening the full edit dialog
+  const pushLogMutation = useMutation({
+    mutationFn: async ({ project, message }) => {
+      const existing = Array.isArray(project.push_log) ? project.push_log : [];
+      return base44.entities.Project.update(project.id, {
+        push_log: [{ date: new Date().toISOString(), message }, ...existing]
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      setNewName("");
-      setNewDesc("");
-      setNewColor("blue");
-      setNewConfig("");
-      setIsCreateDialogOpen(false);
-      toast.success("Project created");
-    }
+      setPushLogProject(null);
+      setPushMessage("");
+      toast.success("Push logged");
+    },
+    onError: (error) => toast.error("Failed to log push: " + error.message)
   });
 
-  const handleCreate = () => {
-    if (!newName.trim()) return;
-    createMutation.mutate({
-      name: newName,
-      color: newColor,
-      description: newDesc,
-      technical_config_markdown: newConfig
-    });
+  const handleCreateStart = () => {
+    setDialogMode("create");
+    setEditDialogProject(null);
+    setIsEditDialogOpen(true);
   };
 
-  // Determine if "All Projects" is selected (black theme)
-  const isAllProjectsSelected = !selectedProjectId;
+  const handleEditStart = (project) => {
+    setDialogMode("edit");
+    setEditDialogProject(project);
+    setIsEditDialogOpen(true);
+  };
 
   return (
     <>
@@ -62,7 +78,7 @@ function ProjectSelector({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setIsCreateDialogOpen(true)}
+          onClick={handleCreateStart}
           className="border-dashed border-2 hover:bg-indigo-50 dark:hover:bg-slate-800 h-9 px-4"
         >
           <Plus className="w-5 h-5 mr-1" />
@@ -84,133 +100,152 @@ function ProjectSelector({
           )}
         </Button>
         {projects.map(p => (
-          <Button
+          /* TASK-4: project chip = activate on click + ⋯ actions menu */
+          <div
             key={p.id}
-            variant={selectedProjectId === p.id ? "default" : "outline"}
-            size="sm"
-            onClick={() => onSelectProject(p.id)}
-            className={selectedProjectId === p.id ? `${projectColors[p.color]} border-0` : ""}
+            className={`inline-flex items-center rounded-md border overflow-hidden ${
+              selectedProjectId === p.id
+                ? `${projectColors[p.color]} border-transparent text-white`
+                : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300"
+            }`}
           >
-            <div className={`w-2 h-2 rounded-full mr-2 ${projectColors[p.color]?.replace('bg-', 'bg-').replace('600', '400') || 'bg-slate-400'}`} />
-            {p.name} ({getProjectCount(p.id)})
-          </Button>
+            <button
+              onClick={() => onSelectProject(p.id)}
+              className="flex items-center px-3 h-8 text-sm font-medium hover:opacity-90"
+            >
+              {/* TASK-1 (icons): AI tool monogram instead of a plain color dot */}
+              <AiToolIcon tool={p.ai_tool} size="sm" className="mr-2" />
+              {p.name} ({getProjectCount(p.id)})
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={`h-8 px-1 border-l flex items-center ${
+                    selectedProjectId === p.id
+                      ? "border-white/30 hover:bg-white/10"
+                      : "border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  }`}
+                  aria-label={`Actions for ${p.name}`}
+                >
+                  <MoreVertical className="w-3.5 h-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700">
+                <DropdownMenuItem onClick={() => onSelectProject(p.id)} className="cursor-pointer">
+                  <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
+                  <span>Activate</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleEditStart(p)} className="cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4 text-slate-500" />
+                  <span>Edit settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { setPushLogProject(p); setPushMessage(""); }} className="cursor-pointer">
+                  <GitCommit className="mr-2 h-4 w-4 text-indigo-500" />
+                  <span>Log push</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
+                <DropdownMenuItem
+                  onClick={() => setConfirmDeleteProject(p)}
+                  className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>Delete project</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         ))}
       </div>
       </CardContent>
     </Card>
 
-    {/* Create Project Dialog */}
-    <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-white dark:bg-slate-800">
+    {/* TASK-4: full create/edit dialog shared with ProjectsManager */}
+    <ProjectEditDialog
+      open={isEditDialogOpen}
+      onOpenChange={setIsEditDialogOpen}
+      mode={dialogMode}
+      project={editDialogProject}
+    />
+
+    {/* TASK-3: quick push-log dialog */}
+    <Dialog open={Boolean(pushLogProject)} onOpenChange={(open) => { if (!open) setPushLogProject(null); }}>
+      <DialogContent className="max-w-md bg-white dark:bg-slate-800">
         <DialogHeader>
-          <DialogTitle className="text-slate-900 dark:text-slate-100">Create New Project</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
+            <GitCommit className="w-4 h-4" /> Log push — {pushLogProject?.name}
+          </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 pt-4">
-          <Input 
-            placeholder="Project Name..." 
-            value={newName} 
-            onChange={e => setNewName(e.target.value)}
-            className="dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500"
+        <div className="space-y-3 pt-2">
+          <Input
+            value={pushMessage}
+            onChange={e => setPushMessage(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && pushMessage.trim()) {
+                pushLogMutation.mutate({ project: pushLogProject, message: pushMessage.trim() });
+              }
+            }}
+            placeholder="Short description of what was pushed..."
+            autoFocus
           />
-          
-          <div>
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 block">Color</label>
-            <div className="flex gap-2 flex-wrap">
-              {Object.keys(projectColors).map(color => (
-                <button
-                  key={color}
-                  onClick={() => setNewColor(color)}
-                  className={`w-8 h-8 rounded-full ${projectColors[color]} ${newColor === color ? 'ring-2 ring-offset-2 ring-slate-400 dark:ring-slate-500 dark:ring-offset-slate-800' : ''}`}
-                />
+          {Array.isArray(pushLogProject?.push_log) && pushLogProject.push_log.length > 0 && (
+            <div className="max-h-32 overflow-y-auto space-y-1 text-xs text-slate-500">
+              {pushLogProject.push_log.slice(0, 5).map((entry, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <span className="font-mono text-slate-400 shrink-0">
+                    {entry.date ? new Date(entry.date).toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit' }) : "—"}
+                  </span>
+                  <span className="truncate">{entry.message}</span>
+                </div>
               ))}
             </div>
-          </div>
-
-          <Textarea 
-            placeholder="Description..." 
-            value={newDesc} 
-            onChange={e => setNewDesc(e.target.value)} 
-            className="min-h-[80px] dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500"
-          />
-          
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Technical Config (Markdown)</label>
-            <Textarea 
-              value={newConfig} 
-              onChange={e => setNewConfig(e.target.value)} 
-              placeholder="Technical project configuration..." 
-              className="font-mono text-sm min-h-[100px] dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500" 
-            />
-            <div className="flex justify-between items-center pt-1">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Need structure? Copy this prompt:</span>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                onClick={() => {
-                  const prompt = `Analyze the codebase and provide a technical configuration summary in Markdown. Include:
-1. Tech Stack (Frameworks, Libraries)
-2. File Structure (Key directories)
-3. Key Components & Entities
-4. Styling & Theming Approach
-5. Conventions (Naming, Async, Error Handling)
-
-Format as clear Markdown headers and lists.`;
-                  navigator.clipboard.writeText(prompt);
-                  toast.success("Structure prompt copied!");
-                }}
-              >
-                <Copy className="w-3 h-3" /> Copy Prompt
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">LLM Response Parser</label>
-            <div className="flex gap-2">
-              <Textarea 
-                placeholder="Paste LLM response to auto-fill..." 
-                className="min-h-[80px] text-xs font-mono dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100 dark:placeholder-slate-500"
-                id="create-llm-response-input"
-              />
-              <Button 
-                variant="secondary" 
-                className="h-auto w-20 flex-col gap-1 text-xs dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                onClick={() => {
-                  const input = document.getElementById('create-llm-response-input').value;
-                  if (!input) return;
-                  try {
-                    const jsonMatch = input.match(/```json\n([\s\S]*?)\n```/) || input.match(/\{[\s\S]*\}/);
-                    const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : input;
-                    const data = JSON.parse(jsonStr);
-                    
-                    if (data.technical_config_markdown) setNewConfig(data.technical_config_markdown);
-                    if (data.description) setNewDesc(data.description);
-                    if (data.name) setNewName(data.name);
-                    toast.success("Project auto-filled from LLM");
-                  } catch (e) {
-                    toast.error("Failed to parse JSON");
-                  }
-                }}
-              >
-                <Sparkles className="w-4 h-4" />
-                Auto Fill
-              </Button>
-            </div>
-          </div>
-          
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)} className="dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
-              Cancel
-            </Button>
-            <Button onClick={handleCreate} className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600" disabled={!newName}>
-              <Plus className="w-4 h-4 mr-2" /> Create Project
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setPushLogProject(null)}>Cancel</Button>
+            <Button
+              size="sm"
+              className="bg-indigo-600 hover:bg-indigo-700"
+              disabled={!pushMessage.trim() || pushLogMutation.isPending}
+              onClick={() => pushLogMutation.mutate({ project: pushLogProject, message: pushMessage.trim() })}
+            >
+              {pushLogMutation.isPending ? "Saving..." : "Log push"}
             </Button>
           </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+
+    {/* TASK-4: delete confirmation */}
+    <Dialog open={Boolean(confirmDeleteProject)} onOpenChange={(open) => { if (!open) setConfirmDeleteProject(null); }}>
+      <DialogContent className="max-w-md bg-white dark:bg-slate-800">
+        <DialogHeader>
+          <DialogTitle className="text-slate-900 dark:text-slate-100">Delete "{confirmDeleteProject?.name}"?</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          This deletes the project including its templates and structures; tasks are moved to the recycle bin.
+        </p>
+        <div className="flex justify-end gap-2 pt-2">
+          <Button variant="outline" size="sm" onClick={() => setConfirmDeleteProject(null)}>Cancel</Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={deleteMutation.isPending}
+            onClick={() => {
+              const id = confirmDeleteProject.id;
+              deleteMutation.mutate(id, {
+                onSuccess: () => {
+                  if (selectedProjectId === id) onSelectProject("");
+                  setConfirmDeleteProject(null);
+                }
+              });
+            }}
+          >
+            {deleteMutation.isPending ? "Deleting..." : "Yes, delete"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
     </>
   );
 }
+
 export default React.memo(ProjectSelector);
