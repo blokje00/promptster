@@ -1,123 +1,42 @@
-import React, { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Pencil, Trash2, Plus, Copy, FileText, Sparkles, Save, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { projectColors, projectBorderColors } from "@/components/lib/constants";
+import { Pencil, Trash2, Plus, FolderCode, GitCommit, Github, Search } from "lucide-react";
+import { projectBorderColors } from "@/components/lib/constants";
+import { AiToolIcon } from "@/components/lib/aiTools";
+import ProjectEditDialog from "./ProjectEditDialog";
+import { useDeleteProject } from "@/components/hooks/useDeleteProject";
 
 export default function ProjectsManager({ projects = [] }) {
-  const queryClient = useQueryClient();
-
-  // Dialog State (used for both create and edit)
-  const [dialogMode, setDialogMode] = useState("edit"); // "create" or "edit"
+  const [dialogMode, setDialogMode] = useState("edit");
   const [editingProject, setEditingProject] = useState(null);
-  const [editName, setEditName] = useState("");
-  const [editColor, setEditColor] = useState("blue");
-  const [editDesc, setEditDesc] = useState("");
-  const [editConfig, setEditConfig] = useState("");
-  const [pastedJSON, setPastedJSON] = useState("");
-  const [editComponentMapping, setEditComponentMapping] = useState({});
-  const [editDomains, setEditDomains] = useState([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  // TASK-2 (rich description): search across all project metadata
+  const [search, setSearch] = useState("");
 
-  // Mutations
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      console.log('[ProjectsManager] Creating project:', data);
-      const result = await base44.entities.Project.create(data);
-      console.log('[ProjectsManager] Created project:', result);
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      setIsDialogOpen(false);
-      toast.success("Project created");
-    },
-    onError: (error) => {
-      console.error('[ProjectsManager] Create error:', error);
-      toast.error("Failed to create project: " + error.message);
-    }
-  });
+  const filteredProjects = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return projects;
+    return projects.filter(p => {
+      const haystack = [
+        p.name,
+        p.description,
+        p.ai_tool,
+        p.local_code_path,
+        p.github_repo,
+        ...(Array.isArray(p.push_log) ? p.push_log.map(e => e.message) : []),
+        ...(Array.isArray(p.domains) ? p.domains : []),
+      ].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [projects, search]);
 
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
-      console.log('[ProjectsManager] Updating project:', id, data);
-      const result = await base44.entities.Project.update(id, data);
-      console.log('[ProjectsManager] Updated project:', result);
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      setIsDialogOpen(false);
-      toast.success("Project updated");
-    },
-    onError: (error) => {
-      console.error('[ProjectsManager] Update error:', error);
-      toast.error("Failed to update project: " + error.message);
-    }
-  });
+  const deleteMutation = useDeleteProject();
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      // TASK-2: Cascade delete - delete thoughts, templates, and project structures
-      const [thoughts, templates, projectStructures] = await Promise.all([
-        base44.entities.Thought.filter({ project_id: id }),
-        base44.entities.PromptTemplate.filter({ project_id: id }),
-        base44.entities.ProjectStructure.filter({ project_id: id })
-      ]);
-      
-      console.log(`[ProjectsManager] Deleting project with ${thoughts.length} tasks, ${templates.length} templates, and ${projectStructures.length} structures`);
-      
-      // Mark thoughts as deleted (soft delete)
-      await Promise.all(
-        thoughts.map(thought => base44.entities.Thought.update(thought.id, { 
-          is_deleted: true,
-          deleted_at: new Date().toISOString()
-        }))
-      );
-      
-      // Delete templates (hard delete)
-      await Promise.all(
-        templates.map(template => base44.entities.PromptTemplate.delete(template.id))
-      );
-      
-      // Delete project structures (hard delete)
-      await Promise.all(
-        projectStructures.map(structure => base44.entities.ProjectStructure.delete(structure.id))
-      );
-      
-      // Finally delete the project itself
-      await base44.entities.Project.delete(id);
-    },
-    onSuccess: () => {
-      // Invalidate ALL project-related queries (unified)
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['activeThoughts'] });
-      queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] });
-      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-      queryClient.invalidateQueries({ queryKey: ['templates'] });
-      queryClient.invalidateQueries({ queryKey: ['projectStructures'] });
-      console.log('[ProjectsManager] ✓ Project + templates + tasks + structures deleted');
-      toast.success("Project deleted with all associated data");
-    }
-  });
-
-  // Handlers
   const handleCreateStart = () => {
     setDialogMode("create");
     setEditingProject(null);
-    setEditName("");
-    setEditColor("blue");
-    setEditDesc("");
-    setEditConfig("");
-    setPastedJSON("");
-    setEditComponentMapping({});
-    setEditDomains([]);
     setIsDialogOpen(true);
   };
 
@@ -125,120 +44,6 @@ export default function ProjectsManager({ projects = [] }) {
     setDialogMode("edit");
     setEditingProject(project);
     setIsDialogOpen(true);
-    // Set fields AFTER dialog opens to prevent flash
-    setTimeout(() => {
-      setEditName(project.name);
-      setEditColor(project.color);
-      setEditDesc(project.description || "");
-      setEditConfig(project.technical_config_markdown || "");
-      setPastedJSON(project.llm_response_parser_instruction || "");
-      setEditComponentMapping(project.component_mapping || {});
-      setEditDomains(project.domains || []);
-    }, 0);
-  };
-
-  const handleJSONPaste = (value) => {
-    setPastedJSON(value);
-  };
-
-  const handleJSONImport = () => {
-    if (!pastedJSON.trim()) {
-      toast.error("Please paste JSON first");
-      return;
-    }
-    
-    try {
-      // Extract JSON from markdown code blocks or raw JSON
-      const jsonMatch = pastedJSON.match(/```json\n([\s\S]*?)\n```/) || pastedJSON.match(/\{[\s\S]*\}/);
-      const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : pastedJSON;
-      const data = JSON.parse(jsonStr);
-      
-      console.log('[ProjectsManager] Parsing LLM response:', data);
-      
-      // Basis velden
-      if (data.name) setEditName(data.name);
-      if (data.description) setEditDesc(data.description);
-      if (data.technical_config_markdown) setEditConfig(data.technical_config_markdown);
-      
-      // Bouw component_mapping uit pages array (voor Page->Component dropdowns)
-      const mapping = {};
-      if (data.pages && Array.isArray(data.pages)) {
-        data.pages.forEach(page => {
-          if (page.name) {
-            mapping[page.name] = Array.isArray(page.components) ? page.components : [];
-          }
-        });
-      }
-      
-      // Of gebruik direct component_mapping als die er is (overschrijft pages)
-      if (data.component_mapping && typeof data.component_mapping === 'object') {
-        Object.assign(mapping, data.component_mapping);
-      }
-      
-      if (Object.keys(mapping).length > 0) {
-        setEditComponentMapping(mapping);
-        console.log('[ProjectsManager] Component mapping set:', mapping);
-      }
-      
-      // Domains uit verschillende bronnen
-      let domains = [];
-      if (data.domains && Array.isArray(data.domains)) {
-        domains = data.domains;
-      } else if (data.entities && Array.isArray(data.entities)) {
-        // Maak domains van entity names
-        domains = data.entities.map(e => e.name || e).filter(Boolean);
-      }
-      
-      if (domains.length > 0) {
-        setEditDomains(domains);
-        console.log('[ProjectsManager] Domains set:', domains);
-      }
-      
-      toast.success(`✓ Parsed: ${Object.keys(mapping).length} pages, ${domains.length} domains`);
-    } catch (e) {
-      toast.error("Invalid JSON format");
-      console.error('[ProjectsManager] JSON parse error:', e);
-    }
-  };
-
-  const handleSave = async () => {
-    console.log('[ProjectsManager] handleSave called', { dialogMode, editName, editColor, editDesc, editConfig, editComponentMapping, editDomains });
-    
-    if (!editName.trim()) {
-      toast.error("Project name is required");
-      return;
-    }
-    
-    const projectData = {
-      name: editName,
-      color: editColor,
-      description: editDesc,
-      technical_config_markdown: editConfig,
-      llm_response_parser_instruction: pastedJSON.trim() || null,
-      component_mapping: editComponentMapping,
-      domains: editDomains
-    };
-
-    console.log('[ProjectsManager] Saving project data:', projectData);
-
-    try {
-      if (dialogMode === "create") {
-        console.log('[ProjectsManager] Creating new project');
-        await createMutation.mutateAsync(projectData);
-      } else {
-        console.log('[ProjectsManager] Updating existing project:', editingProject?.id);
-        if (!editingProject?.id) {
-          toast.error("No project ID found");
-          return;
-        }
-        await updateMutation.mutateAsync({
-          id: editingProject.id,
-          data: projectData
-        });
-      }
-    } catch (error) {
-      console.error('[ProjectsManager] Save failed:', error);
-    }
   };
 
   return (
@@ -248,7 +53,7 @@ export default function ProjectsManager({ projects = [] }) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>My Projects</CardTitle>
-            <Button 
+            <Button
               onClick={handleCreateStart}
               size="icon"
               className="h-10 w-10 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600"
@@ -258,14 +63,44 @@ export default function ProjectsManager({ projects = [] }) {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {projects.map(project => (
+          {/* TASK-2: search across name, description, tool, paths, repo, push log */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-slate-400" />
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search projects (description, tool, path, repo, pushes)..."
+              className="pl-8"
+            />
+          </div>
+          {filteredProjects.map(project => (
             <div key={project.id} className={`p-4 rounded-lg border-2 ${projectBorderColors[project.color]} bg-white`}>
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
-                  <div className={`w-4 h-4 rounded-full ${projectColors[project.color]}`} />
+                  {/* TASK-1 (icons): AI tool monogram instead of color dot */}
+                  <AiToolIcon tool={project.ai_tool} size="lg" />
                   <div>
                     <p className="font-medium text-slate-800">{project.name}</p>
-                    <p className="text-sm text-slate-500">{project.description}</p>
+                    {/* TASK-2: description rendered with preserved line breaks */}
+                    <p className="text-sm text-slate-500 whitespace-pre-line line-clamp-4">{project.description}</p>
+                    {/* TASK-3: workspace metadata on the project card */}
+                    <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                      {project.github_repo && (
+                        <span className="flex items-center gap-1 text-[11px] font-mono text-slate-400 truncate max-w-[220px]" title={project.github_repo}>
+                          <Github className="w-3 h-3 shrink-0" /> {project.github_repo}
+                        </span>
+                      )}
+                      {project.local_code_path && (
+                        <span className="flex items-center gap-1 text-[11px] font-mono text-slate-400 truncate max-w-[280px]" title={project.local_code_path}>
+                          <FolderCode className="w-3 h-3 shrink-0" /> {project.local_code_path}
+                        </span>
+                      )}
+                      {Array.isArray(project.push_log) && project.push_log.length > 0 && (
+                        <span className="flex items-center gap-1 text-[11px] text-slate-400" title={project.push_log[0]?.message}>
+                          <GitCommit className="w-3 h-3" /> {project.push_log.length} push(es)
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -279,144 +114,21 @@ export default function ProjectsManager({ projects = [] }) {
               </div>
             </div>
           ))}
-          {projects.length === 0 && <p className="text-center text-slate-400 py-4">No projects yet</p>}
+          {filteredProjects.length === 0 && (
+            <p className="text-center text-slate-400 py-4">
+              {search ? "No projects match your search" : "No projects yet"}
+            </p>
+          )}
         </CardContent>
       </Card>
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{dialogMode === "create" ? "Create New Project" : "Edit Project"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-4 max-h-[70vh] overflow-y-auto px-1">
-            <Input value={editName} onChange={e => setEditName(e.target.value)} />
-            <div className="flex gap-2">
-              {Object.keys(projectColors).map(color => (
-                <button
-                  key={color}
-                  onClick={() => setEditColor(color)}
-                  className={`w-6 h-6 rounded-full ${projectColors[color]} ${editColor === color ? 'ring-2 ring-offset-2 ring-slate-400' : ''}`}
-                />
-              ))}
-            </div>
-            <Textarea 
-              value={editDesc} 
-              onChange={e => setEditDesc(e.target.value)} 
-              placeholder="Short project description (shown in project list)..." 
-              className="min-h-[80px]"
-            />
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Technical Config (Markdown)</label>
-              <Textarea value={editConfig} onChange={e => setEditConfig(e.target.value)} className="font-mono text-sm min-h-[150px]" />
-              <div className="flex justify-between items-center pt-1">
-                 <span className="text-xs text-slate-500">Need structure? Copy this prompt for your LLM:</span>
-                 <Button
-                   variant="outline"
-                   size="sm"
-                   className="h-7 text-xs gap-1"
-                   onClick={() => {
-                      const prompt = `Analyze the codebase and provide a technical configuration summary in Markdown. Include:
-1. Tech Stack (Frameworks, Libraries)
-2. File Structure (Key directories)
-3. Key Components & Entities
-4. Styling & Theming Approach
-5. Conventions (Naming, Async, Error Handling)
-
-Format as clear Markdown headers and lists.`;
-                      navigator.clipboard.writeText(prompt);
-                      toast.success("Structure prompt copied!");
-                   }}
-                 >
-                   <Copy className="w-3 h-3" /> Copy Prompt
-                 </Button>
-              </div>
-            </div>
-
-            <div className="space-y-2 pt-4 border-t border-slate-100">
-               <div className="flex items-center justify-between">
-                 <label className="text-sm font-medium">Auto-Parse Project Structure</label>
-                 <Button
-                   variant="outline"
-                   size="sm"
-                   className="h-7 text-xs gap-1"
-                   onClick={() => {
-                     const prompt = `Analyze this codebase and provide a complete structural overview in JSON format:
-
-{
-  "name": "Project Name",
-  "description": "Brief project description",
-  "technical_config_markdown": "# Tech Stack\\n- Framework: ...\\n- Libraries: ...\\n\\n# Architecture\\n...",
-  "pages": [
-    {"name": "PageName", "path": "/path", "components": ["Component1"], "purpose": "..."}
-  ],
-  "components": [
-    {"name": "ComponentName", "location": "components/...", "purpose": "...", "props": ["prop1"]}
-  ],
-  "entities": [
-    {"name": "EntityName", "fields": ["field1", "field2"], "purpose": "..."}
-  ],
-  "buttons_and_actions": [
-    {"label": "Button Text", "location": "PageName", "action": "what it does"}
-  ],
-  "routing": "How navigation works",
-  "state_management": "How data flows",
-  "styling": "Tailwind/CSS approach"
-}
-
-Be thorough - include ALL pages, components, buttons, forms, and key functionality.`;
-                     navigator.clipboard.writeText(prompt);
-                     toast.success("Structure analysis prompt copied!");
-                   }}
-                 >
-                   <Copy className="w-3 h-3" /> Copy Analysis Prompt
-                 </Button>
-               </div>
-               <Textarea 
-                 placeholder="Paste LLM's JSON response here..." 
-                 className="min-h-[100px] text-xs font-mono"
-                 value={pastedJSON}
-                 onChange={(e) => handleJSONPaste(e.target.value)}
-               />
-               <div className="flex justify-end">
-                 <Button
-                   variant="outline"
-                   size="sm"
-                   onClick={handleJSONImport}
-                   disabled={!pastedJSON.trim()}
-                 >
-                   <Sparkles className="w-4 h-4 mr-2" />
-                   Import Structure
-                 </Button>
-               </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-6 border-t border-slate-100 mt-6">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={createMutation.isPending || updateMutation.isPending}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleSave}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                disabled={!editName.trim() || createMutation.isPending || updateMutation.isPending}
-              >
-                {(createMutation.isPending || updateMutation.isPending) ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    {dialogMode === "create" ? "Create Project" : "Save Changes"}
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Shared create/edit dialog (TASK-3/TASK-4) */}
+      <ProjectEditDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        mode={dialogMode}
+        project={editingProject}
+      />
     </div>
   );
 }
