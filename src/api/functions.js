@@ -39,11 +39,7 @@ export const syncStripeProducts = base44.functions.syncStripeProducts;
 
 export const resetUserTrial = base44.functions.resetUserTrial;
 
-export const seedDemoData = base44.functions.seedDemoData;
-
 export const runPrompt = base44.functions.runPrompt;
-
-export const resetDemoStatus = base44.functions.resetDemoStatus;
 
 export const updateNoCodeRanking = base44.functions.updateNoCodeRanking;
 

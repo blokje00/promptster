@@ -6,7 +6,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/AuthContext";
 import { createPageUrl } from "@/utils";
-import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText, TrendingUp, X, Database, CreditCard } from "lucide-react";
+import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText, TrendingUp, X, CreditCard } from "lucide-react";
 import ThemeToggleButton from "@/components/theme/ThemeToggleButton";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ export default function Header() {
   const { t } = useLanguage();
   const [showExport, setShowExport] = useState(false);
   
-  const { currentUser: user, isLoadingAuth: isUserLoading, refreshUser } = useAuth();
+  const { currentUser: user, isLoadingAuth: isUserLoading } = useAuth();
 
   // HARDENED: Badge counts can fail without affecting navigation
   const { data: deletedCount = 0 } = useQuery({
@@ -131,26 +131,6 @@ export default function Header() {
     const returnUrl = window.location.origin + createPageUrl('Features');
     await base44.auth.logout(returnUrl);
   };
-
-  const handleSeedDemoData = async () => {
-    try {
-      toast.info('Creating demo data (force mode)...');
-      const response = await base44.functions.invoke('seedDemoData', { force: true });
-      
-      if (response.data?.status === 'already_seeded') {
-        toast.info('Demo data already exists');
-      } else if (response.data?.status === 'success') {
-        toast.success(`Demo created: ${response.data.projects} projects, ${response.data.tasks} tasks!`);
-        setTimeout(() => window.location.reload(), 1500);
-      } else {
-        toast.success('Demo data created!');
-        setTimeout(() => window.location.reload(), 1500);
-      }
-    } catch (error) {
-      console.error('[Header] Seed error:', error);
-      toast.error(`Failed: ${error.message || 'Unknown error'}`);
-    }
-  };
   
   const currentPath = location.pathname.toLowerCase();
   const isVault = currentPath.includes("dashboard") || currentPath === "/" || currentPath === "";
@@ -177,42 +157,6 @@ export default function Header() {
     }
   }, [currentPath, navigate, user]);
 
-  // Auto-seed demo data for new users
-  useEffect(() => {
-    const seedForNewUser = async () => {
-      if (!user || !user.email) return;
-      
-      // Check localStorage to prevent infinite loop
-      const seedKey = `demo_seeded_${user.id}`;
-      if (localStorage.getItem(seedKey)) {
-        return;
-      }
-      
-      // Check if demo_seeded_at is null (new user)
-      if (user.demo_seeded_at === null || user.demo_seeded_at === undefined) {
-        console.log('[Header] 🆕 New user detected, auto-seeding demo data...');
-        localStorage.setItem(seedKey, 'true');
-        
-        try {
-          const response = await base44.functions.invoke('seedDemoData', { force: false });
-          
-          if (response.data?.status === 'success') {
-            refreshUser();
-            setTimeout(() => {
-              window.location.reload();
-            }, 800);
-          }
-        } catch (error) {
-          console.error('[Header] ❌ Auto-seed failed:', error);
-        }
-      } else {
-        localStorage.setItem(seedKey, 'true');
-      }
-    };
-    
-    seedForNewUser();
-  }, [user]);
-  
   const handleLogoClick = () => {
     window.location.href = createPageUrl("Multiprompt");
   };
@@ -372,10 +316,6 @@ export default function Header() {
                         <MessageCircle className="mr-2 h-4 w-4" />
                         <span>Tickets</span>
                       </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleSeedDemoData} className="cursor-pointer text-green-600 dark:text-green-400 focus:text-green-600 dark:focus:text-green-400 bg-green-50/50 dark:bg-green-950/30">
-                      <Database className="mr-2 h-4 w-4" />
-                      <span>Seed Demo Data</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-slate-200 dark:bg-slate-700" />
                   </>
