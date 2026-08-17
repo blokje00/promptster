@@ -1,0 +1,66 @@
+{
+  "name": "FeatureBlock",
+  "type": "object",
+  "properties": {
+    "block_key": {
+      "type": "string",
+      "description": "Unique identifier for the content block (e.g., 'hero_title', 'feature_1_title')"
+    },
+    "content": {
+      "type": "string",
+      "description": "The content/text for this block"
+    },
+    "content_type": {
+      "type": "string",
+      "enum": [
+        "text",
+        "markdown",
+        "html"
+      ],
+      "default": "text",
+      "description": "Type of content"
+    },
+    "order": {
+      "type": "number",
+      "default": 0,
+      "description": "Display order for sorting"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata (icon, specs array, etc.)",
+      "properties": {
+        "icon": {
+          "type": "string"
+        },
+        "specs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "block_key",
+    "content"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

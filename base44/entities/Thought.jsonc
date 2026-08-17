@@ -1,0 +1,167 @@
+{
+  "name": "Thought",
+  "type": "object",
+  "properties": {
+    "content": {
+      "type": "string",
+      "description": "De gedachte of het idee"
+    },
+    "screenshot_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "IDs van bijgevoegde screenshots (ScreenshotAsset)"
+    },
+    "vision_analysis": {
+      "type": "object",
+      "description": "OCR/Vision analyse resultaten per screenshot",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "analyzing",
+            "completed",
+            "failed"
+          ]
+        }
+      }
+    },
+    "project_id": {
+      "type": "string",
+      "description": "ID van het gekoppelde project"
+    },
+    "is_selected": {
+      "type": "boolean",
+      "default": true,
+      "description": "Of deze gedachte geselecteerd is"
+    },
+    "is_used": {
+      "type": "boolean",
+      "default": false,
+      "description": "Of deze gedachte al is gebruikt in een multiprompt"
+    },
+    "focus_type": {
+      "type": "string",
+      "enum": [
+        "both",
+        "design",
+        "logic",
+        "no_design",
+        "discuss"
+      ],
+      "default": "both",
+      "description": "Focus van de taak"
+    },
+    "target_page": {
+      "type": "string",
+      "enum": [
+        "Dashboard",
+        "AddItem",
+        "ViewItem",
+        "EditItem",
+        "Multiprompt",
+        "AIBackoffice"
+      ],
+      "description": "Doelpagina voor deze taak"
+    },
+    "target_component": {
+      "type": "string",
+      "description": "Doelcomponent voor deze taak"
+    },
+    "target_domain": {
+      "type": "string",
+      "enum": [
+        "UI",
+        "Data",
+        "UploadFlow",
+        "i18n",
+        "DragDrop",
+        "PromptEngine",
+        "Routing",
+        "Styling",
+        "Performance"
+      ],
+      "description": "Functioneel domein van de taak"
+    },
+    "ai_prediction": {
+      "type": "object",
+      "properties": {
+        "predicted_pages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "score": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "predicted_components": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "score": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "explanation": {
+          "type": "string"
+        }
+      },
+      "description": "AI voorspelling scores"
+    },
+    "is_deleted": {
+      "type": "boolean",
+      "default": false,
+      "description": "Of deze gedachte in de prullenbak zit"
+    },
+    "deleted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Tijdstip van verwijdering"
+    },
+    "retry_from_item_id": {
+      "type": "string",
+      "description": "ID van het item waaruit deze taak opnieuw geprobeerd wordt"
+    }
+  },
+  "required": [
+    "content"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

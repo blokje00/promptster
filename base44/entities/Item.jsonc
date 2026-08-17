@@ -1,0 +1,198 @@
+{
+  "name": "Item",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Titel van het item"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "prompt",
+        "code",
+        "snippet",
+        "multiprompt",
+        "idee"
+      ],
+      "description": "Type item"
+    },
+    "content": {
+      "type": "string",
+      "description": "De volledige inhoud"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "javascript",
+        "python",
+        "typescript",
+        "html",
+        "css",
+        "json",
+        "markdown",
+        "sql",
+        "bash",
+        "other"
+      ],
+      "description": "Programmeertaal (voor code items)"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags voor organisatie"
+    },
+    "is_favorite": {
+      "type": "boolean",
+      "default": false,
+      "description": "Favoriet item"
+    },
+    "description": {
+      "type": "string",
+      "description": "Korte beschrijving"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Persoonlijke notities voor dit item"
+    },
+    "screenshot_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "IDs van bijgevoegde screenshots (ScreenshotAsset)"
+    },
+    "zip_files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Zip bestanden met code"
+    },
+    "is_publish_version": {
+      "type": "boolean",
+      "default": false,
+      "description": "Is dit een Publish versie"
+    },
+    "publish_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Datum/tijd van deze Publish versie"
+    },
+    "publish_working_notes": {
+      "type": "string",
+      "description": "Wat werkte er allemaal goed op dit moment"
+    },
+    "publish_reason": {
+      "type": "string",
+      "description": "Waarom is deze Publish versie gemaakt"
+    },
+    "used_thoughts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs van gedachten gebruikt in multiprompt"
+    },
+    "start_template_id": {
+      "type": "string",
+      "description": "ID van gebruikte starttemplate"
+    },
+    "end_template_id": {
+      "type": "string",
+      "description": "ID van gebruikte eindtemplate"
+    },
+    "task_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "task_name": {
+            "type": "string"
+          },
+          "full_description": {
+            "type": "string"
+          },
+          "is_checked": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "success",
+              "failed",
+              "retried"
+            ],
+            "default": "open"
+          },
+          "created_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_date": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "description": "Controlepunten per taak"
+    },
+    "file_changes_feedback": {
+      "type": "string",
+      "description": "Gekopieerde Base44 feedback"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "ID van gekoppeld project"
+    },
+    "is_pending_check": {
+      "type": "boolean",
+      "default": false,
+      "description": "Of dit item klaarstaat voor controle"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "success",
+        "failed"
+      ],
+      "default": "open",
+      "description": "Overall status van het item"
+    }
+  },
+  "required": [
+    "title",
+    "type",
+    "content"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

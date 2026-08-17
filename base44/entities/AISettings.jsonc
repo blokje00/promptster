@@ -1,0 +1,52 @@
+{
+  "name": "AISettings",
+  "type": "object",
+  "properties": {
+    "improve_prompt_instruction": {
+      "type": "string",
+      "description": "Instructie voor de AI verbeter functie"
+    },
+    "model_preference": {
+      "type": "string",
+      "enum": [
+        "default",
+        "creative",
+        "precise"
+      ],
+      "default": "default",
+      "description": "Voorkeur voor AI model gedrag"
+    },
+    "enable_context_suggestions": {
+      "type": "boolean",
+      "default": true,
+      "description": "AI context suggesties aan/uit voor thoughts"
+    },
+    "enable_verbalized_sampling": {
+      "type": "boolean",
+      "default": false,
+      "description": "Schakel Verbalized Sampling in voor meer diverse LLM outputs (1.6-2.1x diversiteit)"
+    },
+    "enable_reasoning_transparency": {
+      "type": "boolean",
+      "default": false,
+      "description": "Toon AI reasoning stappen (planning, interpretatie, keuzes)"
+    }
+  },
+  "required": [
+    "improve_prompt_instruction"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

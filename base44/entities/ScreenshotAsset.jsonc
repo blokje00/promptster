@@ -1,0 +1,94 @@
+{
+  "name": "ScreenshotAsset",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID van de gebruiker die de screenshot ge\u00fcpload heeft"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Optioneel: gekoppeld project"
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Optioneel: gekoppelde task/thought"
+    },
+    "bucket": {
+      "type": "string",
+      "default": "screenshots",
+      "description": "Supabase storage bucket naam"
+    },
+    "path": {
+      "type": "string",
+      "description": "Pad binnen de bucket"
+    },
+    "public_url": {
+      "type": "string",
+      "description": "Publieke URL voor weergave"
+    },
+    "filename": {
+      "type": "string",
+      "description": "Originele bestandsnaam"
+    },
+    "content_type": {
+      "type": "string",
+      "description": "MIME type (image/png, image/jpeg, etc.)"
+    },
+    "size_bytes": {
+      "type": "number",
+      "description": "Bestandsgrootte in bytes"
+    },
+    "vision_analysis": {
+      "type": "object",
+      "description": "Cached OCR vision analysis result from analyzeScreenshotVision",
+      "properties": {
+        "ocr": {
+          "type": "object"
+        },
+        "regions": {
+          "type": "array"
+        },
+        "semanticBlocks": {
+          "type": "array"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        },
+        "metadata": {
+          "type": "object"
+        },
+        "analyzedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  },
+  "required": [
+    "user_id",
+    "bucket",
+    "path",
+    "public_url"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "name": "UserProfile",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Base44 Auth User ID (koppeling)"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email kopie voor snelle lookup"
+    },
+    "demo_seeded_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Wanneer demo data gezaaid is"
+    },
+    "demo_default_project_id": {
+      "type": "string",
+      "description": "Default project ID voor demo"
+    },
+    "demo_start_template_id": {
+      "type": "string",
+      "description": "Default start template ID voor demo"
+    },
+    "demo_end_template_id": {
+      "type": "string",
+      "description": "Default end template ID voor demo"
+    }
+  },
+  "required": [
+    "user_id",
+    "email"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}
