@@ -1,0 +1,49 @@
+{
+  "name": "ResearchPaper",
+  "type": "object",
+  "properties": {
+    "arxiv_id": {
+      "type": "string",
+      "description": "arXiv identifier (e.g. 2501.12963)"
+    },
+    "file_uri": {
+      "type": "string",
+      "description": "Private storage URI for downloaded PDF"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Filename of the stored PDF"
+    },
+    "title": {
+      "type": "string",
+      "description": "Paper title"
+    },
+    "downloaded_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the paper was downloaded"
+    }
+  },
+  "required": [
+    "arxiv_id",
+    "file_uri"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "name": "Project",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Naam van het project"
+    },
+    "color": {
+      "type": "string",
+      "enum": [
+        "red",
+        "orange",
+        "yellow",
+        "green",
+        "blue",
+        "indigo",
+        "purple",
+        "pink"
+      ],
+      "description": "Kleur voor visuele herkenning"
+    },
+    "description": {
+      "type": "string",
+      "description": "Korte beschrijving van het project"
+    },
+    "technical_config_markdown": {
+      "type": "string",
+      "description": "Technische project configuratie in markdown formaat"
+    },
+    "llm_response_parser_instruction": {
+      "type": "string",
+      "description": "Project-specifieke LLM Response Parser instructie (hoe de LLM de output moet formatteren/parseren)"
+    },
+    "last_start_template_id": {
+      "type": "string",
+      "description": "ID van laatst gebruikte starttemplate"
+    },
+    "last_end_template_id": {
+      "type": "string",
+      "description": "ID van laatst gebruikte eindtemplate"
+    },
+    "component_mapping": {
+      "type": "object",
+      "description": "Project-specifieke pagina naar component mapping",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "required": [
+    "name",
+    "color"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

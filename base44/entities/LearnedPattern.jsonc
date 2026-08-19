@@ -1,0 +1,86 @@
+{
+  "name": "LearnedPattern",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Project waar dit pattern bij hoort"
+    },
+    "pattern_type": {
+      "type": "string",
+      "enum": [
+        "retrospective",
+        "preference_synthesis",
+        "task_decomposition",
+        "structure_ab"
+      ],
+      "description": "Type learned pattern"
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "UI",
+        "Data",
+        "Logic",
+        "All"
+      ],
+      "description": "Domein waar pattern op van toepassing is"
+    },
+    "pattern_text": {
+      "type": "string",
+      "description": "De geleerde pattern/strategie als markdown"
+    },
+    "success_rate": {
+      "type": "number",
+      "description": "Geschatte success rate van deze pattern (0-100)"
+    },
+    "sample_size": {
+      "type": "number",
+      "description": "Aantal feedbacks waarop dit pattern gebaseerd is"
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium",
+      "description": "Confidence level in deze pattern"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Of deze pattern actief gebruikt wordt"
+    },
+    "learned_from_feedback_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs van feedback records waaruit geleerd is"
+    }
+  },
+  "required": [
+    "project_id",
+    "pattern_type",
+    "pattern_text"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "personal_preferences_markdown": {
+      "type": "string",
+      "description": "Personal development preferences in markdown format"
+    },
+    "retry_task_message": {
+      "type": "string",
+      "description": "Custom retry task message template"
+    },
+    "tier_advisor_features_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Show Tier Advisor on Features page"
+    },
+    "tier_advisor_subscription_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Show Tier Advisor on Subscription page"
+    },
+    "scheduled_plan_id": {
+      "type": "string",
+      "description": "Stripe price ID scheduled to activate after trial ends"
+    },
+    "scheduled_change_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when scheduled plan will activate (ISO format)"
+    },
+    "stripe_schedule_id": {
+      "type": "string",
+      "description": "Stripe subscription schedule ID for tracking"
+    }
+  },
+  "required": [
+    "personal_preferences_markdown",
+    "retry_task_message"
+  ]
+}

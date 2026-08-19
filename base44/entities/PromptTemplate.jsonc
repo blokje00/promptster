@@ -1,0 +1,48 @@
+{
+  "name": "PromptTemplate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Naam van de template"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "start",
+        "eind"
+      ],
+      "description": "Type template: start of eind"
+    },
+    "content": {
+      "type": "string",
+      "description": "De template tekst"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "ID van het gekoppelde project"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "content"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

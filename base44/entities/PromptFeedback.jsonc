@@ -1,0 +1,70 @@
+{
+  "name": "PromptFeedback",
+  "type": "object",
+  "properties": {
+    "item_id": {
+      "type": "string",
+      "description": "ID van het Item waar deze feedback bij hoort"
+    },
+    "prompt_used": {
+      "type": "string",
+      "description": "De volledige prompt die gebruikt is"
+    },
+    "rating": {
+      "type": "string",
+      "enum": [
+        "excellent",
+        "good",
+        "okay",
+        "poor"
+      ],
+      "description": "Gebruiker rating van het resultaat"
+    },
+    "what_worked": {
+      "type": "string",
+      "description": "Wat werkte goed in de output"
+    },
+    "what_failed": {
+      "type": "string",
+      "description": "Wat werkte niet goed"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Extra opmerkingen van de gebruiker"
+    },
+    "project_id": {
+      "type": "string",
+      "description": "Project waar deze feedback bij hoort"
+    },
+    "used_templates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs van templates die gebruikt zijn"
+    },
+    "applied_to_preferences": {
+      "type": "boolean",
+      "default": false,
+      "description": "Of deze feedback al is toegepast op personal preferences"
+    }
+  },
+  "required": [
+    "item_id",
+    "rating"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

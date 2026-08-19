@@ -1,0 +1,46 @@
+{
+  "name": "FeatureContentBlock",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Unique stable identifier (e.g. hero_title, cta_subtitle)"
+    },
+    "page": {
+      "type": "string",
+      "default": "features",
+      "description": "Page identifier for multi-page support"
+    },
+    "value": {
+      "type": "string",
+      "description": "The actual content text"
+    },
+    "updated_by": {
+      "type": "string",
+      "description": "Email or user ID of last editor"
+    }
+  },
+  "required": [
+    "key",
+    "page",
+    "value"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

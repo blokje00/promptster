@@ -1,0 +1,71 @@
+{
+  "name": "PageView",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of the user (if logged in)"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user (if logged in)"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Unique session identifier"
+    },
+    "page_name": {
+      "type": "string",
+      "description": "Name of the page visited"
+    },
+    "page_url": {
+      "type": "string",
+      "description": "Full URL of the page"
+    },
+    "referrer": {
+      "type": "string",
+      "description": "Previous page URL"
+    },
+    "time_on_page": {
+      "type": "number",
+      "description": "Time spent on page in seconds"
+    },
+    "viewport_width": {
+      "type": "number",
+      "description": "Browser viewport width"
+    },
+    "viewport_height": {
+      "type": "number",
+      "description": "Browser viewport height"
+    },
+    "user_agent": {
+      "type": "string",
+      "description": "Browser user agent"
+    }
+  },
+  "required": [
+    "page_name",
+    "session_id"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "write": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

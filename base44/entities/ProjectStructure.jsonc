@@ -1,0 +1,271 @@
+{
+  "name": "ProjectStructure",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Koppeling naar bestaand Promptster project ID"
+    },
+    "platform_label": {
+      "type": "string",
+      "description": "Platform naam (Base44, Bubble, Webflow, Make, etc.)"
+    },
+    "base_url": {
+      "type": "string",
+      "description": "Basis URL van het project"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "liveApp",
+              "clipboard",
+              "wizard"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      },
+      "description": "Bronnen waaruit de structuur is opgebouwd"
+    },
+    "pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "route": {
+            "type": "string"
+          },
+          "url_example": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "page_type": {
+            "type": "string",
+            "enum": [
+              "dashboard",
+              "list",
+              "detail",
+              "form",
+              "settings",
+              "other"
+            ]
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "entities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "from_sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "description": "Pagina definities"
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "is_required": {
+                  "type": "boolean"
+                },
+                "example_value": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "primary_id_field": {
+            "type": "string"
+          },
+          "from_sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "description": "Entity/data structuur definities"
+    },
+    "workflows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "trigger_description": {
+            "type": "string"
+          },
+          "actions_description": {
+            "type": "string"
+          },
+          "related_entities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "related_pages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "platform_specific": {
+            "type": "object"
+          },
+          "from_sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "description": "Workflow/automation definities"
+    },
+    "navigation": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "route": {
+            "type": "string"
+          },
+          "position": {
+            "type": "string",
+            "enum": [
+              "header",
+              "sidebar",
+              "footer"
+            ]
+          },
+          "order": {
+            "type": "number"
+          },
+          "from_sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "description": "Navigatie structuur"
+    },
+    "last_updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Laatste update timestamp"
+    }
+  },
+  "required": [
+    "project_id",
+    "platform_label"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "created_by": "{{user.email}}",
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "created_by": "{{user.email}}",
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "write": {
+      "created_by": "{{user.email}}",
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

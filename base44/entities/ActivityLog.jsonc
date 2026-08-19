@@ -1,0 +1,59 @@
+{
+  "name": "ActivityLog",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of the user (if applicable)"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user (if applicable)"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "login_success",
+        "login_failure",
+        "critical_error"
+      ],
+      "description": "Type of event being logged"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Event-specific data (NO sensitive content like passwords or full prompts)"
+    },
+    "ip_address": {
+      "type": "string",
+      "description": "IP address of the request (if available)"
+    },
+    "user_agent": {
+      "type": "string",
+      "description": "User agent string (if available)"
+    }
+  },
+  "required": [
+    "event_type"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "write": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
