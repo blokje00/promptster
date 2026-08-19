@@ -27,7 +27,8 @@ export default function TaskDecomposer({ open, onClose, thought, currentUser }) 
           focus_type: task.focus_type || 'both',
           target_page: task.target_page,
           target_component: task.target_component,
-          target_domain: task.target_domain
+          target_domain: task.target_domain,
+          estimated_complexity: task.estimated_complexity || "moderate"
         })
       );
       return await Promise.all(promises);

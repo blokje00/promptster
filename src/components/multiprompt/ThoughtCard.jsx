@@ -240,7 +240,8 @@ export default function ThoughtCard({
     design: { label: "Design Only", color: "bg-purple-100 text-purple-700 border-purple-200" },
     logic: { label: "Logic Only", color: "bg-amber-100 text-amber-700 border-amber-200" },
     no_design: { label: "No Design", color: "bg-red-100 text-red-700 border-red-200" },
-    discuss: { label: "Discuss", color: "bg-green-100 text-green-700 border-green-200" }
+    discuss: { label: "Discuss", color: "bg-green-100 text-green-700 border-green-200" },
+    planned: { label: "Planned (Research First)", color: "bg-gray-100 text-gray-700 border-gray-300" }
   };
 
   const currentFocus = focusConfig[thought.focus_type] || focusConfig.both;

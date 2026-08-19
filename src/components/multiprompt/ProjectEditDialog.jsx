@@ -50,6 +50,7 @@ export default function ProjectEditDialog({ open, onOpenChange, mode = "edit", p
   // TASK-3: workspace metadata
   const [editCodePath, setEditCodePath] = useState("");
   const [editAiTool, setEditAiTool] = useState("");
+  const [editTargetModel, setEditTargetModel] = useState("");
   const [editPushLog, setEditPushLog] = useState([]);
   const [newPushMessage, setNewPushMessage] = useState("");
   // TASK-2 (rich description): GitHub repo/version reference
@@ -68,6 +69,7 @@ export default function ProjectEditDialog({ open, onOpenChange, mode = "edit", p
       setEditDomains(project.domains || []);
       setEditCodePath(project.local_code_path || "");
       setEditAiTool(project.ai_tool || "");
+      setEditTargetModel(project.target_model || "");
       setEditPushLog(Array.isArray(project.push_log) ? project.push_log : []);
       setEditGithubRepo(project.github_repo || "");
     } else {
@@ -80,6 +82,7 @@ export default function ProjectEditDialog({ open, onOpenChange, mode = "edit", p
       setEditDomains([]);
       setEditCodePath("");
       setEditAiTool("");
+      setEditTargetModel("");
       setEditPushLog([]);
       setEditGithubRepo("");
     }
@@ -171,6 +174,7 @@ export default function ProjectEditDialog({ open, onOpenChange, mode = "edit", p
       // TASK-3: workspace metadata
       local_code_path: editCodePath.trim() || null,
       ai_tool: editAiTool || null,
+      target_model: editTargetModel || null,
       push_log: editPushLog,
       github_repo: editGithubRepo.trim() || null,
     };
@@ -209,6 +213,24 @@ export default function ProjectEditDialog({ open, onOpenChange, mode = "edit", p
                 </button>
               ))}
             </div>
+          </div>
+          {/* Target model: which LLM the prompts are written for */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-500">Target AI model (which LLM prompts are written for)</label>
+            <select
+              value={editTargetModel}
+              onChange={e => setEditTargetModel(e.target.value)}
+              className="h-9 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-300 px-3 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            >
+              <option value="">Not set</option>
+              <option value="gemini">Gemini</option>
+              <option value="gpt-4o">GPT-4o</option>
+              <option value="gpt-4">GPT-4</option>
+              <option value="claude-sonnet">Claude Sonnet</option>
+              <option value="claude-opus">Claude Opus</option>
+              <option value="llama">Llama</option>
+              <option value="other">Other</option>
+            </select>
           </div>
           {/* TASK-2 (rich description): big, structured, searchable description */}
           <div className="space-y-1">

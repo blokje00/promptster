@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
@@ -70,6 +70,10 @@ function MultipromptContent({ currentUser }) {
     newThoughtInput.setNewThoughtScreenshots
   );
 
+  // Target model: local state seeded from the selected project, persisted back on change
+  const [targetModel, setTargetModelRaw] = useState("");
+  const prevProjectIdRef = useRef(null);
+
   const promptGeneration = usePromptGeneration({
     thoughts, selectedThoughtIds,
     startTemplateId: templateSelection.startTemplateId,
@@ -81,7 +85,8 @@ function MultipromptContent({ currentUser }) {
     currentUser: { ...currentUser, ...aiSettings[0] },
     selectedProject,
     templates,
-    selectedProjectId
+    selectedProjectId,
+    targetModel
   });
 
   // --- Derived State ---
@@ -92,6 +97,24 @@ function MultipromptContent({ currentUser }) {
   // --- Local UI State ---
   const [showBanner, setShowBanner] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Sync targetModel when the selected project changes
+  useEffect(() => {
+    if (selectedProjectId !== prevProjectIdRef.current) {
+      prevProjectIdRef.current = selectedProjectId;
+      setTargetModelRaw(selectedProject?.target_model || "");
+    }
+  }, [selectedProjectId, selectedProject?.target_model]);
+
+  const setTargetModel = useCallback((value) => {
+    setTargetModelRaw(value);
+    // Persist to the Project entity so it survives across sessions
+    if (selectedProject?.id) {
+      base44.entities.Project.update(selectedProject.id, { target_model: value || null })
+        .catch(err => console.warn('[Multiprompt] Failed to persist target_model:', err));
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+    }
+  }, [selectedProject?.id, queryClient]);
 
   const generateChecklist = useCallback(() => {
     return thoughts
@@ -273,6 +296,8 @@ function MultipromptContent({ currentUser }) {
                 handleQuickSave={handleQuickSave}
                 currentUser={currentUser}
                 selectedTaskCount={selectedThoughtIds.length}
+                targetModel={targetModel}
+                onTargetModelChange={setTargetModel}
               />
             </div>
           </TabsContent>

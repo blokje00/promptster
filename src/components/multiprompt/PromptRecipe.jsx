@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
-import { User, FolderCog, Brain, Braces, PlayCircle, ListChecks, StopCircle, Pencil } from "lucide-react";
+import { User, FolderCog, Brain, Braces, PlayCircle, ListChecks, StopCircle, Pencil, Bot } from "lucide-react";
 import { createPageUrl } from "@/utils";
 
 /**
@@ -13,6 +13,16 @@ import { createPageUrl } from "@/utils";
  * card. Every optional block gets a toggle; auto-injected blocks (Learned
  * Patterns, Response Parser) are now visible and controllable too.
  */
+
+const TARGET_MODEL_OPTIONS = [
+  { value: "gemini", label: "Gemini" },
+  { value: "gpt-4o", label: "GPT-4o" },
+  { value: "gpt-4", label: "GPT-4" },
+  { value: "claude-sonnet", label: "Claude Sonnet" },
+  { value: "claude-opus", label: "Claude Opus" },
+  { value: "llama", label: "Llama" },
+  { value: "other", label: "Other" },
+];
 
 function RecipeRow({ step, icon: Icon, title, subtitle, active, disabled, control, editUrl }) {
   return (
@@ -45,6 +55,8 @@ function PromptRecipe({
   selectedProject,
   currentUser,
   selectedTaskCount,
+  targetModel,
+  onTargetModelChange,
 }) {
   const {
     startTemplateId, setStartTemplateId,
@@ -86,6 +98,24 @@ function PromptRecipe({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
+        {/* Target model selector — compact, at the top of the recipe */}
+        <div className="flex items-center gap-3 py-2 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+          <Bot className="w-4 h-4 shrink-0 text-slate-400" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Target AI Model</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Which LLM this prompt is written for</p>
+          </div>
+          <select
+            value={targetModel || ""}
+            onChange={e => onTargetModelChange(e.target.value)}
+            className="h-8 w-[150px] text-xs rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          >
+            <option value="">Not set</option>
+            {TARGET_MODEL_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
         <RecipeRow
           step="1"
           icon={User}

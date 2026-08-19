@@ -11,6 +11,8 @@ function PromptColumn({
   handleQuickSave,
   currentUser,
   selectedTaskCount,
+  targetModel,
+  onTargetModelChange,
 }) {
   return (
     <div className="space-y-4">
@@ -22,6 +24,8 @@ function PromptColumn({
         selectedProject={selectedProject}
         currentUser={currentUser}
         selectedTaskCount={selectedTaskCount}
+        targetModel={targetModel}
+        onTargetModelChange={onTargetModelChange}
       />
       <PromptPreview
         {...promptGeneration}

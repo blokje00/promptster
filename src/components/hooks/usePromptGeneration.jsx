@@ -13,7 +13,8 @@ export const usePromptGeneration = ({
   currentUser,
   selectedProject,
   templates,
-  selectedProjectId
+  selectedProjectId,
+  targetModel
 }) => {
   const [improvedPrompt, setImprovedPrompt] = useState("");
   const [isImproving, setIsImproving] = useState(false);
@@ -60,6 +61,14 @@ export const usePromptGeneration = ({
 
     if (includeProjectConfig && selectedProject?.technical_config_markdown) {
       parts.push(selectedProject.technical_config_markdown);
+    }
+
+    if (selectedProject?.ai_tool) {
+      parts.push(`[DEVELOPMENT_PLATFORM]\nThis app is being built for: ${selectedProject.ai_tool}\nTailor all code output, file paths, and conventions to this platform.\n[/DEVELOPMENT_PLATFORM]`);
+    }
+
+    if (targetModel) {
+      parts.push(`[TARGET_MODEL]\nThis prompt is intended for: ${targetModel}\nOptimize output format, token usage, and response style for this model.\n[/TARGET_MODEL]`);
     }
 
     // TIER 3 FEATURE: Include active learned patterns for this project (TASK-1: now toggleable)
@@ -110,13 +119,19 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
     }
 
     if (selectedItems.length > 0) {
-      const tasks = selectedItems.map((t, i) => {
+      const sortedItems = [...selectedItems].sort((a, b) => {
+        const aPlanned = a.focus_type === "planned" ? 1 : 0;
+        const bPlanned = b.focus_type === "planned" ? 1 : 0;
+        return aPlanned - bPlanned;
+      });
+      const tasks = sortedItems.map((t, i) => {
         const taskObj = {
           id: `TASK-${i + 1}`,
           title: t.content.length > 150 ? t.content.substring(0, 150) + "..." : t.content,
           description: t.content,
           files: [t.target_page ? `pages/${t.target_page}.jsx` : "TBD"],
-          priority: "Medium"
+          priority: "Medium",
+          estimated_complexity: t.estimated_complexity || "moderate"
         };
 
         // Add screenshots with real OCR vision data from thought entity
@@ -165,13 +180,27 @@ Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde ap
         subtasks: tasks
       };
       parts.push("```json\n" + JSON.stringify(jsonBlock, null, 2) + "\n```");
+
+      const hasComplexityVariation = sortedItems.some(t => (t.estimated_complexity || "moderate") === 'simple') 
+                                  && sortedItems.some(t => (t.estimated_complexity || "moderate") === 'complex');
+      if (hasComplexityVariation) {
+        parts.push(`[MIXTURE_OF_EXPERTS_ROUTING]
+Route tasks by complexity to optimize cost and speed:
+- "simple" tasks → use a fast, cost-efficient model (e.g. GPT-4o-mini, Claude Haiku)
+- "moderate" tasks → use a mid-tier model (e.g. GPT-4o, Claude Sonnet)
+- "complex" tasks → use the most capable model (e.g. o3, Claude Opus)
+
+Each task in the JSON above includes an "estimated_complexity" field.
+Apply this routing strategy when executing the multi-task protocol.
+[/MIXTURE_OF_EXPERTS_ROUTING]`);
+      }
     }
 
     const endTmpl = templates.find(t => t.id === endTemplateId);
     if (endTmpl) parts.push(endTmpl.content);
 
     return parts.join("\n\n---\n\n");
-  }, [selectedItems, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, includeLearnedPatterns, includeParserInstruction, currentUser, selectedProject, templates, selectedProjectId]);
+  }, [selectedItems, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, includeLearnedPatterns, includeParserInstruction, currentUser, selectedProject, templates, selectedProjectId, targetModel]);
 
   const handleImprovePrompt = useCallback(async (isUndo = false) => {
     // Undo: clear improved prompt

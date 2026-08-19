@@ -209,6 +209,7 @@ export const translations = {
     aiSettingsSaved: "AI settings saved",
     preferencesSaved: "Personal preferences saved",
     preferencesSaveFailed: "Could not save preferences",
+    targetModel: "Target AI Model",
     defaultAIInstruction: "Improve the following prompt technically and linguistically. Make the text more professional, clearer, and better structured. Preserve the original intent and content, but improve grammar, spelling, and technical precision. Only return the improved text, no explanation.",
   }
 };
