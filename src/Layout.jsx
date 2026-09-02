@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import Header from "./components/layout/Header";
 import { LanguageProvider } from "./components/i18n/LanguageContext";
 import { ThemeProvider } from "./components/theme/ThemeProvider";

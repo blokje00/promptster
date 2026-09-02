@@ -1,13 +1,11 @@
-import React, { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckSquare, Square, Trash2, MoreHorizontal, GripVertical, Upload, ChevronDown, ChevronUp, Split } from "lucide-react";
+import { CheckSquare, Square, Trash2, MoreHorizontal, GripVertical, Upload, ChevronDown, ChevronUp, Split, Pencil } from "lucide-react";
 import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
+import * as functions from "@/api/functions";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,7 +77,6 @@ export default function ThoughtCard({
   onUpdateScreenshots,
   onUpdateFocus,
   onUpdateContext,
-  onDecompose,
   dragHandleProps,
   showDragHandle = true,
   onDebugScreenshot
@@ -123,10 +120,8 @@ export default function ThoughtCard({
           // TASK-7: Trigger OCR vision analysis immediately after paste
           try {
             for (const url of uploadedUrls) {
-              base44.functions.invoke('analyzeScreenshotWithCache', {
-                screenshotUrl: url,
-                level: 'full'
-              }).catch(err => console.warn('[ThoughtCard] Vision analysis failed:', err));
+              functions.analyzeScreenshotUrl(url)
+                .catch(err => console.warn('[ThoughtCard] Vision analysis failed:', err));
             }
           } catch (error) {
             console.warn('[ThoughtCard] Could not trigger vision analysis:', error);
@@ -152,6 +147,21 @@ export default function ThoughtCard({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleContentSave();
+    }
+  };
+
+  // Whole-card click-to-edit affordance. Nested interactive elements
+  // (checkbox, drag handle, badges/dropdown triggers, ContextSelector,
+  // screenshot thumbs, buttons) stop propagation so they never trigger this.
+  const handleCardClick = () => {
+    if (!isEditing) setIsEditing(true);
+  };
+
+  const handleCardKeyDown = (e) => {
+    if (isEditing) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setIsEditing(true);
     }
   };
 
@@ -217,10 +227,8 @@ export default function ThoughtCard({
         // TASK-7: Trigger OCR vision analysis immediately after drop
         try {
           for (const url of successUrls) {
-            base44.functions.invoke('analyzeScreenshotWithCache', {
-              screenshotUrl: url,
-              level: 'full'
-            }).catch(err => console.warn('[ThoughtCard] Vision analysis failed:', err));
+            functions.analyzeScreenshotUrl(url)
+              .catch(err => console.warn('[ThoughtCard] Vision analysis failed:', err));
           }
         } catch (error) {
           console.warn('[ThoughtCard] Could not trigger vision analysis:', error);
@@ -247,10 +255,14 @@ export default function ThoughtCard({
   const currentFocus = focusConfig[thought.focus_type] || focusConfig.both;
 
   return (
-    <div 
-      className={`group relative flex gap-3 p-3 rounded-lg border transition-all ${
-        isSelected 
-          ? 'bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-700' 
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
+      className={`group relative flex gap-3 p-3 rounded-lg border transition-all cursor-pointer hover:ring-1 hover:ring-indigo-300 dark:hover:ring-indigo-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 ${
+        isSelected
+          ? 'bg-indigo-50/50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-700'
           : `bg-white dark:bg-slate-800 ${project ? `border-${project.color}-200 hover:border-${project.color}-300` : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600'}`
       } ${isDropActive ? 'ring-2 ring-indigo-400 dark:ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900 bg-indigo-50 dark:bg-indigo-950/50' : ''}`}
       onDragEnter={handleDragEnter}
@@ -260,8 +272,9 @@ export default function ThoughtCard({
     >
       {/* Drag Handle */}
       {showDragHandle && (
-        <div 
+        <div
           {...dragHandleProps}
+          onClick={(e) => e.stopPropagation()}
           className="mt-2 text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 cursor-grab active:cursor-grabbing"
         >
           <GripVertical className="w-5 h-5" />
@@ -294,7 +307,7 @@ export default function ThoughtCard({
       {/* Content Area */}
       <div className="flex-1 min-w-0 space-y-3">
         {/* Header: Project Badge & Actions */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-2">
             {project && (
               <Badge variant="secondary" className="text-[10px] h-5 px-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600">
@@ -307,11 +320,17 @@ export default function ThoughtCard({
                 Retry
               </Badge>
             )}
+            {!isEditing && (
+              <Pencil
+                className="w-3 h-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                aria-hidden="true"
+              />
+            )}
           </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+              <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()} className="h-6 w-6 p-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
                 <MoreHorizontal className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -335,7 +354,7 @@ export default function ThoughtCard({
         </div>
 
         {/* Editable Content */}
-        <div onClick={() => setIsEditing(true)}>
+        <div onClick={isEditing ? (e) => e.stopPropagation() : undefined}>
           {isEditing ? (
             <Textarea
               autoFocus
@@ -353,7 +372,7 @@ export default function ThoughtCard({
         </div>
 
         {/* Controls Footer */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
           {/* Context Selector */}
           <ContextSelector 
             value={{
@@ -406,15 +425,17 @@ export default function ThoughtCard({
       </div>
 
       {/* Task Decomposer Dialog */}
-      <TaskDecomposerDialog
-        isOpen={showDecomposer}
-        onClose={() => setShowDecomposer(false)}
-        taskContent={thought.content}
-        projectId={thought.project_id}
-        onSelectVariant={(variantText) => {
-          onUpdateContent(thought.id, variantText);
-        }}
-      />
+      <div onClick={(e) => e.stopPropagation()}>
+        <TaskDecomposerDialog
+          isOpen={showDecomposer}
+          onClose={() => setShowDecomposer(false)}
+          taskContent={thought.content}
+          projectId={thought.project_id}
+          onSelectVariant={(variantText) => {
+            onUpdateContent(thought.id, variantText);
+          }}
+        />
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Sparkles, X, CheckCircle, Plus } from "lucide-react";
@@ -6,8 +6,7 @@ import { useLanguage } from "../i18n/LanguageContext";
 import { 
   DEFAULT_PAGE_COMPONENT_MAP, 
   DEFAULT_PAGES, 
-  DEFAULT_DOMAINS,
-  predictContext 
+  DEFAULT_DOMAINS 
 } from "./contextPrediction";
 import AddCustomItemDialog from "./AddCustomItemDialog";
 

@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { useMemo, useState } from "react";
+import * as functions from "@/api/functions";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/lib/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BarChart, Users, Sparkles, FileText, Loader2, Calendar, Clock, CreditCard, ArrowUpDown, ArrowUp, ArrowDown, Eye, Filter } from "lucide-react";
+import { BarChart, Users, Sparkles, FileText, Loader2, Calendar, ArrowUpDown, ArrowUp, ArrowDown, Eye, Filter } from "lucide-react";
 import { format, differenceInDays, startOfDay, endOfDay, subDays } from "date-fns";
 import { nl } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -52,24 +53,15 @@ export default function AdminStats() {
     to: new Date()
   });
 
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
+  const { currentUser } = useAuth();
 
   // Single server-side aggregated query (replaces 7 full-table downloads)
   const { data: adminData, isLoading } = useQuery({
     queryKey: ['adminStats', dateRange],
-    queryFn: async () => {
-      const response = await base44.functions.invoke('getAdminStats', {
-        from: dateRange.from ? startOfDay(dateRange.from).toISOString() : null,
-        to: dateRange.to ? endOfDay(dateRange.to).toISOString() : null,
-      });
-      if (!response.data?.ok) {
-        throw new Error(response.data?.error || 'Failed to load admin stats');
-      }
-      return response.data;
-    },
+    queryFn: () => functions.getAdminStats({
+      from: dateRange.from ? startOfDay(dateRange.from).toISOString() : null,
+      to: dateRange.to ? endOfDay(dateRange.to).toISOString() : null,
+    }),
     enabled: currentUser?.role === 'admin',
   });
 
@@ -141,15 +133,7 @@ export default function AdminStats() {
     return sorted;
   }, [usersWithData, sortField, sortDirection]);
 
-  // Check admin access AFTER all hooks
-  if (currentUser && currentUser.role !== 'admin') {
-    return (
-      <div className="p-8 text-center">
-        <h2 className="text-2xl font-bold text-red-600">Geen Toegang</h2>
-        <p className="text-slate-600 mt-2">Deze pagina is alleen toegankelijk voor administrators.</p>
-      </div>
-    );
-  }
+  // Admin access is already enforced by RouteGuard (routes.config.js: access "admin")
 
   if (isLoading || !globalStats) {
     return (
@@ -319,8 +303,6 @@ export default function AdminStats() {
                       <SortableHeader field="full_name" label="Naam" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       <SortableHeader field="email" label="Email" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       <SortableHeader field="created_date" label="Lid sinds" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
-                      <th className="pb-2 font-semibold text-slate-700 w-20">Plan</th>
-                      <th className="pb-2 font-semibold text-slate-700 w-40">Subscription Status</th>
                       <SortableHeader field="items" label="Items" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       <SortableHeader field="projects" label="Projecten" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
                       <SortableHeader field="thoughts" label="Thoughts" sortField={sortField} sortDirection={sortDirection} onSort={handleSort} />
@@ -332,37 +314,9 @@ export default function AdminStats() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {sortedUsers.map((user) => {
-                      // Get subscription data from server-aggregated profile
-                      const profile = user.profile;
-                      const subscriptionStatus = profile?.subscription_status || 'none';
-                      const trialEnd = profile?.trial_ends_at ? new Date(profile.trial_ends_at) : null;
-                      const planId = profile?.plan_id;
-
                       const createdDate = user.created_date ? new Date(user.created_date) : null;
                       const lastActivity = user.lastActivity ? new Date(user.lastActivity) : null;
                       const now = new Date();
-
-                      // Days remaining in trial
-                      const daysRemaining = trialEnd && trialEnd > now
-                        ? Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24))
-                        : 0;
-
-                      // Status labels matching Stripe subscription status
-                      const statusConfig = {
-                        'none': { label: 'Free', color: 'bg-slate-100 text-slate-700', icon: null },
-                        'trialing': {
-                          label: trialEnd && trialEnd > now ? `Trial (${daysRemaining}d left)` : 'Trial Expired',
-                          color: trialEnd && trialEnd > now ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700',
-                          icon: Clock
-                        },
-                        'active': { label: 'Active Paid', color: 'bg-green-100 text-green-700', icon: CreditCard },
-                        'past_due': { label: 'Past Due', color: 'bg-orange-100 text-orange-700', icon: null },
-                        'canceled': { label: 'Canceled', color: 'bg-red-100 text-red-700', icon: null },
-                        'incomplete': { label: 'Incomplete', color: 'bg-yellow-100 text-yellow-700', icon: null }
-                      };
-
-                      const currentStatus = statusConfig[subscriptionStatus] || statusConfig['none'];
-                      const StatusIcon = currentStatus.icon;
 
                       // Server-aggregated task_checks stats
                       const checks = user.checks || { total: 0, success: 0, failed: 0, retried: 0 };
@@ -384,17 +338,6 @@ export default function AdminStats() {
                                 {format(createdDate, "d MMM yyyy", { locale: nl })}
                               </div>
                             ) : "—"}
-                          </td>
-                          <td className="py-3">
-                            <Badge variant={planId ? "default" : "secondary"} className="px-2 text-xs whitespace-nowrap">
-                              {planId || "Free"}
-                            </Badge>
-                          </td>
-                          <td className="py-3">
-                            <Badge className={`${currentStatus.color} px-2 text-xs whitespace-nowrap`}>
-                              {StatusIcon && <StatusIcon className="w-3 h-3 mr-1" />}
-                              {currentStatus.label}
-                            </Badge>
                           </td>
                           <td className="py-3 text-center">{user.itemsCount}</td>
                           <td className="py-3 text-center">{user.projectsCount}</td>

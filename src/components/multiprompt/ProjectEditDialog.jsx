@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Copy, Sparkles, Save, Plus, Loader2, GitCommit, Trash2 } from "lucide-react";
 import { AI_TOOLS, AI_TOOL_META, AiToolIcon } from "@/components/lib/aiTools";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import * as projects from "@/api/projects";
+import { projectStructureAnalysisPrompt } from "@/lib/prompts";
 import { toast } from "sonner";
 
 // Re-export for backwards compatibility
@@ -38,8 +38,6 @@ const DESCRIPTION_TEMPLATE = `## Wat is het
  * Workspace section: local code path, AI tool, and a GitHub push log.
  */
 export default function ProjectEditDialog({ open, onOpenChange, mode = "edit", project = null }) {
-  const queryClient = useQueryClient();
-
   const [editName, setEditName] = useState("");
   const [editColor, setEditColor] = useState("blue");
   const [editDesc, setEditDesc] = useState("");
@@ -89,20 +87,16 @@ export default function ProjectEditDialog({ open, onOpenChange, mode = "edit", p
     setNewPushMessage("");
   }, [open, mode, project]);
 
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Project.create(data),
+  const createMutation = projects.useCreate({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
       onOpenChange(false);
       toast.success("Project created");
     },
     onError: (error) => toast.error("Failed to create project: " + error.message)
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Project.update(id, data),
+  const updateMutation = projects.useUpdate({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
       onOpenChange(false);
       toast.success("Project updated");
     },
@@ -342,30 +336,7 @@ Format as clear Markdown headers and lists.`;
                 size="sm"
                 className="h-7 text-xs gap-1"
                 onClick={() => {
-                  const prompt = `Analyze this codebase and provide a complete structural overview in JSON format:
-
-{
-  "name": "Project Name",
-  "description": "Brief project description",
-  "technical_config_markdown": "# Tech Stack\\n- Framework: ...\\n- Libraries: ...\\n\\n# Architecture\\n...",
-  "pages": [
-    {"name": "PageName", "path": "/path", "components": ["Component1"], "purpose": "..."}
-  ],
-  "components": [
-    {"name": "ComponentName", "location": "components/...", "purpose": "...", "props": ["prop1"]}
-  ],
-  "entities": [
-    {"name": "EntityName", "fields": ["field1", "field2"], "purpose": "..."}
-  ],
-  "buttons_and_actions": [
-    {"label": "Button Text", "location": "PageName", "action": "what it does"}
-  ],
-  "routing": "How navigation works",
-  "state_management": "How data flows",
-  "styling": "Tailwind/CSS approach"
-}
-
-Be thorough - include ALL pages, components, buttons, forms, and key functionality.`;
+                  const prompt = projectStructureAnalysisPrompt();
                   navigator.clipboard.writeText(prompt);
                   toast.success("Structure analysis prompt copied!");
                 }}

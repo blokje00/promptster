@@ -1,23 +1,19 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, X, ZoomIn, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import {
   Dialog,
   DialogContent,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function ScreenshotThumb({ screenshotId, onRemove, showCopyEmbed = true, onDebugClick }) {
   const [showOCRDebug, setShowOCRDebug] = useState(false);
 
   // Check if user is admin
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
+  const { user } = useAuth();
 
   const isAdmin = user?.role === 'admin';
   // screenshotId is now actually a direct URL string

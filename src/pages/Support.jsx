@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import * as supportTickets from "@/api/supportTickets";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { MessageCircle, Send, CheckCircle, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 import { useAutosaveField } from "@/components/hooks/useAutosaveField";
 
 export default function Support() {
@@ -19,10 +18,7 @@ export default function Support() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
+  const { currentUser } = useAuth();
 
   // Autosave for subject and message fields
   const { value: subject, setValue: setSubject, resetValue: resetSubject } = useAutosaveField({
@@ -52,7 +48,7 @@ export default function Support() {
     setIsSubmitting(true);
     try {
       // Save as support ticket in database
-      await base44.entities.SupportTicket.create({
+      await supportTickets.create({
         category: category,
         subject: subject.trim(),
         message: message.trim(),

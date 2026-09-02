@@ -1,18 +1,31 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import * as pageViews from "@/api/pageViews";
+import { useAuth } from "@/lib/AuthContext";
 
 /**
  * Client-side page view tracker
- * Records page views, time on page, and navigation patterns
- * Only used on Admin Analytics page
+ * Records page views, time on page, and navigation patterns.
+ * Mounted app-wide (see Layout.jsx), but only writes a PageView row when the
+ * visitor has accepted the cookie banner (localStorage 'cookie_consent' ===
+ * 'accepted', set by CookieConsent.jsx) — no consent, no tracking call.
+ * Reads the signed-in user from useAuth() instead of calling base44.auth.me()
+ * on every navigation, since that hook already caches the ['authUser'] query.
  */
 export default function PageViewTracker() {
   const location = useLocation();
+  const { user } = useAuth();
+  const userRef = useRef(user);
   const pageStartTime = useRef(null);
   const sessionId = useRef(null);
   const lastPageName = useRef(null);
-  
+
+  // Keep the latest user available to the (non-reactive) recordPageView calls
+  // below without re-running the page-change effect when it changes.
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
   // Initialize session ID once on mount
   useEffect(() => {
     if (!sessionId.current) {
@@ -22,12 +35,13 @@ export default function PageViewTracker() {
 
   // Track page changes and time on page
   useEffect(() => {
+    const hasConsent = localStorage.getItem('cookie_consent') === 'accepted';
     const currentPage = getPageName(location.pathname);
-    
+
     // Record time spent on previous page
-    if (pageStartTime.current && lastPageName.current && sessionId.current) {
+    if (hasConsent && pageStartTime.current && lastPageName.current && sessionId.current) {
       const timeOnPage = Math.floor((Date.now() - pageStartTime.current) / 1000);
-      recordPageView(lastPageName.current, timeOnPage, sessionId.current);
+      recordPageView(lastPageName.current, timeOnPage, sessionId.current, userRef.current);
     }
 
     // Set new page start time
@@ -36,7 +50,7 @@ export default function PageViewTracker() {
 
     // Track exit (when user leaves the page)
     const handleBeforeUnload = () => {
-      if (pageStartTime.current && lastPageName.current) {
+      if (hasConsent && pageStartTime.current && lastPageName.current) {
         const timeOnPage = Math.floor((Date.now() - pageStartTime.current) / 1000);
         // Use sendBeacon for reliable tracking on page exit
         const data = JSON.stringify({
@@ -69,13 +83,12 @@ function getPageName(pathname) {
 }
 
 /**
- * Record page view to database
+ * Record page view to database. `user` is whatever useAuth() currently has
+ * cached (may be null for an anonymous visit) — no per-navigation auth call.
  */
-async function recordPageView(pageName, timeOnPage, sessionIdValue) {
+async function recordPageView(pageName, timeOnPage, sessionIdValue, user) {
   try {
-    const user = await base44.auth.me().catch(() => null);
-    
-    await base44.entities.PageView.create({
+    await pageViews.create({
       user_id: user?.id || null,
       user_email: user?.email || null,
       session_id: sessionIdValue,

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { items as itemsApi, thoughts, templates, aiSettings, projects } from "@/api";
+import { useAuth } from "@/lib/AuthContext";
 import { subDays, startOfMonth, subMonths, endOfMonth, startOfDay, endOfDay } from "date-fns";
 import { toast } from "sonner";
 
@@ -8,6 +9,7 @@ import { toast } from "sonner";
  */
 export function useExportLogic({ items, mode, singleItemId, dateRange, customDate, typeFilter, checkStatusFilter }) {
   const [isExporting, setIsExporting] = useState(false);
+  const { currentUser } = useAuth();
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -90,15 +92,15 @@ export function useExportLogic({ items, mode, singleItemId, dateRange, customDat
   const handleExport = async (formatType) => {
     setIsExporting(true);
     try {
-      const userEmail = (await base44.auth.me())?.email;
+      const userEmail = currentUser?.email;
       if (!userEmail) throw new Error("User not authenticated");
 
       const [allItems, allThoughts, allTemplates, allAISettings, allProjects] = await Promise.all([
-        base44.entities.Item.filter({ created_by: userEmail }),
-        base44.entities.Thought.filter({ created_by: userEmail }),
-        base44.entities.PromptTemplate.filter({ created_by: userEmail }),
-        base44.entities.AISettings.filter({ created_by: userEmail }),
-        base44.entities.Project.filter({ created_by: userEmail })
+        itemsApi.listMine(userEmail),
+        thoughts.listMine(userEmail),
+        templates.listMine(userEmail),
+        aiSettings.listMine(userEmail),
+        projects.listMine(userEmail)
       ]);
 
       // Apply filters (same logic as stats)

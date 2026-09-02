@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { useState } from "react";
+import * as templates from "@/api/templates";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +11,7 @@ import { Pencil, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { projectColors, projectLightColors, projectBorderColors } from "@/components/lib/constants";
 
-export default function TemplatesManager({ templates = [], projects = [], selectedProjectId }) {
-  const queryClient = useQueryClient();
-  
+export default function TemplatesManager({ templates: templateList = [], projects = [], selectedProjectId }) {
   // State
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState("start");
@@ -28,29 +25,23 @@ export default function TemplatesManager({ templates = [], projects = [], select
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   // Mutations
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.PromptTemplate.create(data),
+  const createMutation = templates.useCreate({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['templates'] });
       setNewName("");
       setNewContent("");
       toast.success("Template created");
     }
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.PromptTemplate.update(id, data),
+  const updateMutation = templates.useUpdate({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['templates'] });
       setIsEditDialogOpen(false);
       toast.success("Template updated");
     }
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.PromptTemplate.delete(id),
+  const deleteMutation = templates.useRemove({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['templates'] });
       toast.success("Template deleted");
     }
   });
@@ -92,7 +83,7 @@ export default function TemplatesManager({ templates = [], projects = [], select
   const renderTemplateList = (type, title, colorClass) => {
     // TASK-4 FIX: Show templates for selected project OR no project (global)
     // Hide templates from other projects entirely
-    const filtered = templates.filter(t => {
+    const filtered = templateList.filter(t => {
       if (t.type !== type) return false;
       
       // If project selected: show project templates + global templates (no project_id)

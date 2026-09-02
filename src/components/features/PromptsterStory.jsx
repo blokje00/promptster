@@ -1,6 +1,5 @@
-import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, ArrowRight, Cpu, Layers, TrendingUp, Target } from "lucide-react";
+import { CheckCircle2, ArrowRight, Cpu, TrendingUp, Target } from "lucide-react";
 import InlineEditableText from "./InlineEditableText";
 
 // Default content for PromptsterStory

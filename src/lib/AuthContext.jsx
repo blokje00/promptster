@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
@@ -12,10 +12,6 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
 
-  useEffect(() => {
-    checkAppState();
-  }, []);
-
   const {
     data: user = null,
     isLoading: isLoadingUser,
@@ -25,7 +21,15 @@ export const AuthProvider = ({ children }) => {
     // plain visit/refresh (no ?access_token= in the URL) still resolves the user.
     queryFn: async () => {
       try {
-        return await base44.auth.me();
+        const me = await base44.auth.me();
+        if (!me) return null;
+        // Explicit defaults (false, not undefined) so every useAuth() consumer
+        // sees the same shape, regardless of whether the platform ever set these.
+        return {
+          ...me,
+          tier_advisor_features_enabled: me.tier_advisor_features_enabled ?? false,
+          tier_advisor_subscription_enabled: me.tier_advisor_subscription_enabled ?? false,
+        };
       } catch {
         return null;
       }
@@ -42,7 +46,7 @@ export const AuthProvider = ({ children }) => {
     queryClient.invalidateQueries({ queryKey: ['authUser'] });
   }, [queryClient]);
 
-  const checkAppState = async () => {
+  const checkAppState = useCallback(async () => {
     // Safety timeout: never hang longer than 8 seconds
     const timeout = setTimeout(() => {
       setIsLoadingPublicSettings(false);
@@ -51,7 +55,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoadingPublicSettings(true);
       setAuthError(null);
-      
+
       // First, check app public settings (with token if available)
       // This will tell us if auth is required, user not registered, etc.
       const appClient = createAxiosClient({
@@ -62,14 +66,14 @@ export const AuthProvider = ({ children }) => {
         token: appParams.token, // Include token if available
         interceptResponses: true
       });
-      
+
       try {
         const publicSettings = await appClient.get(`/prod/public-settings/by-id/${appParams.appId}`);
         setAppPublicSettings(publicSettings);
         setIsLoadingPublicSettings(false);
       } catch (appError) {
         console.error('App state check failed:', appError);
-        
+
         // Handle app-level errors
         if (appError.status === 403 && appError.data?.extra_data?.reason) {
           const reason = appError.data.extra_data.reason;
@@ -107,39 +111,77 @@ export const AuthProvider = ({ children }) => {
     } finally {
       clearTimeout(timeout);
     }
-  };
+  }, []);
 
-  const logout = (shouldRedirect = true) => {
+  useEffect(() => {
+    checkAppState();
+  }, [checkAppState]);
+
+  /**
+   * Log out via the SDK (token cleanup + redirect).
+   * @param {boolean|string} [redirect=true] true → back to the current URL,
+   *   a string → to that URL, false → no redirect.
+   */
+  const logout = useCallback((redirect = true) => {
     queryClient.removeQueries({ queryKey: ['authUser'] });
-    
-    if (shouldRedirect) {
-      // Use the SDK's logout method which handles token cleanup and redirect
+
+    if (typeof redirect === 'string') {
+      base44.auth.logout(redirect);
+    } else if (redirect) {
       base44.auth.logout(window.location.href);
     } else {
-      // Just remove the token without redirect
       base44.auth.logout();
     }
-  };
+  }, [queryClient]);
 
-  const navigateToLogin = () => {
+  const navigateToLogin = useCallback(() => {
     // Use the SDK's redirectToLogin method
     base44.auth.redirectToLogin(window.location.href);
-  };
+  }, []);
+
+  /** Start the OAuth flow for a provider, returning to `returnTo` afterwards. */
+  const loginWithProvider = useCallback((provider, returnTo) => {
+    return base44.auth.loginWithProvider(provider, returnTo);
+  }, []);
+
+  /** Update fields on the signed-in user and refresh the shared auth cache. */
+  const updateMe = useCallback(async (data) => {
+    const updated = await base44.auth.updateMe(data);
+    refreshUser();
+    return updated;
+  }, [refreshUser]);
+
+  const value = useMemo(() => ({
+    user,
+    currentUser: user,
+    isAuthenticated,
+    isLoadingAuth,
+    isLoadingPublicSettings,
+    authError,
+    appPublicSettings,
+    logout,
+    navigateToLogin,
+    loginWithProvider,
+    updateMe,
+    checkAppState,
+    refreshUser
+  }), [
+    user,
+    isAuthenticated,
+    isLoadingAuth,
+    isLoadingPublicSettings,
+    authError,
+    appPublicSettings,
+    logout,
+    navigateToLogin,
+    loginWithProvider,
+    updateMe,
+    checkAppState,
+    refreshUser
+  ]);
 
   return (
-    <AuthContext.Provider value={{ 
-      user,
-      currentUser: user,
-      isAuthenticated,
-      isLoadingAuth,
-      isLoadingPublicSettings,
-      authError,
-      appPublicSettings,
-      logout,
-      navigateToLogin,
-      checkAppState,
-      refreshUser
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

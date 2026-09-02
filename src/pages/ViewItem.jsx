@@ -1,31 +1,23 @@
-import React, { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { useState } from "react";
+import { items, thoughts } from "@/api";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowLeft, Edit, Copy, CheckCircle, Star, MessageSquare, Image as ImageIcon, ZoomIn, FileArchive, Download, GitBranch, Calendar, ClipboardCheck, ClipboardPaste, Save, Loader2, ListChecks, AlertCircle, RotateCcw, CheckCircle2, XCircle, Circle } from "lucide-react";
+import { ArrowLeft, Edit, Copy, CheckCircle, Star, MessageSquare, Image as ImageIcon, FileArchive, Download, GitBranch, Calendar, ClipboardPaste, Loader2 } from "lucide-react";
+import { TASK_CHECK_STATUS } from "@/components/lib/status";
 import FileChangesFeedback from "../components/items/FileChangesFeedback";
 import ScreenshotThumb from "../components/media/ScreenshotThumb";
 import PromptFeedbackDialog from "../components/vault/PromptFeedbackDialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+
 
 export default function ViewItem() {
   const navigate = useNavigate();
   const location = useLocation();
-  const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(location.search);
   const itemId = urlParams.get("id");
   const [copied, setCopied] = useState(false);
@@ -34,19 +26,9 @@ export default function ViewItem() {
   const [isRetrying, setIsRetrying] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
 
-  const { data: item, isLoading, error } = useQuery({
-    queryKey: ['item', itemId],
-    queryFn: () => base44.entities.Item.get(itemId),
-    enabled: !!itemId,
-  });
+  const { data: item, isLoading, error } = items.useOne(itemId);
 
-  const updateItemMutation = useMutation({
-    mutationFn: (data) => base44.entities.Item.update(itemId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['item', itemId] });
-      queryClient.invalidateQueries({ queryKey: ['items'] });
-    }
-  });
+  const updateItemMutation = items.useUpdate();
 
   const handleCopy = () => {
     if (!item?.content) return;
@@ -61,11 +43,12 @@ export default function ViewItem() {
       const text = await navigator.clipboard.readText();
       if (text) {
         setIsSavingFeedback(true);
-        const newFeedback = item.file_changes_feedback 
-          ? `${item.file_changes_feedback}\n\n---\n\n${text}` 
+        const newFeedback = item.file_changes_feedback
+          ? `${item.file_changes_feedback}\n\n---\n\n${text}`
           : text;
         await updateItemMutation.mutateAsync({
-          file_changes_feedback: newFeedback
+          id: itemId,
+          data: { file_changes_feedback: newFeedback }
         });
         toast.success('Feedback pasted and saved!');
         setIsSavingFeedback(false);
@@ -93,8 +76,11 @@ export default function ViewItem() {
     setIsSavingFeedback(true);
     try {
       await updateItemMutation.mutateAsync({
-        file_changes_feedback: feedbackText,
-        is_pending_check: false
+        id: itemId,
+        data: {
+          file_changes_feedback: feedbackText,
+          is_pending_check: false
+        }
       });
       toast.success('Feedback saved and check completed!');
       setFeedbackText("");
@@ -107,7 +93,7 @@ export default function ViewItem() {
 
   const handleMarkAsChecked = async () => {
     try {
-      await updateItemMutation.mutateAsync({ is_pending_check: false });
+      await updateItemMutation.mutateAsync({ id: itemId, data: { is_pending_check: false } });
       toast.success('Check completed!');
     } catch (err) {
       toast.error('Could not change status');
@@ -116,8 +102,8 @@ export default function ViewItem() {
 
   const handleRetryFailed = async () => {
     if (!item?.task_checks) return;
-    
-    const failedTasks = item.task_checks.filter(check => check.status === 'failed');
+
+    const failedTasks = item.task_checks.filter(check => check.status === TASK_CHECK_STATUS.FAILED);
     
     if (failedTasks.length === 0) {
       toast.info("No failed tasks to retry.");
@@ -127,7 +113,7 @@ export default function ViewItem() {
     setIsRetrying(true);
     try {
       const promises = failedTasks.map(task => {
-        return base44.entities.Thought.create({
+        return thoughts.create({
           content: task.full_description || task.task_name,
           project_id: item.project_id,
           is_selected: true,
@@ -152,12 +138,12 @@ export default function ViewItem() {
 
   const handleStatusChange = (taskIndex, newStatus) => {
     const newChecks = [...item.task_checks];
-    newChecks[taskIndex] = { 
-      ...newChecks[taskIndex], 
+    newChecks[taskIndex] = {
+      ...newChecks[taskIndex],
       status: newStatus,
-      is_checked: newStatus === 'success'
+      is_checked: newStatus === TASK_CHECK_STATUS.SUCCESS
     };
-    updateItemMutation.mutate({ task_checks: newChecks });
+    updateItemMutation.mutate({ id: itemId, data: { task_checks: newChecks } });
   };
 
   if (isLoading) {

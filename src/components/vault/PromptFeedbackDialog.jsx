@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ThumbsUp, ThumbsDown, Star, Meh } from "lucide-react";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
+import { promptFeedback } from "@/api";
 
 const RATING_OPTIONS = [
   { value: "excellent", label: "Excellent", icon: Star, color: "text-green-600" },
@@ -31,6 +31,7 @@ export default function PromptFeedbackDialog({
   const [whatFailed, setWhatFailed] = useState("");
   const [notes, setNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const createFeedbackMutation = promptFeedback.useCreate();
 
   const handleSubmit = async () => {
     if (!rating) {
@@ -40,7 +41,7 @@ export default function PromptFeedbackDialog({
 
     setIsSaving(true);
     try {
-      await base44.entities.PromptFeedback.create({
+      await createFeedbackMutation.mutateAsync({
         item_id: item.id,
         prompt_used: promptUsed,
         rating,

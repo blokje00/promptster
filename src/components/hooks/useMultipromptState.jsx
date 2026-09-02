@@ -1,15 +1,16 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import * as thoughts from "@/api/thoughts";
+import * as functions from "@/api/functions";
 import { toast } from "sonner";
 
 /**
  * Simplified hook for managing thoughts data and selection.
  * Removes complex syncing logic in favor of React Query as the single source of truth.
  */
-export const useMultipromptData = ({ 
-  currentUser, 
-  selectedProjectId, 
+export const useMultipromptData = ({
+  currentUser,
+  selectedProjectId,
   idsToAutoSelect = [],
   activeProjectIds = [] // NEW: List of active project IDs
 }) => {
@@ -19,15 +20,8 @@ export const useMultipromptData = ({
   // Errors surface via the global query error toast; UI falls back to []
   // CANONICAL QUERY - This is the SINGLE SOURCE OF TRUTH for active tasks
   const { data: rawThoughts = [], isLoading } = useQuery({
-    queryKey: ['activeThoughts', currentUser?.email],
-    queryFn: async () => {
-      // Fetch ONLY non-deleted thoughts - server-side filter for performance
-      const thoughts = await base44.entities.Thought.filter({
-        created_by: currentUser.email,
-        is_deleted: false
-      }, "-created_date");
-      return thoughts || [];
-    },
+    queryKey: thoughts.keys.list(currentUser?.email),
+    queryFn: () => thoughts.listActive(currentUser?.email),
     enabled: Boolean(currentUser?.email),
     staleTime: 0, // Always fresh
     refetchOnWindowFocus: true, // Refresh when user returns to tab
@@ -40,16 +34,16 @@ export const useMultipromptData = ({
       // No projects loaded yet, show all thoughts
       return rawThoughts;
     }
-    
+
     // Only show thoughts from active projects OR without project
-    const filtered = rawThoughts.filter(t => 
+    const filtered = rawThoughts.filter(t =>
       !t.project_id || activeProjectIds.includes(t.project_id)
     );
     return filtered;
   }, [rawThoughts, activeProjectIds]);
 
   // Client-side filtering for view
-  const thoughts = useMemo(() => {
+  const filteredThoughts = useMemo(() => {
     if (!selectedProjectId) return allThoughts;
     return allThoughts.filter(t => t.project_id === selectedProjectId);
   }, [allThoughts, selectedProjectId]);
@@ -58,42 +52,28 @@ export const useMultipromptData = ({
   const [hasInitialSelected, setHasInitialSelected] = useState(false);
 
   useEffect(() => {
-    if (thoughts.length > 0 && !hasInitialSelected) {
+    if (filteredThoughts.length > 0 && !hasInitialSelected) {
       if (idsToAutoSelect && idsToAutoSelect.length > 0) {
         // Retry logic: Select specific IDs (Task 1 Fix: Don't filter against thoughts yet to avoid race conditions)
         setSelectedThoughtIds(idsToAutoSelect);
       } else {
         // Default: Select All
-        setSelectedThoughtIds(thoughts.map(t => t.id));
+        setSelectedThoughtIds(filteredThoughts.map(t => t.id));
       }
       setHasInitialSelected(true);
     }
-  }, [thoughts, idsToAutoSelect, hasInitialSelected]);
+  }, [filteredThoughts, idsToAutoSelect, hasInitialSelected]);
 
-  // 3. Mutations with Global Invalidation
-  const invalidateAllThoughts = async () => {
-    try {
-      // Invalidate ALL thought-related queries (unified approach)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['activeThoughts'] }),
-        queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] }),
-        queryClient.invalidateQueries({ queryKey: ['thoughts'] })
-      ]);
-    } catch (error) {
-      console.error("Invalidate failed:", error);
-    }
-  };
-
-  const createThought = useMutation({
-    mutationFn: (data) => base44.entities.Thought.create(data),
-    onSuccess: async (newThought) => {
+  // 3. Mutations — thoughts.useCreate/useUpdate/useSoftDelete/useRestore already
+  // invalidate the full activeThoughts/deletedThoughts/allThoughtsCount/thoughts
+  // cache set (see thoughts.invalidateThoughtCaches); only the optimistic cache
+  // writes and selection-state side effects are handled here.
+  const createThought = thoughts.useCreate({
+    onSuccess: (newThought) => {
       // Optimistic update: direct toevoegen aan canonical cache
       if (newThought) {
-        queryClient.setQueryData(['activeThoughts', currentUser?.email], (old) => [newThought, ...(old || [])]);
+        queryClient.setQueryData(thoughts.keys.list(currentUser?.email), (old) => [newThought, ...(old || [])]);
       }
-      
-      await invalidateAllThoughts();
-      
       if (newThought?.id) {
         setSelectedThoughtIds(prev => [...prev, newThought.id]);
       }
@@ -104,37 +84,32 @@ export const useMultipromptData = ({
     }
   });
 
-  const updateThought = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Thought.update(id, data),
-    onSuccess: () => {
-      invalidateAllThoughts();
-    },
+  const updateThought = thoughts.useUpdate({
     onError: () => {
       toast.error("Failed to save changes");
     }
   });
+
+  const restoreThought = thoughts.useRestore();
 
   // Trigger vision analysis for screenshots using cached endpoint
   const triggerVisionAnalysis = useCallback(async (thoughtId, screenshotUrls) => {
     if (!screenshotUrls || screenshotUrls.length === 0) return;
 
     // Update status to analyzing
-    await base44.entities.Thought.update(thoughtId, {
+    await thoughts.update(thoughtId, {
       vision_analysis: { status: 'analyzing', results: [] }
     });
 
     try {
       const results = [];
-      
+
       // Analyze each screenshot using the cached endpoint
       for (const url of screenshotUrls) {
         try {
-          const response = await base44.functions.invoke('analyzeScreenshotWithCache', {
-            screenshotUrl: url,
-            level: 'full'
-          });
-          if (response.data?.ok) {
-            results.push(response.data);
+          const data = await functions.analyzeScreenshotWithCache({ screenshotUrl: url, level: 'full' });
+          if (data?.ok) {
+            results.push(data);
           } else {
             results.push({ error: 'Analysis failed', sourceUrl: url });
           }
@@ -145,44 +120,31 @@ export const useMultipromptData = ({
       }
 
       // Save results to thought entity
-      await base44.entities.Thought.update(thoughtId, {
+      await thoughts.update(thoughtId, {
         vision_analysis: { status: 'completed', results }
       });
-      invalidateAllThoughts();
+      thoughts.invalidateThoughtCaches(queryClient);
     } catch (error) {
       console.error('[useMultipromptState] Vision analysis error:', error);
-      await base44.entities.Thought.update(thoughtId, {
+      await thoughts.update(thoughtId, {
         vision_analysis: { status: 'failed', results: [] }
       });
-      invalidateAllThoughts();
+      thoughts.invalidateThoughtCaches(queryClient);
     }
-  }, [invalidateAllThoughts]);
+  }, [queryClient]);
 
-  const deleteThought = useMutation({
-    mutationFn: async (id) => {
-      await base44.entities.Thought.update(id, { 
-        is_deleted: true, 
-        deleted_at: new Date().toISOString() 
-      });
-    },
+  const deleteThought = thoughts.useSoftDelete({
     onSuccess: (_, id) => {
       // Immediate optimistic removal from canonical cache
-      queryClient.setQueryData(['activeThoughts', currentUser?.email], (old) => 
+      queryClient.setQueryData(thoughts.keys.list(currentUser?.email), (old) =>
         (old || []).filter(t => t.id !== id)
       );
-      
-      invalidateAllThoughts();
-      queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
       setSelectedThoughtIds(prev => prev.filter(tid => tid !== id));
-      
+
       toast("Task moved to recycle bin", {
         action: {
           label: "Undo",
-          onClick: async () => {
-            await base44.entities.Thought.update(id, { is_deleted: false, deleted_at: null });
-            invalidateAllThoughts();
-            queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
-          }
+          onClick: () => restoreThought.mutate(id)
         },
         duration: 5000
       });
@@ -191,7 +153,7 @@ export const useMultipromptData = ({
 
   // Selection helpers
   const toggleSelection = useCallback((id) => {
-    setSelectedThoughtIds(prev => 
+    setSelectedThoughtIds(prev =>
       prev.includes(id) ? prev.filter(tid => tid !== id) : [...prev, id]
     );
   }, []);
@@ -212,7 +174,7 @@ export const useMultipromptData = ({
   }, []);
 
   return {
-    thoughts,
+    thoughts: filteredThoughts,
     allThoughts,
     isLoading,
     selectedThoughtIds,

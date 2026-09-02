@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { items } from "@/api";
 import { useNavigate, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Save, X, Star, GitBranch } from "lucide-react";
 import FileChangesFeedback from "../components/items/FileChangesFeedback";
-import TaskChecklist from "../components/items/TaskChecklist";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import ZipUploadZone from "../components/dashboard/ZipUploadZone";
@@ -21,18 +19,13 @@ import ScreenshotUploader from "../components/media/ScreenshotUploader";
 export default function EditItem() {
   const navigate = useNavigate();
   const location = useLocation();
-  const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(location.search);
   const itemId = urlParams.get("id");
 
   const [formData, setFormData] = useState(null);
   const [tagInput, setTagInput] = useState("");
 
-  const { data: item, isLoading } = useQuery({
-    queryKey: ['item', itemId],
-    queryFn: () => base44.entities.Item.get(itemId),
-    enabled: !!itemId,
-  });
+  const { data: item, isLoading } = items.useOne(itemId);
 
   useEffect(() => {
     if (item) {
@@ -61,11 +54,8 @@ export default function EditItem() {
     }
   }, [item]);
 
-  const updateMutation = useMutation({
-    mutationFn: (data) => base44.entities.Item.update(itemId, data),
+  const updateMutation = items.useUpdate({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
-      queryClient.invalidateQueries({ queryKey: ['item', itemId] });
       navigate(createPageUrl(`ViewItem?id=${itemId}`));
     },
   });
@@ -73,7 +63,7 @@ export default function EditItem() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const { id, created_date, updated_date, created_by, ...updateData } = formData;
-    updateMutation.mutate(updateData);
+    updateMutation.mutate({ id: itemId, data: updateData });
   };
   
   const handleInputChange = (field, value) => {

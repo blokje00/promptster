@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import ScreenshotUploader from "@/components/media/ScreenshotUploader";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
+import { functions } from "@/api";
+import { retryModalPrompt } from "@/lib/prompts";
 
 /**
  * RetryModal - Guided flow for creating structured retry prompts
@@ -52,32 +53,27 @@ export default function RetryModal({
         screenshots.map(async (url) => {
           try {
             console.log('[RetryModal] Analyzing screenshot (with cache):', url);
-            const response = await base44.functions.invoke('analyzeScreenshotWithCache', {
+            const result = await functions.analyzeScreenshotWithCache({
               screenshotUrl: url,
               level: 'full'
             });
-            
-            if (response.data?.ok) {
-              console.log('[RetryModal] ✓ Analysis', response.data.cached ? 'from cache' : 'completed');
-              return response.data;
-            }
-            
-            // Retry once on failure
-            console.log('[RetryModal] Retrying analysis for:', url);
-            const retryResponse = await base44.functions.invoke('analyzeScreenshotWithCache', {
-              screenshotUrl: url,
-              level: 'full'
-            });
-            
-            if (retryResponse.data?.ok) {
-              console.log('[RetryModal] ✓ Retry successful');
-              return retryResponse.data;
-            }
-            
-            return { status: 'failed', url };
+
+            console.log('[RetryModal] ✓ Analysis', result.cached ? 'from cache' : 'completed');
+            return result;
           } catch (error) {
-            console.error('[RetryModal] Analysis failed for', url, error);
-            return { status: 'failed', url, error: error.message };
+            // Retry once on failure (analyzeScreenshotWithCache throws on a non-ok backend response)
+            console.log('[RetryModal] Retrying analysis for:', url, 'after error:', error.message);
+            try {
+              const retryResult = await functions.analyzeScreenshotWithCache({
+                screenshotUrl: url,
+                level: 'full'
+              });
+              console.log('[RetryModal] ✓ Retry successful');
+              return retryResult;
+            } catch (retryError) {
+              console.error('[RetryModal] Analysis failed for', url, retryError);
+              return { status: 'failed', url, error: retryError.message };
+            }
           }
         })
       );
@@ -174,52 +170,16 @@ export default function RetryModal({
       }));
     }
 
-    const prompt = `**Retry — Task Correction Request**
-
-**1. User screenshot evidence**
-${hasScreenshot ? `Attached screenshot shows the area where the issue occurs.` : "⚠️ Screenshot required"}
-${visionSection}
-${hasExplanation ? `User observation: ${userExplanation.trim()}` : ""}
-
-**2. Original task description**
-${originalTask}
-\`\`\`
-${originalTask}
-\`\`\`
-
-**3. What was expected**
-• The task should have produced the following elements, functions, or UI changes:
-  ${originalTask.split('\n')[0]}
-
-**4. What was wrong or missing**
-• Based on the screenshot and user feedback:
-  ${userExplanation.trim() || "⚠️ Please describe what is missing or incorrect"}
-• Specific issues:
-  - Elements not visible or not rendered
-  - Functions not working correctly
-  - Incorrect styling or layout
-  - Missing functionality
-
-**5. Required corrections**
-• Review the screenshot carefully
-• Identify exactly which specific part failed
-• Make the following corrections:
-  - Add missing elements
-  - Fix incorrect implementations
-  - Ensure all UI elements are visible and properly styled
-  - Verify functionality works as intended
-  - Check dark mode compatibility if applicable
-• Validate the changes work correctly before marking as complete
-
-**Context:**
-- Original task: ${task.itemTitle}
-- Project: ${task.projectId || "No project"}
-
-**Screenshots JSON:**
-\`\`\`json
-${JSON.stringify({ screenshots: screenshotsPayload }, null, 2)}
-\`\`\`
-`;
+    const prompt = retryModalPrompt({
+      originalTask,
+      hasScreenshot,
+      visionSection,
+      hasExplanation,
+      userExplanation,
+      itemTitle: task.itemTitle,
+      projectId: task.projectId,
+      screenshotsPayload
+    });
 
     return prompt;
   };

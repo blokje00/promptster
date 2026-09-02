@@ -1,16 +1,13 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 
-import { base44 } from "@/api/base44Client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useUserEntities } from "@/components/hooks/useUserEntities";
+import * as projectsApi from "@/api/projects";
+import * as itemsApi from "@/api/items";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Search, Plus, Star, Code2, Sparkles, FileArchive, GitBranch, ClipboardCheck, FolderOpen, X, Grid3x3, Table } from "lucide-react";
-import { useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import ItemCard from "../components/dashboard/ItemCard";
@@ -19,7 +16,6 @@ import { projectColors } from "@/components/lib/constants";
 import { useDebouncedValue } from "@/components/hooks/useDebouncedValue";
 
 export default function Dashboard() {
-  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebouncedValue(searchQuery);
   const [filterType, setFilterType] = useState("all");
@@ -30,17 +26,9 @@ export default function Dashboard() {
   const [selectedProjectId, setSelectedProjectId] = useState("all");
   const [viewMode, setViewMode] = useState("cards");
 
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
+  const { data: projects = [] } = projectsApi.useList();
 
-  const { data: projects = [] } = useUserEntities("Project", { queryKey: "projects" });
-
-  const { data: items = [], isLoading } = useUserEntities("Item", {
-    queryKey: "items",
-    sort: "-updated_date",
-  });
+  const { data: items = [], isLoading } = itemsApi.useList({ sort: "-updated_date" });
 
   const itemCounts = useMemo(() => ({
     all: items.length,

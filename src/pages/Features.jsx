@@ -1,14 +1,11 @@
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
-import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
+import { useState } from "react";
+import * as featureContentBlocks from "@/api/featureContentBlocks";
+import { useAuth } from "@/lib/AuthContext";
 import PromptsterStory from "@/components/features/PromptsterStory.jsx";
 import InlineEditableText from "@/components/features/InlineEditableText";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Zap, Shield, Database, Code, Sparkles, ArrowRight, Edit, Eye } from "lucide-react";
-import { createPageUrl } from "@/utils";
+import { CheckCircle, Zap, Shield, Database, Code, Edit, Eye } from "lucide-react";
 
 import InAppBrowserGuard from "../components/auth/InAppBrowserGuard";
 
@@ -62,13 +59,11 @@ const iconMap = {
 function FeaturesPage() {
   const [editMode, setEditMode] = useState(false);
   
-  const { data: currentUser } = useCurrentUserSettings();
+  const { currentUser } = useAuth();
 
   const isAdmin = currentUser?.role === 'admin';
 
-  const { data: blocks = [] } = useQuery({
-    queryKey: ['featureContentBlocks'],
-    queryFn: () => base44.entities.FeatureContentBlock.filter({ page: "features" }),
+  const { data: blocks = [] } = featureContentBlocks.useByPage("features", {
     retry: false,
     // Cosmetic content with hardcoded defaults; skip the global error toast
     meta: { silent: true },

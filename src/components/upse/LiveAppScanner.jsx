@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,14 +11,14 @@ import {
   ExternalLink, 
   Camera, 
   Globe, 
-  AlertTriangle, 
-  Plus,
+  AlertTriangle,
   X,
   Loader2,
   CheckCircle
 } from "lucide-react";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
+import { invokeLLM } from "@/components/lib/invokeLLM";
+import * as prompts from "@/lib/prompts";
 
 const PAGE_TYPES = [
   { value: "dashboard", label: "Dashboard" },
@@ -154,22 +154,15 @@ export default function LiveAppScanner({
     
     setIsCapturing(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Genereer een korte, technische beschrijving (max 2 zinnen) voor een pagina met de volgende kenmerken:
-        
-- Pagina naam: ${pageName || "Onbekend"}
-- Type: ${pageType}
-- URL/Route: ${extractRoute(currentUrl)}
-- Entiteiten: ${pageEntities || "Geen opgegeven"}
-- Componenten: ${pageComponents || "Geen opgegeven"}
-
-De beschrijving moet bruikbaar zijn als context voor een AI die code moet genereren. Focus op functionaliteit en datastromen.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            description: { type: "string" }
-          }
-        }
+      const result = await invokeLLM({
+        prompt: prompts.pageDescription({
+          pageName,
+          pageType,
+          route: extractRoute(currentUrl),
+          entities: pageEntities,
+          components: pageComponents
+        }),
+        response_json_schema: prompts.pageDescriptionSchema
       });
       
       setPageDescription(result.description);

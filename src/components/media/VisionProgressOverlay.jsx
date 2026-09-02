@@ -1,4 +1,3 @@
-import React from 'react';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 // Spinner Component (scaled for thumbnails)

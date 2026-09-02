@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import * as appSettings from "@/api/appSettings";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -8,38 +7,31 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Loader2, Settings, AlertTriangle, Users, Calendar } from "lucide-react";
-import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
 import AdminSettingsHelp from "@/components/admin/AdminSettingsHelp";
 
 export default function AdminSettingsPage() {
-  const { data: user } = useCurrentUserSettings();
   const queryClient = useQueryClient();
 
   // Fetch all settings
-  const { data: settings = [], isLoading } = useQuery({
-    queryKey: ['appSettings'],
-    queryFn: async () => {
-      return await base44.entities.AppSetting.list();
-    },
-  });
+  const { data: settings = [], isLoading } = appSettings.useList();
 
   // Mutation to create or update a setting (handles both boolean and string values)
   const updateSettingMutation = useMutation({
     mutationFn: async ({ key, value, description }) => {
       const existing = settings.find(s => s.key === key);
-      
+
       if (existing) {
         // For existing settings, just update the value
-        return await base44.entities.AppSetting.update(existing.id, { 
+        return await appSettings.update(existing.id, {
           value: typeof value === 'string' ? value : value,
-          description: description 
+          description: description
         });
       } else {
-        return await base44.entities.AppSetting.create({ key, value, description });
+        return await appSettings.create({ key, value, description });
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['appSettings'] });
+      queryClient.invalidateQueries({ queryKey: appSettings.keys.all });
       toast.success('Setting updated successfully');
     },
     onError: (error) => {
@@ -71,20 +63,8 @@ export default function AdminSettingsPage() {
     toast.success('All current users will now have free lifetime access!');
   };
 
-  // Only admins can access this page
-  if (user?.role !== 'admin') {
-    return (
-      <div className="p-8 max-w-4xl mx-auto">
-        <Card className="border-red-200">
-          <CardContent className="p-6">
-            <p className="text-red-600">Access Denied. Admin only.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Admin access is already enforced by RouteGuard (routes.config.js: access "admin")
 
-  const stripeEnabled = getSetting('stripe_enabled', true);
   const appWideAccessEnabled = getSetting('app_wide_access_enabled', false);
   const grandfatheredBeforeDate = getSetting('grandfathered_before_date', '');
 
@@ -109,38 +89,6 @@ export default function AdminSettingsPage() {
         </Card>
       ) : (
         <div className="space-y-6">
-          
-          {/* Stripe Integration Toggle */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Stripe Integration</CardTitle>
-              <CardDescription>
-                Enable or disable Stripe payment processing. When disabled, all subscription features are bypassed.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="stripe-toggle" className="flex flex-col gap-1">
-                  <span className="font-medium">Stripe Enabled</span>
-                  <span className="text-sm text-slate-500">
-                    {stripeEnabled 
-                      ? "✅ Stripe payments are active (requires Base44 functions)" 
-                      : "❌ Stripe is disabled - subscription page hidden"}
-                  </span>
-                </Label>
-                <Switch
-                  id="stripe-toggle"
-                  checked={stripeEnabled}
-                  onCheckedChange={() => handleToggle(
-                    'stripe_enabled', 
-                    stripeEnabled,
-                    'Enable or disable Stripe integration'
-                  )}
-                  disabled={updateSettingMutation.isPending}
-                />
-              </div>
-            </CardContent>
-          </Card>
 
           {/* App-Wide Access Toggle */}
           <Card className="border-yellow-200">
@@ -229,10 +177,9 @@ export default function AdminSettingsPage() {
             <CardContent className="p-6">
               <h3 className="font-semibold text-blue-900 mb-2">💡 How it works</h3>
               <ul className="text-sm text-blue-800 space-y-2">
-                <li><strong>Stripe OFF + Free Access ON:</strong> App is fully open, no payments.</li>
-                <li><strong>Stripe ON + Free Access OFF:</strong> Normal subscription mode (requires Base44 functions).</li>
-                <li><strong>Grandfathering:</strong> Set cutoff date before enabling Stripe to keep early users happy.</li>
-                <li><strong>Recommended migration:</strong> 1) Set grandfathering date to today, 2) Turn off Free Access, 3) Enable Stripe.</li>
+                <li><strong>Free Access ON:</strong> every authenticated user has full access, no checks.</li>
+                <li><strong>Free Access OFF:</strong> only admins and grandfathered users pass the access check.</li>
+                <li><strong>Grandfathering:</strong> gives users registered before the cutoff date free lifetime access, independent of Free Access.</li>
               </ul>
             </CardContent>
           </Card>

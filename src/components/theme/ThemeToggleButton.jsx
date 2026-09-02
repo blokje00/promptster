@@ -3,12 +3,12 @@
  * Cycles through: system → light → dark → system
  */
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import { base44 } from '@/api/base44Client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { Sun, Moon, Monitor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/lib/AuthContext';
 import {
   Tooltip,
   TooltipContent,
@@ -18,7 +18,7 @@ import {
 
 export default function ThemeToggleButton() {
   const { theme, setTheme } = useTheme();
-  const queryClient = useQueryClient();
+  const { updateMe } = useAuth();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -26,12 +26,8 @@ export default function ThemeToggleButton() {
   }, []);
 
   const updateThemeMutation = useMutation({
-    mutationFn: async (themeMode) => {
-      await base44.auth.updateMe({ theme_mode: themeMode });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-    }
+    // updateMe() also refreshes the shared auth cache
+    mutationFn: (themeMode) => updateMe({ theme_mode: themeMode })
   });
 
   const cycleTheme = () => {

@@ -11,29 +11,19 @@
  * and synced to user settings (for cross-device consistency).
  */
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { useMutation } from '@tanstack/react-query';
+import { useAuth } from '@/lib/AuthContext';
 
 export function ThemeProvider({ children }) {
-  const queryClient = useQueryClient();
-
-  // Fetch current user to get their theme preference
-  const { data: user } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-    retry: false,
-  });
+  // Current user (and their theme preference) comes from the single auth cache
+  const { user, updateMe } = useAuth();
 
   // Mutation to update user theme preference
   const updateThemeMutation = useMutation({
-    mutationFn: async (themeMode) => {
-      await base44.auth.updateMe({ theme_mode: themeMode });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUser'] });
-    }
+    // updateMe() also refreshes the shared auth cache
+    mutationFn: (themeMode) => updateMe({ theme_mode: themeMode })
   });
 
   return (

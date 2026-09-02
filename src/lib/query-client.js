@@ -8,10 +8,14 @@ const TOAST_DEDUPE_MS = 30 * 1000;
 export const queryClientInstance = new QueryClient({
 	queryCache: new QueryCache({
 		onError: (error, query) => {
+			const now = Date.now();
+			// Prune stale entries so the Map doesn't grow unbounded over a long session
+			for (const [staleKey, ts] of recentErrorToasts) {
+				if (now - ts >= TOAST_DEDUPE_MS) recentErrorToasts.delete(staleKey);
+			}
 			// Queries can opt out of the global toast via meta.silent
 			if (query.meta?.silent) return;
 			const key = query.queryHash;
-			const now = Date.now();
 			const last = recentErrorToasts.get(key);
 			if (last && now - last < TOAST_DEDUPE_MS) return;
 			recentErrorToasts.set(key, now);

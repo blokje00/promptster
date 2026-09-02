@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import * as learnedPatterns from '@/api/learnedPatterns';
+import * as functions from '@/api/functions';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,26 +14,15 @@ export default function LearnedPatternsPanel({ projectId }) {
     const queryClient = useQueryClient();
 
     // Fetch learned patterns voor dit project
-    const { data: patterns = [], isLoading } = useQuery({
-        queryKey: ['learnedPatterns', projectId],
-        queryFn: async () => {
-            if (!projectId) return [];
-            const allPatterns = await base44.entities.LearnedPattern.filter({ project_id: projectId });
-            return allPatterns.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
-        },
-        enabled: !!projectId
-    });
+    const { data: patterns = [], isLoading } = learnedPatterns.useByProject(projectId);
 
     // Run preference synthesis
     const runSynthesisMutation = useMutation({
-        mutationFn: async () => {
-            const response = await base44.functions.invoke('synthesizePreferences', { project_id: projectId });
-            return response.data;
-        },
+        mutationFn: () => functions.synthesizePreferences({ project_id: projectId }),
         onSuccess: (data) => {
             if (data.patterns_count > 0) {
                 toast.success(`${data.patterns_count} nieuwe patterns geleerd! 🎯`);
-                queryClient.invalidateQueries({ queryKey: ['learnedPatterns', projectId] });
+                queryClient.invalidateQueries({ queryKey: learnedPatterns.keys.byProject(projectId) });
             } else {
                 toast.info(data.message || 'Nog niet genoeg data voor analyse');
             }
@@ -44,14 +34,11 @@ export default function LearnedPatternsPanel({ projectId }) {
 
     // Run retrospective analysis
     const runRetrospectiveMutation = useMutation({
-        mutationFn: async () => {
-            const response = await base44.functions.invoke('analyzeRetrospectiveFeedback', { project_id: projectId });
-            return response.data;
-        },
+        mutationFn: () => functions.analyzeRetrospectiveFeedback({ project_id: projectId }),
         onSuccess: (data) => {
             if (data.patterns) {
                 toast.success(`Retrospective analyse compleet! ${data.patterns.length} patterns gevonden 🔍`);
-                queryClient.invalidateQueries({ queryKey: ['learnedPatterns', projectId] });
+                queryClient.invalidateQueries({ queryKey: learnedPatterns.keys.byProject(projectId) });
             } else {
                 toast.info(data.message || 'Nog niet genoeg data voor retrospective analyse');
             }

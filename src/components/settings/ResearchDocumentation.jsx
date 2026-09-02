@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, BookOpen, Sparkles, Download, CheckCircle2 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import * as functions from "@/api/functions";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 
@@ -80,10 +80,8 @@ export default function ResearchDocumentation({ currentUser }) {
       const papers = {};
       for (const paper of researchPapers) {
         try {
-          const result = await base44.functions.invoke('getResearchPaperUrl', {
-            arxivId: paper.arxivId
-          });
-          if (result.data.success) {
+          const result = await functions.getResearchPaperUrl({ arxivId: paper.arxivId });
+          if (result.success) {
             papers[paper.arxivId] = true;
           }
         } catch (error) {
@@ -98,15 +96,13 @@ export default function ResearchDocumentation({ currentUser }) {
   const handleDownloadPaper = async (arxivId) => {
     setDownloadingPaper(arxivId);
     try {
-      const result = await base44.functions.invoke('downloadResearchPaper', {
-        arxivId
-      });
+      const result = await functions.downloadResearchPaper({ arxivId });
 
-      if (result.data.success) {
+      if (result.success) {
         toast.success(`Paper ${arxivId} downloaded to server`);
         refetch();
       } else {
-        toast.error(result.data.error || 'Download failed');
+        toast.error('Download failed');
       }
     } catch (error) {
       toast.error('Failed to download paper: ' + error.message);
@@ -117,12 +113,10 @@ export default function ResearchDocumentation({ currentUser }) {
 
   const handleOpenPaper = async (arxivId, fallbackUrl) => {
     try {
-      const result = await base44.functions.invoke('getResearchPaperUrl', {
-        arxivId
-      });
+      const result = await functions.getResearchPaperUrl({ arxivId });
 
-      if (result.data.success) {
-        window.open(result.data.signed_url, '_blank');
+      if (result.success) {
+        window.open(result.signed_url, '_blank');
       } else {
         // Fallback to arXiv
         window.open(fallbackUrl, '_blank');

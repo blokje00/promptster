@@ -1,14 +1,16 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import * as projectsApi from "@/api/projects";
+import * as templatesApi from "@/api/templates";
+import * as aiSettingsApi from "@/api/aiSettings";
+import * as items from "@/api/items";
 import { createPageUrl } from "@/utils";
 import { useAuth } from "@/lib/AuthContext";
 
 // Custom Hooks
 import { useMultipromptData } from "@/components/hooks/useMultipromptState";
 import { useProjectSelection } from "@/components/hooks/useProjectSelection";
-import { useUserEntities } from "@/components/hooks/useUserEntities";
 import { useTemplateSelection } from "@/components/hooks/useTemplateSelection";
 import { useNewThoughtInput } from "@/components/hooks/useNewThoughtInput";
 import { usePromptGeneration } from "@/components/hooks/usePromptGeneration";
@@ -24,8 +26,6 @@ import { Lightbulb, Layers, FileText, FolderOpen } from "lucide-react";
 import TemplatesManager from "@/components/multiprompt/TemplatesManager";
 import ProjectsManager from "@/components/multiprompt/ProjectsManager";
 import ProjectSelector from "@/components/multiprompt/ProjectSelector";
-import TaskInputArea from "@/components/multiprompt/TaskInputArea";
-import TasksList from "@/components/multiprompt/TasksList";
 import SuccessBanner from "@/components/multiprompt/SuccessBanner";
 import TasksColumn from "@/components/multiprompt/TasksColumn";
 import PromptColumn from "@/components/multiprompt/PromptColumn";
@@ -39,11 +39,11 @@ function MultipromptContent({ currentUser }) {
   const queryClient = useQueryClient();
 
   // --- Data Queries ---
-  const { data: projects = [] } = useUserEntities("Project", { queryKey: "projects" });
+  const { data: projects = [] } = projectsApi.useList();
 
-  const { data: templates = [] } = useUserEntities("PromptTemplate", { queryKey: "templates" });
+  const { data: templates = [] } = templatesApi.useList();
 
-  const { data: aiSettings = [] } = useUserEntities("AISettings", { queryKey: "aiSettings" });
+  const { data: aiSettings = [] } = aiSettingsApi.useList();
 
   // --- Custom Hooks ---
   const { selectedProjectId, setSelectedProjectId, selectedProject } = useProjectSelection(projects);
@@ -110,9 +110,9 @@ function MultipromptContent({ currentUser }) {
     setTargetModelRaw(value);
     // Persist to the Project entity so it survives across sessions
     if (selectedProject?.id) {
-      base44.entities.Project.update(selectedProject.id, { target_model: value || null })
+      projectsApi.update(selectedProject.id, { target_model: value || null })
         .catch(err => console.warn('[Multiprompt] Failed to persist target_model:', err));
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: projectsApi.keys.all });
     }
   }, [selectedProject?.id, queryClient]);
 
@@ -127,10 +127,8 @@ function MultipromptContent({ currentUser }) {
       }));
   }, [thoughts, selectedThoughtIds]);
 
-  const createItemMutation = useMutation({
-    mutationFn: (data) => base44.entities.Item.create(data),
+  const createItemMutation = items.useCreate({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
       queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] });
       selectedThoughtIds.forEach(id => deleteThought.mutate(id));
       setSelectedThoughtIds([]);

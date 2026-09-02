@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { useUserEntities } from "@/components/hooks/useUserEntities";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { items, projects as projectsApi } from "@/api";
+import { useAuth } from "@/lib/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
@@ -17,14 +16,10 @@ import { projectColors } from "@/components/lib/constants";
 
 export default function AddItem() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
 
-  const { data: projects = [] } = useUserEntities("Project", { queryKey: "projects" });
+  const { currentUser } = useAuth();
+
+  const { data: projects = [] } = projectsApi.useList();
 
   const [selectedProjectId, setSelectedProjectId] = useState(() => localStorage.getItem('lastSelectedProjectId') || "");
   
@@ -83,10 +78,8 @@ export default function AddItem() {
     }
   }, [currentUser]);
 
-  const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Item.create(data),
+  const createMutation = items.useCreate({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
       if (currentUser?.id) {
         localStorage.removeItem(`additem_draft_${currentUser.id}`);
         localStorage.removeItem(`additem_tag_draft_${currentUser.id}`);

@@ -1,6 +1,6 @@
-import React, { useMemo } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import * as pageViewsApi from "@/api/pageViews";
+import { useAuth } from "@/lib/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,18 +11,11 @@ import PageViewTracker from "../components/analytics/PageViewTracker";
 export default function AdminAnalytics() {
   const navigate = useNavigate();
 
-  // Fetch current user
-  const { data: currentUser, isLoading: loadingUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
+  // Current user from the single auth cache
+  const { currentUser, isLoadingAuth: loadingUser } = useAuth();
 
   // Fetch page views
-  const { data: pageViews = [], isLoading: loadingViews } = useQuery({
-    queryKey: ['pageViews'],
-    queryFn: async () => {
-      return await base44.entities.PageView.list('-created_date', 1000);
-    },
+  const { data: pageViews = [], isLoading: loadingViews } = pageViewsApi.useList({
     enabled: currentUser?.role === 'admin'
   });
 
@@ -99,21 +92,7 @@ export default function AdminAnalytics() {
 
   // Render PageViewTracker unconditionally to maintain stable hook count across all render paths
   // This prevents "Rendered more/fewer hooks" errors when access state changes
-  
-  // Check admin access AFTER all hooks
-  if (!loadingUser && currentUser?.role !== 'admin') {
-    return (
-      <>
-        <PageViewTracker />
-        <div className="p-8 max-w-4xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <h2 className="text-xl font-bold text-red-800 mb-2">Access Denied</h2>
-            <p className="text-red-600">This page is only accessible to administrators.</p>
-          </div>
-        </div>
-      </>
-    );
-  }
+  // Admin access is already enforced by RouteGuard (routes.config.js: access "admin")
 
   // Loading state - AFTER all hooks
   if (loadingUser || loadingViews) {

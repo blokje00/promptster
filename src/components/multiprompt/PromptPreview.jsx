@@ -1,12 +1,10 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Sparkles, Copy, CheckCircle, Cog, RefreshCw, Layers, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
-import { createPageUrl } from "@/utils";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 
 function PromptPreview({
   generatedPrompt,
@@ -29,10 +27,7 @@ function PromptPreview({
   const [activeVariantIndex, setActiveVariantIndex] = React.useState(0);
 
   // Check if AI features are available (trial or subscription)
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
+  const { currentUser } = useAuth();
 
   const subscriptionStatus = currentUser?.subscription_status;
   const trialEnd = currentUser?.trial_end ? new Date(currentUser.trial_end) : null;
@@ -165,16 +160,20 @@ function PromptPreview({
             Show AI Reasoning Steps
           </button>
         )}
-        <div className="bg-slate-900 rounded-lg p-4 min-h-[300px] max-h-[500px] overflow-auto text-slate-300 font-mono text-sm whitespace-pre-wrap">
-          {promptVariants.length > 0 
-            ? promptVariants[activeVariantIndex]?.content || displayPrompt
-            : displayPrompt || (
-                selectedThoughts.length > 0 
-                  ? "// Tasks loaded. Click 'Generate Prompt' to create preview..." 
-                  : "// Create / select tasks to generate prompt..."
-              )
+        <Textarea
+          value={
+            promptVariants.length > 0
+              ? promptVariants[activeVariantIndex]?.content || displayPrompt
+              : displayPrompt
           }
-        </div>
+          onChange={(e) => setImprovedPrompt(e.target.value)}
+          placeholder={
+            selectedThoughts.length > 0
+              ? "// Tasks loaded. Click 'Generate Prompt' to create preview..."
+              : "// Create / select tasks to generate prompt..."
+          }
+          className="bg-slate-900 rounded-lg p-4 min-h-[300px] max-h-[500px] overflow-auto text-slate-300 font-mono text-sm whitespace-pre-wrap resize-none border-0 placeholder:text-slate-500 focus-visible:ring-1 focus-visible:ring-indigo-500"
+        />
         {displayPrompt && (
           <Button
             size="icon"

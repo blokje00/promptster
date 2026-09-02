@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
-import { base44 } from "@/api/base44Client";
 
 const Spinner = () => (
   <div className="flex items-center justify-center min-h-screen">
@@ -18,15 +17,15 @@ const Spinner = () => (
  */
 export default function RouteGuard({ children, access = "protected" }) {
   const location = useLocation();
-  const { isAuthenticated, isLoadingAuth, currentUser } = useAuth();
+  const { isAuthenticated, isLoadingAuth, currentUser, loginWithProvider } = useAuth();
 
   // Redirect unauthenticated users to login (after auth is resolved)
   useEffect(() => {
     if (isLoadingAuth || access === "public") return;
     if (!isAuthenticated) {
-      base44.auth.loginWithProvider('google', location.pathname + location.search);
+      loginWithProvider('google', location.pathname + location.search);
     }
-  }, [isAuthenticated, isLoadingAuth, access, location.pathname, location.search]);
+  }, [isAuthenticated, isLoadingAuth, access, location.pathname, location.search, loginWithProvider]);
 
   // Public pages — always render
   if (access === "public") {

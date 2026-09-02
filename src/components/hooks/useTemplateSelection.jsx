@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import * as projects from "@/api/projects";
 
 export const useTemplateSelection = (selectedProjectId, selectedProject) => {
   const [startTemplateId, setStartTemplateId] = useState("");
@@ -26,8 +26,8 @@ export const useTemplateSelection = (selectedProjectId, selectedProject) => {
     if (!selectedProjectId || !startTemplateId) return;
     
     const timer = setTimeout(() => {
-      base44.entities.Project.update(selectedProjectId, { 
-        last_start_template_id: startTemplateId 
+      projects.update(selectedProjectId, {
+        last_start_template_id: startTemplateId
       }).catch(err => console.error('Failed to save start template:', err));
     }, 300);
 
@@ -39,8 +39,8 @@ export const useTemplateSelection = (selectedProjectId, selectedProject) => {
     if (!selectedProjectId || !endTemplateId) return;
     
     const timer = setTimeout(() => {
-      base44.entities.Project.update(selectedProjectId, { 
-        last_end_template_id: endTemplateId 
+      projects.update(selectedProjectId, {
+        last_end_template_id: endTemplateId
       }).catch(err => console.error('Failed to save end template:', err));
     }, 300);
 

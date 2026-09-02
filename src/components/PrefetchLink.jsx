@@ -10,14 +10,19 @@ import { Link } from "react-router-dom";
 const prefetchers = {
   AIBackoffice: () => import("@/pages/AIBackoffice"),
   AddItem: () => import("@/pages/AddItem"),
+  AdminAnalytics: () => import("@/pages/AdminAnalytics"),
+  AdminSettings: () => import("@/pages/AdminSettings"),
   AdminStats: () => import("@/pages/AdminStats"),
   AdminSupportTickets: () => import("@/pages/AdminSupportTickets"),
   Checks: () => import("@/pages/Checks"),
   Dashboard: () => import("@/pages/Dashboard"),
+  EditItem: () => import("@/pages/EditItem"),
   Features: () => import("@/pages/Features"),
+  Legal: () => import("@/pages/Legal"),
   Multiprompt: () => import("@/pages/Multiprompt"),
   RecycleBin: () => import("@/pages/RecycleBin"),
   Support: () => import("@/pages/Support"),
+  ViewItem: () => import("@/pages/ViewItem"),
 };
 
 const alreadyPrefetched = new Set();

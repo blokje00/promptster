@@ -7,7 +7,7 @@ import ScreenshotUploader from "@/components/media/ScreenshotUploader";
 import ContextSelector from "./ContextSelector";
 import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
+import * as functions from "@/api/functions";
 
 function TaskInputArea({
   selectedProject,
@@ -72,10 +72,8 @@ function TaskInputArea({
           // TASK-7: Trigger OCR vision analysis immediately after paste
           try {
             for (const url of uploadedUrls) {
-              base44.functions.invoke('analyzeScreenshotWithCache', {
-                screenshotUrl: url,
-                level: 'full'
-              }).catch(err => console.warn('[TaskInputArea] Vision analysis failed:', err));
+              functions.analyzeScreenshotUrl(url)
+                .catch(err => console.warn('[TaskInputArea] Vision analysis failed:', err));
             }
           } catch (error) {
             console.warn('[TaskInputArea] Could not trigger vision analysis:', error);

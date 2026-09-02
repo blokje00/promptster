@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Sparkles, FileJson, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
+import { invokeLLM } from "@/components/lib/invokeLLM";
+import { parseClipboardConfig, parseClipboardConfigSchema } from "@/lib/prompts";
 
 const PLATFORM_OPTIONS = [
   { value: "base44", label: "Base44" },
@@ -50,88 +51,9 @@ export default function ClipboardConfigParser({ onParse }) {
     setAnalysisResult(null);
 
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Je bent een expert in no-code platform analyse. Analyseer de volgende config/export van platform "${platform}" en extraheer de projectstructuur.
-
-BELANGRIJK: Geef ALLEEN valide JSON terug, geen uitleg of markdown.
-
-Input config:
-\`\`\`
-${configText.substring(0, 15000)}
-\`\`\`
-
-Extraheer waar mogelijk:
-1. Pages/schermen met routes en types
-2. Entities/data types met velden
-3. Workflows/automations
-4. Navigatie items
-
-Voor elk item, geef een korte beschrijving die bruikbaar is voor AI code-generatie context.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            platform_detected: { type: "string" },
-            confidence: { type: "string", enum: ["high", "medium", "low"] },
-            pages: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  route: { type: "string" },
-                  page_type: { type: "string" },
-                  description: { type: "string" },
-                  components: { type: "array", items: { type: "string" } },
-                  entities: { type: "array", items: { type: "string" } }
-                }
-              }
-            },
-            entities: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  description: { type: "string" },
-                  fields: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        name: { type: "string" },
-                        type: { type: "string" },
-                        is_required: { type: "boolean" }
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            workflows: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  trigger_description: { type: "string" },
-                  actions_description: { type: "string" },
-                  related_entities: { type: "array", items: { type: "string" } }
-                }
-              }
-            },
-            navigation: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  label: { type: "string" },
-                  route: { type: "string" },
-                  position: { type: "string" }
-                }
-              }
-            }
-          }
-        }
+      const result = await invokeLLM({
+        prompt: parseClipboardConfig({ platform, configText }),
+        response_json_schema: parseClipboardConfigSchema
       });
 
       setAnalysisResult(result);

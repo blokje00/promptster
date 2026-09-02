@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { useState, useRef, useEffect } from "react";
+import * as featureContentBlocks from "@/api/featureContentBlocks";
+import { useAuth } from "@/lib/AuthContext";
 import { Loader2, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -19,36 +19,10 @@ export default function InlineEditableText({
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const inputRef = useRef(null);
-  const queryClient = useQueryClient();
+  const { currentUser } = useAuth();
 
-  const saveMutation = useMutation({
-    mutationFn: async (newValue) => {
-      const user = await base44.auth.me();
-      
-      // Check if block exists
-      const existing = await base44.entities.FeatureContentBlock.filter({ 
-        key: blockKey, 
-        page: "features" 
-      });
-
-      if (existing && existing.length > 0) {
-        // Update existing
-        return await base44.entities.FeatureContentBlock.update(existing[0].id, {
-          value: newValue,
-          updated_by: user?.email || user?.id
-        });
-      } else {
-        // Create new
-        return await base44.entities.FeatureContentBlock.create({
-          key: blockKey,
-          page: "features",
-          value: newValue,
-          updated_by: user?.email || user?.id
-        });
-      }
-    },
+  const saveMutation = featureContentBlocks.useSaveBlock({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['featureContentBlocks'] });
       setShowSuccess(true);
       setTimeout(() => {
         setShowSuccess(false);
@@ -71,7 +45,12 @@ export default function InlineEditableText({
 
     setIsSaving(true);
     try {
-      await saveMutation.mutateAsync(trimmed);
+      await saveMutation.mutateAsync({
+        key: blockKey,
+        page: "features",
+        value: trimmed,
+        updated_by: currentUser?.email || currentUser?.id,
+      });
     } finally {
       setIsSaving(false);
     }

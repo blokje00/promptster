@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { base44 } from "@/api/base44Client";
+import * as functions from "@/api/functions";
+import { invokeLLM } from "@/components/lib/invokeLLM";
+import * as prompts from "@/lib/prompts";
 import { toast } from "sonner";
 export const usePromptGeneration = ({
   thoughts,
@@ -45,8 +47,11 @@ export const usePromptGeneration = ({
   }, [selectedProjectId]);
 
   useEffect(() => {
+    const key = `promptster:improved:${selectedProjectId || 'all'}`;
     if (improvedPrompt) {
-      localStorage.setItem(`promptster:improved:${selectedProjectId || 'all'}`, improvedPrompt);
+      localStorage.setItem(key, improvedPrompt);
+    } else {
+      localStorage.removeItem(key);
     }
   }, [improvedPrompt, selectedProjectId]);
 
@@ -97,25 +102,7 @@ Gebruik deze insights bij het uitvoeren van taken.
     // Add Screenshot Context Block if any tasks have screenshots
     const hasScreenshots = selectedItems.some(t => t.screenshot_ids && t.screenshot_ids.length > 0);
     if (hasScreenshots) {
-      parts.push(`[SCREENSHOT_CONTEXT]
-
-Je krijgt per taak optioneel een of meer screenshots:
-
-- "pageHint" en "componentHint" geven de vermoedelijke pagina / sectie / functie aan.
-- "ocrVision" bevat:
-  - ocr.text en ocr.regions → alle zichtbare tekst
-  - semanticBlocks → gegroepeerde UI-/content-blokken
-  - layoutRelations → relaties tussen blokken
-  - visionStructure → hogere-orde interpretatie van de UI
-
-Gebruik deze context om beter te begrijpen:
-- op welke pagina we zijn;
-- welke knoppen, dropdowns, inputs zichtbaar zijn;
-- waar een wijziging precies moet plaatsvinden.
-
-Als er meerdere screenshots zijn, behandel ze als aparte "views" van dezelfde app.
-
-[/SCREENSHOT_CONTEXT]`);
+      parts.push(prompts.screenshotContext());
     }
 
     if (selectedItems.length > 0) {
@@ -202,6 +189,48 @@ Apply this routing strategy when executing the multi-task protocol.
     return parts.join("\n\n---\n\n");
   }, [selectedItems, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, includeLearnedPatterns, includeParserInstruction, currentUser, selectedProject, templates, selectedProjectId, targetModel]);
 
+  // Defined above handleImprovePrompt (and listed in its deps) so that useCallback
+  // rebuilds handleImprovePrompt whenever reasoningSteps/handleToggleReasoning change,
+  // instead of a stale closure re-triggering the paid reasoning call on every click.
+  const handleToggleReasoning = useCallback(async () => {
+    if (showReasoning) {
+      setShowReasoning(false);
+      return;
+    }
+
+    // If reasoning already generated, just show it
+    if (reasoningSteps) {
+      setShowReasoning(true);
+      return;
+    }
+
+    // Generate reasoning steps
+    if (!generatedPrompt) return;
+
+    try {
+      const reasoningPrompt = prompts.reasoningSteps({
+        prompt: generatedPrompt,
+        taskCount: selectedItems.length,
+        hasStartTemplate: !!startTemplateId,
+        hasEndTemplate: !!endTemplateId,
+        includePersonalPrefs,
+        includeProjectConfig
+      });
+
+      const data = await functions.runPrompt({ prompt: reasoningPrompt });
+
+      setReasoningSteps(data.result);
+      setShowReasoning(true);
+      // Only show toast if manually triggered
+      if (showReasoning === false && !reasoningSteps) {
+        toast.success("Reasoning steps generated");
+      }
+    } catch (error) {
+      console.error("Reasoning generation error:", error);
+      toast.error(error.message || "Reasoning generation failed");
+    }
+  }, [generatedPrompt, selectedItems, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, showReasoning, reasoningSteps]);
+
   const handleImprovePrompt = useCallback(async (isUndo = false) => {
     // Undo: clear improved prompt
     if (isUndo) {
@@ -211,7 +240,7 @@ Apply this routing strategy when executing the multi-task protocol.
     }
 
     if (!generatedPrompt) return;
-    
+
     // Check if Reasoning Transparency is enabled - auto-generate reasoning
     if (!reasoningSteps && currentUser?.enable_reasoning_transparency) {
       handleToggleReasoning();
@@ -224,24 +253,31 @@ Apply this routing strategy when executing the multi-task protocol.
       
       if (allScreenshotUrls.length > 0) {
         try {
+          // Promise.all preserves input order, so zip allScreenshotUrls[i] with
+          // visionResults[i] into a URL-keyed Map before a single failed call (caught
+          // below, resolves to null) can shift the indices of the others.
           const visionResults = await Promise.all(
-            allScreenshotUrls.map(url => 
-              base44.functions.invoke('analyzeScreenshotWithCache', {
+            allScreenshotUrls.map(url =>
+              functions.analyzeScreenshotWithCache({
                 screenshotUrl: url,
                 level: 'full'
-              })
+              }).catch(() => null)
             )
           );
-          
-          const analyses = visionResults
-            .map(r => r.data)
-            .filter(d => d?.ok);
-          
-          if (analyses.length > 0) {
+
+          const analysisByUrl = new Map();
+          allScreenshotUrls.forEach((url, idx) => {
+            const data = visionResults[idx];
+            if (data?.ok) {
+              analysisByUrl.set(url, data);
+            }
+          });
+
+          if (analysisByUrl.size > 0) {
             // Replace "TO_BE_ENRICHED_WITH_CACHE" placeholders with actual OCR data
             enrichedPromptWithVision = generatedPrompt;
-            allScreenshotUrls.forEach((url, idx) => {
-              const analysis = analyses[idx];
+            allScreenshotUrls.forEach((url) => {
+              const analysis = analysisByUrl.get(url);
               if (analysis) {
                 const ocrData = {
                   ocr: analysis.ocr,
@@ -259,8 +295,9 @@ Apply this routing strategy when executing the multi-task protocol.
                 );
               }
             });
-            
-            visionContext = `\n\n**Screenshot Analysis (OCR Vision):**\n${analyses.map((a, i) => 
+
+            const analyses = [...analysisByUrl.values()];
+            visionContext = `\n\n**Screenshot Analysis (OCR Vision):**\n${analyses.map((a, i) =>
               `Screenshot ${i + 1}: ${a.regions?.length || 0} UI elements detected\n- Text: "${a.ocr?.text?.substring(0, 150) || 'None'}..."`
             ).join('\n')}\n`;
           }
@@ -271,33 +308,18 @@ Apply this routing strategy when executing the multi-task protocol.
 
       // Check if Verbalized Sampling is enabled
       const verbalizedSamplingEnabled = currentUser?.enable_verbalized_sampling || false;
-      
-      let improvePromptInstruction = `Improve and optimize this multi-task prompt for better clarity and execution:\n\n${enrichedPromptWithVision}\n\nIMPORTANT: Return ONLY the improved prompt content, keeping the JSON structure and all screenshot data intact.`;
-      
-      if (verbalizedSamplingEnabled) {
-        improvePromptInstruction = `You are using Verbalized Sampling to improve this prompt with maximum diversity.
 
-ORIGINAL PROMPT:
-${enrichedPromptWithVision}
-
-TASK: Generate ONE improved version that takes an atypical, creative approach (avoid the most obvious solution). Consider:
-- Alternative execution strategies
-- Different levels of detail
-- Unconventional but effective structures
-- Novel perspectives on the tasks
-
-IMPORTANT: Return ONLY the improved prompt content, keeping the JSON structure and all screenshot data intact. Be creative but maintain functionality.`;
-      }
-      
-      // Call backend function with rate limiting - DON'T send file_urls (AI can't access them anyway)
-      const response = await base44.functions.invoke('runPrompt', {
-        prompt: improvePromptInstruction
+      const improvePromptInstruction = prompts.improvePrompt({
+        prompt: enrichedPromptWithVision,
+        verbalizedSampling: verbalizedSamplingEnabled
       });
 
-      const data = response.data;
-
-      if (response.status !== 200 || data.error) {
-        toast.error(data.error || "AI Improvement failed");
+      // Call backend function with rate limiting - DON'T send file_urls (AI can't access them anyway)
+      let data;
+      try {
+        data = await functions.runPrompt({ prompt: improvePromptInstruction });
+      } catch (error) {
+        toast.error(error.message || "AI Improvement failed");
         return;
       }
 
@@ -309,7 +331,7 @@ IMPORTANT: Return ONLY the improved prompt content, keeping the JSON structure a
     } finally {
       setIsImproving(false);
     }
-  }, [generatedPrompt, selectedItems, allScreenshotUrls, currentUser]);
+  }, [generatedPrompt, selectedItems, allScreenshotUrls, currentUser, reasoningSteps, handleToggleReasoning]);
 
   const handleGenerateVariants = useCallback(async () => {
     if (!generatedPrompt) return;
@@ -317,49 +339,14 @@ IMPORTANT: Return ONLY the improved prompt content, keeping the JSON structure a
     setIsGeneratingVariants(true);
     try {
       // Verbalized Sampling: generate 3 diverse variants
-      const vsPrompt = `You are a prompt engineering expert. Generate exactly 3 diverse variants of the following multi-task prompt, each taking a different strategic approach. For each variant, estimate its "typicality probability" (0.0-1.0, where higher = more typical/conventional).
+      const vsPrompt = prompts.promptVariants({ prompt: generatedPrompt });
 
-ORIGINAL PROMPT:
-${generatedPrompt}
-
-OUTPUT FORMAT (strict JSON):
-{
-  "variants": [
-    {
-      "content": "Full prompt variant 1...",
-      "probability": 0.8,
-      "approach": "Conservative - minimal changes"
-    },
-    {
-      "content": "Full prompt variant 2...",
-      "probability": 0.5,
-      "approach": "Balanced - moderate restructuring"
-    },
-    {
-      "content": "Full prompt variant 3...",
-      "probability": 0.2,
-      "approach": "Creative - novel approach"
-    }
-  ]
-}
-
-RULES:
-- Each variant must be a complete, executable prompt (keep JSON structure intact)
-- Variants should differ in: tone, structure, level of detail, or execution strategy
-- Ensure at least one variant is "atypical" (probability < 0.4)
-- Return ONLY valid JSON, no markdown fences`;
-
-      const response = await base44.integrations.Core.InvokeLLM({
-        prompt: vsPrompt
+      const parsed = await invokeLLM({
+        prompt: vsPrompt,
+        response_json_schema: prompts.promptVariantsSchema
       });
 
-      // Parse JSON response
-      let cleanResult = response.trim();
-      cleanResult = cleanResult.replace(/^```json\s*\n?/i, '').replace(/\n?```\s*$/i, '');
-      
-      const parsed = JSON.parse(cleanResult);
-      
-      if (parsed.variants && Array.isArray(parsed.variants) && parsed.variants.length > 0) {
+      if (Array.isArray(parsed?.variants) && parsed.variants.length > 0) {
         setPromptVariants(parsed.variants);
         toast.success(`✨ Generated ${parsed.variants.length} prompt variants`);
       } else {
@@ -372,62 +359,6 @@ RULES:
       setIsGeneratingVariants(false);
     }
   }, [generatedPrompt, currentUser]);
-
-  const handleToggleReasoning = useCallback(async () => {
-    if (showReasoning) {
-      setShowReasoning(false);
-      return;
-    }
-
-    // If reasoning already generated, just show it
-    if (reasoningSteps) {
-      setShowReasoning(true);
-      return;
-    }
-
-    // Generate reasoning steps
-    if (!generatedPrompt) return;
-
-    try {
-      const reasoningPrompt = `You are analyzing how you would interpret and execute the following multi-task prompt. Explain your reasoning process in 3-5 concise steps:
-
-1. **Interpretation**: How do you understand the tasks and their context?
-2. **Planning**: What is your execution strategy?
-3. **Prioritization**: Which tasks are most critical and why?
-4. **Dependencies**: Are there any task dependencies or order requirements?
-5. **Context Usage**: How would you use templates, preferences, and project config?
-
-PROMPT TO ANALYZE:
-${generatedPrompt}
-
-SELECTED TASKS: ${selectedItems.length}
-- Templates: ${startTemplateId ? 'Start' : ''} ${endTemplateId ? 'End' : ''}
-- Personal Prefs: ${includePersonalPrefs ? 'Yes' : 'No'}
-- Project Config: ${includeProjectConfig ? 'Yes' : 'No'}
-
-Return your reasoning as clear, numbered steps (max 200 words).`;
-
-      const response = await base44.functions.invoke('runPrompt', {
-        prompt: reasoningPrompt
-      });
-
-      const data = response.data;
-
-      if (response.status === 200 && !data.error) {
-        setReasoningSteps(data.result);
-        setShowReasoning(true);
-        // Only show toast if manually triggered
-        if (showReasoning === false && !reasoningSteps) {
-          toast.success("Reasoning steps generated");
-        }
-      } else {
-        toast.error("Failed to generate reasoning");
-      }
-    } catch (error) {
-      console.error("Reasoning generation error:", error);
-      toast.error("Reasoning generation failed");
-    }
-  }, [generatedPrompt, selectedItems, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, showReasoning, reasoningSteps]);
 
   return {
     generatedPrompt,

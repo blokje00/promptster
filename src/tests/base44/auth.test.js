@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createMockBase44Client } from '../mocks/base44Mock';
 
 describe('Base44 Client - Authentication', () => {
@@ -20,11 +20,24 @@ describe('Base44 Client - Authentication', () => {
       await expect(client.auth.me()).rejects.toThrow('Not authenticated');
     });
 
-    it('should call login redirect', () => {
-      const consoleSpy = vi.spyOn(console, 'log');
-      client.auth.login('/dashboard');
-      
-      expect(client.auth.login).toHaveBeenCalledWith('/dashboard');
+    // The real SDK has no auth.login() — RouteGuard.jsx calls
+    // base44.auth.loginWithProvider('google', path) for unauthenticated users,
+    // and AuthContext.jsx calls base44.auth.redirectToLogin(url) directly.
+    it('should call loginWithProvider like RouteGuard.jsx does', () => {
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      client.auth.loginWithProvider('google', '/dashboard');
+
+      expect(client.auth.loginWithProvider).toHaveBeenCalledWith('google', '/dashboard');
+      consoleSpy.mockRestore();
+    });
+
+    it('should call redirectToLogin like AuthContext.jsx does', () => {
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      client.auth.redirectToLogin('https://app.example.com/checks');
+
+      expect(client.auth.redirectToLogin).toHaveBeenCalledWith('https://app.example.com/checks');
       consoleSpy.mockRestore();
     });
   });
@@ -44,7 +57,7 @@ describe('Base44 Client - Authentication', () => {
 
     it('should return user data from me()', async () => {
       const user = await client.auth.me();
-      
+
       expect(user).toHaveProperty('id');
       expect(user).toHaveProperty('name');
       expect(user).toHaveProperty('email');
@@ -55,7 +68,7 @@ describe('Base44 Client - Authentication', () => {
       const updated = await client.auth.updateMe({
         name: 'Updated Name',
       });
-      
+
       expect(updated.name).toBe('Updated Name');
       expect(updated.email).toBe('test@example.com');
     });
@@ -64,14 +77,22 @@ describe('Base44 Client - Authentication', () => {
       const newClient = createMockBase44Client({
         appId: '68f4bcd57ca6479c7acf2f47',
       });
-      
+
       let isAuth = await newClient.auth.isAuthenticated();
       expect(isAuth).toBe(false);
-      
+
       newClient.setToken('new-token');
-      
+
       isAuth = await newClient.auth.isAuthenticated();
       expect(isAuth).toBe(true);
+    });
+
+    it('should clear the token on logout, like Header.jsx / AuthContext.jsx expect', async () => {
+      client.auth.logout('https://app.example.com/');
+
+      expect(client.auth.logout).toHaveBeenCalledWith('https://app.example.com/');
+      const isAuth = await client.auth.isAuthenticated();
+      expect(isAuth).toBe(false);
     });
   });
 });

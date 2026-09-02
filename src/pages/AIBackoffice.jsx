@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+// (personalPrefsHook / retryMessageHook below) — auth otherwise stays on useAuth().
+import * as aiSettings from "@/api/aiSettings";
+import * as projectsApi from "@/api/projects";
+import * as projectStructuresApi from "@/api/projectStructures";
+import * as learnedPatternsApi from "@/api/learnedPatterns";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { FolderTree, Settings } from "lucide-react";
 import { useAutosaveField } from "@/components/hooks/useAutosaveField";
 import { useReliableSaveButton } from "@/components/hooks/useReliableSaveButton";
-import { useCurrentUserSettings } from "@/components/hooks/useCurrentUserSettings";
-import { useUserEntities } from "@/components/hooks/useUserEntities";
+import { useAuth } from "@/lib/AuthContext";
+import { retryTask } from "@/lib/prompts";
 import UPSEPanel from "../components/upse/UPSEPanel";
 import MaintenanceTools from "../components/settings/MaintenanceTools";
 import AIInstructionForm from "../components/settings/AIInstructionForm";
@@ -57,128 +61,12 @@ const DEFAULT_PERSONAL_PREFERENCES = `# My Personal Development Preferences
 - Task format: What/Where/Why structure
 `;
 
-const DEFAULT_RETRY_MESSAGE = `You are the Base44 code assistant for the Promptster webapp.
+const DEFAULT_RETRY_MESSAGE = retryTask();
 
-GOAL
-Take the failed or rejected task, the user's short explanation, and the attached screenshot, and UPDATE the Promptster codebase so that the problem is structurally fixed for ALL users – not just as a one-off patch.
-
-CONTEXT
-
-* Tech stack: React + Tailwind CSS + shadcn/ui, Lucide icons.
-* Structure: \`pages/\` for pages, \`components/\` for reusable UI, \`entities/\` for data models, \`functions/\` for backend/logic.
-* Follow Patrick's preferences: camelCase, async/await, clear comments, minimalistic UI, dark-mode support, accessible components.
-
-WHEN PROCESSING A RETRY
-
-1. Carefully inspect the attached screenshot and the user's explanation of what is missing, incorrect, or not visible.
-2. Locate the correct files in the Promptster codebase where this behaviour is defined (pages, components, styles, or backend functions).
-3. Change the code so that the behaviour works correctly and consistently for ALL users and all relevant pages / states.
-4. Avoid one-off hacks or hard-coded values tied to a single user, project, or environment.
-5. Keep the implementation clean, testable, and aligned with existing patterns in the app.
-
-DELIVERABLE
-
-* Implement the necessary code changes.
-* Ensure light and dark mode both work correctly.
-* Make sure the fix is visible in the UI (no invisible changes).
-* At the end, briefly list:
-
-  * Which files were changed (with paths),
-  * A short summary per file,
-  * A 3-line manual test checklist the user can run to verify the fix.`;
-
-// Retry message examples for "Load example" button cycling
-const RETRY_MESSAGE_EXAMPLES = [
-  `You are the Base44 code assistant for the Promptster webapp.
-
-GOAL
-Take the failed or rejected task, the user's short explanation, and the attached screenshot, and UPDATE the Promptster codebase so that the problem is structurally fixed for ALL users – not just as a one-off patch.
-
-CONTEXT
-
-* Tech stack: React + Tailwind CSS + shadcn/ui, Lucide icons.
-* Structure: \`pages/\` for pages, \`components/\` for reusable UI, \`entities/\` for data models, \`functions/\` for backend/logic.
-* Follow Patrick's preferences: camelCase, async/await, clear comments, minimalistic UI, dark-mode support, accessible components.
-
-WHEN PROCESSING A RETRY
-
-1. Carefully inspect the attached screenshot and the user's explanation of what is missing, incorrect, or not visible.
-2. Locate the correct files in the Promptster codebase where this behaviour is defined (pages, components, styles, or backend functions).
-3. Change the code so that the behaviour works correctly and consistently for ALL users and all relevant pages / states.
-4. Avoid one-off hacks or hard-coded values tied to a single user, project, or environment.
-5. Keep the implementation clean, testable, and aligned with existing patterns in the app.
-
-DELIVERABLE
-
-* Implement the necessary code changes.
-* Ensure light and dark mode both work correctly.
-* Make sure the fix is visible in the UI (no invisible changes).
-* At the end, briefly list:
-
-  * Which files were changed (with paths),
-  * A short summary per file,
-  * A 3-line manual test checklist the user can run to verify the fix.`,
-
-  `You are the Base44 code assistant for the Promptster webapp.
-
-GOAL
-Take the failed or rejected task, the user's short explanation, and the attached screenshot, and UPDATE the Promptster codebase so that the problem is structurally fixed for ALL users – not just as a one-off patch.
-
-CONTEXT
-
-* Tech stack: React + Tailwind CSS + shadcn/ui, Lucide icons.
-* Structure: \`pages/\` for pages, \`components/\` for reusable UI, \`entities/\` for data models, \`functions/\` for backend/logic.
-* Follow Patrick's preferences: camelCase, async/await, clear comments, minimalistic UI, dark-mode support, accessible components.
-
-WHEN PROCESSING A RETRY
-
-1. Carefully inspect the attached screenshot and the user's explanation of what is missing, incorrect, or not visible.
-2. Locate the correct files in the Promptster codebase where this behaviour is defined (pages, components, styles, or backend functions).
-3. Change the code so that the behaviour works correctly and consistently for ALL users and all relevant pages / states.
-4. Avoid one-off hacks or hard-coded values tied to a single user, project, or environment.
-5. Keep the implementation clean, testable, and aligned with existing patterns in the app.
-
-DELIVERABLE
-
-* Implement the necessary code changes.
-* Ensure light and dark mode both work correctly.
-* Make sure the fix is visible in the UI (no invisible changes).
-* At the end, briefly list:
-
-  * Which files were changed (with paths),
-  * A short summary per file,
-  * A 3-line manual test checklist the user can run to verify the fix.`,
-
-  `You are the Base44 code assistant for the Promptster webapp.
-
-GOAL
-Take the failed or rejected task, the user's short explanation, and the attached screenshot, and UPDATE the Promptster codebase so that the problem is structurally fixed for ALL users – not just as a one-off patch.
-
-CONTEXT
-
-* Tech stack: React + Tailwind CSS + shadcn/ui, Lucide icons.
-* Structure: \`pages/\` for pages, \`components/\` for reusable UI, \`entities/\` for data models, \`functions/\` for backend/logic.
-* Follow Patrick's preferences: camelCase, async/await, clear comments, minimalistic UI, dark-mode support, accessible components.
-
-WHEN PROCESSING A RETRY
-
-1. Carefully inspect the attached screenshot and the user's explanation of what is missing, incorrect, or not visible.
-2. Locate the correct files in the Promptster codebase where this behaviour is defined (pages, components, styles, or backend functions).
-3. Change the code so that the behaviour works correctly and consistently for ALL users and all relevant pages / states.
-4. Avoid one-off hacks or hard-coded values tied to a single user, project, or environment.
-5. Keep the implementation clean, testable, and aligned with existing patterns in the app.
-
-DELIVERABLE
-
-* Implement the necessary code changes.
-* Ensure light and dark mode both work correctly.
-* Make sure the fix is visible in the UI (no invisible changes).
-* At the end, briefly list:
-
-  * Which files were changed (with paths),
-  * A short summary per file,
-  * A 3-line manual test checklist the user can run to verify the fix.`
-];
+// Retry message examples for "Load example" button cycling. All four were
+// byte-identical to DEFAULT_RETRY_MESSAGE, so all four now come from the
+// same retryTask() builder (see src/lib/prompts.js).
+const RETRY_MESSAGE_EXAMPLES = [retryTask(), retryTask(), retryTask()];
 
 export default function AIBackoffice() {
   const queryClient = useQueryClient();
@@ -195,47 +83,33 @@ export default function AIBackoffice() {
     enableContextSuggestions: true
   });
 
-  // UNIFIED: Use same hook as TierAdvisorToggles, Features, Subscription
-  const { data: currentUser } = useCurrentUserSettings();
+  // Single source of truth for the logged-in user (see src/lib/AuthContext.jsx)
+  const { currentUser, refreshUser, updateMe } = useAuth();
 
   // AISettings failure surfaces via the global query error toast; page still renders with defaults
-  const { data: settings = [] } = useQuery({
-    queryKey: ['aiSettings', currentUser?.email],
-    queryFn: async () => {
-      return await base44.entities.AISettings.filter({ created_by: currentUser.email }) || [];
-    },
-    enabled: Boolean(currentUser?.email),
-    retry: false,
-  });
+  const { data: settings = [] } = aiSettings.useList();
 
-  const { data: projects = [] } = useUserEntities("Project", { queryKey: "projects" });
+  const { data: projects = [] } = projectsApi.useList();
 
-  const { data: projectStructures = [] } = useUserEntities("ProjectStructure", { queryKey: "projectStructures" });
+  const { data: projectStructures = [] } = projectStructuresApi.useList();
 
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const currentProjectStructure = projectStructures.find(ps => ps.project_id === selectedProjectId);
 
   // Load learned patterns for selected project
-  const { data: learnedPatterns = [] } = useQuery({
-    queryKey: ['learnedPatterns', selectedProjectId],
-    queryFn: async () => {
-      if (!selectedProjectId) return [];
-      return await base44.entities.LearnedPattern.filter({ project_id: selectedProjectId });
-    },
-    enabled: Boolean(selectedProjectId)
-  });
+  const { data: learnedPatterns = [] } = learnedPatternsApi.useByProject(selectedProjectId);
 
   const structureMutation = useMutation({
     mutationFn: async (data) => {
       const existing = projectStructures.find(ps => ps.project_id === data.project_id);
       if (existing) {
-        return base44.entities.ProjectStructure.update(existing.id, data);
+        return projectStructuresApi.update(existing.id, data);
       } else {
-        return base44.entities.ProjectStructure.create(data);
+        return projectStructuresApi.create(data);
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projectStructures'] });
+      queryClient.invalidateQueries({ queryKey: projectStructuresApi.keys.all });
       toast.success("Project structure saved");
     },
   });
@@ -250,20 +124,18 @@ export default function AIBackoffice() {
     storageKey: `promptster:personalPrefs:${currentUser?.id ?? 'anon'}`,
     initialValue: currentUser?.personal_preferences_markdown || "",
     mutationFn: async (draft) => {
-      await base44.auth.updateMe({ personal_preferences_markdown: draft });
+      await updateMe({ personal_preferences_markdown: draft });
       return { success: true };
     },
-    invalidateKeys: [['currentUser']]
   });
 
   const retryMessageHook = useReliableSaveButton({
     storageKey: `promptster:retryMessage:${currentUser?.id ?? 'anon'}`,
     initialValue: currentUser?.retry_task_message || DEFAULT_RETRY_MESSAGE,
     mutationFn: async (draft) => {
-      await base44.auth.updateMe({ retry_task_message: draft });
+      await updateMe({ retry_task_message: draft });
       return { success: true };
     },
-    invalidateKeys: [['currentUser']]
   });
 
   useEffect(() => {
@@ -329,14 +201,14 @@ export default function AIBackoffice() {
 
       let saved;
       if (settingsId) {
-        saved = await base44.entities.AISettings.update(settingsId, payload);
+        saved = await aiSettings.update(settingsId, payload);
       } else {
-        saved = await base44.entities.AISettings.create(payload);
+        saved = await aiSettings.create(payload);
         setSettingsId(saved.id);
       }
 
       // Optimistic cache update
-      queryClient.setQueryData(['aiSettings', currentUser.email], (old = []) => {
+      queryClient.setQueryData(aiSettings.keys.list(currentUser.email), (old = []) => {
         const idx = old.findIndex((s) => s.id === saved.id);
         if (idx === -1) return [saved, ...old];
         const next = [...old];
@@ -345,7 +217,7 @@ export default function AIBackoffice() {
       });
 
       // Invalidate for consistency
-      queryClient.invalidateQueries({ queryKey: ['aiSettings', currentUser.email] });
+      queryClient.invalidateQueries({ queryKey: aiSettings.keys.list(currentUser.email) });
 
       // Update saved values (reset dirty state)
       setSavedAIValues({
@@ -370,6 +242,7 @@ export default function AIBackoffice() {
   const handleSavePersonalPreferences = async () => {
     await personalPrefsHook.handleSave();
     if (!personalPrefsHook.error) {
+      refreshUser();
       toast.success("Personal preferences saved");
     } else {
       toast.error("Could not save preferences");
@@ -379,6 +252,7 @@ export default function AIBackoffice() {
   const handleSaveRetryMessage = async () => {
     await retryMessageHook.handleSave();
     if (!retryMessageHook.error) {
+      refreshUser();
       toast.success("Retry task message saved");
     } else {
       toast.error("Could not save retry message");

@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import * as functions from "@/api/functions";
 import { Plus, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import ScreenshotThumbWithOCR from "./ScreenshotThumbWithOCR";
@@ -88,11 +87,8 @@ export default function ScreenshotUploader({
         
         // Trigger analysis for each URL
         Promise.all(
-          successfulUrls.map(url => 
-            base44.functions.invoke('analyzeScreenshotWithCache', {
-              screenshotUrl: url,
-              level: 'full'
-            }).catch(err => {
+          successfulUrls.map(url =>
+            functions.analyzeScreenshotUrl(url).catch(err => {
               console.error('[ScreenshotUploader] OCR analysis failed:', err);
               return null;
             })

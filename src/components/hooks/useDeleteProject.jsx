@@ -1,6 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
+import * as projects from "@/api/projects";
+import * as thoughts from "@/api/thoughts";
+import * as templates from "@/api/templates";
+import * as projectStructures from "@/api/projectStructures";
 
 /**
  * TASK-4: shared cascade-delete for projects (soft-deletes tasks, hard-deletes
@@ -9,38 +13,35 @@ import { toast } from "sonner";
  */
 export function useDeleteProject() {
   const queryClient = useQueryClient();
+  const { currentUser } = useAuth();
+  const email = currentUser?.email;
 
   return useMutation({
     mutationFn: async (id) => {
-      const [thoughts, templates, projectStructures] = await Promise.all([
-        base44.entities.Thought.filter({ project_id: id }),
-        base44.entities.PromptTemplate.filter({ project_id: id }),
-        base44.entities.ProjectStructure.filter({ project_id: id })
+      const [projectThoughts, projectTemplates, structures] = await Promise.all([
+        thoughts.listMine(email, { filters: { project_id: id } }),
+        templates.listMine(email, { filters: { project_id: id } }),
+        projectStructures.listMine(email, { filters: { project_id: id } }),
       ]);
 
       // Mark thoughts as deleted (soft delete)
       await Promise.all(
-        thoughts.map(thought => base44.entities.Thought.update(thought.id, {
-          is_deleted: true,
-          deleted_at: new Date().toISOString()
-        }))
+        projectThoughts.map(thought => thoughts.softDelete(thought.id))
       );
 
       // Hard delete templates + structures
       await Promise.all([
-        ...templates.map(template => base44.entities.PromptTemplate.delete(template.id)),
-        ...projectStructures.map(structure => base44.entities.ProjectStructure.delete(structure.id)),
+        ...projectTemplates.map(template => templates.remove(template.id)),
+        ...structures.map(structure => projectStructures.remove(structure.id)),
       ]);
 
-      await base44.entities.Project.delete(id);
+      await projects.remove(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['activeThoughts'] });
-      queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] });
-      queryClient.invalidateQueries({ queryKey: ['thoughts'] });
-      queryClient.invalidateQueries({ queryKey: ['templates'] });
-      queryClient.invalidateQueries({ queryKey: ['projectStructures'] });
+      queryClient.invalidateQueries({ queryKey: projects.keys.all });
+      thoughts.invalidateThoughtCaches(queryClient);
+      queryClient.invalidateQueries({ queryKey: templates.keys.all });
+      queryClient.invalidateQueries({ queryKey: projectStructures.keys.all });
       toast.success("Project deleted with all associated data");
     },
     onError: (error) => {

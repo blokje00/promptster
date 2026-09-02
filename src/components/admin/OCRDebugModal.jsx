@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Eye, EyeOff, Box, Layers, Network, Code, X } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { Eye, EyeOff, Box, Layers, Code, X } from "lucide-react";
+import { functions } from "@/api";
 import { toast } from "sonner";
 
 /**
@@ -34,31 +34,19 @@ export default function OCRDebugModal({ isOpen, onClose, screenshotUrl }) {
         level: 'full'
       });
 
-      const response = await base44.functions.invoke('analyzeScreenshotVision', { 
+      const result = await functions.analyzeScreenshotVision({
         screenshotUrl,
         level: 'full'
       });
-      
-      console.log('[OCRDebugModal] Received response:', response.data);
-      
-      const result = response.data;
-      
-      if (result.ok === false) {
-        const errorMsg = result.error || 'Analysis failed without specific error';
-        console.error('[OCRDebugModal] Analysis returned error:', errorMsg);
-        toast.error(`Analysis failed: ${errorMsg}`);
-        return;
-      }
-      
+
+      console.log('[OCRDebugModal] Received response:', result);
+
       setAnalysisResult(result);
       toast.success(`Analysis complete: ${result.metadata?.ocrLevel || 'basic'}`);
     } catch (error) {
       console.error('[OCRDebugModal] Exception during analysis:', error);
-      
-      const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
-      
-      toast.error(`Analysis failed: ${errorMessage}`, {
-        description: error.response?.status ? `HTTP ${error.response.status}` : undefined,
+
+      toast.error(`Analysis failed: ${error.message || 'Unknown error'}`, {
         duration: 8000
       });
     } finally {

@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { PrefetchLink } from "@/components/PrefetchLink";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import * as thoughts from "@/api/thoughts";
+import * as projects from "@/api/projects";
+import * as items from "@/api/items";
+// base44 is used ONLY for auth.logout(redirectUrl) below — the SDK auth call is
+// out of scope for the entity data-layer migration (src/api/index.js) and
+// AuthContext.jsx's logout() has no custom-redirect-URL option; see handleLogout.
 import { useAuth } from "@/lib/AuthContext";
 import { createPageUrl } from "@/utils";
-import { Settings, Sparkles, Plus, Archive, User, LogOut, ChevronDown, Trash2, Trash, MessageCircle, BarChart, ListChecks, FileText, TrendingUp, X, CreditCard } from "lucide-react";
+import { Settings, Sparkles, Plus, Archive, LogOut, Trash, MessageCircle, BarChart, ListChecks, FileText, TrendingUp } from "lucide-react";
 import ThemeToggleButton from "@/components/theme/ThemeToggleButton";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "../i18n/LanguageContext";
 
@@ -20,7 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import ExportDialogWrapper from "@/components/export/ExportDialogWrapper";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -30,106 +32,46 @@ export default function Header() {
   const { t } = useLanguage();
   const [showExport, setShowExport] = useState(false);
   
-  const { currentUser: user, isLoadingAuth: isUserLoading } = useAuth();
+  const { currentUser: user, isLoadingAuth: isUserLoading, logout } = useAuth();
 
-  // HARDENED: Badge counts can fail without affecting navigation
-  const { data: deletedCount = 0 } = useQuery({
-    queryKey: ['deletedThoughtsCount', user?.email],
-    queryFn: async () => {
-      try {
-        if (!user?.email) return 0;
-        const result = await base44.entities.Thought.filter({ 
-          created_by: user.email,
-          is_deleted: true 
-        });
-        return result?.length || 0;
-      } catch (error) {
-        console.warn('[Header] Deleted count fetch failed (non-blocking):', error.message);
-        return 0; // Hide badge on error
-      }
-    },
-    enabled: !!user?.email,
+  // HARDENED: Badge counts can fail without affecting navigation.
+  // Errors surface via the global query error toast; UI falls back to 0/[].
+  const { data: deletedCount = 0 } = thoughts.useDeletedThoughts({
+    select: (data) => data?.length || 0,
     staleTime: 5 * 60 * 1000,
     retry: false, // Don't retry badge queries
   });
 
   // Fetch active projects to filter thoughts
-  const { data: activeProjects = [] } = useQuery({
-    queryKey: ['projects', user?.email],
-    queryFn: async () => {
-      try {
-        if (!user?.email) return [];
-        return await base44.entities.Project.filter({ created_by: user.email });
-      } catch (error) {
-        console.warn('[Header] Projects fetch failed (non-blocking):', error.message);
-        return [];
-      }
-    },
-    enabled: !!user?.email,
+  const { data: activeProjects = [] } = projects.useList({
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
 
   // HARDENED: Badge counts derived from CANONICAL activeThoughts query
   // This ensures Header badge always matches Multiprompt badge
-  const { data: rawThoughts = [] } = useQuery({
-    queryKey: ['activeThoughts', user?.email],
-    queryFn: async () => {
-      try {
-        if (!user?.email) return [];
-        const thoughts = await base44.entities.Thought.filter({ 
-          created_by: user.email,
-          is_deleted: false
-        });
-        return thoughts || [];
-      } catch (error) {
-        return [];
-      }
-    },
-    enabled: !!user?.email,
+  const { data: rawThoughts = [] } = thoughts.useActiveThoughts({
     staleTime: 30 * 1000,
     retry: false,
   });
-  
+
   // Filter: only count thoughts from active projects OR without project
   const activeProjectIds = activeProjects.map(p => p.id);
-  const activeThoughts = rawThoughts.filter(t => 
+  const activeThoughts = rawThoughts.filter(t =>
     !t.project_id || activeProjectIds.includes(t.project_id)
   );
   const allThoughtsCount = activeThoughts.length;
 
   // HARDENED: Open tasks badge is non-critical UI feature
-  const { data: openTasksCount = 0 } = useQuery({
-    queryKey: ['openTasksCount', user?.email],
-    queryFn: async () => {
-      try {
-        if (!user?.email) return [];
-        return await base44.entities.Item.filter({ created_by: user.email });
-      } catch (error) {
-        return [];
-      }
-    },
-    select: (items) => {
-      let count = 0;
-      items.forEach(item => {
-        if (item.task_checks && Array.isArray(item.task_checks)) {
-          item.task_checks.forEach(check => {
-            if (!check.status || check.status === 'open') count++;
-          });
-        }
-      });
-      return count;
-    },
-    enabled: !!user?.email,
+  const { data: openTasksCount = 0 } = items.useOpenChecksCount({
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     retry: false,
   });
 
-  const handleLogout = async () => {
-    // TASK-2: Use Base44 auth redirect after logout
-    const returnUrl = window.location.origin + createPageUrl('Features');
-    await base44.auth.logout(returnUrl);
+  const handleLogout = () => {
+    // Back to the public Features page after the SDK cleared the session.
+    logout(window.location.origin + createPageUrl('Features'));
   };
   
   const currentPath = location.pathname.toLowerCase();

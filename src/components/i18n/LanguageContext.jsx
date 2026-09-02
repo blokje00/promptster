@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { translations, languageNames } from "./translations";
 
 const LanguageContext = createContext();
@@ -13,12 +13,17 @@ export function LanguageProvider({ children }) {
     localStorage.setItem("app_language", language);
   }, [language]);
 
-  const t = (key) => {
+  const t = useCallback((key) => {
     return translations[language]?.[key] || translations.en[key] || key;
-  };
+  }, [language]);
+
+  const value = useMemo(
+    () => ({ language, setLanguage, t, languageNames }),
+    [language, t]
+  );
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, languageNames }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );

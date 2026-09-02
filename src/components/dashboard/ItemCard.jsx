@@ -1,16 +1,15 @@
-import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { items } from "@/api";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Copy, Star, Trash2, Edit, Code2, Sparkles, FileText, CheckCircle, MessageSquare, Image as ImageIcon, FileArchive, GitBranch, ClipboardCheck, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { TASK_CHECK_STATUS } from "@/components/lib/status";
 import ScreenshotThumb from "../media/ScreenshotThumb";
 
 
@@ -41,50 +40,35 @@ const projectColors = {
 export default function ItemCard({ item, project }) {
   const [copied, setCopied] = useState(false);
   const [localTaskChecks, setLocalTaskChecks] = useState(item.task_checks || []);
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
-  
+
   const TypeIcon = typeIcons[item.type] || FileText;
 
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Item.delete(id),
+  const deleteMutation = items.useRemove({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
       toast.success('Item deleted');
     },
   });
 
-  const toggleFavoriteMutation = useMutation({
-    mutationFn: ({ id, isFavorite }) => base44.entities.Item.update(id, { is_favorite: !isFavorite }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
-    },
-  });
-
-  const updateTaskChecksMutation = useMutation({
-    mutationFn: ({ id, task_checks }) => base44.entities.Item.update(id, { task_checks }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
-    },
-  });
+  const updateMutation = items.useUpdate();
 
   const handleToggleTaskCheck = (e, index) => {
     e.stopPropagation();
     const newChecks = [...localTaskChecks];
     // Cycle status: open -> success -> failed -> open
-    const currentStatus = newChecks[index].status || (newChecks[index].is_checked ? 'success' : 'open');
-    let nextStatus = 'open';
-    if (currentStatus === 'open') nextStatus = 'success';
-    else if (currentStatus === 'success') nextStatus = 'failed';
-    else if (currentStatus === 'failed') nextStatus = 'open';
+    const currentStatus = newChecks[index].status || (newChecks[index].is_checked ? TASK_CHECK_STATUS.SUCCESS : TASK_CHECK_STATUS.OPEN);
+    let nextStatus = TASK_CHECK_STATUS.OPEN;
+    if (currentStatus === TASK_CHECK_STATUS.OPEN) nextStatus = TASK_CHECK_STATUS.SUCCESS;
+    else if (currentStatus === TASK_CHECK_STATUS.SUCCESS) nextStatus = TASK_CHECK_STATUS.FAILED;
+    else if (currentStatus === TASK_CHECK_STATUS.FAILED) nextStatus = TASK_CHECK_STATUS.OPEN;
     
-    newChecks[index] = { 
-      ...newChecks[index], 
+    newChecks[index] = {
+      ...newChecks[index],
       status: nextStatus,
-      is_checked: nextStatus === 'success' // maintain legacy compat
+      is_checked: nextStatus === TASK_CHECK_STATUS.SUCCESS // maintain legacy compat
     };
     setLocalTaskChecks(newChecks);
-    updateTaskChecksMutation.mutate({ id: item.id, task_checks: newChecks });
+    updateMutation.mutate({ id: item.id, data: { task_checks: newChecks } });
   };
 
   const handleCopy = (e) => {
@@ -100,7 +84,7 @@ export default function ItemCard({ item, project }) {
   };
 
   const handleCardClick = () => {
-    const hasOpenTasks = item.task_checks?.some(check => check.status !== 'success');
+    const hasOpenTasks = item.task_checks?.some(check => check.status !== TASK_CHECK_STATUS.SUCCESS);
     
     // Task 2: Always navigate to EditItem, with hash anchor
     if (hasOpenTasks) {
@@ -192,7 +176,7 @@ export default function ItemCard({ item, project }) {
               size="icon"
               onClick={(e) => {
                 handleActionClick(e);
-                toggleFavoriteMutation.mutate({ id: item.id, isFavorite: item.is_favorite });
+                updateMutation.mutate({ id: item.id, data: { is_favorite: !item.is_favorite } });
               }}
               className="flex-shrink-0"
             >
@@ -221,30 +205,30 @@ export default function ItemCard({ item, project }) {
               <div className="flex justify-between items-center mb-1">
                 <p className="text-xs font-medium text-orange-700">Task checklist:</p>
                 <span className="text-[10px] text-orange-600">
-                  {localTaskChecks.filter(c => c.status === 'success').length}/{localTaskChecks.length}
+                  {localTaskChecks.filter(c => c.status === TASK_CHECK_STATUS.SUCCESS).length}/{localTaskChecks.length}
                 </span>
               </div>
               {localTaskChecks.map((check, index) => (
                 <HoverCard key={index} openDelay={200}>
                   <HoverCardTrigger asChild>
-                    <div 
+                    <div
                       className={`flex items-center gap-2 p-1.5 rounded text-xs cursor-pointer hover:bg-orange-100 ${
-                        check.status === 'success' ? 'bg-green-50' : 
-                        check.status === 'failed' ? 'bg-red-50' : ''
+                        check.status === TASK_CHECK_STATUS.SUCCESS ? 'bg-green-50' :
+                        check.status === TASK_CHECK_STATUS.FAILED ? 'bg-red-50' : ''
                       }`}
                       onClick={(e) => handleToggleTaskCheck(e, index)}
                     >
                       <div className={`w-3 h-3 rounded-full border flex items-center justify-center flex-shrink-0 ${
-                        check.status === 'success' ? 'bg-green-500 border-green-500' : 
-                        check.status === 'failed' ? 'bg-red-500 border-red-500' : 
+                        check.status === TASK_CHECK_STATUS.SUCCESS ? 'bg-green-500 border-green-500' :
+                        check.status === TASK_CHECK_STATUS.FAILED ? 'bg-red-500 border-red-500' :
                         'border-slate-400 bg-white'
                       }`}>
-                        {check.status === 'success' && <CheckCircle className="w-2 h-2 text-white" />}
-                        {check.status === 'failed' && <X className="w-2 h-2 text-white" />}
+                        {check.status === TASK_CHECK_STATUS.SUCCESS && <CheckCircle className="w-2 h-2 text-white" />}
+                        {check.status === TASK_CHECK_STATUS.FAILED && <X className="w-2 h-2 text-white" />}
                       </div>
                       <span className={`truncate ${
-                        check.status === 'success' ? 'line-through text-green-600' : 
-                        check.status === 'failed' ? 'text-red-600' : 
+                        check.status === TASK_CHECK_STATUS.SUCCESS ? 'line-through text-green-600' :
+                        check.status === TASK_CHECK_STATUS.FAILED ? 'text-red-600' :
                         'text-slate-700'
                       }`}>
                         {check.task_name}
@@ -256,11 +240,11 @@ export default function ItemCard({ item, project }) {
                       <span className="font-semibold text-xs text-slate-700">Full task description</span>
                       <div className="flex gap-1">
                         <Badge variant="outline" className={`text-[10px] ${
-                          check.status === 'success' ? 'bg-green-100 text-green-700' :
-                          check.status === 'failed' ? 'bg-red-100 text-red-700' :
+                          check.status === TASK_CHECK_STATUS.SUCCESS ? 'bg-green-100 text-green-700' :
+                          check.status === TASK_CHECK_STATUS.FAILED ? 'bg-red-100 text-red-700' :
                           'bg-blue-100 text-blue-700'
                         }`}>
-                          {check.status === 'success' ? 'Success' : check.status === 'failed' ? 'Failed' : 'Open'}
+                          {check.status === TASK_CHECK_STATUS.SUCCESS ? 'Success' : check.status === TASK_CHECK_STATUS.FAILED ? 'Failed' : 'Open'}
                         </Badge>
                       </div>
                     </div>

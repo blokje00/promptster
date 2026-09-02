@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Cookie, X } from "lucide-react";
+import { createPageUrl } from "@/utils";
 
 /**
  * Cookie Consent Banner - GDPR compliant
@@ -33,8 +34,6 @@ export default function CookieConsent() {
     localStorage.setItem('cookie_consent', 'accepted');
     localStorage.setItem('cookie_consent_expiry', expiryTime.toString());
     setShowBanner(false);
-    
-    // Demo seeding is handled by Header component for logged-in users
   };
 
   const handleDecline = () => {
@@ -42,8 +41,6 @@ export default function CookieConsent() {
     localStorage.setItem('cookie_consent', 'declined');
     localStorage.setItem('cookie_consent_expiry', expiryTime.toString());
     setShowBanner(false);
-    
-    // Demo seeding is handled by Header component for logged-in users
   };
 
   if (!showBanner) return null;
@@ -67,9 +64,9 @@ export default function CookieConsent() {
             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
               We use essential cookies to ensure our website functions properly and optional cookies to improve your experience. 
               By clicking "Accept", you consent to our use of cookies. Learn more in our{" "}
-              <a href="/Legal" className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
+              <Link to={createPageUrl("Legal")} className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
                 Privacy Policy
-              </a>.
+              </Link>.
             </p>
           </div>
 

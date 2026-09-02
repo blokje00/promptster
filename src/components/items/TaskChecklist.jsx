@@ -1,26 +1,21 @@
-import React, { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { items, thoughts } from "@/api";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { toast } from "sonner";
 import {
   CheckCircle2,
   Circle,
-  AlertCircle,
   RotateCcw,
   Loader2,
   XCircle,
 } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ITEM_STATUS, TASK_CHECK_STATUS } from "@/components/lib/status";
 
 /**
  * TaskChecklist - Rebuilt with robust retry logic
@@ -37,8 +32,8 @@ export default function TaskChecklist({
   const [isRetrying, setIsRetrying] = useState(false);
 
   // Calculate stats
-  const completed = taskChecks.filter(t => t.status === 'success').length;
-  const failed = taskChecks.filter(t => t.status === 'failed').length;
+  const completed = taskChecks.filter(t => t.status === TASK_CHECK_STATUS.SUCCESS).length;
+  const failed = taskChecks.filter(t => t.status === TASK_CHECK_STATUS.FAILED).length;
   const total = taskChecks.length;
 
   // Update single task status
@@ -49,7 +44,7 @@ export default function TaskChecklist({
     updatedChecks[index] = {
       ...updatedChecks[index],
       status: newStatus,
-      is_checked: newStatus === 'success'
+      is_checked: newStatus === TASK_CHECK_STATUS.SUCCESS
     };
 
     // Optimistic update parent
@@ -58,16 +53,16 @@ export default function TaskChecklist({
     // Persist to DB immediately
     if (itemId) {
       // Task 1 & 4: Update parent Item status based on checklist
-      const hasOpen = updatedChecks.some(c => c.status !== 'success');
-      const newStatus = hasOpen ? 'open' : 'success';
+      const hasOpen = updatedChecks.some(c => c.status !== TASK_CHECK_STATUS.SUCCESS);
+      const newStatus = hasOpen ? ITEM_STATUS.OPEN : ITEM_STATUS.SUCCESS;
 
-      // Ensure we strip any properties not in schema if necessary, though base44 handles it.
-      base44.entities.Item.update(itemId, { 
+      // Ensure we strip any properties not in schema if necessary, though the SDK handles it.
+      items.update(itemId, {
         task_checks: updatedChecks,
-        status: newStatus 
+        status: newStatus
       })
         .then(() => {
-          queryClient.invalidateQueries({ queryKey: ['item', itemId] });
+          queryClient.invalidateQueries({ queryKey: items.keys.one(itemId) });
           // Invalidate openTasksCount for Header badge
           queryClient.invalidateQueries({ queryKey: ['openTasksCount'] });
         })
@@ -82,7 +77,7 @@ export default function TaskChecklist({
     e.preventDefault();
     e.stopPropagation();
 
-    const failedTasks = taskChecks.filter(check => check.status === 'failed');
+    const failedTasks = taskChecks.filter(check => check.status === TASK_CHECK_STATUS.FAILED);
     if (failedTasks.length === 0) return;
 
     setIsRetrying(true);
@@ -98,8 +93,8 @@ export default function TaskChecklist({
 
       // 2. Create new thoughts for retried tasks
       const newThoughts = await Promise.all(
-        failedTasks.map(task => 
-          base44.entities.Thought.create({
+        failedTasks.map(task =>
+          thoughts.create({
             content: task.full_description || task.task_name,
             project_id: targetProjectId || null,
             is_selected: true,
@@ -111,24 +106,21 @@ export default function TaskChecklist({
       );
 
       // 3. Update local checklist status to 'retried'
-      const updatedChecks = taskChecks.map(check => 
-        check.status === 'failed' 
-          ? { ...check, status: 'retried', is_checked: false }
+      const updatedChecks = taskChecks.map(check =>
+        check.status === TASK_CHECK_STATUS.FAILED
+          ? { ...check, status: TASK_CHECK_STATUS.RETRIED, is_checked: false }
           : check
       );
-      
+
       onTaskChecksChange(updatedChecks);
-      
+
       if (itemId) {
-        await base44.entities.Item.update(itemId, { task_checks: updatedChecks });
-        queryClient.invalidateQueries({ queryKey: ['item', itemId] });
+        await items.update(itemId, { task_checks: updatedChecks });
+        queryClient.invalidateQueries({ queryKey: items.keys.one(itemId) });
       }
 
-      // 4. GLOBAL Invalidation to ensure Multiprompt sees new items
-      // Invalidating root 'thoughts' ensures ALL project views update
-      await queryClient.invalidateQueries({ 
-        predicate: (query) => query.queryKey[0] === 'thoughts' 
-      });
+      // 4. GLOBAL Invalidation to ensure Multiprompt (activeThoughts) sees new items
+      thoughts.invalidateThoughtCaches(queryClient);
 
       // 5. Update Storage & Dispatch Event for Cross-Component Sync
       if (targetProjectId) {
@@ -197,14 +189,14 @@ export default function TaskChecklist({
             {/* Description - Full Text, No Tooltip */}
             <div className="flex-1 min-w-0">
               <p className={`text-sm whitespace-pre-wrap leading-relaxed ${
-                check.status === 'success' ? 'text-slate-400 line-through' :
-                check.status === 'failed' ? 'text-red-700 font-medium' :
-                check.status === 'retried' ? 'text-indigo-600' :
+                check.status === TASK_CHECK_STATUS.SUCCESS ? 'text-slate-400 line-through' :
+                check.status === TASK_CHECK_STATUS.FAILED ? 'text-red-700 font-medium' :
+                check.status === TASK_CHECK_STATUS.RETRIED ? 'text-indigo-600' :
                 'text-slate-700'
               }`}>
                 {check.full_description || check.task_name}
               </p>
-              {check.status === 'failed' && !readOnly && (
+              {check.status === TASK_CHECK_STATUS.FAILED && !readOnly && (
                   <span className="text-[10px] text-red-500 block mt-1">Marked for retry</span>
               )}
             </div>
@@ -213,19 +205,19 @@ export default function TaskChecklist({
             <div className="flex items-center gap-1 shrink-0 pt-0.5" onClick={e => e.stopPropagation()}>
                 {readOnly ? (
                   // Read-only icon
-                  check.status === 'success' ? <CheckCircle2 className="w-5 h-5 text-green-500" /> :
-                  check.status === 'failed' ? <XCircle className="w-5 h-5 text-red-500" /> :
-                  check.status === 'retried' ? <RotateCcw className="w-5 h-5 text-indigo-400" /> :
+                  check.status === TASK_CHECK_STATUS.SUCCESS ? <CheckCircle2 className="w-5 h-5 text-green-500" /> :
+                  check.status === TASK_CHECK_STATUS.FAILED ? <XCircle className="w-5 h-5 text-red-500" /> :
+                  check.status === TASK_CHECK_STATUS.RETRIED ? <RotateCcw className="w-5 h-5 text-indigo-400" /> :
                   <Circle className="w-5 h-5 text-slate-300" />
                 ) : (
                   // Interactive Horizontal Buttons
                   <>
                     <button
                       type="button" // Task 5: Prevent form submission
-                      onClick={(e) => handleStatusChange(e, index, 'success')}
+                      onClick={(e) => handleStatusChange(e, index, TASK_CHECK_STATUS.SUCCESS)}
                       className={`p-1.5 rounded-md border transition-all ${
-                        check.status === 'success' 
-                          ? 'bg-green-500 text-white border-green-600' 
+                        check.status === TASK_CHECK_STATUS.SUCCESS
+                          ? 'bg-green-500 text-white border-green-600'
                           : 'bg-white text-slate-300 border-slate-200 hover:border-green-400 hover:text-green-500'
                       }`}
                       title="Mark as Success"
@@ -235,10 +227,10 @@ export default function TaskChecklist({
 
                     <button
                       type="button" // Task 5: Prevent form submission
-                      onClick={(e) => handleStatusChange(e, index, 'failed')}
+                      onClick={(e) => handleStatusChange(e, index, TASK_CHECK_STATUS.FAILED)}
                       className={`p-1.5 rounded-md border transition-all ${
-                        check.status === 'failed' 
-                          ? 'bg-red-500 text-white border-red-600' 
+                        check.status === TASK_CHECK_STATUS.FAILED
+                          ? 'bg-red-500 text-white border-red-600'
                           : 'bg-white text-slate-300 border-slate-200 hover:border-red-400 hover:text-red-500'
                       }`}
                       title="Mark as Failed"
@@ -248,10 +240,10 @@ export default function TaskChecklist({
 
                     <button
                       type="button" // Task 5: Prevent form submission
-                      onClick={(e) => handleStatusChange(e, index, 'open')}
+                      onClick={(e) => handleStatusChange(e, index, TASK_CHECK_STATUS.OPEN)}
                       className={`p-1.5 rounded-md border transition-all ${
-                        !check.status || check.status === 'open' || check.status === 'retried'
-                          ? 'bg-blue-50 text-blue-600 border-blue-200' 
+                        !check.status || check.status === TASK_CHECK_STATUS.OPEN || check.status === TASK_CHECK_STATUS.RETRIED
+                          ? 'bg-blue-50 text-blue-600 border-blue-200'
                           : 'bg-white text-slate-300 border-slate-200 hover:bg-slate-50'
                       }`}
                       title="Reset to Open"

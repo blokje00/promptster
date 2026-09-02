@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import * as functions from '@/api/functions';
 import {
     Dialog,
     DialogContent,
@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Check, Copy, Loader2 } from 'lucide-react';
+import { Sparkles, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function TaskDecomposerDialog({ 
@@ -23,13 +23,10 @@ export default function TaskDecomposerDialog({
     const [selectedVariant, setSelectedVariant] = useState(null);
 
     const decomposeMutation = useMutation({
-        mutationFn: async () => {
-            const response = await base44.functions.invoke('decomposeTask', {
-                task_content: taskContent,
-                project_id: projectId
-            });
-            return response.data;
-        }
+        mutationFn: () => functions.decomposeTask({
+            task_content: taskContent,
+            project_id: projectId
+        })
     });
 
     React.useEffect(() => {

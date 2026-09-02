@@ -1,11 +1,11 @@
-import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { projects as projectsApi, thoughts } from "@/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Trash2, RotateCcw, AlertTriangle, Loader2 } from "lucide-react";
+import { Trash2, RotateCcw, Loader2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,54 +17,25 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useUserEntities } from "@/components/hooks/useUserEntities";
 
 export default function RecycleBin() {
   const queryClient = useQueryClient();
   const [isConfirmingDeleteAll, setIsConfirmingDeleteAll] = useState(false);
 
-  // 1. Fetch Current User
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
-
   // 1b. Fetch Projects (for name lookup)
-  const { data: projects = [] } = useUserEntities("Project", { queryKey: "projects" });
+  const { data: projects = [] } = projectsApi.useList();
 
   // 2. Fetch Deleted Thoughts
-  const { data: deletedThoughts = [], isLoading } = useQuery({
-    queryKey: ['deletedThoughts', currentUser?.email],
-    queryFn: async () => {
-      if (!currentUser?.email) return [];
-      // Fetch ONLY deleted items
-      return await base44.entities.Thought.filter({ is_deleted: true }, "-deleted_at");
-    },
-    enabled: !!currentUser?.email,
+  const { data: deletedThoughts = [], isLoading } = thoughts.useDeletedThoughts({
     staleTime: 0, // Always fresh
   });
 
-  // Helper: Global Invalidate
-  const invalidateGlobalThoughts = async () => {
-    // Invalidate ALL thoughts caches to ensure Multiprompt sees restored items
-    await queryClient.invalidateQueries({ 
-      predicate: (query) => query.queryKey[0] === 'thoughts' 
-    });
-    // Also invalidate deleted list
-    await queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
-  };
-
   // 3. Restore Mutation
   const restoreMutation = useMutation({
-    mutationFn: async (id) => {
-      return await base44.entities.Thought.update(id, { 
-        is_deleted: false, 
-        deleted_at: null 
-      });
-    },
-    onSuccess: async (restoredItem) => {
-      // Critical: Ensure Multiprompt updates
-      await invalidateGlobalThoughts();
+    mutationFn: (id) => thoughts.restore(id),
+    onSuccess: (restoredItem) => {
+      // Critical: Ensure Multiprompt (activeThoughts) and the recycle bin both update
+      thoughts.invalidateThoughtCaches(queryClient);
 
       // Context Switching: Update Project ID
       if (restoredItem?.project_id) {
@@ -84,9 +55,9 @@ export default function RecycleBin() {
 
   // 4. Permanent Delete Mutation
   const deletePermanentMutation = useMutation({
-    mutationFn: (id) => base44.entities.Thought.delete(id),
+    mutationFn: (id) => thoughts.remove(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
+      thoughts.invalidateThoughtCaches(queryClient);
       toast.success("Task permanently deleted");
     }
   });
@@ -94,11 +65,11 @@ export default function RecycleBin() {
   // 5. Empty Bin Mutation
   const emptyBinMutation = useMutation({
     mutationFn: async () => {
-      const promises = deletedThoughts.map(t => base44.entities.Thought.delete(t.id));
+      const promises = deletedThoughts.map(t => thoughts.remove(t.id));
       await Promise.all(promises);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['deletedThoughts'] });
+      thoughts.invalidateThoughtCaches(queryClient);
       await queryClient.invalidateQueries({ queryKey: ['deletedThoughtsCount'] });
       toast.success("Recycle bin emptied");
       setIsConfirmingDeleteAll(false);

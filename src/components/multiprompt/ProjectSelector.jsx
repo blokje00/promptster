@@ -14,22 +14,19 @@ import {
 import { Plus, MoreVertical, CheckCircle2, Settings, GitCommit, Trash2 } from "lucide-react";
 import { projectColors } from "@/components/lib/constants";
 import { AiToolIcon } from "@/components/lib/aiTools";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import * as projects from "@/api/projects";
 import { toast } from "sonner";
 import ProjectEditDialog from "./ProjectEditDialog";
 import { useDeleteProject } from "@/components/hooks/useDeleteProject";
 
 function ProjectSelector({
-  projects,
+  projects: projectList,
   selectedProjectId,
   selectedProject,
   onSelectProject,
   allThoughtsCount,
   getProjectCount
 }) {
-  const queryClient = useQueryClient();
-
   // TASK-4: dialogs driven from the per-project actions menu
   const [editDialogProject, setEditDialogProject] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -41,21 +38,22 @@ function ProjectSelector({
   const deleteMutation = useDeleteProject();
 
   // TASK-3: quick "log push" without opening the full edit dialog
-  const pushLogMutation = useMutation({
-    mutationFn: async ({ project, message }) => {
-      const existing = Array.isArray(project.push_log) ? project.push_log : [];
-      return base44.entities.Project.update(project.id, {
-        push_log: [{ date: new Date().toISOString(), message }, ...existing]
-      });
-    },
+  const pushLogMutation = projects.useUpdate({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
       setPushLogProject(null);
       setPushMessage("");
       toast.success("Push logged");
     },
     onError: (error) => toast.error("Failed to log push: " + error.message)
   });
+
+  const handlePushLog = (project, message) => {
+    const existing = Array.isArray(project.push_log) ? project.push_log : [];
+    pushLogMutation.mutate({
+      id: project.id,
+      data: { push_log: [{ date: new Date().toISOString(), message }, ...existing] }
+    });
+  };
 
   const handleCreateStart = () => {
     setDialogMode("create");
@@ -99,7 +97,7 @@ function ProjectSelector({
             </Badge>
           )}
         </Button>
-        {projects.map(p => (
+        {projectList.map(p => (
           /* TASK-4: project chip = activate on click + ⋯ actions menu */
           <div
             key={p.id}
@@ -181,7 +179,7 @@ function ProjectSelector({
             onChange={e => setPushMessage(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Enter' && pushMessage.trim()) {
-                pushLogMutation.mutate({ project: pushLogProject, message: pushMessage.trim() });
+                handlePushLog(pushLogProject, pushMessage.trim());
               }
             }}
             placeholder="Short description of what was pushed..."
@@ -205,7 +203,7 @@ function ProjectSelector({
               size="sm"
               className="bg-indigo-600 hover:bg-indigo-700"
               disabled={!pushMessage.trim() || pushLogMutation.isPending}
-              onClick={() => pushLogMutation.mutate({ project: pushLogProject, message: pushMessage.trim() })}
+              onClick={() => handlePushLog(pushLogProject, pushMessage.trim())}
             >
               {pushLogMutation.isPending ? "Saving..." : "Log push"}
             </Button>

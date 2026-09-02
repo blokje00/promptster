@@ -6,10 +6,23 @@ import pluginUnusedImports from "eslint-plugin-unused-imports";
 
 export default [
   {
+    ignores: [
+      "src/lib/VisualEditAgent.jsx",
+      "src/lib/NavigationTracker.jsx",
+      "dist/**",
+      "coverage/**",
+    ],
+  },
+  {
     files: [
       "src/components/**/*.{js,mjs,cjs,jsx}",
       "src/pages/**/*.{js,mjs,cjs,jsx}",
       "src/Layout.jsx",
+      "src/lib/**/*.{js,mjs,cjs,jsx}",
+      "src/hooks/**/*.{js,mjs,cjs,jsx}",
+      "src/api/**/*.{js,mjs,cjs,jsx}",
+      "src/App.jsx",
+      "src/main.jsx",
     ],
     ...pluginJs.configs.recommended,
     ...pluginReact.configs.flat.recommended,

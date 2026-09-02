@@ -1,10 +1,10 @@
-import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, Filter, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
+import { TASK_CHECK_STATUS } from "@/components/lib/status";
 
 export default function ExportFilters({
   dateRange,
@@ -90,10 +90,10 @@ export default function ExportFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Checks</SelectItem>
-            <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="success">Success</SelectItem>
-            <SelectItem value="failed">Failed</SelectItem>
-            <SelectItem value="retried">Retried</SelectItem>
+            <SelectItem value={TASK_CHECK_STATUS.OPEN}>Open</SelectItem>
+            <SelectItem value={TASK_CHECK_STATUS.SUCCESS}>Success</SelectItem>
+            <SelectItem value={TASK_CHECK_STATUS.FAILED}>Failed</SelectItem>
+            <SelectItem value={TASK_CHECK_STATUS.RETRIED}>Retried</SelectItem>
           </SelectContent>
         </Select>
       )}

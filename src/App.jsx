@@ -1,6 +1,5 @@
 import './App.css'
 import { Suspense } from 'react';
-import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import VisualEditAgent from '@/lib/VisualEditAgent'
@@ -12,10 +11,17 @@ import { BrowserRouter as Router, Route, Routes, Outlet, useLocation } from 'rea
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import { prefetchPage } from '@/components/PrefetchLink';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
+
+// Start loading the landing page chunk immediately, in parallel with the
+// rest of the entry bundle executing, instead of waiting for React to
+// render far enough to hit its lazy() import. prefetchPage() no-ops if
+// mainPageKey isn't in the prefetchers map.
+prefetchPage(mainPageKey);
 
 // Computed once at module scope - route metadata lives in routes.config.js
 const filteredPages = Object.entries(Pages).filter(([path]) => isRoutablePage(path));
@@ -107,7 +113,6 @@ function App() {
             <AuthenticatedApp />
           </Suspense>
         </Router>
-        <Toaster />
         <VisualEditAgent />
       </AuthProvider>
     </QueryClientProvider>

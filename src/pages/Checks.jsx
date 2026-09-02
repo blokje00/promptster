@@ -1,13 +1,13 @@
-import React, { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { useState, useMemo } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { items, projects as projectsApi, thoughts } from "@/api";
+import { useAuth } from "@/lib/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle, RotateCcw, Loader2, XCircle, ArrowUpDown, Search, Filter, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { CheckCircle2, RotateCcw, Search, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 /**
@@ -58,7 +58,6 @@ import { toast } from "sonner";
 import { useDebouncedValue } from "@/components/hooks/useDebouncedValue";
 import { projectColors } from "@/components/lib/constants";
 import RetryModal from "@/components/checks/RetryModal";
-import { useUserEntities } from "@/components/hooks/useUserEntities";
 
 
 export default function Checks() {
@@ -71,22 +70,16 @@ export default function Checks() {
   const [retryModalOpen, setRetryModalOpen] = useState(false);
   const [selectedRetryTask, setSelectedRetryTask] = useState(null);
 
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
+  const { currentUser } = useAuth();
 
-  const { data: items = [], isLoading } = useUserEntities("Item", {
-    queryKey: "items",
-    sort: "-updated_date",
-  });
+  const { data: itemList = [], isLoading } = items.useList({ sort: "-updated_date" });
 
-  const { data: projects = [] } = useUserEntities("Project", { queryKey: "projects" });
+  const { data: projects = [] } = projectsApi.useList();
 
   // Flatten tasks with proper screenshot handling
   const allTasks = useMemo(() => {
     const tasks = [];
-    items.forEach(item => {
+    itemList.forEach(item => {
       if (item.task_checks && Array.isArray(item.task_checks)) {
         item.task_checks.forEach((check, index) => {
           tasks.push({
@@ -144,23 +137,23 @@ export default function Checks() {
 
   const deleteTaskMutation = useMutation({
     mutationFn: async ({ itemId, taskIndex }) => {
-      const item = items.find(i => i.id === itemId);
+      const item = itemList.find(i => i.id === itemId);
       if (!item) throw new Error("Item not found");
-      
+
       const newChecks = item.task_checks.filter((_, idx) => idx !== taskIndex);
-      
+
       // If no tasks left, delete the entire item
       if (newChecks.length === 0) {
-        await base44.entities.Item.delete(itemId);
+        await items.remove(itemId);
         return { deleted: true };
       }
-      
+
       // Otherwise just remove this check
-      await base44.entities.Item.update(itemId, { task_checks: newChecks });
+      await items.update(itemId, { task_checks: newChecks });
       return { deleted: false };
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: items.keys.all });
       queryClient.invalidateQueries({ queryKey: ['openTasksCount'] });
       toast.success(result.deleted ? "Item deleted (no tasks left)" : "Task deleted");
     },
@@ -170,7 +163,7 @@ export default function Checks() {
   });
 
   const updateTaskStatus = async (task, newStatus) => {
-    const item = items.find(i => i.id === task.itemId);
+    const item = itemList.find(i => i.id === task.itemId);
     if (!item) return;
 
     // If retry is triggered, open modal instead
@@ -199,7 +192,7 @@ export default function Checks() {
     const parentStatus = newChecks.some(c => c.status !== 'success') ? 'open' : 'success';
 
     try {
-      await base44.entities.Item.update(item.id, {
+      await items.update(item.id, {
         task_checks: newChecks,
         status: parentStatus
       });
@@ -211,7 +204,7 @@ export default function Checks() {
       }
 
       // Invalidate queries
-      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: items.keys.all });
       queryClient.invalidateQueries({ queryKey: ['openTasksCount'] });
     } catch (error) {
       toast.error("Failed to update task");
@@ -222,7 +215,7 @@ export default function Checks() {
     if (!selectedRetryTask) return;
 
     const task = selectedRetryTask;
-    const item = items.find(i => i.id === task.itemId);
+    const item = itemList.find(i => i.id === task.itemId);
     if (!item) {
       toast.error("Item not found");
       setRetryModalOpen(false);
@@ -232,7 +225,7 @@ export default function Checks() {
     let newThought = null;
     try {
       // Create new Thought with retry reference and user ownership
-      newThought = await base44.entities.Thought.create({
+      newThought = await thoughts.create({
         content: retryData.content,
         screenshot_ids: retryData.screenshots,
         project_id: task.projectId || null,
@@ -250,14 +243,14 @@ export default function Checks() {
       const newChecks = item.task_checks.filter((_, idx) => idx !== task.index);
 
       // Optimistic UI update - remove task from list
-      queryClient.setQueryData(['items', currentUser?.email], (oldData) => {
+      queryClient.setQueryData(items.keys.list(currentUser?.email), (oldData) => {
         if (!oldData) return oldData;
-        
+
         // If no tasks left, remove entire item
         if (newChecks.length === 0) {
           return oldData.filter(i => i.id !== item.id);
         }
-        
+
         // Otherwise update with filtered tasks
         return oldData.map((i) =>
           i.id === item.id ? { ...i, task_checks: newChecks } : i
@@ -266,33 +259,32 @@ export default function Checks() {
 
       // Update or delete item based on remaining tasks
       if (newChecks.length === 0) {
-        await base44.entities.Item.delete(item.id);
+        await items.remove(item.id);
       } else {
-        await base44.entities.Item.update(item.id, { task_checks: newChecks });
+        await items.update(item.id, { task_checks: newChecks });
       }
 
       setRetryModalOpen(false);
       setSelectedRetryTask(null);
 
-      queryClient.invalidateQueries({ queryKey: ['items'] });
-      queryClient.invalidateQueries({ queryKey: ['activeThoughts'] });
-      queryClient.invalidateQueries({ queryKey: ['allThoughtsCount'] });
+      queryClient.invalidateQueries({ queryKey: items.keys.all });
+      thoughts.invalidateThoughtCaches(queryClient);
       queryClient.invalidateQueries({ queryKey: ['openTasksCount'] });
 
       toast.success("✓ Retry task created and original removed! Check Multiprompt page.");
     } catch (error) {
       console.error("Retry failed:", error);
-      
+
       // Rollback: delete the created Thought if item update failed
       if (newThought?.id) {
         try {
-          await base44.entities.Thought.delete(newThought.id);
+          await thoughts.remove(newThought.id);
         } catch (deleteError) {
           console.error("Failed to rollback Thought creation:", deleteError);
         }
       }
-      
-      queryClient.invalidateQueries({ queryKey: ['items'] });
+
+      queryClient.invalidateQueries({ queryKey: items.keys.all });
       toast.error("Failed to complete retry - changes rolled back");
     }
   };

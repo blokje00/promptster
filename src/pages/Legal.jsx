@@ -1,8 +1,7 @@
-import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FileText, Shield, Cookie, AlertCircle, CreditCard, Users, Lock, Mail } from "lucide-react";
+import { FileText, Shield, Cookie, AlertCircle, CreditCard, Lock, Mail } from "lucide-react";
 
 
 export default function Legal() {

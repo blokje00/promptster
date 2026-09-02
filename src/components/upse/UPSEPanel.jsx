@@ -1,14 +1,13 @@
 import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Scan, Clipboard, Wand2, FolderTree, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
+import * as projectsApi from "@/api/projects";
 
 import LiveAppScanner from "./LiveAppScanner";
 import ClipboardConfigParser from "./ClipboardConfigParser";
@@ -132,7 +131,7 @@ export default function UPSEPanel({
 
     setIsSavingParser(true);
     try {
-      await base44.entities.Project.update(selectedProjectId, {
+      await projectsApi.update(selectedProjectId, {
         llm_response_parser_instruction: llmParserInstruction
       });
       toast.success("LLM Response Parser opgeslagen");

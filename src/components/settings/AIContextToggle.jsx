@@ -1,16 +1,11 @@
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Lightbulb } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function AIContextToggle({ enableContextSuggestions, setEnableContextSuggestions }) {
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () => base44.auth.me(),
-  });
+  const { currentUser } = useAuth();
 
   const isAdmin = currentUser?.role === 'admin';
 

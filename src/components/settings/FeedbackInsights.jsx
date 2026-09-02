@@ -1,6 +1,9 @@
 import React, { useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import * as promptFeedback from "@/api/promptFeedback";
+import * as projectsApi from "@/api/projects";
+import * as functions from "@/api/functions";
+import { useAuth } from "@/lib/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,30 +28,15 @@ const RATING_COLORS = {
 /**
  * Toont feedback insights en stelt gebruiker in staat om learnings toe te passen (PROJECT-SPECIFIC)
  */
-export default function FeedbackInsights({ currentUser }) {
+export default function FeedbackInsights() {
   const queryClient = useQueryClient();
+  const { refreshUser } = useAuth();
   const [selectedProjectId, setSelectedProjectId] = React.useState("all");
 
-  const { data: feedbacks = [], isLoading } = useQuery({
-    queryKey: ['promptFeedback', currentUser?.email],
-    queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.PromptFeedback.filter({ 
-        created_by: currentUser.email 
-      });
-    },
-    enabled: Boolean(currentUser?.email)
-  });
+  const { data: feedbacks = [], isLoading } = promptFeedback.useList();
 
   // Fetch projects
-  const { data: projects = [] } = useQuery({
-    queryKey: ['projects', currentUser?.email],
-    queryFn: async () => {
-      if (!currentUser?.email) return [];
-      return await base44.entities.Project.filter({ created_by: currentUser.email });
-    },
-    enabled: !!currentUser?.email
-  });
+  const { data: projects = [] } = projectsApi.useList();
 
   // Filter feedback by project
   const filteredFeedbacks = useMemo(() => {
@@ -63,19 +51,15 @@ export default function FeedbackInsights({ currentUser }) {
   }, [feedbacks, projects]);
 
   const applyFeedbackMutation = useMutation({
-    mutationFn: async (feedbackId) => {
-      const response = await base44.functions.invoke('applyFeedbackToPreferences', {
-        feedbackId
-      });
-      return response.data;
-    },
+    mutationFn: (feedbackId) => functions.applyFeedbackToPreferences({ feedbackId }),
     onSuccess: (data, feedbackId) => {
       if (data.skipped) {
         toast.info("This feedback was already applied");
       } else {
         toast.success("Learnings applied to your preferences! 🎓");
-        queryClient.invalidateQueries({ queryKey: ['promptFeedback'] });
-        queryClient.invalidateQueries({ queryKey: ['currentUser'] });
+        queryClient.invalidateQueries({ queryKey: promptFeedback.keys.all });
+        // Backend applied this via auth.updateMe(); refresh the single auth cache.
+        refreshUser();
       }
     },
     onError: (error) => {

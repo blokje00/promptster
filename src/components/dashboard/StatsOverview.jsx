@@ -1,6 +1,5 @@
-import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Code2, Sparkles, FileText, Star, TrendingUp, Users } from "lucide-react";
+import { Sparkles, FileText, TrendingUp, Users } from "lucide-react";
 
 export default function StatsOverview({ items }) {
   const stats = [

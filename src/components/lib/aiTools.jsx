@@ -1,4 +1,3 @@
-import React from "react";
 
 /**
  * TASK-1 (icons): AI coding tools with a fixed brand color + monogram icon.
