@@ -1,50 +1,34 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 import JSZip from 'npm:jszip@3.10.1';
 import { Parser } from 'npm:@json2csv/plainjs@6.1.3';
+import { withAuth, fail } from '../utils/http/entry.ts';
 
 /**
  * PROMPTSTER EXPORT FUNCTION
- * 
+ *
  * Export user data (Vault + Checks) for current workspace.
  * - format: "csv" -> ZIP with items.csv + checks.csv
  * - format: "json" -> JSON with { items, checks }
  * This function is the single source of truth for exports.
- * 
+ *
  * CRITICAL: Always returns `new Response(...)` - never wrapped JSON objects.
+ * withAuth passes any Response returned by the handler straight through
+ * (with CORS headers added), so the CSV/ZIP/JSON export bodies below are
+ * unchanged.
  */
 
-export const exportUserData = async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      },
-    });
-  }
-
+Deno.serve(withAuth({ name: 'exportUserData', cors: true }, async ({ base44, user, body }) => {
   try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-
-    if (!user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }), 
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const { format = 'csv', scope = 'vault', itemId, filters = {} } = await req.json();
+    const { format = 'csv', scope = 'vault', itemId, filters = {} } = body || {};
     const { dateRange, typeFilter, checkStatusFilter } = filters;
 
-    // 1. Fetch Data (workspace-scoped)
-    // Only fetch items belonging to current user's workspace
-    // Filter out demo/seed data without valid workspace
-    let items = await base44.entities.Item.filter({ created_by: user.email });
-    
-    // TODO: Add workspace_id filtering when workspace support is fully implemented
-    // items = items.filter(i => i.workspace_id === user.workspace_id);
+    // 1. Fetch Data (workspace-scoped), in parallel.
+    // Only fetch items belonging to current user's workspace. Workspace-id
+    // scoping is not implemented yet; the created_by filter is the current
+    // workspace boundary.
+    let [items, projects] = await Promise.all([
+      base44.entities.Item.filter({ created_by: user.email }),
+      base44.entities.Project.filter({ created_by: user.email })
+    ]);
 
     // 2. Apply Filters
     // Scope Filter
@@ -106,8 +90,8 @@ export const exportUserData = async (req) => {
       }
     }
 
-    // 3. Fetch Projects for Name Resolution
-    const projects = await base44.entities.Project.filter({ created_by: user.email });
+    // 3. Projects were already fetched above (in parallel with Items) for
+    //    name resolution.
     const projectMap = projects.reduce((acc, p) => ({ ...acc, [p.id]: p.name }), {});
 
     // 4. Prepare Items Export Structure
@@ -234,18 +218,10 @@ export const exportUserData = async (req) => {
     }
 
     // Unsupported format
-    return new Response(
-      JSON.stringify({ error: 'Unsupported format. Use "csv" or "json".' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    );
+    return fail('Unsupported format. Use "csv" or "json".', 400);
 
   } catch (error) {
     console.error('Export error:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Export failed' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    return fail(error.message || 'Export failed', 500);
   }
-};
-
-Deno.serve(exportUserData);
+}));

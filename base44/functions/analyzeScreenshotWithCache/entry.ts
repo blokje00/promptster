@@ -1,5 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
-import { hasProAccess, proAccessDeniedResponse } from '../utils/entitlements/entry.ts';
+import { withAuth, ok, fail } from '../utils/http/entry.ts';
 
 /**
  * Smart screenshot analysis with caching
@@ -7,138 +6,107 @@ import { hasProAccess, proAccessDeniedResponse } from '../utils/entitlements/ent
  * Otherwise calls analyzeScreenshotVision and caches result
  */
 
-Deno.serve(async (req) => {
+Deno.serve(withAuth({ name: 'analyzeScreenshotWithCache' }, async ({ base44, user, body }) => {
   const startTime = Date.now();
-  
-  try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    
-    if (!user) {
-      return Response.json({ 
-        ok: false,
-        error: 'Unauthorized' 
-      }, { status: 401 });
-    }
 
-    // ✅ PRO FEATURE CHECK — shared gate (see utils/entitlements)
-    if (!hasProAccess(user)) {
-      console.log('[analyzeScreenshotWithCache] ❌ PRO feature access denied');
-      return proAccessDeniedResponse(user);
-    }
+  const { screenshotUrl, level = 'full', forceRefresh = false } = body || {};
 
-    console.log('[analyzeScreenshotWithCache] ✓ Access granted');
+  if (!screenshotUrl) {
+    return fail('Missing screenshotUrl', 400);
+  }
 
-    const body = await req.json();
-    const { screenshotUrl, level = 'full', forceRefresh = false } = body;
+  console.log('[analyzeWithCache] Checking cache for:', screenshotUrl);
 
-    if (!screenshotUrl) {
-      return Response.json({ 
-        ok: false,
-        error: 'Missing screenshotUrl' 
-      }, { status: 400 });
-    }
+  // Try to find existing ScreenshotAsset with cached analysis
+  const assets = await base44.entities.ScreenshotAsset.filter({
+    public_url: screenshotUrl
+  });
 
-    console.log('[analyzeWithCache] Checking cache for:', screenshotUrl);
+  const existingAsset = assets && assets.length > 0 ? assets[0] : null;
 
-    // Try to find existing ScreenshotAsset with cached analysis
-    const assets = await base44.entities.ScreenshotAsset.filter({
-      public_url: screenshotUrl
+  // If cached analysis exists and not forcing refresh, return it
+  if (existingAsset?.vision_analysis && !forceRefresh) {
+    const cacheAge = Date.now() - new Date(existingAsset.vision_analysis.analyzedAt).getTime();
+    console.log('[analyzeWithCache] Cache HIT (age:', Math.round(cacheAge / 1000), 'seconds)');
+
+    return ok({
+      cached: true,
+      cacheAge: Math.round(cacheAge / 1000),
+      ...existingAsset.vision_analysis,
+      metadata: {
+        ...existingAsset.vision_analysis.metadata,
+        processingTime: Date.now() - startTime,
+        cached: true
+      }
     });
+  }
 
-    const existingAsset = assets && assets.length > 0 ? assets[0] : null;
+  console.log('[analyzeWithCache] Cache MISS - running fresh analysis');
 
-    // If cached analysis exists and not forcing refresh, return it
-    if (existingAsset?.vision_analysis && !forceRefresh) {
-      const cacheAge = Date.now() - new Date(existingAsset.vision_analysis.analyzedAt).getTime();
-      console.log('[analyzeWithCache] ✓ Cache HIT (age:', Math.round(cacheAge / 1000), 'seconds)');
-      
-      return Response.json({
-        ok: true,
-        cached: true,
-        cacheAge: Math.round(cacheAge / 1000),
-        ...existingAsset.vision_analysis,
-        metadata: {
-          ...existingAsset.vision_analysis.metadata,
-          processingTime: Date.now() - startTime,
-          cached: true
-        }
-      });
-    }
+  // No cache or forced refresh - run analysis
+  const analysisResult = await base44.functions.invoke('analyzeScreenshotVision', {
+    screenshotUrl,
+    level
+  });
 
-    console.log('[analyzeWithCache] Cache MISS - running fresh analysis');
+  if (!analysisResult?.data?.ok) {
+    return fail(analysisResult?.data?.error || 'Analysis failed', 500);
+  }
 
-    // No cache or forced refresh - run analysis
-    const analysisResult = await base44.functions.invoke('analyzeScreenshotVision', {
-      screenshotUrl,
-      level
+  const visionData = analysisResult.data;
+
+  // Prepare cached payload. Includes mode/sourceUrl/imageUrl/projectId so a
+  // cache hit and a cache miss return the exact same shape.
+  const cachePayload = {
+    mode: visionData.mode,
+    sourceUrl: visionData.sourceUrl,
+    imageUrl: visionData.imageUrl,
+    projectId: visionData.projectId,
+    ocr: visionData.ocr,
+    regions: visionData.regions,
+    semanticBlocks: visionData.semanticBlocks,
+    layoutRelations: visionData.layoutRelations,
+    visionStructure: visionData.visionStructure,
+    width: visionData.width,
+    height: visionData.height,
+    summary: visionData.summary,
+    metadata: visionData.metadata,
+    analyzedAt: new Date().toISOString()
+  };
+
+  // Update or create ScreenshotAsset with cached analysis
+  if (existingAsset) {
+    console.log('[analyzeWithCache] Updating cache for existing asset:', existingAsset.id);
+    await base44.entities.ScreenshotAsset.update(existingAsset.id, {
+      vision_analysis: cachePayload
     });
-
-    if (!analysisResult?.data?.ok) {
-      return Response.json({
-        ok: false,
-        error: analysisResult?.data?.error || 'Analysis failed'
-      }, { status: 500 });
-    }
-
-    const visionData = analysisResult.data;
-
-    // Prepare cached payload
-    const cachePayload = {
-      ocr: visionData.ocr,
-      regions: visionData.regions,
-      semanticBlocks: visionData.semanticBlocks,
-      layoutRelations: visionData.layoutRelations,
-      visionStructure: visionData.visionStructure,
-      width: visionData.width,
-      height: visionData.height,
-      summary: visionData.summary,
-      metadata: visionData.metadata,
-      analyzedAt: new Date().toISOString()
-    };
-
-    // Update or create ScreenshotAsset with cached analysis
-    if (existingAsset) {
-      console.log('[analyzeWithCache] Updating cache for existing asset:', existingAsset.id);
-      await base44.entities.ScreenshotAsset.update(existingAsset.id, {
+  } else {
+    console.log('[analyzeWithCache] Creating new asset with cache');
+    // Create basic asset record with vision data
+    try {
+      await base44.entities.ScreenshotAsset.create({
+        user_id: user.id,
+        bucket: 'screenshots',
+        path: screenshotUrl.split('/').pop(),
+        public_url: screenshotUrl,
+        filename: screenshotUrl.split('/').pop(),
+        content_type: 'image/png',
         vision_analysis: cachePayload
       });
-    } else {
-      console.log('[analyzeWithCache] Creating new asset with cache');
-      // Create basic asset record with vision data
-      try {
-        await base44.entities.ScreenshotAsset.create({
-          user_id: user.id,
-          bucket: 'screenshots',
-          path: screenshotUrl.split('/').pop(),
-          public_url: screenshotUrl,
-          filename: screenshotUrl.split('/').pop(),
-          content_type: 'image/png',
-          vision_analysis: cachePayload
-        });
-      } catch (error) {
-        console.warn('[analyzeWithCache] Could not create asset (might already exist):', error.message);
-      }
+    } catch (error) {
+      console.warn('[analyzeWithCache] Could not create asset (might already exist):', error.message);
     }
-
-    console.log('[analyzeWithCache] ✓ Analysis complete and cached in', Date.now() - startTime, 'ms');
-
-    return Response.json({
-      ok: true,
-      cached: false,
-      ...visionData,
-      metadata: {
-        ...visionData.metadata,
-        processingTime: Date.now() - startTime,
-        cached: false
-      }
-    });
-
-  } catch (error) {
-    console.error('[analyzeWithCache] Error:', error);
-    return Response.json({ 
-      ok: false,
-      error: error.message
-    }, { status: 500 });
   }
-});
+
+  console.log('[analyzeWithCache] Analysis complete and cached in', Date.now() - startTime, 'ms');
+
+  return ok({
+    cached: false,
+    ...visionData,
+    metadata: {
+      ...visionData.metadata,
+      processingTime: Date.now() - startTime,
+      cached: false
+    }
+  });
+}));

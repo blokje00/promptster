@@ -10,22 +10,18 @@
       "type": "string",
       "description": "Email kopie voor snelle lookup"
     },
-    "demo_seeded_at": {
+    "subscription_status": {
+      "type": "string",
+      "description": "Abonnementsstatus (kopie voor admin-statistieken)"
+    },
+    "plan_id": {
+      "type": "string",
+      "description": "ID van het huidige plan"
+    },
+    "trial_ends_at": {
       "type": "string",
       "format": "date-time",
-      "description": "Wanneer demo data gezaaid is"
-    },
-    "demo_default_project_id": {
-      "type": "string",
-      "description": "Default project ID voor demo"
-    },
-    "demo_start_template_id": {
-      "type": "string",
-      "description": "Default start template ID voor demo"
-    },
-    "demo_end_template_id": {
-      "type": "string",
-      "description": "Default end template ID voor demo"
+      "description": "Einde van de proefperiode"
     }
   },
   "required": [
@@ -34,6 +30,9 @@
   ],
   "rls": {
     "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
       "created_by": "{{user.email}}"
     },
     "update": {

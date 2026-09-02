@@ -1,23 +1,12 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { withAuth, ok, fail } from '../utils/http/entry.ts';
 
-Deno.serve(async (req) => {
-  try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+// Only admins can download papers — withAuth's admin:true enforces that
+// (403 for a non-admin user) before the handler runs.
+Deno.serve(withAuth({ name: 'downloadResearchPaper', admin: true }, async ({ base44, body }) => {
+    const { arxivId } = body || {};
 
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Only admins can download papers
-    if (user.role !== 'admin') {
-      return Response.json({ error: 'Admin access required' }, { status: 403 });
-    }
-
-    const { arxivId } = await req.json();
-    
     if (!arxivId) {
-      return Response.json({ error: 'arxivId required' }, { status: 400 });
+      return fail('arxivId required', 400);
     }
 
     // Construct arXiv PDF URL
@@ -30,9 +19,7 @@ Deno.serve(async (req) => {
     
     if (!response.ok) {
       console.error(`[downloadResearchPaper] Failed to fetch from arXiv:`, response.status, response.statusText);
-      return Response.json({ 
-        error: `Failed to download paper: ${response.statusText}` 
-      }, { status: response.status });
+      return fail(`Failed to download paper: ${response.statusText}`, response.status);
     }
 
     const pdfBlob = await response.blob();
@@ -72,20 +59,13 @@ Deno.serve(async (req) => {
       savedPaper = await base44.asServiceRole.entities.ResearchPaper.create(paperData);
     }
 
-    console.log(`[downloadResearchPaper] ✓ Complete - Paper saved with ID:`, savedPaper.id);
+    console.log(`[downloadResearchPaper] Complete - Paper saved with ID:`, savedPaper.id);
 
-    return Response.json({ 
+    return ok({
       success: true,
       file_uri: uploadResult.file_uri,
       arxiv_id: arxivId,
       file_name: fileName,
       paper_id: savedPaper.id
     });
-
-  } catch (error) {
-    console.error('[downloadResearchPaper] Error:', error);
-    return Response.json({ 
-      error: error.message 
-    }, { status: 500 });
-  }
-});
+}));

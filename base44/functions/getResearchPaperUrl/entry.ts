@@ -1,28 +1,19 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { withAuth, ok, fail } from '../utils/http/entry.ts';
 
-Deno.serve(async (req) => {
-  try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+Deno.serve(withAuth({ name: 'getResearchPaperUrl' }, async ({ base44, body }) => {
+    const { arxivId } = body || {};
 
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { arxivId } = await req.json();
-    
     if (!arxivId) {
-      return Response.json({ error: 'arxivId required' }, { status: 400 });
+      return fail('arxivId required', 400);
     }
 
     // Retrieve metadata from ResearchPaper entity
     const papers = await base44.asServiceRole.entities.ResearchPaper.filter({ arxiv_id: arxivId });
 
     if (papers.length === 0) {
-      return Response.json({ 
-        error: 'Paper not downloaded yet',
+      return fail('Paper not downloaded yet', 404, {
         fallback_url: `https://arxiv.org/abs/${arxivId}`
-      }, { status: 404 });
+      });
     }
 
     const metadata = papers[0];
@@ -33,18 +24,10 @@ Deno.serve(async (req) => {
       expires_in: 3600 // 1 hour
     });
 
-    return Response.json({ 
+    return ok({
       success: true,
       signed_url: signedUrlResult.signed_url,
       arxiv_id: arxivId,
       downloaded_at: metadata.downloaded_at
     });
-
-  } catch (error) {
-    console.error('[getResearchPaperUrl] Error:', error);
-    return Response.json({ 
-      error: error.message,
-      fallback_url: `https://arxiv.org/abs/${arxivId}`
-    }, { status: 500 });
-  }
-});
+}));

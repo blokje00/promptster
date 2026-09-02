@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { withAuth, ok } from '../utils/http/entry.ts';
 
 /**
  * Server-side aggregation for the AdminStats page.
@@ -11,21 +11,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
 
 const ADMIN_EMAIL = 'patrick.van.zandvoort@gmail.com';
 
-Deno.serve(async (req: Request) => {
-  try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-
-    if (!user) {
-      return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    }
-    if (user.role !== 'admin') {
-      return Response.json({ ok: false, error: 'Admin only' }, { status: 403 });
-    }
-
-    const body = await req.json().catch(() => ({}));
-    const fromDate = body.from ? new Date(body.from) : null;
-    const toDate = body.to ? new Date(body.to) : null;
+Deno.serve(withAuth({ name: 'getAdminStats', admin: true }, async ({ base44, body }) => {
+    const fromDate = body?.from ? new Date(body.from) : null;
+    const toDate = body?.to ? new Date(body.to) : null;
 
     const sr = base44.asServiceRole.entities;
     const [users, items, projects, thoughts, profiles, screenshots, pageViewsRaw] = await Promise.all([
@@ -134,8 +122,7 @@ Deno.serve(async (req: Request) => {
       };
     });
 
-    return Response.json({
-      ok: true,
+    return ok({
       stats: {
         totalUsers: filteredUsers.length,
         totalItems: filteredItems.length,
@@ -154,8 +141,4 @@ Deno.serve(async (req: Request) => {
       },
       users: usersData,
     });
-  } catch (error: any) {
-    console.error('[getAdminStats] Fatal error:', error);
-    return Response.json({ ok: false, error: error.message }, { status: 500 });
-  }
-});
+}));

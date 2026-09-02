@@ -1,113 +1,89 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { withAuth, ok, fail } from '../utils/http/entry.ts';
+import { invokeLLM } from '../utils/nousLLM/entry.ts';
+import { applyFeedbackPrompt } from '../utils/prompts/entry.ts';
 
 /**
  * Self-Evolving Feedback Loop - Backend functie
  * Analyseert feedback en past Personal Preferences automatisch aan
  */
 
-Deno.serve(async (req) => {
-  try {
-    const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { feedbackId } = await req.json();
+Deno.serve(withAuth({ name: 'applyFeedbackToPreferences' }, async ({ base44, user, body }) => {
+    const { feedbackId } = body || {};
 
     if (!feedbackId) {
-      return Response.json({ error: 'Missing feedbackId' }, { status: 400 });
+        return fail('Missing feedbackId', 400);
     }
 
     // Fetch feedback
     const feedback = await base44.entities.PromptFeedback.filter({ id: feedbackId });
     if (!feedback || feedback.length === 0) {
-      return Response.json({ error: 'Feedback not found' }, { status: 404 });
+        return fail('Feedback not found', 404);
     }
 
     const feedbackItem = feedback[0];
 
     // Check if already applied
     if (feedbackItem.applied_to_preferences) {
-      return Response.json({ 
-        success: true, 
-        message: 'Feedback already applied',
-        skipped: true 
-      });
+        return ok({
+            success: true,
+            message: 'Feedback already applied',
+            skipped: true
+        });
     }
 
     // Get project info if project_id exists
     let projectContext = "";
     if (feedbackItem.project_id) {
-      try {
-        const projects = await base44.entities.Project.filter({ id: feedbackItem.project_id });
-        if (projects.length > 0) {
-          const project = projects[0];
-          projectContext = `\nPROJECT: ${project.name}`;
+        try {
+            const projects = await base44.entities.Project.filter({ id: feedbackItem.project_id });
+            if (projects.length > 0) {
+                const project = projects[0];
+                projectContext = `\nPROJECT: ${project.name}`;
+            }
+        } catch (error) {
+            console.warn('[applyFeedbackToPreferences] Could not fetch project:', error?.message);
         }
-      } catch (error) {
-        console.warn('Could not fetch project:', error);
-      }
     }
 
     // Get current preferences
     const currentPrefs = user.personal_preferences_markdown || "";
 
     // Generate learning summary using AI - PROJECT-AWARE
-    const learningPrompt = `Based on this user feedback about a prompt result, extract key learnings to add to their personal preferences:${projectContext}
+    const learningPrompt = applyFeedbackPrompt({
+        projectContext,
+        rating: feedbackItem.rating,
+        whatWorked: feedbackItem.what_worked || "Not specified",
+        whatFailed: feedbackItem.what_failed || "Not specified",
+        notes: feedbackItem.notes || "None",
+        currentPrefs,
+        hasProject: !!feedbackItem.project_id
+    });
 
-FEEDBACK:
-Rating: ${feedbackItem.rating}
-What Worked: ${feedbackItem.what_worked || "Not specified"}
-What Failed: ${feedbackItem.what_failed || "Not specified"}
-Notes: ${feedbackItem.notes || "None"}
-
-CURRENT PREFERENCES:
-${currentPrefs}
-
-TASK: Extract 2-3 SHORT bullet points of actionable learnings that should be added to their preferences. 
-Focus on specific patterns, preferences, or approaches that worked or should be avoided.
-${feedbackItem.project_id ? 'Include the project name in the bullet point to make it project-specific.' : ''}
-Return ONLY the bullet points, no introduction.
-
-Example output:
-${feedbackItem.project_id ? '- [ProjectName] Prefer detailed task breakdowns over high-level descriptions' : '- Prefer detailed task breakdowns over high-level descriptions'}
-- Avoid technical jargon when describing UI changes
-- Always include specific file paths in instructions`;
-
-    const learnings = await base44.asServiceRole.integrations.Core.InvokeLLM({
-      prompt: learningPrompt
+    const learnings = await invokeLLM({
+        prompt: learningPrompt
     });
 
     // Append learnings to preferences - organized by project
     let updatedPrefs = currentPrefs.trim();
     if (feedbackItem.project_id) {
-      updatedPrefs += `\n\n## Project-Specific Learnings\n${learnings.trim()}`;
+        updatedPrefs += `\n\n## Project-Specific Learnings\n${learnings.trim()}`;
     } else {
-      updatedPrefs += `\n\n## General Learnings\n${learnings.trim()}`;
+        updatedPrefs += `\n\n## General Learnings\n${learnings.trim()}`;
     }
 
     // Update user preferences
     await base44.auth.updateMe({
-      personal_preferences_markdown: updatedPrefs
+        personal_preferences_markdown: updatedPrefs
     });
 
     // Mark feedback as applied
     await base44.entities.PromptFeedback.update(feedbackId, {
-      applied_to_preferences: true
+        applied_to_preferences: true
     });
 
-    return Response.json({
-      success: true,
-      learnings,
-      message: 'Preferences updated with feedback learnings'
+    return ok({
+        success: true,
+        learnings,
+        message: 'Preferences updated with feedback learnings'
     });
-
-  } catch (error) {
-    console.error("Apply feedback error:", error);
-    return Response.json({ 
-      error: error.message || 'Internal server error' 
-    }, { status: 500 });
-  }
-});
+}));

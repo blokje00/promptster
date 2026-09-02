@@ -19,3 +19,7 @@ declare module 'npm:*' {
   const mod: any;
   export = mod;
 }
+
+declare module 'npm:@base44/sdk@0.8.6' {
+  export function createClientFromRequest(req: Request): any;
+}

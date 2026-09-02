@@ -64,6 +64,18 @@
         "analyzedAt": {
           "type": "string",
           "format": "date-time"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "layoutRelations": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "visionStructure": {
+          "type": "object"
         }
       }
     }

@@ -1,19 +1,13 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.4';
+import { withAuth, ok } from '../utils/http/entry.ts';
 
-Deno.serve(async (req) => {
-    try {
-        const base44 = createClientFromRequest(req);
-        const user = await base44.auth.me();
-        
-        if (!user) {
-            return Response.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
+// Caller-scoped client: RLS (created_by) already restricts Item.filter to
+// the caller's own rows, so this only ever touches the current user's Vault.
+Deno.serve(withAuth({ name: 'fixVaultTasks' }, async ({ base44 }) => {
         // Fetch all items (assuming less than limit, or default limit is high enough)
         // Base44 SDK list/filter usually has a limit (default 50 or 100).
         // We should try to fetch a reasonable amount, e.g. 100 most recent.
         const items = await base44.entities.Item.filter({}, "-created_date", 100);
-        
+
         let updatedCount = 0;
         const errors = [];
 
@@ -59,13 +53,9 @@ Deno.serve(async (req) => {
             }
         }
 
-        return Response.json({ 
-            success: true, 
+        return ok({
+            success: true,
             message: `Updated ${updatedCount} items.`,
             errors: errors.length > 0 ? errors : undefined
         });
-
-    } catch (error) {
-        return Response.json({ error: error.message }, { status: 500 });
-    }
-});
+}));
