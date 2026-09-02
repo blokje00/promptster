@@ -18,7 +18,11 @@
 export const DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1";
 export const DEFAULT_TEXT_MODEL = "deepseek/deepseek-v4-flash-0731";
 export const DEFAULT_VISION_MODEL = "deepseek/deepseek-v4-flash-vision-exp";
-export const DEFAULT_TIMEOUT_MS = 90_000;
+// Safety net against a hung connection, not a cap on generation: one
+// non-streaming call returns the whole answer at once, and long outputs
+// (3 full prompt variants, an improved multi-task prompt) measured 50-150 s
+// live. 90 s cut Variants off mid-generation.
+export const DEFAULT_TIMEOUT_MS = 300_000;
 
 export class NousError extends Error {
   constructor(message, status = 502) {

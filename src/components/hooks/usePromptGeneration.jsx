@@ -350,7 +350,7 @@ Apply this routing strategy when executing the multi-task protocol.
       }
     } catch (error) {
       console.error("Variant generation error:", error);
-      toast.error("Variant generation failed");
+      toast.error(error?.message || "Variant generation failed");
     } finally {
       setIsGeneratingVariants(false);
     }
