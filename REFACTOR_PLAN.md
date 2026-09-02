@@ -142,3 +142,16 @@ Het plan is in vier golven uitgevoerd met 20 subagenten (5 Haiku voor mechanisch
 2. `base44/` (functies én entity-schema's) deployen; controleren of `seedDemoData` nog op het platform bestaat en die verwijderen.
 3. Committen in stappen (voorstel: fase 0+1, fase 2, fase 3, fase 4), zodat elke stap apart terug te draaien is.
 
+## Update: geen backend-functies op dit plan (2026-09-02, avond)
+
+Na de eerste push bleek uit een controle van de live endpoints dat het Base44-account **geen backend-functies** mag draaien: elke aanroep van `/functions/*` geeft 402 met "Functions are blocked - app owner lacks backend functions capability", ook voor niet-bestaande namen. De database antwoordt normaal (200). Secrets in het dashboard zijn daardoor onbruikbaar, want alleen functies kunnen die lezen. Patrick koos: alles naar de browser, functiemap weg.
+
+**Uitgevoerd.**
+
+- `src/lib/nousClient.js`: browser-versie van de LLM-module (zelfde gedrag: schemacontrole, gerichte retry, timeout, weigeringsmelding); Nous staat browseraanroepen toe (CORS open, gecontroleerd).
+- Sleutelbeheer: nieuwe velden `nous_api_key`, `nous_text_model`, `nous_vision_model` op `AISettings`; invoer bij AI Backoffice; `NousKeyLoader` laadt de sleutel na inloggen. De sleutel staat nergens in code, bundle of env.
+- Client-side diensten met dezelfde in- en uitvoer als de oude functies: `src/lib/ai/screenshotAnalysis.js`, `src/lib/ai/learning.js`, `src/lib/maintenance.js`, `src/lib/adminStats.js`; `src/api/functions.js` is een facade met de oude namen, zodat de aanroepers niet hoefden te veranderen. Promptteksten van de backend zijn woordelijk gelijk overgezet naar `src/lib/prompts.js` (geverifieerd per functie).
+- Verwijderd: `base44/functions/` (17 functies, 3 hulpmodules), de PRO-poort, de backend-tests en de Vitest-vertaalregel voor `npm:`. Onderzoeksdocumenten linken direct naar arXiv. Statistieken zijn beperkt tot het eigen account (de rijregels laten geen andere accounts zien).
+- Stand: 123 tests groen in 11 bestanden, 0 lintfouten (54 waarschuwingen), build groen.
+
+**Voor Patrick.** Na de push: log in, ga naar AI Backoffice, vul de Nous-sleutel in en sla op. Test daarna één keer Improve Prompt, een screenshot-analyse en brainstorm. Alle bewijs tot nu toe is statisch; er is niet live met de sleutel getest.

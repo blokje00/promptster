@@ -10,7 +10,7 @@ npm run dev            # Vite dev-server; praat met de LIVE Base44-backend
 npm run build          # productie-build naar dist/
 ```
 
-Er is geen lokale backend. `.env.development` staat in git en wijst al naar de juiste app. Backend-geheimen (zoals `NOUS_API_KEY` voor de LLM) staan op het Base44-platform, nooit in de repo; de namen staan in `.env.example`.
+Er is geen lokale backend en het Base44-plan heeft geen backend-functies: alleen de database, auth en hosting werken. `.env.development` staat in git en wijst al naar de juiste app. De Nous-sleutel voor de AI voer je één keer in bij AI Backoffice; hij wordt in je eigen AISettings-rij opgeslagen en door de browser gebruikt. Uitrollen = pushen naar `origin/main`; Base44 bouwt de app uit de repo.
 
 ## 2. Tests
 
@@ -21,7 +21,7 @@ npm run test:ui        # grafische interface
 npm run test:coverage  # rapport in coverage/index.html
 ```
 
-Stand: 7 testbestanden, 78 tests. Tests gebruiken een mock van de Base44 SDK (`src/tests/mocks/base44Mock.js`); er gaat niets naar buiten.
+Stand: 11 testbestanden, 123 tests. Tests gebruiken een mock van de Base44 SDK (`src/tests/mocks/base44Mock.js`) en mocken de Nous-client; er gaat niets naar buiten.
 
 ## 3. Je eerste test
 
@@ -61,6 +61,6 @@ npm run typecheck      # informatief; oude schuld van ~1200 meldingen
 
 - Pagina's: `src/pages/`, logica in `src/components/hooks/`.
 - Data: uitsluitend via `src/api/<entity>.js` (hooks en plain functies); nooit rechtstreeks de SDK importeren in pagina's of componenten.
-- LLM: `src/components/lib/invokeLLM.jsx` (browser) en `base44/functions/utils/nousLLM` (backend).
-- Backend-functies: `base44/functions/<naam>/entry.ts`, gebouwd op `utils/http` (`withAuth`, `ok`, `fail`).
+- AI: `src/components/lib/invokeLLM.jsx` → `src/lib/nousClient.js` (rechtstreeks naar Nous Research); de AI-diensten staan in `src/lib/ai/`, promptteksten in `src/lib/prompts.js`.
+- Entity-schema's met rijregels: `base44/entities/`. Er zijn geen backend-functies.
 

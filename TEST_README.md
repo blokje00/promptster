@@ -1,6 +1,6 @@
 # Base44 Testomgeving
 
-Vitest + jsdom + Testing Library. Alle tests draaien tegen een mock van de Base44 SDK die zich gedraagt als het echte pakket; er gaat niets naar buiten. Stand op 2026-09-02: 7 testbestanden, 78 tests, allemaal groen. Snelstart: zie [[QUICKSTART]].
+Vitest + jsdom + Testing Library. Alle tests draaien tegen een mock van de Base44 SDK die zich gedraagt als het echte pakket, en tegen een gemockte Nous-client; er gaat niets naar buiten. Stand op 2026-09-02: 11 testbestanden, 123 tests, allemaal groen. Snelstart: zie [[QUICKSTART]].
 
 ## Structuur
 
@@ -11,9 +11,13 @@ src/tests/
   base44/entities.test.js       # entities: list / filter(query, sort, limit) / get / create / update / delete
   base44/auth.test.js           # auth: me, updateMe, isAuthenticated, redirectToLogin, loginWithProvider, logout
   base44/integrations.test.js   # functions.invoke en Core-integraties
-  base44/nousLLM.test.js        # backend LLM-module (fetch en Deno.env gemockt)
-  base44/http.test.js           # backend-basis withAuth / ok / fail (node-omgeving)
   api/createEntityApi.test.jsx  # datalaag: hooks en plain functies
+  lib/nousClient.test.js        # browser-client voor Nous (fetch gemockt): schema, retry, timeout, weigering
+  lib/prompts.test.js           # promptteksten (vaste invoer → vaste uitvoer)
+  lib/screenshotAnalysis.test.js# vision + cache op ScreenshotAsset (Nous-client gemockt)
+  lib/learning.test.js          # taak opsplitsen, patronen, feedback (Nous-client gemockt)
+  lib/maintenance.test.js       # onderhoudsacties
+  lib/adminStats.test.js        # statistieken
   components/example.test.jsx   # voorbeeld componenttest
 ```
 
@@ -65,14 +69,13 @@ await waitFor(() => expect(result.current.data).toHaveLength(2));
 
 Zie `src/tests/api/createEntityApi.test.jsx` voor een compleet voorbeeld met `QueryClientProvider`.
 
-## Backend-code testen
+## AI-code testen
 
-Deno-functies importeren de SDK als `npm:@base44/sdk@0.8.6`. De testconfiguratie (`vitest.config.js`) vertaalt die schrijfwijze naar het geïnstalleerde pakket, zodat pure backend-modules (`utils/http`, `utils/nousLLM`, `utils/prompts`) rechtstreeks te importeren zijn.
+Er zijn geen backend-functies op dit Base44-plan; alle AI draait in de browser via `src/lib/nousClient.js` en de diensten in `src/lib/ai/`.
 
-- Zet `// @vitest-environment node` bovenaan als de test geen DOM nodig heeft.
-- Mock `fetch` via `globalThis.fetch = vi.fn()` en zet het origineel terug in `afterEach`.
-- Mock `Deno.env` met `globalThis.Deno = { env: { get: (k) => env[k] } }`.
-- Mock de SDK met `vi.mock('@base44/sdk', () => ({ createClientFromRequest: () => mockClient }))`.
+- Test een dienst met `vi.mock('@/lib/nousClient', () => ({ invokeLLM: vi.fn(), getNousConfig: () => ({ visionModel: 'x' }) }))` en mock de entity-modules die hij gebruikt; voorbeeld `src/tests/lib/learning.test.js`.
+- Alleen `nousClient.test.js` mockt `fetch` zelf: `globalThis.fetch = vi.fn()` in `beforeEach`, origineel terug in `afterEach`; configuratie via `configureNous({ apiKey: 'test-key' })` en `resetNous()`.
+- Zet `// @vitest-environment node` bovenaan als de test geen DOM nodig heeft; de gedeelde setup controleert op `window`.
 
 ## Tegen de echte API
 
