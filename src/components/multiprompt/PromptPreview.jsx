@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Sparkles, Copy, CheckCircle, Cog, RefreshCw, Layers, ChevronDown } from "lucide-react";
+import { Loader2, Sparkles, Copy, Check, CheckCircle, Cog, RefreshCw, Layers, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -33,8 +33,23 @@ function PromptPreview({
   const nousReady = isNousConfigured();
   const { textModel } = getNousConfig();
 
-  const handleCopyOnly = () => {
-    navigator.clipboard.writeText(displayPrompt);
+  // Brief "pressed + check mark" feedback on the copy icon, so a successful
+  // copy is visible on the button itself and not only as a toast.
+  const [copied, setCopied] = React.useState(false);
+  const copiedTimer = React.useRef(null);
+  React.useEffect(() => () => clearTimeout(copiedTimer.current), []);
+
+  const handleCopyOnly = async () => {
+    try {
+      await navigator.clipboard.writeText(displayPrompt);
+    } catch (error) {
+      console.error("[PromptPreview] copy failed:", error);
+      toast.error("Copy failed");
+      return;
+    }
+    setCopied(true);
+    clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopied(false), 1500);
     toast.success("Copied to clipboard");
   };
 
@@ -177,10 +192,16 @@ function PromptPreview({
           <Button
             size="icon"
             variant="secondary"
-            className="absolute top-6 right-6 opacity-0 group-hover/preview:opacity-100 transition-opacity bg-white/10 hover:bg-white/20 text-white"
+            className={`absolute top-6 right-6 transition-all duration-150 active:scale-90 text-white ${
+              copied
+                ? "opacity-100 scale-95 bg-green-500/40 hover:bg-green-500/40"
+                : "opacity-0 group-hover/preview:opacity-100 bg-white/10 hover:bg-white/20"
+            }`}
             onClick={handleCopyOnly}
+            title={copied ? "Copied" : "Copy prompt"}
+            aria-label={copied ? "Copied" : "Copy prompt"}
           >
-            <Copy className="w-4 h-4" />
+            {copied ? <Check className="w-4 h-4 text-green-300" /> : <Copy className="w-4 h-4" />}
           </Button>
         )}
       </CardContent>

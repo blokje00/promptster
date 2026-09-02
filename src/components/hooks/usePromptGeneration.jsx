@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import * as functions from "@/api/functions";
 import { invokeLLM } from "@/components/lib/invokeLLM";
+import { resolveOverride, bindOverride, parseStoredOverride } from "@/lib/promptOverride";
 import * as prompts from "@/lib/prompts";
 import { toast } from "sonner";
 export const usePromptGeneration = ({
@@ -18,7 +19,10 @@ export const usePromptGeneration = ({
   selectedProjectId,
   targetModel
 }) => {
-  const [improvedPrompt, setImprovedPrompt] = useState("");
+  // AI-improved or hand-edited preview text, bound to the live prompt it was
+  // made for (see src/lib/promptOverride.js). `improvedPrompt` below is the
+  // derived string the rest of the app reads.
+  const [improvedOverride, setImprovedOverride] = useState(null);
   const [isImproving, setIsImproving] = useState(false);
   const [promptVariants, setPromptVariants] = useState([]);
   const [isGeneratingVariants, setIsGeneratingVariants] = useState(false);
@@ -36,24 +40,20 @@ export const usePromptGeneration = ({
     [selectedItems]
   );
 
-  // Autosave improved prompt
+  // Restore the override for this project (a paid Improve result survives a
+  // reload as long as the live prompt is still the one it was made for).
+  const overrideKey = `promptster:improved:${selectedProjectId || 'all'}`;
   useEffect(() => {
-    const savedImproved = localStorage.getItem(`promptster:improved:${selectedProjectId || 'all'}`);
-    if (savedImproved) {
-      setImprovedPrompt(savedImproved);
-    } else {
-      setImprovedPrompt("");
-    }
-  }, [selectedProjectId]);
+    setImprovedOverride(parseStoredOverride(localStorage.getItem(overrideKey)));
+  }, [overrideKey]);
 
   useEffect(() => {
-    const key = `promptster:improved:${selectedProjectId || 'all'}`;
-    if (improvedPrompt) {
-      localStorage.setItem(key, improvedPrompt);
+    if (improvedOverride) {
+      localStorage.setItem(overrideKey, JSON.stringify(improvedOverride));
     } else {
-      localStorage.removeItem(key);
+      localStorage.removeItem(overrideKey);
     }
-  }, [improvedPrompt, selectedProjectId]);
+  }, [improvedOverride, overrideKey]);
 
   const generatedPrompt = useMemo(() => {
     if (selectedItems.length === 0 && !startTemplateId && !endTemplateId && !includePersonalPrefs && !includeProjectConfig) return "";
@@ -188,6 +188,15 @@ Apply this routing strategy when executing the multi-task protocol.
 
     return parts.join("\n\n---\n\n");
   }, [selectedItems, startTemplateId, endTemplateId, includePersonalPrefs, includeProjectConfig, includeLearnedPatterns, includeParserInstruction, currentUser, selectedProject, templates, selectedProjectId, targetModel]);
+
+  // The preview follows the tasks automatically: the override only shows
+  // while the live prompt equals the one it was derived from. Any change to
+  // tasks, templates or toggles makes the live prompt win again.
+  const improvedPrompt = resolveOverride(improvedOverride, generatedPrompt);
+  const setImprovedPrompt = useCallback(
+    (text) => setImprovedOverride(bindOverride(text, generatedPrompt)),
+    [generatedPrompt],
+  );
 
   // Defined above handleImprovePrompt (and listed in its deps) so that useCallback
   // rebuilds handleImprovePrompt whenever reasoningSteps/handleToggleReasoning change,
@@ -327,7 +336,7 @@ Apply this routing strategy when executing the multi-task protocol.
     } finally {
       setIsImproving(false);
     }
-  }, [generatedPrompt, selectedItems, allScreenshotUrls, currentUser, reasoningSteps, handleToggleReasoning]);
+  }, [generatedPrompt, setImprovedPrompt, selectedItems, allScreenshotUrls, currentUser, reasoningSteps, handleToggleReasoning]);
 
   const handleGenerateVariants = useCallback(async () => {
     if (!generatedPrompt) return;
