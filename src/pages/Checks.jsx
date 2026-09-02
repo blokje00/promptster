@@ -101,7 +101,7 @@ export default function Checks() {
       }
     });
     return tasks;
-  }, [items]);
+  }, [itemList]);
 
   // Filter and Sort
   const filteredTasks = useMemo(() => {
