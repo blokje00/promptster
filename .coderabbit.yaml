@@ -24,13 +24,6 @@ reviews:
   
   # Path-based instructions for specific areas of the codebase
   path_instructions:
-    - path: "base44/functions/**"
-      instructions: |
-        - Focus on serverless best practices
-        - Check for proper error handling
-        - Verify rate limiting implementation
-        - Review security considerations for API endpoints
-
     - path: "base44/entities/**"
       instructions: |
         - Check that every entity has read/create/update/delete rls rules scoped to created_by unless it is admin content

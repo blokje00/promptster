@@ -53,3 +53,19 @@ export function useByProject(projectId, queryOptions = {}) {
     ...queryOptions,
   });
 }
+
+/**
+ * Active LearnedPattern rows for one project + pattern_type. Used by
+ * decomposeTask (src/lib/ai/learning.js) to build the "learned patterns"
+ * context block, matching the old backend's
+ * `LearnedPattern.filter({ project_id, pattern_type, is_active: true })`.
+ */
+export async function listActiveByProjectAndType(projectId, patternType) {
+  if (!projectId) return [];
+  const patterns = await base44.entities.LearnedPattern.filter({
+    project_id: projectId,
+    pattern_type: patternType,
+    is_active: true,
+  });
+  return Array.isArray(patterns) ? patterns : (patterns?.data ?? []);
+}

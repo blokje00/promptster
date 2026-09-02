@@ -1,11 +1,7 @@
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, BookOpen, Sparkles, Download, CheckCircle2 } from "lucide-react";
-import * as functions from "@/api/functions";
-import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { ExternalLink, BookOpen, Sparkles } from "lucide-react";
 
 const researchPapers = [
   {
@@ -70,62 +66,21 @@ const researchPapers = [
   }
 ];
 
-export default function ResearchDocumentation({ currentUser }) {
-  const [downloadingPaper, setDownloadingPaper] = useState(null);
+// Real arXiv ids look like "2501.12963"; the "Task Decomposition" entry above
+// uses a synthetic id ("research-based") because it isn't an actual paper —
+// only build a PDF link for entries with a real id.
+const ARXIV_ID_RE = /^\d{4}\.\d+$/;
 
-  // Check which papers are already downloaded
-  const { data: downloadedPapers = {}, refetch } = useQuery({
-    queryKey: ['downloadedPapers'],
-    queryFn: async () => {
-      const papers = {};
-      for (const paper of researchPapers) {
-        try {
-          const result = await functions.getResearchPaperUrl({ arxivId: paper.arxivId });
-          if (result.success) {
-            papers[paper.arxivId] = true;
-          }
-        } catch (error) {
-          papers[paper.arxivId] = false;
-        }
-      }
-      return papers;
-    },
-    enabled: Boolean(currentUser?.email)
-  });
-
-  const handleDownloadPaper = async (arxivId) => {
-    setDownloadingPaper(arxivId);
-    try {
-      const result = await functions.downloadResearchPaper({ arxivId });
-
-      if (result.success) {
-        toast.success(`Paper ${arxivId} downloaded to server`);
-        refetch();
-      } else {
-        toast.error('Download failed');
-      }
-    } catch (error) {
-      toast.error('Failed to download paper: ' + error.message);
-    } finally {
-      setDownloadingPaper(null);
-    }
-  };
-
-  const handleOpenPaper = async (arxivId, fallbackUrl) => {
-    try {
-      const result = await functions.getResearchPaperUrl({ arxivId });
-
-      if (result.success) {
-        window.open(result.signed_url, '_blank');
-      } else {
-        // Fallback to arXiv
-        window.open(fallbackUrl, '_blank');
-      }
-    } catch (error) {
-      window.open(fallbackUrl, '_blank');
-    }
-  };
-
+/**
+ * Research papers used to be downloaded to Base44 private storage and
+ * reopened through a signed URL (backend functions downloadResearchPaper /
+ * getResearchPaperUrl, both needing base44.asServiceRole). This Base44 plan
+ * blocks all backend functions (402), and there's no browser-side
+ * equivalent of a service-role signed URL, so that flow is gone. arXiv's
+ * own abstract and PDF pages are public, so we just link straight to them —
+ * nothing to download or cache.
+ */
+export default function ResearchDocumentation() {
   return (
     <Card>
       <CardHeader>
@@ -139,8 +94,8 @@ export default function ResearchDocumentation({ currentUser }) {
       </CardHeader>
       <CardContent className="space-y-4">
         {researchPapers.map((paper, idx) => (
-          <div 
-            key={idx} 
+          <div
+            key={idx}
             className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 space-y-3"
           >
             {/* Paper Header */}
@@ -156,28 +111,17 @@ export default function ResearchDocumentation({ currentUser }) {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {downloadedPapers[paper.arxivId] && (
-                  <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleOpenPaper(paper.arxivId, paper.url)}
-                  className="h-7 text-xs"
-                >
-                  <ExternalLink className="w-3 h-3 mr-1" />
-                  {downloadedPapers[paper.arxivId] ? 'Open (Local)' : 'Open (arXiv)'}
+                <Button size="sm" variant="outline" className="h-7 text-xs" asChild>
+                  <a href={paper.url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    Open op arXiv
+                  </a>
                 </Button>
-                {currentUser?.role === 'admin' && !downloadedPapers[paper.arxivId] && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleDownloadPaper(paper.arxivId)}
-                    disabled={downloadingPaper === paper.arxivId}
-                    className="h-7 text-xs"
-                  >
-                    <Download className="w-3 h-3 mr-1" />
-                    {downloadingPaper === paper.arxivId ? 'Downloading...' : 'Download'}
+                {ARXIV_ID_RE.test(paper.arxivId) && (
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" asChild>
+                    <a href={`https://arxiv.org/pdf/${paper.arxivId}`} target="_blank" rel="noopener noreferrer">
+                      PDF
+                    </a>
                   </Button>
                 )}
               </div>
@@ -193,8 +137,8 @@ export default function ResearchDocumentation({ currentUser }) {
               </div>
               {paper.features.map((feature, fIdx) => (
                 <div key={fIdx} className="ml-6 space-y-1">
-                  <Badge 
-                    variant="secondary" 
+                  <Badge
+                    variant="secondary"
                     className={`bg-${paper.color}-100 dark:bg-${paper.color}-950/50 text-${paper.color}-700 dark:text-${paper.color}-300 border-${paper.color}-200 dark:border-${paper.color}-800`}
                   >
                     {feature.name}
@@ -218,7 +162,7 @@ export default function ResearchDocumentation({ currentUser }) {
         {/* Footer Note */}
         <div className="mt-6 p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg border border-indigo-200 dark:border-indigo-800">
           <p className="text-sm text-indigo-900 dark:text-indigo-200">
-            <strong>Training-Free Approach:</strong> Alle features werken zonder model fine-tuning. 
+            <strong>Training-Free Approach:</strong> Alle features werken zonder model fine-tuning.
             We gebruiken prompt engineering en feedback analysis om te leren van gebruikersinteracties.
           </p>
         </div>

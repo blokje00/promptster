@@ -8,12 +8,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { FolderTree, Settings } from "lucide-react";
 import { useAutosaveField } from "@/components/hooks/useAutosaveField";
 import { useReliableSaveButton } from "@/components/hooks/useReliableSaveButton";
 import { useAuth } from "@/lib/AuthContext";
 import { retryTask } from "@/lib/prompts";
+import { configureNous, isNousConfigured, DEFAULT_TEXT_MODEL, DEFAULT_VISION_MODEL } from "@/lib/nousClient";
 import UPSEPanel from "../components/upse/UPSEPanel";
 import MaintenanceTools from "../components/settings/MaintenanceTools";
 import AIInstructionForm from "../components/settings/AIInstructionForm";
@@ -76,6 +79,13 @@ export default function AIBackoffice() {
   const [enableReasoningTransparency, setEnableReasoningTransparency] = useState(false);
   const [settingsId, setSettingsId] = useState(null);
   const [exampleIndex, setExampleIndex] = useState(0);
+  const [nousKeyDraft, setNousKeyDraft] = useState("");
+  const [nousKeyRevealed, setNousKeyRevealed] = useState(false);
+  const [nousTextModel, setNousTextModel] = useState("");
+  const [nousVisionModel, setNousVisionModel] = useState("");
+  const [hasNousKey, setHasNousKey] = useState(false);
+  const [nousKeySuffix, setNousKeySuffix] = useState("");
+  const [isSavingNous, setIsSavingNous] = useState(false);
   const [isSavingAI, setIsSavingAI] = useState(false);
   const [savedAIValues, setSavedAIValues] = useState({
     instruction: "",
@@ -152,6 +162,15 @@ export default function AIBackoffice() {
       setEnableVerbalizedSampling(dbVerbalizedSampling);
       setEnableReasoningTransparency(dbReasoningTransparency);
       setSettingsId(settings[0].id);
+
+      // Nous Research settings — the key itself never lands in state as
+      // plain text unless the user explicitly types a new one; we only keep
+      // its last 4 chars around to render "ingesteld (eindigt op ...1234)".
+      const dbNousKey = settings[0].nous_api_key || "";
+      setHasNousKey(!!dbNousKey);
+      setNousKeySuffix(dbNousKey.slice(-4));
+      setNousTextModel(settings[0].nous_text_model || "");
+      setNousVisionModel(settings[0].nous_vision_model || "");
 
       // Set saved values for dirty tracking
       setSavedAIValues({
@@ -239,6 +258,68 @@ export default function AIBackoffice() {
     }
   };
 
+  const handleSaveNous = async () => {
+    // Guard: prevent save if user not loaded yet
+    if (!currentUser?.email) {
+      toast.error("User not loaded yet");
+      return;
+    }
+
+    // Guard: prevent double-click / multiple saves in flight
+    if (isSavingNous) return;
+
+    setIsSavingNous(true);
+
+    try {
+      const trimmedKey = nousKeyDraft.trim();
+      const patch = {
+        // Required on create (base44/entities/AISettings.jsonc) — fall back
+        // to the existing/default instruction so a Nous-only save on a
+        // brand-new row doesn't fail schema validation.
+        improve_prompt_instruction: (instruction || "").trim() || getDefaultInstruction(),
+        nous_text_model: nousTextModel.trim(),
+        nous_vision_model: nousVisionModel.trim(),
+      };
+      // Only touch the stored key when the user actually typed a new one —
+      // an empty draft means "leave the existing key alone", not "clear it".
+      if (trimmedKey) {
+        patch.nous_api_key = trimmedKey;
+      }
+
+      const saved = await aiSettings.upsertMine(currentUser.email, patch);
+      setSettingsId(saved.id);
+
+      // Optimistic cache update (same pattern as handleSave above)
+      queryClient.setQueryData(aiSettings.keys.list(currentUser.email), (old = []) => {
+        const idx = old.findIndex((s) => s.id === saved.id);
+        if (idx === -1) return [saved, ...old];
+        const next = [...old];
+        next[idx] = saved;
+        return next;
+      });
+      queryClient.invalidateQueries({ queryKey: aiSettings.keys.list(currentUser.email) });
+
+      // Wire the (possibly new) key into the live client immediately —
+      // no reload needed for the next LLM call to pick it up.
+      configureNous({
+        apiKey: saved.nous_api_key,
+        textModel: saved.nous_text_model,
+        visionModel: saved.nous_vision_model,
+      });
+
+      setHasNousKey(!!saved.nous_api_key);
+      setNousKeySuffix((saved.nous_api_key || "").slice(-4));
+      setNousKeyDraft("");
+      setNousKeyRevealed(false);
+
+      toast.success("Nous Research settings saved");
+    } catch (error) {
+      toast.error("Failed to save: " + error.message);
+    } finally {
+      setIsSavingNous(false);
+    }
+  };
+
   const handleSavePersonalPreferences = async () => {
     await personalPrefsHook.handleSave();
     if (!personalPrefsHook.error) {
@@ -290,6 +371,84 @@ export default function AIBackoffice() {
 
             <TabsContent value="settings" className="space-y-6">
               <div className="max-w-3xl space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Nous Research</CardTitle>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                      Deze sleutel praat rechtstreeks vanuit je browser met Nous Research — dit Base44-plan
+                      heeft geen backend functies meer. De sleutel wordt alleen bij jouw account bewaard.
+                    </p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nous-api-key">API-sleutel</Label>
+                      {hasNousKey && !nousKeyRevealed ? (
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-slate-600 dark:text-slate-400">
+                            ingesteld (eindigt op &hellip;{nousKeySuffix})
+                          </span>
+                          <Button type="button" variant="outline" size="sm" onClick={() => setNousKeyRevealed(true)}>
+                            Wijzigen
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            id="nous-api-key"
+                            type="password"
+                            autoComplete="off"
+                            value={nousKeyDraft}
+                            onChange={(e) => setNousKeyDraft(e.target.value)}
+                            placeholder="Nous Research API-sleutel"
+                          />
+                          {hasNousKey && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => { setNousKeyRevealed(false); setNousKeyDraft(""); }}
+                            >
+                              Annuleren
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="nous-text-model">Tekstmodel (optioneel)</Label>
+                        <Input
+                          id="nous-text-model"
+                          value={nousTextModel}
+                          onChange={(e) => setNousTextModel(e.target.value)}
+                          placeholder={DEFAULT_TEXT_MODEL}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="nous-vision-model">Beeldmodel (optioneel)</Label>
+                        <Input
+                          id="nous-vision-model"
+                          value={nousVisionModel}
+                          onChange={(e) => setNousVisionModel(e.target.value)}
+                          placeholder={DEFAULT_VISION_MODEL}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Button onClick={handleSaveNous} disabled={isSavingNous} className="bg-indigo-600">
+                        {isSavingNous ? "Opslaan..." : "Opslaan"}
+                      </Button>
+                      <span className="text-sm text-slate-600 dark:text-slate-400">
+                        Status:{" "}
+                        {isNousConfigured() ? (
+                          <span className="text-green-600 dark:text-green-400 font-medium">actief</span>
+                        ) : (
+                          <span className="text-amber-600 dark:text-amber-400 font-medium">niet ingesteld</span>
+                        )}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
                 <ResearchDocumentation currentUser={currentUser} />
                 <MaintenanceTools currentUser={currentUser} />
                 <FeedbackInsights currentUser={currentUser} />

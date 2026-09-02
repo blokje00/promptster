@@ -30,6 +30,18 @@
       "type": "boolean",
       "default": false,
       "description": "Toon AI reasoning stappen (planning, interpretatie, keuzes)"
+    },
+    "nous_api_key": {
+      "type": "string",
+      "description": "Nous Research API-sleutel (alleen leesbaar door de eigenaar via RLS)"
+    },
+    "nous_text_model": {
+      "type": "string",
+      "description": "Tekstmodel, leeg = deepseek/deepseek-v4-flash-0731"
+    },
+    "nous_vision_model": {
+      "type": "string",
+      "description": "Beeldmodel, leeg = deepseek/deepseek-v4-flash-vision-exp"
     }
   },
   "required": [

@@ -32,6 +32,17 @@ export const useUpdate = itemApi.useUpdate;
 export const useRemove = itemApi.useRemove;
 
 /**
+ * The `limit` most recent items for `email`, sorted by created_date
+ * descending. Query helper for src/lib/maintenance.js (client-side port of
+ * fixVaultTasks/entry.ts, which fetched `Item.filter({}, "-created_date", 100)`).
+ */
+export async function listMineRecent(email, limit = 100) {
+  if (!email) return [];
+  const result = await base44.entities.Item.filter({ created_by: email }, "-created_date", limit);
+  return Array.isArray(result) ? result : (result?.data ?? []);
+}
+
+/**
  * Count of open task_checks across all of the current user's items — the
  * number shown as the Header "Checks" badge (see Header.jsx openTasksCount).
  * A check counts as open when it has no status or status === "open".

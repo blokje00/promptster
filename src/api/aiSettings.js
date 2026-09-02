@@ -28,3 +28,23 @@ export const useOne = aiSettingsApi.useOne;
 export const useCreate = aiSettingsApi.useCreate;
 export const useUpdate = aiSettingsApi.useUpdate;
 export const useRemove = aiSettingsApi.useRemove;
+
+/**
+ * Create-or-update the current user's AISettings row (there's at most one in
+ * practice — see the module doc above). Looks up the user's existing rows
+ * and, if one exists, sends `patch` as a partial update (the backend merges
+ * partial payloads server-side, same as e.g. src/api/thoughts.js softDelete);
+ * otherwise creates a fresh row with `patch` plus `created_by`. On create,
+ * `patch` must satisfy the entity's required fields itself (currently just
+ * `improve_prompt_instruction`, see base44/entities/AISettings.jsonc) —
+ * this helper does not fill in defaults for the caller.
+ */
+export async function upsertMine(email, patch) {
+  if (!email) throw new Error("upsertMine requires a signed-in user's email");
+  const existing = await aiSettingsApi.listMine(email);
+  const row = existing[0];
+  if (row) {
+    return aiSettingsApi.update(row.id, patch);
+  }
+  return aiSettingsApi.create({ ...patch, created_by: email });
+}

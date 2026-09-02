@@ -72,6 +72,22 @@ export async function remove(id) {
   return base44.entities.Thought.delete(id);
 }
 
+/**
+ * Soft-deleted thoughts for `email` whose deleted_at is older than
+ * `thresholdDate`. Query helper for src/lib/maintenance.js (client-side port
+ * of hardDeleteOldTasks/entry.ts, which fetched deleted_at: { "$lt": ... }
+ * capped at 1000 rows to avoid a timeout).
+ */
+export async function listDeletedOlderThan(email, thresholdDate) {
+  if (!email) return [];
+  const result = await base44.entities.Thought.filter(
+    { created_by: email, is_deleted: true, deleted_at: { "$lt": thresholdDate.toISOString() } },
+    null,
+    1000
+  );
+  return Array.isArray(result) ? result : (result?.data ?? []);
+}
+
 /** Exported so callers with hand-rolled mutations (outside this module's hooks) can invalidate the same cache set. */
 export function invalidateThoughtCaches(queryClient) {
   queryClient.invalidateQueries({ queryKey: ["activeThoughts"] });

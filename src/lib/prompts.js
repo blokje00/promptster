@@ -464,3 +464,309 @@ ${JSON.stringify({ screenshots: screenshotsPayload }, null, 2)}
 \`\`\`
 `;
 }
+
+// ---------------------------------------------------------------------------
+// Ported byte-identical from the former backend module
+// base44/functions/utils/prompts/entry.ts (the Base44 plan has no backend
+// functions, so these now run in the browser via src/lib/ai/*).
+// ---------------------------------------------------------------------------
+
+/**
+ * decomposeTask: asks for 3 differently-angled rewrites of a vague task.
+ *
+ * @param {{taskContent: string, projectContext: string, patternsContext: string}} params
+ *   projectContext: `Project: ...\nPlatform: ...` block, or '' when there is no project.
+ *   patternsContext: `\n\nLearned patterns...` block, or '' when there are none.
+ */
+export function decomposeTaskPrompt({ taskContent, projectContext, patternsContext }) {
+  return `Je bent een expert in het schrijven van duidelijke, actionable development tasks.
+
+${projectContext}${patternsContext}
+
+VAGE TASK: "${taskContent}"
+
+Genereer 3 VERSCHILLENDE varianten van deze task, elk met een andere aanpak:
+
+VARIANT A: Maximaal specifiek - expliciete file paths, component names, technical details
+VARIANT B: User-story oriented - wat moet bereikt worden en waarom
+VARIANT C: Step-by-step instructies - concrete actiestappen
+
+Elke variant moet:
+- Duidelijk en actionable zijn
+- Voldoende context bevatten
+- Geen vage termen gebruiken
+
+Output 3 complete task descriptions.`;
+}
+
+export const decomposeTaskSchema = {
+  type: "object",
+  properties: {
+    variant_a: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        description: { type: "string" },
+        rationale: { type: "string" }
+      }
+    },
+    variant_b: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        description: { type: "string" },
+        rationale: { type: "string" }
+      }
+    },
+    variant_c: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        description: { type: "string" },
+        rationale: { type: "string" }
+      }
+    },
+    recommendation: {
+      type: "string",
+      enum: ["A", "B", "C"]
+    }
+  }
+};
+
+/**
+ * synthesizePreferences: distills success patterns from 3+ recent
+ * "excellent"-rated PromptFeedback rows for a project.
+ *
+ * @param {{projectName: string, isConfigured: boolean, feedbackCount: number, feedbackSummary: Array<{prompt_used: string, what_worked: string, notes: string}>}} params
+ */
+export function synthesizePreferencesPrompt({ projectName, isConfigured, feedbackCount, feedbackSummary }) {
+  return `Je bent een AI expert in prompt engineering pattern recognition.
+
+Project: ${projectName}
+Platform: ${isConfigured ? 'Configured' : 'Generic'}
+
+Analyseer deze ${feedbackCount} EXCELLENTE prompts en hun feedback:
+
+${feedbackSummary.map((f, idx) => `
+=== Excellent Prompt ${idx + 1} ===
+Prompt snippet: ${f.prompt_used}
+What worked: ${f.what_worked}
+Notes: ${f.notes}
+`).join('\n')}
+
+TAAK: Distilleer de gemeenschappelijke success patterns uit deze excellente prompts.
+
+Focus op:
+1. Welke prompt structures werkten goed?
+2. Welke context-inclusie strategieën waren succesvol?
+3. Welke task formuleringen leidden tot goede resultaten?
+4. Welke technische details waren cruciaal?
+
+Geef 3-5 ACTIONABLE patterns die toekomstige prompts kunnen verbeteren.
+Wees specifiek en concreet - geen vage adviezen.`;
+}
+
+export const synthesizePreferencesSchema = {
+  type: "object",
+  properties: {
+    patterns: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          description: { type: "string" },
+          domain: { type: "string", enum: ["UI", "Data", "Logic", "All"] },
+          confidence: { type: "string", enum: ["low", "medium", "high"] }
+        }
+      }
+    },
+    overall_insight: { type: "string" }
+  }
+};
+
+/**
+ * analyzeRetrospectiveFeedback: Semantic Advantage analysis (Training-Free
+ * GRPO principle) comparing excellent vs poor/okay-rated prompts.
+ *
+ * @param {{excellent: Array<object>, poor: Array<object>}} params full lists;
+ *   only the first 10 / 5 are listed, `.length` is used in the header.
+ */
+export function retrospectiveFeedbackPrompt({ excellent, poor }) {
+  return `Je bent een AI expert in retrospectieve pattern analyse voor prompt engineering.
+
+Je krijgt twee groepen prompts:
+1. SUCCESVOLLE PROMPTS (${excellent.length} samples met "excellent" rating)
+2. FALENDE PROMPTS (${poor.length} samples met "poor/okay" rating)
+
+=== SUCCESVOLLE PROMPTS ===
+${excellent.slice(0, 10).map((f, idx) => `
+Prompt ${idx + 1}:
+- What worked: ${f.what_worked || 'N/A'}
+- Prompt snippet: ${f.prompt_used?.substring(0, 300) || 'N/A'}
+`).join('\n')}
+
+=== FALENDE PROMPTS ===
+${poor.slice(0, 5).map((f, idx) => `
+Prompt ${idx + 1}:
+- What failed: ${f.what_failed || 'N/A'}
+- Prompt snippet: ${f.prompt_used?.substring(0, 300) || 'N/A'}
+`).join('\n')}
+
+TAAK: Voer een **SEMANTIC ADVANTAGE** analyse uit (Training-Free GRPO principe).
+
+Beantwoord:
+1. Welke strategieën hebben de succesvolle prompts gemeen die de falende prompts NIET hebben?
+2. Welke anti-patterns zie je in de falende prompts?
+3. Wat zijn de 3-5 belangrijkste lessen voor toekomstige prompts?
+
+Focus op ACTIONABLE verschillen - geen generieke adviezen.
+Wees specifiek over wat WERKTE vs wat NIET werkte.`;
+}
+
+export const retrospectiveFeedbackSchema = {
+  type: "object",
+  properties: {
+    success_strategies: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          strategy: { type: "string" },
+          evidence: { type: "string" },
+          domain: { type: "string", enum: ["UI", "Data", "Logic", "All"] }
+        }
+      }
+    },
+    anti_patterns: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          pattern: { type: "string" },
+          why_it_fails: { type: "string" }
+        }
+      }
+    },
+    key_lessons: {
+      type: "array",
+      items: { type: "string" }
+    }
+  }
+};
+
+/**
+ * applyFeedbackToPreferences: extracts 2-3 actionable bullet-point learnings
+ * from one piece of user feedback. No schema — the plain text is used as-is.
+ *
+ * @param {{projectContext: string, rating: string, whatWorked: string, whatFailed: string, notes: string, currentPrefs: string, hasProject: boolean}} params
+ */
+export function applyFeedbackPrompt({ projectContext, rating, whatWorked, whatFailed, notes, currentPrefs, hasProject }) {
+  return `Based on this user feedback about a prompt result, extract key learnings to add to their personal preferences:${projectContext}
+
+FEEDBACK:
+Rating: ${rating}
+What Worked: ${whatWorked}
+What Failed: ${whatFailed}
+Notes: ${notes}
+
+CURRENT PREFERENCES:
+${currentPrefs}
+
+TASK: Extract 2-3 SHORT bullet points of actionable learnings that should be added to their preferences.
+Focus on specific patterns, preferences, or approaches that worked or should be avoided.
+${hasProject ? 'Include the project name in the bullet point to make it project-specific.' : ''}
+Return ONLY the bullet points, no introduction.
+
+Example output:
+${hasProject ? '- [ProjectName] Prefer detailed task breakdowns over high-level descriptions' : '- Prefer detailed task breakdowns over high-level descriptions'}
+- Avoid technical jargon when describing UI changes
+- Always include specific file paths in instructions`;
+}
+
+/**
+ * Screenshot OCR + layout vision prompt. `level: 'full'` asks for text,
+ * components, layout and semantic grouping; any other level asks for a
+ * lighter text + key-elements pass.
+ */
+export function screenshotVisionPrompt({ level }) {
+  return level === 'full'
+    ? `Analyze this UI screenshot comprehensively:
+
+1. Extract ALL visible text (OCR)
+2. Identify UI components (buttons, inputs, headings, cards, images, links, labels)
+3. Describe layout structure and spatial relationships
+4. Group related elements into semantic blocks
+
+Return JSON:
+{
+  "summary": "brief description",
+  "regions": [
+    {"id": "r1", "type": "button|input|heading|card|text", "text": "...", "role": "...", "bbox": {"x": 0, "y": 0, "width": 0, "height": 0}, "confidence": 0.9}
+  ],
+  "semanticBlocks": [
+    {"id": "b1", "type": "header|form|content", "text": "...", "components": ["r1"], "hierarchy": {"level": 0}}
+  ],
+  "layoutPattern": "grid|flex|list",
+  "detectedComponents": ["Button", "Input"]
+}`
+    : `Extract main text and identify key UI elements.
+
+Return JSON:
+{
+  "summary": "brief description",
+  "regions": [{"id": "r1", "type": "text", "text": "...", "bbox": {"x": 0, "y": 0, "width": 0, "height": 0}, "confidence": 0.9}],
+  "semanticBlocks": [],
+  "layoutPattern": "simple",
+  "detectedComponents": []
+}`;
+}
+
+export const screenshotVisionSchema = {
+  type: "object",
+  properties: {
+    summary: { type: "string" },
+    regions: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          type: { type: "string" },
+          text: { type: "string" },
+          role: { type: "string" },
+          bbox: {
+            type: "object",
+            properties: {
+              x: { type: "number" },
+              y: { type: "number" },
+              width: { type: "number" },
+              height: { type: "number" }
+            }
+          },
+          confidence: { type: "number" }
+        }
+      }
+    },
+    semanticBlocks: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          type: { type: "string" },
+          text: { type: "string" },
+          components: { type: "array", items: { type: "string" } },
+          hierarchy: {
+            type: "object",
+            properties: {
+              level: { type: "number" }
+            }
+          }
+        }
+      }
+    },
+    layoutPattern: { type: "string" },
+    detectedComponents: { type: "array", items: { type: "string" } }
+  }
+};

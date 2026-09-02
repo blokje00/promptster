@@ -196,6 +196,11 @@ export default function AdminStats() {
                   </Badge>
                 </div>
                 <p className="text-slate-600">Analytics, gebruikers & app statistieken (admin data gefilterd)</p>
+                <p className="text-xs text-amber-600 mt-1">
+                  Let op: toont alleen jouw eigen account. De backend-functie die alle gebruikers samenvatte
+                  met een service-role is niet beschikbaar op dit Base44-plan (functions geblokkeerd) — en RLS
+                  laat de browser sowieso geen andere accounts lezen. "Totaal Gebruikers" is dus altijd 1.
+                </p>
               </div>
 
               {/* TASK-2: Date Range Picker */}

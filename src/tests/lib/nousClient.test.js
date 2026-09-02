@@ -3,18 +3,27 @@ import {
   invokeLLM,
   parseJsonResponse,
   assertMatchesSchema,
-  LLMError,
+  configureNous,
+  resetNous,
+  isNousConfigured,
+  NousError,
+  NOT_CONFIGURED_MESSAGE,
   DEFAULT_BASE_URL,
   DEFAULT_TEXT_MODEL,
   DEFAULT_VISION_MODEL,
-} from '../../../base44/functions/utils/nousLLM/entry.ts';
+} from '@/lib/nousClient';
 
 /**
- * Tests voor de gedeelde Nous Research LLM-module die de backend functions
- * gebruiken. fetch en Deno.env worden gemockt; er gaat niets naar buiten.
+ * Tests for the browser-side Nous Research LLM client (src/lib/nousClient.js).
+ * This is the client-side port of src/tests/base44/nousLLM.test.js — that
+ * file covers the Deno backend module (base44/functions/utils/nousLLM),
+ * which is a spiegel of the platform and no longer reachable from the
+ * frontend on this Base44 plan (no backend functions). This file exercises
+ * the same behaviour through configureNous()/resetNous() instead of a
+ * mocked Deno.env, since the key now lives in module state loaded from the
+ * signed-in user's AISettings row (see src/components/ai/NousKeyLoader.jsx).
+ * fetch is mocked; nothing goes out over the network.
  */
-
-const env = {};
 
 function okResponse(content, extra = {}) {
   return {
@@ -34,7 +43,7 @@ function lastRequestBody() {
   return JSON.parse(init.body);
 }
 
-describe('nousLLM parseJsonResponse', () => {
+describe('nousClient parseJsonResponse', () => {
   it('parses plain JSON', () => {
     expect(parseJsonResponse('{"a":1}')).toEqual({ a: 1 });
   });
@@ -55,12 +64,12 @@ describe('nousLLM parseJsonResponse', () => {
     expect(parseJsonResponse('values (see note): [1,2,3]', { type: 'array' })).toEqual([1, 2, 3]);
   });
 
-  it('throws LLMError on non-JSON', () => {
-    expect(() => parseJsonResponse('no json here')).toThrow(LLMError);
+  it('throws NousError on non-JSON', () => {
+    expect(() => parseJsonResponse('no json here')).toThrow(NousError);
   });
 });
 
-describe('nousLLM assertMatchesSchema', () => {
+describe('nousClient assertMatchesSchema', () => {
   it('is a no-op when there is no schema', () => {
     expect(() => assertMatchesSchema({ anything: true }, undefined)).not.toThrow();
   });
@@ -78,52 +87,48 @@ describe('nousLLM assertMatchesSchema', () => {
     expect(() => assertMatchesSchema({ title: 'x', items: [], meta: {} }, schema)).not.toThrow();
   });
 
-  it('throws LLMError naming a missing required key', () => {
+  it('throws NousError naming a missing required key', () => {
     const schema = { type: 'object', required: ['title'], properties: {} };
     expect(() => assertMatchesSchema({}, schema)).toThrow(/missing title/);
   });
 
-  it('throws LLMError when an array-typed property is not an array', () => {
+  it('throws NousError when an array-typed property is not an array', () => {
     const schema = { type: 'object', properties: { items: { type: 'array' } } };
-    expect(() => assertMatchesSchema({ items: 'oops' }, schema)).toThrow(LLMError);
+    expect(() => assertMatchesSchema({ items: 'oops' }, schema)).toThrow(NousError);
   });
 
-  it('throws LLMError when an object-typed property is missing', () => {
+  it('throws NousError when an object-typed property is missing', () => {
     const schema = { type: 'object', properties: { meta: { type: 'object' } } };
-    expect(() => assertMatchesSchema({}, schema)).toThrow(LLMError);
+    expect(() => assertMatchesSchema({}, schema)).toThrow(NousError);
   });
 });
 
-describe('nousLLM invokeLLM', () => {
+describe('nousClient invokeLLM', () => {
   let originalFetch;
 
   beforeEach(() => {
     originalFetch = globalThis.fetch;
-    for (const key of Object.keys(env)) delete env[key];
-    env.nousresearch = 'test-key';
-    globalThis.Deno = { env: { get: (key) => env[key] } };
     globalThis.fetch = vi.fn();
+    configureNous({ apiKey: 'test-key' });
   });
 
   afterEach(() => {
-    delete globalThis.Deno;
+    resetNous();
     globalThis.fetch = originalFetch;
     vi.useRealTimers();
   });
 
-  it('throws when the nousresearch secret is missing and never calls the API', async () => {
-    delete env.nousresearch;
-    await expect(invokeLLM({ prompt: 'hi' })).rejects.toThrow(/nousresearch/);
+  it('throws NOT_CONFIGURED when no key has been configured and never calls the API', async () => {
+    resetNous();
+    expect(isNousConfigured()).toBe(false);
+
+    await expect(invokeLLM({ prompt: 'hi' }))
+      .rejects.toMatchObject({ name: 'NousError', status: 401, message: NOT_CONFIGURED_MESSAGE });
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
-  it('accepts NOUS_API_KEY as an alias for the nousresearch secret', async () => {
-    delete env.nousresearch;
-    env.NOUS_API_KEY = 'alias-key';
-    globalThis.fetch.mockResolvedValueOnce(okResponse('hi'));
-    await invokeLLM({ prompt: 'p' });
-    const [, init] = globalThis.fetch.mock.calls[0];
-    expect(init.headers.Authorization).toBe('Bearer alias-key');
+  it('reports configured once a key is set', () => {
+    expect(isNousConfigured()).toBe(true);
   });
 
   it('sends text prompts to the text model and returns the string', async () => {
@@ -179,7 +184,7 @@ describe('nousLLM invokeLLM', () => {
     };
 
     await expect(invokeLLM({ prompt: 'p', response_json_schema: schema }))
-      .rejects.toMatchObject({ name: 'LLMError', status: 502, message: expect.stringMatching(/items/) });
+      .rejects.toMatchObject({ name: 'NousError', status: 502, message: expect.stringMatching(/items/) });
   });
 
   it('retries once without response_format when the error mentions response_format', async () => {
@@ -212,19 +217,32 @@ describe('nousLLM invokeLLM', () => {
     expect(globalThis.fetch).toHaveBeenCalledTimes(2);
   });
 
-  it('surfaces API errors as LLMError with the upstream status', async () => {
+  it('surfaces a 401 as NousError with the Dutch key-rejected message', async () => {
     globalThis.fetch.mockResolvedValueOnce(errorResponse(401, 'invalid key'));
 
-    await expect(invokeLLM({ prompt: 'p' })).rejects.toMatchObject({ name: 'LLMError', status: 401 });
+    await expect(invokeLLM({ prompt: 'p' })).rejects.toMatchObject({
+      name: 'NousError',
+      status: 401,
+      message: expect.stringMatching(/weigert de sleutel \(401\)/),
+    });
   });
 
-  it('throws a 504 LLMError when the request times out', async () => {
+  it('throws a 504 NousError when the request times out', async () => {
     vi.useFakeTimers();
-    env.NOUS_TIMEOUT_MS = '50';
-    globalThis.fetch.mockImplementationOnce(() => new Promise(() => {})); // never resolves
+    configureNous({ apiKey: 'test-key', timeoutMs: 50 });
+    // nousClient aborts via AbortController + fetch's own signal, unlike the
+    // Deno module's Promise.race — so the mock must honour the signal like a
+    // real fetch() would, rejecting with an AbortError once it's aborted.
+    globalThis.fetch.mockImplementationOnce((_url, init) => new Promise((_resolve, reject) => {
+      init.signal.addEventListener('abort', () => {
+        const abortError = new Error('aborted');
+        abortError.name = 'AbortError';
+        reject(abortError);
+      });
+    }));
 
     const pending = expect(invokeLLM({ prompt: 'p' }))
-      .rejects.toMatchObject({ name: 'LLMError', status: 504, message: /timeout after 50ms/ });
+      .rejects.toMatchObject({ name: 'NousError', status: 504, message: /timeout after 50ms/ });
 
     await vi.advanceTimersByTimeAsync(50);
     await pending;
@@ -237,26 +255,26 @@ describe('nousLLM invokeLLM', () => {
     abortError.name = 'AbortError';
     globalThis.fetch.mockRejectedValueOnce(abortError);
 
-    await expect(invokeLLM({ prompt: 'p' })).rejects.toMatchObject({ name: 'LLMError', status: 504 });
+    await expect(invokeLLM({ prompt: 'p' })).rejects.toMatchObject({ name: 'NousError', status: 504 });
   });
 
-  it('throws a 422 LLMError when the model refuses with an explicit refusal', async () => {
+  it('throws a 422 NousError when the model refuses with an explicit refusal', async () => {
     globalThis.fetch.mockResolvedValueOnce(
       okResponse(null, { message: { refusal: 'unsafe content' } }),
     );
 
     await expect(invokeLLM({ prompt: 'p' }))
-      .rejects.toMatchObject({ name: 'LLMError', status: 422, message: /unsafe content/ });
+      .rejects.toMatchObject({ name: 'NousError', status: 422, message: /unsafe content/ });
   });
 
   it('treats finish_reason "content_filter" as a refusal', async () => {
     globalThis.fetch.mockResolvedValueOnce(okResponse('', { finish_reason: 'content_filter' }));
 
-    await expect(invokeLLM({ prompt: 'p' })).rejects.toMatchObject({ name: 'LLMError', status: 422 });
+    await expect(invokeLLM({ prompt: 'p' })).rejects.toMatchObject({ name: 'NousError', status: 422 });
   });
 
-  it('honours model overrides from env and per call', async () => {
-    env.NOUS_TEXT_MODEL = 'custom/text';
+  it('honours model overrides from config and per call', async () => {
+    configureNous({ apiKey: 'test-key', textModel: 'custom/text' });
     globalThis.fetch.mockResolvedValueOnce(okResponse('x')).mockResolvedValueOnce(okResponse('y'));
 
     await invokeLLM({ prompt: 'p' });
