@@ -1,0 +1,83 @@
+# Open Knowledge — workspace configuration
+#
+# This file overrides built-in defaults for this workspace. Every key below
+# is commented out and shows its current default value. Uncomment any key
+# to override it.
+#
+# Precedence (lowest -> highest):
+#   Built-in defaults
+#     -> ~/.open-knowledge/config.yml         (user defaults)
+#     -> ./.open-knowledge/config.yml         (this file)
+#
+# Schema reference: packages/cli/src/config/schema.ts
+
+
+# --- Content ---------------------------------------------------------------
+# dir: where the CRDT editor reads/writes documents. Relative to the project
+# root (the directory containing .open-knowledge/), NOT to this file.
+#
+# include/exclude: glob patterns for tracked content files. Relative to the
+# content directory (content.dir).
+#
+# content:
+#   dir: .
+#   include:
+#     - "**/*.md"
+#   exclude: []
+
+
+# --- Server ----------------------------------------------------------------
+# HTTP/WebSocket listener for the Hocuspocus server + static React app.
+#
+# openOnAgentEdit: when true, the browser opens automatically the first time
+# an agent writes to the knowledge base in this server session. Debounced to
+# one open per boot. Useful for pairing with Claude Code — you see the edit
+# land live. Leave false for headless/CI.
+#
+# server:
+#   port: 3000
+#   host: localhost
+#   openOnAgentEdit: false
+
+
+# --- Persistence -----------------------------------------------------------
+# How aggressively CRDT updates are flushed to disk.
+# persistence:
+#   debounceMs: 2000
+#   maxDebounceMs: 10000
+
+
+# --- Folders: per-folder frontmatter defaults -------------------------------
+#
+# TL;DR glob gotcha: `**` is ONLY a multi-segment wildcard when it is a
+# standalone path segment. `foo-**` behaves like `foo-*` (single segment, NOT
+# descendants). Use `foo/**` or `foo-*/**` to match descendants.
+#
+# Declare title/description/tags defaults keyed by glob `match:`. Rules merge
+# with a file's own frontmatter at read time:
+#   - Per scalar (title, description): the FILE wins when declared; folder
+#     rule fills in blanks.
+#   - Tags: concatenated across ALL matching rules (in declaration order) with
+#     file tags last; first-occurrence preserved on dedup.
+#   - Evaluation is positional — LATER rules in this array override earlier
+#     rules for scalars. Put general rules first, specific rules last.
+#
+# Picomatch glob cheatsheet:
+#   `match: 'foo'`         — matches ONLY the folder `foo` itself
+#   `match: 'foo/**'`      — matches `foo` AND all descendants (files + dirs)
+#   `match: 'foo-*'`       — matches `foo-1`, `foo-bar` (single segment)
+#   `match: 'foo-**'`      — behaves like `foo-*` (NOT multi-segment); see
+#                              TL;DR above. Use `foo-*/**` if you want
+#                              `foo-X` plus its descendants.
+#
+# Example:
+# folders:
+#   - match: 'specs/**'
+#     frontmatter:
+#       title: Specifications
+#       description: Feature specifications and design documents
+#       tags: [spec]
+#   - match: 'specs/2026-*/**'
+#     frontmatter:
+#       title: 2026 Specifications
+#       tags: [2026]

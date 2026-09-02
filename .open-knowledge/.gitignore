@@ -1,0 +1,4 @@
+cache/
+server.lock
+ui.lock
+sync-state.json

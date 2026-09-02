@@ -1,182 +1,79 @@
 # Base44 Testomgeving
 
-Deze testomgeving is opgezet voor het testen van je Base44 applicatie.
+Vitest + jsdom + Testing Library. Alle tests draaien tegen een mock van de Base44 SDK die zich gedraagt als het echte pakket; er gaat niets naar buiten. Stand op 2026-09-02: 7 testbestanden, 78 tests, allemaal groen. Snelstart: zie [[QUICKSTART]].
 
-## 📁 Structuur
+## Structuur
 
 ```
 src/tests/
-  ├── setup.js                    # Test configuratie
-  ├── mocks/
-  │   └── base44Mock.js          # Mock Base44 SDK client
-  ├── base44/
-  │   ├── entities.test.js       # Tests voor entities
-  │   ├── auth.test.js           # Tests voor authenticatie
-  │   └── integrations.test.js   # Tests voor integrations & functions
-  └── components/
-      └── example.test.jsx       # Voorbeeld component tests
+  setup.js                      # jsdom-mocks (matchMedia, IntersectionObserver, ResizeObserver); veilig in node-tests
+  mocks/base44Mock.js           # mock van @base44/sdk, gelijk aan het echte gedrag
+  base44/entities.test.js       # entities: list / filter(query, sort, limit) / get / create / update / delete
+  base44/auth.test.js           # auth: me, updateMe, isAuthenticated, redirectToLogin, loginWithProvider, logout
+  base44/integrations.test.js   # functions.invoke en Core-integraties
+  base44/nousLLM.test.js        # backend LLM-module (fetch en Deno.env gemockt)
+  base44/http.test.js           # backend-basis withAuth / ok / fail (node-omgeving)
+  api/createEntityApi.test.jsx  # datalaag: hooks en plain functies
+  components/example.test.jsx   # voorbeeld componenttest
 ```
 
-## 🚀 Gebruik
-
-### Tests Draaien
+## Commando's
 
 ```bash
-# Alle tests uitvoeren (watch mode)
-npm test
-
-# Tests eenmalig uitvoeren
-npm run test:run
-
-# Tests met UI interface
-npm run test:ui
-
-# Tests met coverage rapport
-npm run test:coverage
+npm test                                          # watch-mode
+npm run test:run                                  # eenmalig
+npm run test:ui                                   # grafische interface
+npm run test:coverage                             # rapport in coverage/index.html
+npx vitest run src/tests/base44/auth.test.js      # één bestand
+npx vitest run -t "should create a new Todo"      # één test op naam
 ```
 
-### Environment Variabelen
-
-Er zijn drie environment bestanden aangemaakt:
-
-- **`.env.example`** - Template met alle mogelijke variabelen
-- **`.env.development`** - Voor development met echte API
-- **`.env.test`** - Voor testing met mock data
-
-Kopieer `.env.example` naar `.env` en vul je echte waarden in voor development:
-
-```bash
-cp .env.example .env
-```
-
-## 🧪 Mock Base44 Client
-
-De mock client (`src/tests/mocks/base44Mock.js`) simuleert de Base44 SDK zonder echte API calls te maken.
-
-### Gebruik in Tests
+## De mock gebruiken
 
 ```javascript
-import { createMockBase44Client } from '../mocks/base44Mock';
+import { createMockBase44Client, resetMockData, addMockEntity, setMockFunctionResponse } from '../mocks/base44Mock';
 
-const client = createMockBase44Client({
-  appId: '68f4bcd57ca6479c7acf2f47',
-  token: 'mock-token',
-});
+const client = createMockBase44Client({ appId: '68f4bcd57ca6479c7acf2f47', token: 'mock-token' });
 
-// Gebruik zoals normale Base44 client
-const todos = await client.entities.Todo.list();
+// Entities: sortering is het TWEEDE argument, net als in de echte SDK
+const projects = await client.entities.Project.filter({ created_by: 'test@example.com' }, '-updated_date');
+
+// Aangemaakte records krijgen created_by, created_date en updated_date
+await client.entities.Project.create({ name: 'Nieuw' });
+
+// Backend-functies: invoke geeft { data, status } terug
+setMockFunctionResponse('runPrompt', { ok: true, result: 'verbeterde prompt' });
+const { data } = await client.functions.invoke('runPrompt', { prompt: '...' });
+
+// Fout simuleren: een handler die een status geeft → invoke verwerpt met error.response.data
+setMockFunctionResponse('runPrompt', () => ({ status: 500, data: { ok: false, error: 'Nous-sleutel (secret nousresearch) ontbreekt' } }));
 ```
 
-### Features van Mock Client
+Gebruik `resetMockData()` in `beforeEach` en `addMockEntity('Naam', [...])` om eigen records te zaaien.
 
-- ✅ Alle entity operaties (list, filter, get, create, update, delete, bulkCreate)
-- ✅ Authenticatie (isAuthenticated, me, updateMe, login)
-- ✅ Integrations (Core.SendEmail, Core.UploadFile, custom integrations)
-- ✅ Functions (custom functions)
-- ✅ Service Role operaties
-- ✅ Dynamische entity creation (werkt met elke entity naam)
+## Hooks en pagina's testen
 
-## 📝 Test Voorbeelden
-
-### Entity Tests
+Mock de ingang van de datalaag, niet de pagina. Alle app-code gaat via `src/api/*`, en die modules importeren de SDK uit één bestand:
 
 ```javascript
-it('should create a new Todo', async () => {
-  const newTodo = await client.entities.Todo.create({
-    title: 'New Task',
-    completed: false,
-  });
-  
-  expect(newTodo).toHaveProperty('id');
-  expect(newTodo.title).toBe('New Task');
-});
+vi.mock('@/api/base44Client', () => ({ base44: createMockBase44Client({ token: 'mock-token' }) }));
+vi.mock('@/lib/AuthContext', () => ({ useAuth: () => ({ currentUser: { email: 'test@example.com' } }) }));
+
+const { result } = renderHook(() => projects.useList(), { wrapper: withQueryClient });
+await waitFor(() => expect(result.current.data).toHaveLength(2));
 ```
 
-### Auth Tests
+Zie `src/tests/api/createEntityApi.test.jsx` voor een compleet voorbeeld met `QueryClientProvider`.
 
-```javascript
-it('should authenticate user', async () => {
-  const isAuth = await client.auth.isAuthenticated();
-  expect(isAuth).toBe(true);
-  
-  const user = await client.auth.me();
-  expect(user.email).toBe('test@example.com');
-});
-```
+## Backend-code testen
 
-### Component Tests
+Deno-functies importeren de SDK als `npm:@base44/sdk@0.8.6`. De testconfiguratie (`vitest.config.js`) vertaalt die schrijfwijze naar het geïnstalleerde pakket, zodat pure backend-modules (`utils/http`, `utils/nousLLM`, `utils/prompts`) rechtstreeks te importeren zijn.
 
-```javascript
-import { render, screen } from '@testing-library/react';
+- Zet `// @vitest-environment node` bovenaan als de test geen DOM nodig heeft.
+- Mock `fetch` via `globalThis.fetch = vi.fn()` en zet het origineel terug in `afterEach`.
+- Mock `Deno.env` met `globalThis.Deno = { env: { get: (k) => env[k] } }`.
+- Mock de SDK met `vi.mock('@base44/sdk', () => ({ createClientFromRequest: () => mockClient }))`.
 
-it('should display todos', async () => {
-  const mockClient = createMockBase44Client({
-    token: 'mock-token',
-  });
-  
-  render(<Dashboard client={mockClient} />);
-  
-  const todo = await screen.findByText('Test Todo 1');
-  expect(todo).toBeInTheDocument();
-});
-```
+## Tegen de echte API
 
-## 🔧 Custom Mock Data
-
-Voeg je eigen mock entities toe:
-
-```javascript
-import { addMockEntity, resetMockData } from '../mocks/base44Mock';
-
-beforeEach(() => {
-  resetMockData();
-  
-  addMockEntity('Product', [
-    { id: '1', name: 'Product A', price: 99.99 },
-    { id: '2', name: 'Product B', price: 149.99 },
-  ]);
-});
-
-it('should list products', async () => {
-  const products = await client.entities.Product.list();
-  expect(products).toHaveLength(2);
-});
-```
-
-## 🔄 Testing met Echte API
-
-Als je tests wilt draaien tegen de echte Base44 API:
-
-1. Vul in `.env.test` je echte `VITE_BASE44_AUTH_TOKEN` in
-2. Zet `VITE_USE_MOCK_DATA=false`
-3. Update je test setup om de echte client te gebruiken
-
-```javascript
-import { createClient } from '@base44/sdk';
-
-const client = createClient({
-  appId: import.meta.env.VITE_BASE44_APP_ID,
-  token: import.meta.env.VITE_BASE44_AUTH_TOKEN,
-});
-```
-
-## 📚 Vitest Features
-
-- **Watch mode** - Tests worden automatisch herhaald bij code wijzigingen
-- **UI mode** - Grafische interface voor test resultaten
-- **Coverage** - Code coverage rapporten
-- **Fast** - Snel en efficiënt door Vite
-- **Jest compatible** - Vertrouwde API als je Jest kent
-
-## 🛠️ Tips
-
-1. **Isolatie**: Gebruik `beforeEach` en `resetMockData()` om tests geïsoleerd te houden
-2. **Async/Await**: Alle Base44 operaties zijn async, gebruik altijd `await`
-3. **Type Safety**: De mock client ondersteunt TypeScript type hints
-4. **Custom Entities**: De mock werkt met elke entity naam dynamisch
-
-## 📖 Meer Info
-
-- [Vitest Docs](https://vitest.dev/)
-- [Testing Library](https://testing-library.com/)
-- [Base44 SDK Docs](https://www.npmjs.com/package/@base44/sdk)
+Niet doen in tests: de app zelf praat al met de live backend (`npm run dev`), en tests met echte data zijn traag en niet herhaalbaar. Wil je toch iets live controleren, doe dat in de browser.
