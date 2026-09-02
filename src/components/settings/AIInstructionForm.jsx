@@ -2,14 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, Sparkles, Loader2 } from "lucide-react";
 
 export default function AIInstructionForm({ 
   instruction, 
   setInstruction, 
-  modelPreference, 
-  setModelPreference, 
   onSave, 
   isSaving,
   isDirty = false,
@@ -39,20 +36,6 @@ export default function AIInstructionForm({
           <p className="text-xs text-slate-500">
             This instruction is used when you click "Improve with AI". The original prompt is automatically added.
           </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Model Preference</Label>
-          <Select value={modelPreference} onValueChange={setModelPreference}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="default">Standard</SelectItem>
-              <SelectItem value="creative">Creative (more variation)</SelectItem>
-              <SelectItem value="precise">Precise (conservative)</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         <div className="flex gap-2">

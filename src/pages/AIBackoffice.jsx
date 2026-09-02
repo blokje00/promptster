@@ -73,7 +73,6 @@ const RETRY_MESSAGE_EXAMPLES = [retryTask(), retryTask(), retryTask()];
 
 export default function AIBackoffice() {
   const queryClient = useQueryClient();
-  const [modelPreference, setModelPreference] = useState("default");
   const [enableContextSuggestions, setEnableContextSuggestions] = useState(true);
   const [enableVerbalizedSampling, setEnableVerbalizedSampling] = useState(false);
   const [enableReasoningTransparency, setEnableReasoningTransparency] = useState(false);
@@ -89,7 +88,6 @@ export default function AIBackoffice() {
   const [isSavingAI, setIsSavingAI] = useState(false);
   const [savedAIValues, setSavedAIValues] = useState({
     instruction: "",
-    modelPreference: "default",
     enableContextSuggestions: true
   });
 
@@ -151,13 +149,11 @@ export default function AIBackoffice() {
   useEffect(() => {
     if (settings.length > 0 && !settingsId) {
       const dbInstruction = settings[0].improve_prompt_instruction;
-      const dbModelPref = settings[0].model_preference || "default";
       const dbContextSuggestions = settings[0].enable_context_suggestions !== false;
       const dbVerbalizedSampling = settings[0].enable_verbalized_sampling || false;
       const dbReasoningTransparency = settings[0].enable_reasoning_transparency || false;
 
       if (dbInstruction) setInstruction(dbInstruction);
-      setModelPreference(dbModelPref);
       setEnableContextSuggestions(dbContextSuggestions);
       setEnableVerbalizedSampling(dbVerbalizedSampling);
       setEnableReasoningTransparency(dbReasoningTransparency);
@@ -175,7 +171,6 @@ export default function AIBackoffice() {
       // Set saved values for dirty tracking
       setSavedAIValues({
         instruction: dbInstruction || getDefaultInstruction(),
-        modelPreference: dbModelPref,
         enableContextSuggestions: dbContextSuggestions,
         enableVerbalizedSampling: dbVerbalizedSampling,
         enableReasoningTransparency: dbReasoningTransparency
@@ -186,7 +181,6 @@ export default function AIBackoffice() {
   // Centralized dirty state calculation
   const isAIDirty = 
     instruction !== savedAIValues.instruction ||
-    modelPreference !== savedAIValues.modelPreference ||
     enableContextSuggestions !== savedAIValues.enableContextSuggestions ||
     enableVerbalizedSampling !== savedAIValues.enableVerbalizedSampling ||
     enableReasoningTransparency !== savedAIValues.enableReasoningTransparency;
@@ -211,7 +205,6 @@ export default function AIBackoffice() {
       // Normalize payload
       const payload = {
         improve_prompt_instruction: (instruction || "").trim(),
-        model_preference: modelPreference || "default",
         enable_context_suggestions: !!enableContextSuggestions,
         enable_verbalized_sampling: !!enableVerbalizedSampling,
         enable_reasoning_transparency: !!enableReasoningTransparency,
@@ -241,7 +234,6 @@ export default function AIBackoffice() {
       // Update saved values (reset dirty state)
       setSavedAIValues({
         instruction: payload.improve_prompt_instruction,
-        modelPreference: payload.model_preference,
         enableContextSuggestions: payload.enable_context_suggestions,
         enableVerbalizedSampling: payload.enable_verbalized_sampling,
         enableReasoningTransparency: payload.enable_reasoning_transparency
@@ -434,6 +426,17 @@ export default function AIBackoffice() {
                         />
                       </div>
                     </div>
+                    <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-3 text-sm space-y-1">
+                      <div className="font-medium">Actieve modellen (provider: Nous Research)</div>
+                      <div>
+                        Tekst:{" "}
+                        <code className="font-mono text-xs">{nousTextModel.trim() || DEFAULT_TEXT_MODEL}</code>
+                      </div>
+                      <div>
+                        Beeld:{" "}
+                        <code className="font-mono text-xs">{nousVisionModel.trim() || DEFAULT_VISION_MODEL}</code>
+                      </div>
+                    </div>
                     <div className="flex items-center justify-between">
                       <Button onClick={handleSaveNous} disabled={isSavingNous} className="bg-indigo-600">
                         {isSavingNous ? "Opslaan..." : "Opslaan"}
@@ -546,8 +549,6 @@ export default function AIBackoffice() {
                 <AIInstructionForm
                   instruction={instruction}
                   setInstruction={setInstruction}
-                  modelPreference={modelPreference}
-                  setModelPreference={setModelPreference}
                   onSave={handleSave}
                   isSaving={isSavingAI}
                   isDirty={isAIDirty}

@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Sparkles, Copy, CheckCircle, Cog, RefreshCw, Layers, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "@/lib/AuthContext";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { getNousConfig, isNousConfigured } from "@/lib/nousClient";
 
 function PromptPreview({
   generatedPrompt,
@@ -26,16 +28,10 @@ function PromptPreview({
   const displayPrompt = improvedPrompt || generatedPrompt;
   const [activeVariantIndex, setActiveVariantIndex] = React.useState(0);
 
-  // Check if AI features are available (trial or subscription)
-  const { currentUser } = useAuth();
-
-  const subscriptionStatus = currentUser?.subscription_status;
-  const trialEnd = currentUser?.trial_end ? new Date(currentUser.trial_end) : null;
-  const now = new Date();
-
-  const hasActiveSubscription = subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
-  const hasActiveTrial = subscriptionStatus === 'trial' && trialEnd && trialEnd > now;
-  const canUseAI = hasActiveSubscription || hasActiveTrial;
+  // Single-user app: AI is always available; it runs in the browser against
+  // Nous Research with the key from AI Backoffice (see src/lib/nousClient.js).
+  const nousReady = isNousConfigured();
+  const { textModel } = getNousConfig();
 
   const handleCopyOnly = () => {
     navigator.clipboard.writeText(displayPrompt);
@@ -73,32 +69,25 @@ function PromptPreview({
               <Cog className="w-4 h-4 mr-1" /> Undo
             </Button>
           )}
-          {canUseAI ? (
-            <>
-              <Button size="sm" variant="outline" onClick={() => onImprove(false)} disabled={!generatedPrompt}>
-                {isImproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />} Improve
-              </Button>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={onGenerateVariants} 
-                disabled={!generatedPrompt || isGeneratingVariants}
-                className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-                title="Generate 3 diverse prompt variants (Verbalized Sampling)"
-              >
-                {isGeneratingVariants ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4 mr-1" />} Variants
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button size="sm" variant="outline" disabled title="AI Improve requires active trial or subscription">
-                <Sparkles className="w-4 h-4 mr-1 opacity-50" /> Improve (Trial/Pro)
-              </Button>
-              <Button size="sm" variant="outline" disabled title="Variants requires active trial or subscription">
-                <Layers className="w-4 h-4 mr-1 opacity-50" /> Variants
-              </Button>
-            </>
-          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onImprove(false)}
+            disabled={!generatedPrompt}
+            title={`Improve with AI via Nous Research (${textModel})`}
+          >
+            {isImproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />} Improve
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={onGenerateVariants}
+            disabled={!generatedPrompt || isGeneratingVariants}
+            className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+            title="Generate 3 diverse prompt variants (Verbalized Sampling)"
+          >
+            {isGeneratingVariants ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4 mr-1" />} Variants
+          </Button>
           <Button 
             size="sm" 
             className={`transition-all duration-300 ${saveSuccess ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
@@ -114,6 +103,16 @@ function PromptPreview({
         </div>
       </CardHeader>
       <CardContent className="flex-1 relative group/preview space-y-4">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          AI: Nous Research ·{" "}
+          <code className="font-mono">{textModel}</code>
+          {!nousReady && (
+            <>
+              {" "}· <span className="text-amber-600 dark:text-amber-400">sleutel niet ingesteld</span>,{" "}
+              <Link to={createPageUrl("AIBackoffice")} className="underline">stel in bij AI Backoffice</Link>
+            </>
+          )}
+        </p>
         {promptVariants.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-2">
             {promptVariants.map((variant, idx) => (

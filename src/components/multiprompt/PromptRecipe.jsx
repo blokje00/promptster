@@ -14,7 +14,11 @@ import { createPageUrl } from "@/utils";
  * Patterns, Response Parser) are now visible and controllable too.
  */
 
+// The coding AI that will RECEIVE the generated prompt. Promptster itself
+// always runs on Nous Research (DeepSeek), see src/lib/nousClient.js.
 const TARGET_MODEL_OPTIONS = [
+  { value: "claude-code", label: "Claude Code" },
+  { value: "deepseek", label: "DeepSeek (via Nous Research)" },
   { value: "gemini", label: "Gemini" },
   { value: "gpt-4o", label: "GPT-4o" },
   { value: "gpt-4", label: "GPT-4" },
@@ -103,7 +107,9 @@ function PromptRecipe({
           <Bot className="w-4 h-4 shrink-0 text-slate-400" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Target AI Model</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Which LLM this prompt is written for</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Which coding AI this prompt is written for (e.g. Claude Code). Promptster itself runs on Nous Research; see AI Backoffice.
+            </p>
           </div>
           <select
             value={targetModel || ""}
