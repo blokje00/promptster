@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { items, thoughts } from "@/api";
+import { items } from "@/api";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { ArrowLeft, Edit, Copy, CheckCircle, Star, MessageSquare, Image as ImageIcon, FileArchive, Download, GitBranch, Calendar, ClipboardPaste, Loader2 } from "lucide-react";
-import { TASK_CHECK_STATUS } from "@/components/lib/status";
 import FileChangesFeedback from "../components/items/FileChangesFeedback";
 import ScreenshotThumb from "../components/media/ScreenshotThumb";
 import PromptFeedbackDialog from "../components/vault/PromptFeedbackDialog";
@@ -21,9 +20,7 @@ export default function ViewItem() {
   const urlParams = new URLSearchParams(location.search);
   const itemId = urlParams.get("id");
   const [copied, setCopied] = useState(false);
-  const [feedbackText, setFeedbackText] = useState("");
   const [isSavingFeedback, setIsSavingFeedback] = useState(false);
-  const [isRetrying, setIsRetrying] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
 
   const { data: item, isLoading, error } = items.useOne(itemId);
@@ -53,97 +50,10 @@ export default function ViewItem() {
         toast.success('Feedback pasted and saved!');
         setIsSavingFeedback(false);
       }
-    } catch (err) {
+    } catch {
       toast.error('Could not paste from clipboard');
       setIsSavingFeedback(false);
     }
-  };
-
-  const handlePasteFeedback = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      if (text) {
-        setFeedbackText(text);
-        toast.success('Feedback pasted from clipboard');
-      }
-    } catch (err) {
-      toast.error('Could not paste from clipboard');
-    }
-  };
-
-  const handleSaveFeedback = async () => {
-    if (!feedbackText.trim()) return;
-    setIsSavingFeedback(true);
-    try {
-      await updateItemMutation.mutateAsync({
-        id: itemId,
-        data: {
-          file_changes_feedback: feedbackText,
-          is_pending_check: false
-        }
-      });
-      toast.success('Feedback saved and check completed!');
-      setFeedbackText("");
-    } catch (err) {
-      toast.error('Could not save feedback');
-    } finally {
-      setIsSavingFeedback(false);
-    }
-  };
-
-  const handleMarkAsChecked = async () => {
-    try {
-      await updateItemMutation.mutateAsync({ id: itemId, data: { is_pending_check: false } });
-      toast.success('Check completed!');
-    } catch (err) {
-      toast.error('Could not change status');
-    }
-  };
-
-  const handleRetryFailed = async () => {
-    if (!item?.task_checks) return;
-
-    const failedTasks = item.task_checks.filter(check => check.status === TASK_CHECK_STATUS.FAILED);
-    
-    if (failedTasks.length === 0) {
-      toast.info("No failed tasks to retry.");
-      return;
-    }
-
-    setIsRetrying(true);
-    try {
-      const promises = failedTasks.map(task => {
-        return thoughts.create({
-          content: task.full_description || task.task_name,
-          project_id: item.project_id,
-          is_selected: true,
-          retry_from_item_id: item.id,
-          focus_type: 'both',
-        });
-      });
-
-      await Promise.all(promises);
-      
-      toast.success(`${failedTasks.length} tasks restored!`);
-      setTimeout(() => {
-        navigate(createPageUrl("Multiprompt"));
-      }, 1000);
-    } catch (error) {
-      console.error("Retry error:", error);
-      toast.error("Could not restore tasks");
-    } finally {
-      setIsRetrying(false);
-    }
-  };
-
-  const handleStatusChange = (taskIndex, newStatus) => {
-    const newChecks = [...item.task_checks];
-    newChecks[taskIndex] = {
-      ...newChecks[taskIndex],
-      status: newStatus,
-      is_checked: newStatus === TASK_CHECK_STATUS.SUCCESS
-    };
-    updateItemMutation.mutate({ id: itemId, data: { task_checks: newChecks } });
   };
 
   if (isLoading) {

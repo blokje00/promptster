@@ -143,6 +143,7 @@ export default function MaintenanceTools({ currentUser }) {
         toast.error("Cleanup failed: " + (data.error || "Unknown error"));
       }
     } catch (error) {
+      console.error("[MaintenanceTools] Hard delete cleanup failed:", error);
       toast.error("Failed to run cleanup");
     } finally {
       setIsRunning(false);

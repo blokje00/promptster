@@ -12,7 +12,6 @@ import { createPageUrl } from "@/utils";
 import { Settings, Sparkles, Plus, Archive, LogOut, Trash, MessageCircle, BarChart, ListChecks, FileText, TrendingUp } from "lucide-react";
 import ThemeToggleButton from "@/components/theme/ThemeToggleButton";
 import { Button } from "@/components/ui/button";
-import { useLanguage } from "../i18n/LanguageContext";
 
 import {
   DropdownMenu,
@@ -29,10 +28,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { t } = useLanguage();
   const [showExport, setShowExport] = useState(false);
-  
-  const { currentUser: user, isLoadingAuth: isUserLoading, logout } = useAuth();
+
+  const { currentUser: user, logout } = useAuth();
 
   // HARDENED: Badge counts can fail without affecting navigation.
   // Errors surface via the global query error toast; UI falls back to 0/[].
@@ -329,7 +327,7 @@ export default function Header() {
                    No, ExportPanel uses items for stats. 
                    We should fetch items here only when dialog is open.
                */}
-               <ExportDialogWrapper onClose={() => setShowExport(false)} />
+               <ExportDialogWrapper />
             </DialogContent>
           </Dialog>
 

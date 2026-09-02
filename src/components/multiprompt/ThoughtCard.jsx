@@ -84,7 +84,6 @@ export default function ThoughtCard({
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(thought.content || "");
   const [isDropActive, setIsDropActive] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [showDecomposer, setShowDecomposer] = useState(false);
 
   // TASK-1: Handle paste in textarea during editing
@@ -102,8 +101,7 @@ export default function ThoughtCard({
     if (imageFiles.length > 0) {
       e.preventDefault();
       const currentScreenshots = thought.screenshot_ids || [];
-      
-      setIsUploading(true);
+
       try {
         const uploadedUrls = [];
         for (const file of imageFiles) {
@@ -127,10 +125,8 @@ export default function ThoughtCard({
             console.warn('[ThoughtCard] Could not trigger vision analysis:', error);
           }
         }
-      } catch (error) {
+      } catch {
         toast.error("Failed to paste image");
-      } finally {
-        setIsUploading(false);
       }
     }
   };
@@ -204,7 +200,6 @@ export default function ThoughtCard({
       return;
     }
 
-    setIsUploading(true);
     const loadingToast = toast.loading("Screenshots uploaden...");
     
     try {
@@ -238,7 +233,6 @@ export default function ThoughtCard({
       }
     } finally {
       toast.dismiss(loadingToast);
-      setIsUploading(false);
     }
   };
 
@@ -415,7 +409,6 @@ export default function ThoughtCard({
             screenshotIds={thought.screenshot_ids || []}
             onChange={(ids) => onUpdateScreenshots(thought.id, ids)}
             taskId={thought.id}
-            projectId={thought.project_id}
             maxCount={5}
             compact
             onDebugClick={onDebugScreenshot}

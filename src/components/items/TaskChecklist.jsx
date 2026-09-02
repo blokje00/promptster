@@ -34,7 +34,6 @@ export default function TaskChecklist({
   // Calculate stats
   const completed = taskChecks.filter(t => t.status === TASK_CHECK_STATUS.SUCCESS).length;
   const failed = taskChecks.filter(t => t.status === TASK_CHECK_STATUS.FAILED).length;
-  const total = taskChecks.length;
 
   // Update single task status
   const handleStatusChange = (e, index, newStatus) => {

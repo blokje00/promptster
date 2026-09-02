@@ -52,7 +52,7 @@ export default function FeedbackInsights() {
 
   const applyFeedbackMutation = useMutation({
     mutationFn: (feedbackId) => functions.applyFeedbackToPreferences({ feedbackId }),
-    onSuccess: (data, feedbackId) => {
+    onSuccess: (data) => {
       if (data.skipped) {
         toast.info("This feedback was already applied");
       } else {

@@ -13,18 +13,11 @@
 
 import { useEffect } from 'react';
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
-import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 
 export function ThemeProvider({ children }) {
   // Current user (and their theme preference) comes from the single auth cache
-  const { user, updateMe } = useAuth();
-
-  // Mutation to update user theme preference
-  const updateThemeMutation = useMutation({
-    // updateMe() also refreshes the shared auth cache
-    mutationFn: (themeMode) => updateMe({ theme_mode: themeMode })
-  });
+  const { user } = useAuth();
 
   return (
     <NextThemesProvider
@@ -33,10 +26,7 @@ export function ThemeProvider({ children }) {
       enableSystem={true}
       storageKey="promptster-theme"
     >
-      <ThemeSyncHandler 
-        user={user} 
-        updateThemeMutation={updateThemeMutation} 
-      />
+      <ThemeSyncHandler user={user} />
       {children}
     </NextThemesProvider>
   );
@@ -45,7 +35,7 @@ export function ThemeProvider({ children }) {
 /**
  * Syncs theme between localStorage and user settings
  */
-function ThemeSyncHandler({ user, updateThemeMutation }) {
+function ThemeSyncHandler({ user }) {
   useEffect(() => {
     if (user?.theme_mode) {
       // Sync user's saved preference to localStorage if different

@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import * as pageViewsApi from "@/api/pageViews";
 import { useAuth } from "@/lib/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Eye, Clock, TrendingUp, Loader2, MousePointerClick, Users } from "lucide-react";
@@ -9,8 +8,6 @@ import { format } from "date-fns";
 import PageViewTracker from "../components/analytics/PageViewTracker";
 
 export default function AdminAnalytics() {
-  const navigate = useNavigate();
-
   // Current user from the single auth cache
   const { currentUser, isLoadingAuth: loadingUser } = useAuth();
 

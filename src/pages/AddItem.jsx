@@ -22,9 +22,7 @@ export default function AddItem() {
   const { data: projects = [] } = projectsApi.useList();
 
   const [selectedProjectId, setSelectedProjectId] = useState(() => localStorage.getItem('lastSelectedProjectId') || "");
-  
-  const selectedProject = projects.find(p => p.id === selectedProjectId);
-  
+
   const [formData, setFormData] = useState({
     title: "",
     type: "prompt",
@@ -204,7 +202,6 @@ export default function AddItem() {
                 <ScreenshotUploader
                   screenshotIds={formData.screenshot_ids}
                   onChange={(ids) => setFormData({...formData, screenshot_ids: ids})}
-                  projectId={formData.project_id}
                 />
               </div>
 

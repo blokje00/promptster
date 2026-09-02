@@ -2,7 +2,7 @@ import { items as itemsApi } from "@/api";
 import ExportPanel from "@/components/export/ExportPanel";
 import { Loader2 } from "lucide-react";
 
-export default function ExportDialogWrapper({ onClose }) {
+export default function ExportDialogWrapper() {
   const { data: items = [], isLoading } = itemsApi.useList();
 
   if (isLoading) {

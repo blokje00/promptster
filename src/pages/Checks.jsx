@@ -2,12 +2,11 @@ import { useState, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { items, projects as projectsApi, thoughts } from "@/api";
 import { useAuth } from "@/lib/AuthContext";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, RotateCcw, Search, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { CheckCircle2, RotateCcw, Search, ChevronDown, ChevronUp, Trash2, Loader2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 /**
@@ -61,12 +60,10 @@ import RetryModal from "@/components/checks/RetryModal";
 
 
 export default function Checks() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebouncedValue(searchQuery);
   const [statusFilter, setStatusFilter] = useState("open");
-  const [sortConfig, setSortConfig] = useState({ key: "updated_date", direction: "asc" });
   const [retryModalOpen, setRetryModalOpen] = useState(false);
   const [selectedRetryTask, setSelectedRetryTask] = useState(null);
 
@@ -126,14 +123,7 @@ export default function Checks() {
 
     // No sorting - keep insertion order (chronological)
     return result;
-  }, [allTasks, debouncedSearch, statusFilter, sortConfig]);
-
-  const handleSort = (key) => {
-    setSortConfig(current => ({
-      key,
-      direction: current.key === key && current.direction === "asc" ? "desc" : "asc"
-    }));
-  };
+  }, [allTasks, debouncedSearch, statusFilter]);
 
   const deleteTaskMutation = useMutation({
     mutationFn: async ({ itemId, taskIndex }) => {
@@ -207,6 +197,7 @@ export default function Checks() {
       queryClient.invalidateQueries({ queryKey: items.keys.all });
       queryClient.invalidateQueries({ queryKey: ['openTasksCount'] });
     } catch (error) {
+      console.error("[Checks] Failed to update task status:", error);
       toast.error("Failed to update task");
     }
   };
@@ -352,7 +343,13 @@ export default function Checks() {
                  </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                  {filteredTasks.length === 0 ? (
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan="5" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                        <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                      </td>
+                    </tr>
+                  ) : filteredTasks.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                         No tasks found
@@ -486,7 +483,6 @@ export default function Checks() {
           }}
           task={selectedRetryTask}
           onConfirm={handleRetryConfirm}
-          projectId={selectedRetryTask?.projectId}
           currentUser={currentUser}
         />
       </div>

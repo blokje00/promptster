@@ -19,7 +19,7 @@ const researchPapers = [
         description: "Distilleert automatisch best practices uit excellent ratings (3+ feedbacks)"
       }
     ],
-    implementation: "Backend functions: analyzeRetrospectiveFeedback, synthesizePreferences",
+    implementation: "Client-side (src/lib/ai/learning.js): analyzeRetrospectiveFeedback, synthesizePreferences",
     color: "indigo"
   },
   {
@@ -61,7 +61,7 @@ const researchPapers = [
         description: "Genereert 3 diverse task varianten (conservative, balanced, creative approaches)"
       }
     ],
-    implementation: "Backend function: decomposeTask, UI: TaskDecomposerDialog in ThoughtCard",
+    implementation: "Client-side (src/lib/ai/learning.js): decomposeTask, UI: TaskDecomposerDialog in ThoughtCard",
     color: "amber"
   }
 ];

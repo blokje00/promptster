@@ -62,7 +62,12 @@ export default function EditItem() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const { id, created_date, updated_date, created_by, ...updateData } = formData;
+    // Strip server-managed fields before sending the update payload back.
+    const updateData = { ...formData };
+    delete updateData.id;
+    delete updateData.created_date;
+    delete updateData.updated_date;
+    delete updateData.created_by;
     updateMutation.mutate({ id: itemId, data: updateData });
   };
   
@@ -183,7 +188,6 @@ export default function EditItem() {
                 <ScreenshotUploader
                   screenshotIds={formData.screenshot_ids}
                   onChange={(ids) => handleInputChange('screenshot_ids', ids)}
-                  projectId={formData.project_id}
                 />
               </div>
 

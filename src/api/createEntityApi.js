@@ -118,6 +118,17 @@ export function createEntityApi(entityName, config = {}) {
     return useMutation({
       mutationFn: ({ id, data }) => update(id, data),
       onSuccess: (result, variables, context) => {
+        // Write the saved record into every cached list right away, so a
+        // dialog that reopens before the refetch lands never shows the old
+        // values; the invalidation below still refreshes from the server.
+        if (result?.id) {
+          queryClient.setQueriesData({ queryKey: keys.all }, (old) =>
+            Array.isArray(old)
+              ? old.map((row) => (row?.id === result.id ? { ...row, ...result } : row))
+              : old,
+          );
+          queryClient.setQueryData(keys.one(result.id), (old) => (old ? { ...old, ...result } : result));
+        }
         queryClient.invalidateQueries({ queryKey: keys.all });
         if (variables?.id) {
           queryClient.invalidateQueries({ queryKey: keys.one(variables.id) });

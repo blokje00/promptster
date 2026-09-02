@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, X, ZoomIn, Eye } from "lucide-react";
 import { toast } from "sonner";
@@ -17,8 +16,6 @@ export default function ScreenshotThumbWithOCR({
   onDebugClick,
   visionStatus = null // 'analyzing', 'completed', 'failed', or null
 }) {
-  const [showOCRDebug, setShowOCRDebug] = useState(false);
-
   // Check if user is admin
   const { user } = useAuth();
 

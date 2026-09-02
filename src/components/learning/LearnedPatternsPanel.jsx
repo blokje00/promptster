@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as learnedPatterns from '@/api/learnedPatterns';
 import * as functions from '@/api/functions';
@@ -10,7 +9,6 @@ import { Brain, TrendingUp, AlertCircle, RefreshCw, Sparkles, CheckCircle2 } fro
 import { toast } from 'sonner';
 
 export default function LearnedPatternsPanel({ projectId }) {
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
     const queryClient = useQueryClient();
 
     // Fetch learned patterns voor dit project

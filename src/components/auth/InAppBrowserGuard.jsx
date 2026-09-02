@@ -20,7 +20,7 @@ export default function InAppBrowserGuard({ children }) {
       setCopied(true);
       toast.success("Link gekopieerd! Open Safari en plak de link.");
       setTimeout(() => setCopied(false), 3000);
-    } catch (error) {
+    } catch {
       toast.error("Kopiëren mislukt. Houd de knop ingedrukt en kies 'Kopieer link'.");
     }
   };

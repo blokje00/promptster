@@ -49,6 +49,45 @@
           "type": "string"
         }
       }
+    },
+    "domains": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Domeinen/gebieden binnen het project (vrije labels)"
+    },
+    "local_code_path": {
+      "type": "string",
+      "description": "Lokaal pad naar de code op de machine van de gebruiker"
+    },
+    "ai_tool": {
+      "type": "string",
+      "description": "AI-codeertool waarmee dit project gebouwd wordt (bepaalt icoon en kleur)"
+    },
+    "target_model": {
+      "type": "string",
+      "description": "AI-model waarvoor prompts van dit project geschreven worden"
+    },
+    "push_log": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Logboek van pushes/releases (datum + bericht)"
+    },
+    "github_repo": {
+      "type": "string",
+      "description": "GitHub-repository of versie-referentie"
     }
   },
   "required": [

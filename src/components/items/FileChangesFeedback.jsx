@@ -23,7 +23,7 @@ export default function FileChangesFeedback({
       setLocalValue(text);
       if (onChange) onChange(text);
       toast.success("Feedback pasted from clipboard");
-    } catch (err) {
+    } catch {
       toast.error("Could not paste - grant clipboard access");
     }
   };

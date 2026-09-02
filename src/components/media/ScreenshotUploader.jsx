@@ -5,10 +5,9 @@ import { toast } from "sonner";
 import ScreenshotThumbWithOCR from "./ScreenshotThumbWithOCR";
 import { uploadImageToSupabase } from "@/components/lib/uploadImage";
 
-export default function ScreenshotUploader({ 
-  screenshotIds = [], 
+export default function ScreenshotUploader({
+  screenshotIds = [],
   onChange,
-  projectId = null,
   taskId = null,
   maxCount = 10,
   compact = false,

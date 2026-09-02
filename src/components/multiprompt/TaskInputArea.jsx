@@ -24,7 +24,6 @@ function TaskInputArea({
   onFocusChange,
   newThoughtContext,
   onContextChange,
-  selectedProjectId,
   enableContextSuggestions
 }) {
   const textareaRef = useRef(null);
@@ -139,7 +138,6 @@ function TaskInputArea({
         <ScreenshotUploader
           screenshotIds={newThoughtScreenshots}
           onChange={onScreenshotsChange}
-          projectId={selectedProjectId}
           maxCount={5}
           compact
         />

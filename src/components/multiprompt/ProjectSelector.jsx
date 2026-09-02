@@ -22,7 +22,6 @@ import { useDeleteProject } from "@/components/hooks/useDeleteProject";
 function ProjectSelector({
   projects: projectList,
   selectedProjectId,
-  selectedProject,
   onSelectProject,
   allThoughtsCount,
   getProjectCount

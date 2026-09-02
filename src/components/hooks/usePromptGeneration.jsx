@@ -248,7 +248,6 @@ Apply this routing strategy when executing the multi-task protocol.
     
     setIsImproving(true);
     try {
-      let visionContext = '';
       let enrichedPromptWithVision = generatedPrompt;
       
       if (allScreenshotUrls.length > 0) {
@@ -296,13 +295,10 @@ Apply this routing strategy when executing the multi-task protocol.
               }
             });
 
-            const analyses = [...analysisByUrl.values()];
-            visionContext = `\n\n**Screenshot Analysis (OCR Vision):**\n${analyses.map((a, i) =>
-              `Screenshot ${i + 1}: ${a.regions?.length || 0} UI elements detected\n- Text: "${a.ocr?.text?.substring(0, 150) || 'None'}..."`
-            ).join('\n')}\n`;
           }
         } catch (error) {
           // Vision analysis failed, continue without it
+          console.error("[usePromptGeneration] Vision enrichment failed:", error);
         }
       }
 

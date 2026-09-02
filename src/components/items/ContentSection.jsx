@@ -15,8 +15,7 @@ export default function ContentSection({
   onTagInputChange,
   onAddTag,
   onRemoveTag,
-  onContentPaste,
-  onFormDataChange
+  onContentPaste
 }) {
   return (
     <>

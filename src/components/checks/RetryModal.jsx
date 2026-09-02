@@ -16,9 +16,8 @@ import { retryModalPrompt } from "@/lib/prompts";
 export default function RetryModal({ 
   isOpen, 
   onClose, 
-  task, 
+  task,
   onConfirm,
-  projectId,
   currentUser
 }) {
   const [screenshots, setScreenshots] = useState([]);
@@ -323,7 +322,6 @@ export default function RetryModal({
               <ScreenshotUploader
                 screenshotIds={screenshots}
                 onChange={setScreenshots}
-                projectId={projectId}
                 maxCount={3}
               />
               {isAnalyzing && (

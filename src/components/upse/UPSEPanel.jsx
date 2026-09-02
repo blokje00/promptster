@@ -264,7 +264,6 @@ export default function UPSEPanel({
             <TabsContent value="liveApp">
               <LiveAppScanner
                 baseUrl={currentStructure?.base_url || ""}
-                existingPages={currentStructure?.pages || []}
                 existingEntities={currentStructure?.entities || []}
                 onCapture={(data, meta) => handleScanComplete("liveApp", data, meta)}
               />

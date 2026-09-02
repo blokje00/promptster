@@ -77,7 +77,6 @@ function TasksColumn({
               onScreenshotsChange={newThoughtInput.setNewThoughtScreenshots}
               onFocusChange={newThoughtInput.setNewThoughtFocus}
               onContextChange={newThoughtInput.setNewThoughtContext}
-              selectedProjectId={selectedProjectId}
               enableContextSuggestions={enableContextSuggestions}
             />
             <div className="flex gap-2">

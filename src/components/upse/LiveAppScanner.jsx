@@ -33,11 +33,10 @@ const PAGE_TYPES = [
  * Live App Scanner component
  * Scant een live app via iframe en laat gebruiker pagina's capturen
  */
-export default function LiveAppScanner({ 
+export default function LiveAppScanner({
   baseUrl: initialBaseUrl = "",
-  existingPages = [],
   existingEntities = [],
-  onCapture 
+  onCapture
 }) {
   const iframeRef = useRef(null);
   const [baseUrl, setBaseUrl] = useState(initialBaseUrl);
@@ -127,7 +126,7 @@ export default function LiveAppScanner({
         setCurrentUrl(iframeRef.current.src);
         setCorsBlocked(false);
       }
-    } catch (e) {
+    } catch {
       // Cross-origin blocked
       setCorsBlocked(true);
       setCurrentUrl(iframeRef.current?.src || baseUrl);

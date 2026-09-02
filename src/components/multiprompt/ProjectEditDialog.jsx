@@ -141,7 +141,7 @@ export default function ProjectEditDialog({ open, onOpenChange, mode = "edit", p
       if (domains.length > 0) setEditDomains(domains);
 
       toast.success(`✓ Parsed: ${Object.keys(mapping).length} pages, ${domains.length} domains`);
-    } catch (e) {
+    } catch {
       toast.error("Invalid JSON format");
     }
   };

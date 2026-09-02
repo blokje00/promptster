@@ -41,7 +41,6 @@ export default function ContextSelector({
     }
   });
   const [isAddingItem, setIsAddingItem] = useState(null); // 'page' or 'component'
-  const [newItemName, setNewItemName] = useState("");
 
   // Save custom items to localStorage when they change
   useEffect(() => {

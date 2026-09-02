@@ -235,7 +235,6 @@ function MultipromptContent({ currentUser }) {
         <ProjectSelector
           projects={projects}
           selectedProjectId={selectedProjectId}
-          selectedProject={selectedProject}
           onSelectProject={setSelectedProjectId}
           allThoughtsCount={allThoughts.length}
           getProjectCount={getProjectCount}
@@ -255,7 +254,6 @@ function MultipromptContent({ currentUser }) {
 
           <TabsContent value="brainstorm">
             <BrainstormPanel
-              currentUser={currentUser}
               selectedProjectId={selectedProjectId}
             />
           </TabsContent>

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, X, ZoomIn, Eye } from "lucide-react";
 import { toast } from "sonner";
@@ -10,8 +9,6 @@ import {
 import { useAuth } from "@/lib/AuthContext";
 
 export default function ScreenshotThumb({ screenshotId, onRemove, showCopyEmbed = true, onDebugClick }) {
-  const [showOCRDebug, setShowOCRDebug] = useState(false);
-
   // Check if user is admin
   const { user } = useAuth();
 

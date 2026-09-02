@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import * as aiSettings from "@/api/aiSettings";
 import * as projectsApi from "@/api/projects";
 import * as projectStructuresApi from "@/api/projectStructures";
-import * as learnedPatternsApi from "@/api/learnedPatterns";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -103,9 +102,6 @@ export default function AIBackoffice() {
 
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const currentProjectStructure = projectStructures.find(ps => ps.project_id === selectedProjectId);
-
-  // Load learned patterns for selected project
-  const { data: learnedPatterns = [] } = learnedPatternsApi.useByProject(selectedProjectId);
 
   const structureMutation = useMutation({
     mutationFn: async (data) => {

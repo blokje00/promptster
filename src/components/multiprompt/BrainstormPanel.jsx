@@ -12,7 +12,7 @@ import { toast } from "sonner";
  * Creative Brainstorm Tool - TIER 2 Feature #4
  * Genereert diverse ideeën met Verbalized Sampling
  */
-export default function BrainstormPanel({ currentUser, selectedProjectId }) {
+export default function BrainstormPanel({ selectedProjectId }) {
   const [concept, setConcept] = useState("");
   const [ideas, setIdeas] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
