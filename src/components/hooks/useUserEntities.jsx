@@ -22,10 +22,16 @@ export function useUserEntities(entityName, { queryKey, sort, ...options } = {})
     queryKey: [queryKey ?? entityName, email],
     queryFn: async () => {
       if (!email) return [];
-      const result = sort
-        ? await base44.entities[entityName].filter({ created_by: email }, sort)
-        : await base44.entities[entityName].filter({ created_by: email });
-      return result || [];
+      let result;
+      try {
+        result = sort
+          ? await base44.entities[entityName].filter({ created_by: email }, sort)
+          : await base44.entities[entityName].filter({ created_by: email });
+      } catch (error) {
+        if (!sort) throw error;
+        result = await base44.entities[entityName].filter({ created_by: email });
+      }
+      return Array.isArray(result) ? result : result?.data ?? [];
     },
     enabled: !!email,
     ...options,

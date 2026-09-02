@@ -24,7 +24,7 @@ export default function RouteGuard({ children, access = "protected" }) {
   useEffect(() => {
     if (isLoadingAuth || access === "public") return;
     if (!isAuthenticated) {
-      base44.auth.redirectToLogin(location.pathname + location.search);
+      base44.auth.loginWithProvider('google', location.pathname + location.search);
     }
   }, [isAuthenticated, isLoadingAuth, access, location.pathname, location.search]);
 

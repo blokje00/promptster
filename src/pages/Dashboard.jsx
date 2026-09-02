@@ -37,10 +37,9 @@ export default function Dashboard() {
 
   const { data: projects = [] } = useUserEntities("Project", { queryKey: "projects" });
 
-  const { data: items, isLoading } = useUserEntities("Item", {
+  const { data: items = [], isLoading } = useUserEntities("Item", {
     queryKey: "items",
     sort: "-updated_date",
-    initialData: [],
   });
 
   const itemCounts = useMemo(() => ({

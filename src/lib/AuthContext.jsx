@@ -16,21 +16,27 @@ export const AuthProvider = ({ children }) => {
     checkAppState();
   }, []);
 
-  const { 
-    data: user = null, 
+  const {
+    data: user = null,
     isLoading: isLoadingUser,
   } = useQuery({
     queryKey: ['authUser'],
-    queryFn: () => base44.auth.me(),
-    // Runs in parallel with the public-settings fetch instead of waiting for it
-    enabled: !!appParams.token,
+    // The SDK manages its own session storage; me() must always run so a
+    // plain visit/refresh (no ?access_token= in the URL) still resolves the user.
+    queryFn: async () => {
+      try {
+        return await base44.auth.me();
+      } catch {
+        return null;
+      }
+    },
     retry: false,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
 
   const isAuthenticated = !!user;
-  const isLoadingAuth = isLoadingUser && !!appParams.token;
+  const isLoadingAuth = isLoadingUser;
 
   const refreshUser = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['authUser'] });
